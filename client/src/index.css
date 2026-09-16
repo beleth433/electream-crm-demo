@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.4);
+}
+
+/* Tech Background Circuit / Dot Grid */
+.bg-tech-dots {
+  background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .bg-tech-dots {
+  background-image: radial-gradient(rgba(16, 185, 129, 0.12) 1.2px, transparent 1.2px);
+  background-size: 28px 28px;
+}
+
+/* Contoured Cards (Matching Fleet Management Reference) */
+.contour-card {
+  @apply rounded-2xl border transition-all duration-200;
+  @apply bg-white border-slate-200 shadow-sm hover:border-emerald-400/60;
+}
+.dark .contour-card {
+  background-color: #0b1511;
+  border-color: rgba(16, 185, 129, 0.22);
+  box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.08);
+}
+.dark .contour-card:hover {
+  border-color: rgba(52, 211, 153, 0.45);
+  box-shadow: 0 0 25px -2px rgba(16, 185, 129, 0.16);
+}
+
+/* Danger / Alert Contours */
+.contour-card-rose {
+  @apply rounded-2xl border transition-all duration-200;
+  @apply bg-white border-rose-200 shadow-sm hover:border-rose-400;
+}
+.dark .contour-card-rose {
+  background-color: #150c0f;
+  border-color: rgba(244, 63, 94, 0.35);
+  box-shadow: 0 0 20px -3px rgba(244, 63, 94, 0.12);
+}
+.dark .contour-card-rose:hover {
+  border-color: rgba(251, 113, 133, 0.6);
+  box-shadow: 0 0 25px -2px rgba(244, 63, 94, 0.2);
+}
+
+/* Amber / Warning Contours */
+.contour-card-amber {
+  @apply rounded-2xl border transition-all duration-200;
+  @apply bg-white border-amber-200 shadow-sm hover:border-amber-400;
+}
+.dark .contour-card-amber {
+  background-color: #15120c;
+  border-color: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 20px -3px rgba(245, 158, 11, 0.12);
+}
+.dark .contour-card-amber:hover {
+  border-color: rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 25px -2px rgba(245, 158, 11, 0.2);
+}
+
+/* Sky / Info Contours */
+.contour-card-sky {
+  @apply rounded-2xl border transition-all duration-200;
+  @apply bg-white border-sky-200 shadow-sm hover:border-sky-400;
+}
+.dark .contour-card-sky {
+  background-color: #0b1218;
+  border-color: rgba(14, 165, 233, 0.35);
+  box-shadow: 0 0 20px -3px rgba(14, 165, 233, 0.12);
+}
+.dark .contour-card-sky:hover {
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 25px -2px rgba(14, 165, 233, 0.2);
+}
+
+/* Print styles for Handover Act */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-act, #printable-act * {
+    visibility: visible;
+  }
+  #printable-act {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

@@ -1,0 +1,281 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  MECHANIC
+}
+
+enum BikeStatus {
+  AVAILABLE
+  RENTED
+  IN_MAINTENANCE
+  FOR_SALE
+  DECOMMISSIONED
+}
+
+enum RentalStatus {
+  DRAFT
+  RESERVED
+  ACTIVE
+  OVERDUE
+  CLOSED
+  PROBLEM
+  BOUGHT_OUT
+}
+
+enum RentalType {
+  STANDARD
+  RENT_TO_OWN
+}
+
+enum ClientStatus {
+  NORMAL
+  VIP
+  PROBLEM
+  BLACKLIST
+}
+
+enum OutfitCategory {
+  HELMET
+  LOCK
+  BAG
+  BATTERY
+  CHARGER
+  PHONE_HOLDER
+  WINTER_GLOVES
+}
+
+enum OutfitStatus {
+  IN_STOCK
+  ISSUED
+  DAMAGED
+  LOST
+}
+
+enum RepairStatus {
+  DIAGNOSTICS
+  WAITING_PARTS
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum RepairFaultType {
+  COMPANY_EXPENSE
+  CLIENT_FAULT
+}
+
+enum PaymentType {
+  RENTAL
+  DEPOSIT
+  DEPOSIT_REFUND
+  REPAIR
+  OUTFIT_SALE
+  FINE
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  SBP
+  BANK_TRANSFER
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  role         UserRole      @default(MANAGER)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  managedRentals Rental[]    @relation("ManagerRentals")
+  repairs        RepairOrder[] @relation("MechanicRepairs")
+  articles       Article[]
+}
+
+model BikeModel {
+  id                String   @id @default(uuid())
+  name              String   // e.g. "Minako Monster", "Wenbox U3 Pro"
+  powerWatts        Int      // e.g. 800
+  batteryCapacityAh Float    // e.g. 21.0
+  wheelSizeInch     Float?   // e.g. 16.0
+  winterVersion     Boolean  @default(false)
+  bikes             Bike[]
+}
+
+model Bike {
+  id              String        @id @default(uuid())
+  inventoryNumber String        @unique // e.g. "EV-001"
+  modelId         String
+  model           BikeModel     @relation(fields: [modelId], references: [id])
+  frameNumber     String?
+  motorNumber     String?       // № мотор-колеса
+  status          BikeStatus    @default(AVAILABLE)
+  currentLocation String        @default("Центральная база")
+  mileageKm       Float         @default(0)
+  note            String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  rentals         Rental[]
+  repairs         RepairOrder[]
+  reviews         Review[]
+}
+
+model Outfit {
+  id              String             @id @default(uuid())
+  name            String             // e.g. "Шлем защитный M", "Замок цепной 10мм"
+  category        OutfitCategory
+  inventoryNumber String?            @unique
+  depositValue    Decimal            @default(0) // Залоговая стоимость
+  status          OutfitStatus       @default(IN_STOCK)
+  createdAt       DateTime           @default(now())
+  rentalItems     RentalOutfitItem[]
+}
+
+model Client {
+  id                String       @id @default(uuid())
+  fullName          String
+  phone             String       @unique
+  telegram          String?
+  passportSerial    String?
+  passportNumber    String?
+  citizenship       String       @default("РФ")
+  migrationCard     String?      // Для граждан СНГ
+  patentNumber      String?      // Для граждан СНГ
+  courierService    String?      // "Яндекс Еда", "Самокат", "Купер"
+  documentPhotoUrls String[]     // Ссылки на фото документов
+  status            ClientStatus @default(NORMAL)
+  blackListReason   String?
+  createdAt         DateTime     @default(now())
+  rentals           Rental[]
+  reviews           Review[]
+}
+
+model Tariff {
+  id              String     @id @default(uuid())
+  name            String     // "Суточный", "Недельный", "Месячный", "Выкуп (9 мес)"
+  type            RentalType @default(STANDARD)
+  durationDays    Int        // 1, 7, 30
+  price           Decimal    // Цена за период
+  depositRequired Decimal    @default(3000)
+  isActive        Boolean    @default(true)
+  rentals         Rental[]
+}
+
+model Rental {
+  id              String             @id @default(uuid())
+  rentalNumber    String             @unique // e.g. "RNT-2026-001"
+  clientId        String
+  client          Client             @relation(fields: [clientId], references: [id])
+  bikeId          String
+  bike            Bike               @relation(fields: [bikeId], references: [id])
+  tariffId        String
+  tariff          Tariff             @relation(fields: [tariffId], references: [id])
+  managerId       String
+  manager         User               @relation("ManagerRentals", fields: [managerId], references: [id])
+  status          RentalStatus       @default(DRAFT)
+  type            RentalType         @default(STANDARD)
+  startedAt       DateTime           @default(now())
+  expiresAt       DateTime
+  nextPaymentDue  DateTime
+  depositAmount   Decimal            @default(0)
+  depositRefunded Boolean            @default(false)
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  payments        Payment[]
+  outfitItems     RentalOutfitItem[]
+}
+
+model RentalOutfitItem {
+  id         String   @id @default(uuid())
+  rentalId   String
+  rental     Rental   @relation(fields: [rentalId], references: [id])
+  outfitId   String
+  outfit     Outfit   @relation(fields: [outfitId], references: [id])
+  isReturned Boolean  @default(false)
+}
+
+model Part {
+  id            String      @id @default(uuid())
+  name          String      // e.g. "Колодки гидравлика", "Покрышка 16x3.0"
+  sku           String      @unique
+  quantity      Int         @default(0)
+  minQuantity   Int         @default(3) // Порог предупреждения
+  purchasePrice Decimal
+  clientPrice   Decimal
+  createdAt     DateTime    @default(now())
+  usedInRepairs PartUsage[]
+}
+
+model RepairOrder {
+  id          String          @id @default(uuid())
+  orderNumber String          @unique // e.g. "REP-2026-001"
+  bikeId      String
+  bike        Bike            @relation(fields: [bikeId], references: [id])
+  mechanicId  String
+  mechanic    User            @relation("MechanicRepairs", fields: [mechanicId], references: [id])
+  status      RepairStatus    @default(DIAGNOSTICS)
+  faultType   RepairFaultType @default(COMPANY_EXPENSE)
+  description String
+  laborCost   Decimal         @default(0)
+  partsCost   Decimal         @default(0)
+  totalCost   Decimal         @default(0)
+  createdAt   DateTime        @default(now())
+  completedAt DateTime?
+  partsUsed   PartUsage[]
+}
+
+model PartUsage {
+  id            String      @id @default(uuid())
+  repairOrderId String
+  repairOrder   RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+  partId        String
+  part          Part        @relation(fields: [partId], references: [id])
+  quantity      Int         @default(1)
+  priceCharged  Decimal     // Зафиксированная цена на момент списания
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  rentalId    String?
+  rental      Rental?       @relation(fields: [rentalId], references: [id])
+  type        PaymentType
+  amount      Decimal
+  method      PaymentMethod @default(CASH)
+  description String?
+  createdAt   DateTime      @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id])
+  bikeId    String
+  bike      Bike     @relation(fields: [bikeId], references: [id])
+  rating    Int      // 1 to 5
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+model Article {
+  id        String   @id @default(uuid())
+  title     String
+  category  String   // "Регламенты выдачи", "СТО и Ремонт", "Скрипты общения", "FAQ"
+  content   String   // Markdown
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
