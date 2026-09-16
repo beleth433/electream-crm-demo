@@ -27,6 +27,10 @@ router.get("/dashboard/stats", DashboardController.getStats);
 
 // 3. Batteries (АКБ)
 router.get("/batteries/stats", BatteryController.getStats);
+router.get("/batteries/models", BatteryController.getModels);
+router.post("/batteries/models", BatteryController.createModel);
+router.patch("/batteries/models/:id", BatteryController.updateModel);
+router.delete("/batteries/models/:id", BatteryController.deleteModel);
 router.get("/batteries", BatteryController.getAll);
 router.get("/batteries/:id", BatteryController.getById);
 router.post("/batteries", BatteryController.create);

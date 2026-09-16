@@ -64,9 +64,7 @@ export const BikesPage: React.FC = () => {
   const [newModelForm, setNewModelForm] = useState({
     name: '',
     powerWatts: 800,
-    batteryCapacityAh: 21.0,
     wheelSizeInch: 16.0,
-    winterVersion: false,
     description: '',
   });
 
@@ -198,9 +196,7 @@ export const BikesPage: React.FC = () => {
       setNewModelForm({
         name: '',
         powerWatts: 800,
-        batteryCapacityAh: 21.0,
         wheelSizeInch: 16.0,
-        winterVersion: false,
         description: '',
       });
     } catch (err: any) {
@@ -355,12 +351,6 @@ export const BikesPage: React.FC = () => {
                     {bike.model?.wheelSizeInch}"
                   </span>
                 )}
-                {bike.model?.winterVersion && (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200/50">
-                    <Snowflake className="w-3.5 h-3.5 text-blue-500" />
-                    Зима
-                  </span>
-                )}
               </div>
 
               {/* Battery Unit Block */}
@@ -374,9 +364,6 @@ export const BikesPage: React.FC = () => {
                         <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
                           {bike.battery.voltage}V {bike.battery.capacityAh}Ah
                         </span>
-                      </div>
-                      <div className="text-[10px] text-slate-500 dark:text-emerald-400/80">
-                        Разъем: {bike.battery.connector}
                       </div>
                     </div>
                   </div>
@@ -545,18 +532,6 @@ export const BikesPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] text-slate-400 mb-0.5">АКБ (Ah)</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={newModelForm.batteryCapacityAh}
-                      onChange={(e) =>
-                        setNewModelForm({ ...newModelForm, batteryCapacityAh: Number(e.target.value) })
-                      }
-                      className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs"
-                    />
-                  </div>
-                  <div>
                     <label className="block text-[10px] text-slate-400 mb-0.5">Колеса (")</label>
                     <input
                       type="number"
@@ -569,16 +544,7 @@ export const BikesPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer text-[11px] text-slate-700 dark:text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={newModelForm.winterVersion}
-                      onChange={(e) => setNewModelForm({ ...newModelForm, winterVersion: e.target.checked })}
-                      className="rounded text-emerald-500"
-                    />
-                    <span>Зимняя резина / подготовка</span>
-                  </label>
+                <div className="flex items-center justify-end pt-1">
                   <button
                     type="button"
                     onClick={(e) => handleCreateModel(e, true)}
@@ -597,7 +563,7 @@ export const BikesPage: React.FC = () => {
               >
                 {models.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.name} ({m.powerWatts}W, {m.batteryCapacityAh}Ah) {m.winterVersion ? '❄' : ''}
+                    {m.name} ({m.powerWatts}W)
                   </option>
                 ))}
               </select>
@@ -619,7 +585,7 @@ export const BikesPage: React.FC = () => {
               <option value="">-- Без аккумулятора (пустая рама на складе / в резерве) --</option>
               {availableBatteries.map((bat) => (
                 <option key={bat.id} value={bat.id}>
-                  {bat.serialNumber} [{bat.voltage}V {bat.capacityAh}Ah, {bat.connector}] — {bat.location}
+                  {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah)
                 </option>
               ))}
             </select>
@@ -746,7 +712,7 @@ export const BikesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-slate-500 dark:text-slate-400 mb-1">Мощность мотора (W) *</label>
                 <input
@@ -756,19 +722,6 @@ export const BikesPage: React.FC = () => {
                   step="50"
                   value={newModelForm.powerWatts}
                   onChange={(e) => setNewModelForm({ ...newModelForm, powerWatts: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Емкость батареи (Ah) *</label>
-                <input
-                  required
-                  type="number"
-                  min="5"
-                  step="0.5"
-                  value={newModelForm.batteryCapacityAh}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, batteryCapacityAh: Number(e.target.value) })}
                   className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold"
                 />
               </div>
@@ -787,20 +740,10 @@ export const BikesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-              <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={newModelForm.winterVersion}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, winterVersion: e.target.checked })}
-                  className="rounded text-emerald-500 w-4 h-4"
-                />
-                <span className="font-medium">Зимняя версия (шипованная резина, термочехол АКБ)</span>
-              </label>
-
+            <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all self-end sm:self-auto"
+                className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all"
               >
                 Создать шаблон модели
               </button>
@@ -829,19 +772,11 @@ export const BikesPage: React.FC = () => {
                           <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{m.description}</p>
                         )}
                       </div>
-                      {m.winterVersion && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
-                          ❄ Зима
-                        </span>
-                      )}
                     </div>
 
                     <div className="flex items-center gap-2 mt-2 text-[11px]">
                       <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 font-semibold">
                         ⚡ {m.powerWatts}W
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-semibold">
-                        🔋 {m.batteryCapacityAh}Ah
                       </span>
                       {m.wheelSizeInch && (
                         <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-[#162720] text-slate-600 dark:text-slate-300 font-medium">
@@ -917,7 +852,7 @@ export const BikesPage: React.FC = () => {
               >
                 {availableBatteries.map((bat) => (
                   <option key={bat.id} value={bat.id}>
-                    {bat.serialNumber} [{bat.voltage}V {bat.capacityAh}Ah, {bat.connector}] — {bat.location}
+                    {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah)
                   </option>
                 ))}
               </select>
@@ -966,7 +901,7 @@ export const BikesPage: React.FC = () => {
             </div>
             {swapTargetBike?.battery ? (
               <div className="text-amber-600 dark:text-amber-400 text-xs mt-1">
-                Текущий АКБ: <b>{swapTargetBike.battery.serialNumber}</b> ({swapTargetBike.battery.voltage}V {swapTargetBike.battery.capacityAh}Ah) будет возвращен на зарядный стеллаж базы.
+                Текущий АКБ: <b>{swapTargetBike.battery.serialNumber}</b> ({swapTargetBike.battery.voltage}V {swapTargetBike.battery.capacityAh}Ah) будет снят на склад.
               </div>
             ) : (
               <div className="text-slate-500 dark:text-slate-400 text-xs mt-1">Байк в данный момент без батареи.</div>
@@ -989,7 +924,7 @@ export const BikesPage: React.FC = () => {
               >
                 {availableBatteries.map((bat) => (
                   <option key={bat.id} value={bat.id}>
-                    {bat.serialNumber} [{bat.voltage}V {bat.capacityAh}Ah, {bat.connector}] — {bat.location}
+                    {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah)
                   </option>
                 ))}
               </select>

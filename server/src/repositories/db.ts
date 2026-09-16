@@ -1,6 +1,7 @@
 import {
   INITIAL_USERS,
   INITIAL_MODELS,
+  INITIAL_BATTERY_MODELS,
   INITIAL_BIKES,
   INITIAL_BATTERIES,
   INITIAL_OUTFITS,
@@ -37,17 +38,25 @@ export type RepairFaultType = "COMPANY_EXPENSE" | "CLIENT_FAULT";
 export type PaymentType = "RENTAL" | "DEPOSIT" | "DEPOSIT_REFUND" | "REPAIR" | "OUTFIT_SALE" | "FINE" | "SALARY_PAYMENT" | "RETAIL_SALE";
 export type PaymentMethod = "CASH" | "CARD" | "SBP" | "BANK_TRANSFER";
 
+export interface BatteryModelRecord {
+  id: string;
+  name: string;
+  voltage: number;
+  capacityAh: number;
+  description?: string | null;
+}
+
 export interface BatteryRecord {
   id: string;
   serialNumber: string;       // e.g. BAT-60V-001
-  voltage: number;            // 48, 60, 72
-  capacityAh: number;         // 20, 21, 24, 30
-  connector: string;          // XT60, XT90, Anderson, QS8
-  cycleCount: number;         // количество циклов заряда (e.g. 34)
-  healthPercent: number;      // SoH (State of Health) 0-100%
+  modelId?: string | null;
+  modelName?: string | null;
+  voltage: number;
+  capacityAh: number;
+  cycleCount?: number;
+  healthPercent?: number;
   status: BatteryStatus;
   installedBikeId?: string | null; // Привязка к байку
-  location: string;           // "Зарядный стеллаж #1", "Байк EV-001"
   notes?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -67,9 +76,7 @@ export interface BikeModelRecord {
   id: string;
   name: string;
   powerWatts: number;
-  batteryCapacityAh: number;
   wheelSizeInch?: number | null;
-  winterVersion: boolean;
   description?: string | null;
 }
 
@@ -260,6 +267,7 @@ export interface RetailOrderRecord {
 export interface DBStore {
   users: UserRecord[];
   models: BikeModelRecord[];
+  batteryModels: BatteryModelRecord[];
   bikes: BikeRecord[];
   batteries: BatteryRecord[];
   outfits: OutfitRecord[];
@@ -281,6 +289,7 @@ export interface DBStore {
 let db: DBStore = {
   users: JSON.parse(JSON.stringify(INITIAL_USERS)),
   models: JSON.parse(JSON.stringify(INITIAL_MODELS)),
+  batteryModels: JSON.parse(JSON.stringify(INITIAL_BATTERY_MODELS)),
   bikes: JSON.parse(JSON.stringify(INITIAL_BIKES)),
   batteries: JSON.parse(JSON.stringify(INITIAL_BATTERIES)),
   outfits: JSON.parse(JSON.stringify(INITIAL_OUTFITS)),
@@ -327,6 +336,7 @@ export const resetDb = () => {
   db = {
     users: JSON.parse(JSON.stringify(INITIAL_USERS)),
     models: JSON.parse(JSON.stringify(INITIAL_MODELS)),
+    batteryModels: JSON.parse(JSON.stringify(INITIAL_BATTERY_MODELS)),
     bikes: JSON.parse(JSON.stringify(INITIAL_BIKES)),
     batteries: JSON.parse(JSON.stringify(INITIAL_BATTERIES)),
     outfits: JSON.parse(JSON.stringify(INITIAL_OUTFITS)),

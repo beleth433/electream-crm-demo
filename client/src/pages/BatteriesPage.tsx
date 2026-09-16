@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Battery, BatteryStats, BatteryStatus, Bike } from '../types';
+import { Battery, BatteryModel, BatteryStats, BatteryStatus, Bike } from '../types';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
 import {
@@ -20,12 +20,12 @@ import {
   LayoutGrid,
   Table as TableIcon,
   ShieldAlert,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const BatteriesPage: React.FC = () => {
   const [batteries, setBatteries] = useState<Battery[]>([]);
+  const [batteryModels, setBatteryModels] = useState<BatteryModel[]>([]);
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [stats, setStats] = useState<BatteryStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,14 +36,20 @@ export const BatteriesPage: React.FC = () => {
   const [voltageFilter, setVoltageFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
+  // Modal: Manage Battery Models (Templates)
+  const [isManageModelsOpen, setIsManageModelsOpen] = useState(false);
+  const [newModelForm, setNewModelForm] = useState({
+    name: '',
+    voltage: 60,
+    capacityAh: 21,
+    description: '',
+  });
+
   // Modal: Create Battery
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [createForm, setCreateForm] = useState({
+    modelId: '',
     serialNumber: '',
-    voltage: 60,
-    capacityAh: 21,
-    connector: 'XT60',
-    location: 'Стеллаж зарядки #1 (База)',
     notes: '',
   });
 
@@ -51,12 +57,11 @@ export const BatteriesPage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingBattery, setEditingBattery] = useState<Battery | null>(null);
   const [editForm, setEditForm] = useState({
+    modelId: '',
     serialNumber: '',
     voltage: 60,
     capacityAh: 21,
-    connector: 'XT60',
     status: 'AVAILABLE' as BatteryStatus,
-    location: '',
     notes: '',
   });
 
@@ -73,14 +78,19 @@ export const BatteriesPage: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [batList, batStats, bikeList] = await Promise.all([
+      const [batList, batModels, batStats, bikeList] = await Promise.all([
         api.getBatteries(),
+        api.getBatteryModels(),
         api.getBatteryStats(),
         api.getBikes(),
       ]);
       setBatteries(batList);
+      setBatteryModels(batModels);
       setStats(batStats);
       setBikes(bikeList);
+      if (batModels.length > 0) {
+        setCreateForm((prev) => ({ ...prev, modelId: prev.modelId || batModels[0].id }));
+      }
     } catch (err: any) {
       toast.error('Ошибка загрузки батарейного парка: ' + err.message);
     } finally {
@@ -92,18 +102,51 @@ export const BatteriesPage: React.FC = () => {
     loadData();
   }, []);
 
-  // Generate unique serial number helper
-  const handleGenerateSerial = (volts: number) => {
-    const prefix = `BAT-${volts}V-`;
-    const existingNums = batteries
-      .filter((b) => b.serialNumber.startsWith(prefix))
-      .map((b) => {
-        const numPart = parseInt(b.serialNumber.replace(prefix, ''), 10);
-        return isNaN(numPart) ? 0 : numPart;
+  // Create battery model submit
+  const handleCreateModel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newModelForm.name.trim()) {
+      toast.error('Укажите название модели АКБ');
+      return;
+    }
+    try {
+      const created = await api.createBatteryModel(newModelForm);
+      toast.success(`Шаблон модели АКБ "${created.name}" создан!`);
+      const updated = await api.getBatteryModels();
+      setBatteryModels(updated);
+      setCreateForm((prev) => ({ ...prev, modelId: created.id }));
+      setNewModelForm({
+        name: '',
+        voltage: 60,
+        capacityAh: 21,
+        description: '',
       });
-    const maxNum = existingNums.length > 0 ? Math.max(...existingNums) : 0;
-    const nextSerial = `${prefix}${(maxNum + 1).toString().padStart(3, '0')}`;
-    setCreateForm((prev) => ({ ...prev, serialNumber: nextSerial }));
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка создания шаблона АКБ');
+    }
+  };
+
+  // Delete battery model submit
+  const handleDeleteModel = async (model: BatteryModel) => {
+    if ((model.batteriesCount ?? 0) > 0) {
+      toast.error(
+        `Невозможно удалить шаблон "${model.name}": в парке зарегистрировано ${model.batteriesCount} АКБ этой модели!`
+      );
+      return;
+    }
+    if (window.confirm(`Вы уверены, что хотите удалить шаблон модели "${model.name}"?`)) {
+      try {
+        await api.deleteBatteryModel(model.id);
+        toast.success(`Шаблон модели "${model.name}" удален`);
+        const updated = await api.getBatteryModels();
+        setBatteryModels(updated);
+        if (createForm.modelId === model.id && updated.length > 0) {
+          setCreateForm((prev) => ({ ...prev, modelId: updated[0].id }));
+        }
+      } catch (err: any) {
+        toast.error(err.message || 'Ошибка удаления шаблона');
+      }
+    }
   };
 
   // Create battery submit
@@ -118,14 +161,11 @@ export const BatteriesPage: React.FC = () => {
       await api.createBattery(createForm);
       toast.success(`Аккумулятор ${createForm.serialNumber} успешно оприходован`);
       setIsCreateModalOpen(false);
-      setCreateForm({
+      setCreateForm((prev) => ({
+        ...prev,
         serialNumber: '',
-        voltage: 60,
-        capacityAh: 21,
-        connector: 'XT60',
-        location: 'Стеллаж зарядки #1 (База)',
         notes: '',
-      });
+      }));
       loadData();
     } catch (err: any) {
       toast.error('Ошибка создания АКБ: ' + err.message);
@@ -136,12 +176,11 @@ export const BatteriesPage: React.FC = () => {
   const handleOpenEdit = (bat: Battery) => {
     setEditingBattery(bat);
     setEditForm({
+      modelId: bat.modelId || '',
       serialNumber: bat.serialNumber,
       voltage: bat.voltage,
       capacityAh: bat.capacityAh,
-      connector: bat.connector,
       status: bat.status,
-      location: bat.location,
       notes: bat.notes || '',
     });
     setIsEditModalOpen(true);
@@ -258,9 +297,8 @@ export const BatteriesPage: React.FC = () => {
       try {
         await api.updateBattery(bat.id, {
           status: 'AVAILABLE',
-          location: 'Стеллаж зарядки #1 (После ТО)',
         });
-        toast.success(`АКБ ${bat.serialNumber} возвращен с ТО на зарядку`);
+        toast.success(`АКБ ${bat.serialNumber} возвращен с ТО на склад`);
         loadData();
       } catch (err: any) {
         toast.error(err.message);
@@ -273,7 +311,6 @@ export const BatteriesPage: React.FC = () => {
       try {
         await api.updateBattery(bat.id, {
           status: 'IN_MAINTENANCE',
-          location: 'Зона ремонта АКБ СТО',
         });
         toast.success(`АКБ ${bat.serialNumber} отправлен на ТО СТО`);
         loadData();
@@ -283,6 +320,11 @@ export const BatteriesPage: React.FC = () => {
     }
   };
 
+  // Available unique voltages
+  const availableVoltages = Array.from(new Set(batteries.map((b) => b.voltage.toString()))).sort(
+    (a, b) => Number(a) - Number(b)
+  );
+
   // Filtering
   const filteredBatteries = batteries.filter((bat) => {
     if (statusFilter !== 'ALL' && bat.status !== statusFilter) return false;
@@ -290,13 +332,13 @@ export const BatteriesPage: React.FC = () => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const matchSerial = bat.serialNumber.toLowerCase().includes(q);
-      const matchLocation = bat.location.toLowerCase().includes(q);
+      const matchModel = bat.modelName ? bat.modelName.toLowerCase().includes(q) : false;
       const matchNotes = bat.notes ? bat.notes.toLowerCase().includes(q) : false;
       const matchBike = bat.installedBike
         ? bat.installedBike.inventoryNumber.toLowerCase().includes(q) ||
           (bat.installedBike.modelName && bat.installedBike.modelName.toLowerCase().includes(q))
         : false;
-      if (!matchSerial && !matchLocation && !matchNotes && !matchBike) return false;
+      if (!matchSerial && !matchModel && !matchNotes && !matchBike) return false;
     }
     return true;
   });
@@ -307,7 +349,7 @@ export const BatteriesPage: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Свободен на зарядке
+            Свободен на складе
           </span>
         );
       case 'INSTALLED':
@@ -377,7 +419,7 @@ export const BatteriesPage: React.FC = () => {
                 </span>
               </div>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Учет тяговых батарей, контроль размещения, быстрая замена и привязка к электровелосипедам
+                Учет тяговых батарей, шаблоны моделей, быстрая замена и привязка к электровелосипедам
               </p>
             </div>
           </div>
@@ -411,8 +453,18 @@ export const BatteriesPage: React.FC = () => {
           </div>
 
           <button
+            onClick={() => setIsManageModelsOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium rounded-lg text-sm transition"
+          >
+            <Layers className="w-4 h-4 text-emerald-500" />
+            Шаблоны АКБ ({batteryModels.length})
+          </button>
+
+          <button
             onClick={() => {
-              handleGenerateSerial(60);
+              if (batteryModels.length > 0 && !createForm.modelId) {
+                setCreateForm((prev) => ({ ...prev, modelId: batteryModels[0].id }));
+              }
               setIsCreateModalOpen(true);
             }}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition shadow-sm"
@@ -497,7 +549,7 @@ export const BatteriesPage: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Поиск по номеру BAT-..., байку или локации..."
+              placeholder="Поиск по номеру BAT-..., модели или байку..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
@@ -515,7 +567,7 @@ export const BatteriesPage: React.FC = () => {
           {/* Voltage Filter Pills */}
           <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
             <span className="text-xs text-slate-500 mr-1 hidden sm:inline">Вольтаж:</span>
-            {['ALL', '48', '60', '72'].map((v) => (
+            {['ALL', ...availableVoltages].map((v) => (
               <button
                 key={v}
                 onClick={() => setVoltageFilter(v)}
@@ -601,9 +653,9 @@ export const BatteriesPage: React.FC = () => {
                 className="contour-card p-5 flex flex-col justify-between"
               >
                 <div>
-                  {/* Top Bar: Voltage badge, Connector & Status badge */}
+                  {/* Top Bar: Voltage badge, Model name & Status badge */}
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span
                         className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border ${getVoltageBadgeColor(
                           bat.voltage
@@ -611,9 +663,11 @@ export const BatteriesPage: React.FC = () => {
                       >
                         {bat.voltage}V {bat.capacityAh}Ah
                       </span>
-                      <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono font-medium">
-                        {bat.connector}
-                      </span>
+                      {bat.modelName && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
+                          {bat.modelName}
+                        </span>
+                      )}
                     </div>
                     {getStatusBadge(bat.status, bat.installedBike)}
                   </div>
@@ -649,7 +703,7 @@ export const BatteriesPage: React.FC = () => {
                     ) : (
                       <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-300">
                         <Zap className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span className="truncate font-medium">{bat.location}</span>
+                        <span className="truncate font-medium">На складе (зарядка)</span>
                       </div>
                     )}
 
@@ -748,6 +802,7 @@ export const BatteriesPage: React.FC = () => {
             <thead className="bg-slate-50 dark:bg-slate-900 text-xs uppercase text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="px-4 py-3">Серийный номер</th>
+                <th className="px-4 py-3">Модель</th>
                 <th className="px-4 py-3">Характеристики</th>
                 <th className="px-4 py-3">Статус</th>
                 <th className="px-4 py-3">Текущее размещение</th>
@@ -762,17 +817,17 @@ export const BatteriesPage: React.FC = () => {
                     <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
                       {bat.serialNumber}
                     </td>
+                    <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">
+                      {bat.modelName || '—'}
+                    </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-mono font-semibold border ${getVoltageBadgeColor(
-                            bat.voltage
-                          )}`}
-                        >
-                          {bat.voltage}V {bat.capacityAh}Ah
-                        </span>
-                        <span className="text-xs text-slate-500 font-mono">({bat.connector})</span>
-                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-mono font-semibold border ${getVoltageBadgeColor(
+                          bat.voltage
+                        )}`}
+                      >
+                        {bat.voltage}V {bat.capacityAh}Ah
+                      </span>
                     </td>
                     <td className="px-4 py-3">{getStatusBadge(bat.status, bat.installedBike)}</td>
                     <td className="px-4 py-3 text-xs">
@@ -781,7 +836,7 @@ export const BatteriesPage: React.FC = () => {
                           Байк {bat.installedBike.inventoryNumber}
                         </span>
                       ) : (
-                        <span className="text-slate-600 dark:text-slate-400">{bat.location}</span>
+                        <span className="text-slate-600 dark:text-slate-400">Склад / Зарядка</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-500 italic max-w-xs truncate">
@@ -838,26 +893,83 @@ export const BatteriesPage: React.FC = () => {
         title="Оприходование нового аккумулятора (АКБ)"
         subtitle="Регистрация тяговой батареи в парке"
       >
-        <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {batteryModels.length === 0 ? (
+          <div className="p-5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 space-y-3 text-xs">
+            <div className="flex items-center gap-2 font-bold text-sm text-amber-700 dark:text-amber-300">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              Сначала создайте шаблон модели АКБ
+            </div>
+            <p>
+              В системе пока нет шаблонов моделей батарей. Чтобы добавить аккумулятор в парк, сначала создайте хотя бы один шаблон модели (название, вольтаж, емкость).
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreateModalOpen(false);
+                setIsManageModelsOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-xs transition shadow-sm"
+            >
+              <Layers className="w-4 h-4" />
+              Перейти к созданию шаблонов АКБ
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  Серийный номер *
-                </label>
-                <button
-                  type="button"
-                  onClick={() => handleGenerateSerial(createForm.voltage)}
-                  className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  Сгенерировать
-                </button>
-              </div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Шаблон модели аккумулятора *
+              </label>
+              <select
+                required
+                value={createForm.modelId}
+                onChange={(e) => setCreateForm({ ...createForm, modelId: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none font-medium"
+              >
+                {batteryModels.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} ({m.voltage}V {m.capacityAh}Ah)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Model Preview Card */}
+            {(() => {
+              const selectedModel = batteryModels.find((m) => m.id === createForm.modelId) || batteryModels[0];
+              if (!selectedModel) return null;
+              return (
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1">
+                  <div className="text-slate-500 font-medium">Характеристики из выбранного шаблона:</div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-mono font-bold border ${getVoltageBadgeColor(
+                        selectedModel.voltage
+                      )}`}
+                    >
+                      {selectedModel.voltage}V
+                    </span>
+                    <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
+                      {selectedModel.capacityAh} Ah
+                    </span>
+                    {selectedModel.description && (
+                      <span className="text-slate-500 text-[11px] truncate">
+                        • {selectedModel.description}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Серийный номер *
+              </label>
               <input
                 type="text"
                 required
-                placeholder="BAT-60V-023"
+                placeholder="Например: BAT-001, SN6021004"
                 value={createForm.serialNumber}
                 onChange={(e) => setCreateForm({ ...createForm, serialNumber: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none font-bold"
@@ -866,96 +978,34 @@ export const BatteriesPage: React.FC = () => {
 
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Вольтаж (V) *
+                Заметки / Особенности (необязательно)
               </label>
-              <select
-                value={createForm.voltage}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  setCreateForm({ ...createForm, voltage: v });
-                  handleGenerateSerial(v);
-                }}
+              <textarea
+                rows={2}
+                value={createForm.notes}
+                onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-              >
-                <option value={48}>48V (Wenbox U3 / Minako V8)</option>
-                <option value={60}>60V (Minako Monster / Monster Pro)</option>
-                <option value={72}>72V (Monster Max / Спецсборка)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Емкость (Ah) *
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                required
-                value={createForm.capacityAh}
-                onChange={(e) => setCreateForm({ ...createForm, capacityAh: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                placeholder="Партия поставки, особенности сборки..."
               />
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Разъем подключения
-              </label>
-              <select
-                value={createForm.connector}
-                onChange={(e) => setCreateForm({ ...createForm, connector: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition"
               >
-                <option value="XT60">XT60 (Стандарт)</option>
-                <option value="XT90">XT90 (Усиленный анти-искра)</option>
-                <option value="Anderson">Anderson Powerpole</option>
-                <option value="QS8">QS8 (Высокотоковый 72V)</option>
-              </select>
+                Отмена
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition shadow-sm"
+              >
+                Оприходовать в парк
+              </button>
             </div>
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Место хранения / стеллаж
-            </label>
-            <input
-              type="text"
-              value={createForm.location}
-              onChange={(e) => setCreateForm({ ...createForm, location: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-              placeholder="Стеллаж зарядки #1, полка 2"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Заметки / Особенности
-            </label>
-            <textarea
-              rows={2}
-              value={createForm.notes}
-              onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-              placeholder="Ячейки Samsung 35E, термочехол..."
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => setIsCreateModalOpen(false)}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition shadow-sm"
-            >
-              Оприходовать в парк
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
       </Modal>
 
       {/* MODAL 2: Установить АКБ на байк */}
@@ -975,7 +1025,7 @@ export const BatteriesPage: React.FC = () => {
               Параметры устанавливаемой батареи:
             </div>
             <p className="text-slate-800 dark:text-slate-200 font-mono">
-              {targetBattery?.serialNumber} ({targetBattery?.voltage}V {targetBattery?.capacityAh}Ah • {targetBattery?.connector})
+              {targetBattery?.serialNumber} ({targetBattery?.voltage}V {targetBattery?.capacityAh}Ah{targetBattery?.modelName ? ` • ${targetBattery.modelName}` : ''})
             </p>
           </div>
 
@@ -1091,7 +1141,7 @@ export const BatteriesPage: React.FC = () => {
                 .filter((b) => b.status === 'AVAILABLE')
                 .map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.serialNumber} [{b.voltage}V {b.capacityAh}Ah, {b.connector}] — {b.location}
+                    {b.serialNumber} [{b.voltage}V {b.capacityAh}Ah{b.modelName ? ` • ${b.modelName}` : ''}] — Склад
                   </option>
                 ))}
             </select>
@@ -1165,15 +1215,12 @@ export const BatteriesPage: React.FC = () => {
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Вольтаж (V)
               </label>
-              <select
+              <input
+                type="number"
                 value={editForm.voltage}
                 onChange={(e) => setEditForm({ ...editForm, voltage: Number(e.target.value) })}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-              >
-                <option value={48}>48V</option>
-                <option value={60}>60V</option>
-                <option value={72}>72V</option>
-              </select>
+              />
             </div>
 
             <div>
@@ -1188,18 +1235,6 @@ export const BatteriesPage: React.FC = () => {
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Текущая локация
-            </label>
-            <input
-              type="text"
-              value={editForm.location}
-              onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-            />
           </div>
 
           <div>
@@ -1233,6 +1268,149 @@ export const BatteriesPage: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* MODAL 5: Управление шаблонами моделей АКБ */}
+      <Modal
+        isOpen={isManageModelsOpen}
+        onClose={() => setIsManageModelsOpen(false)}
+        title="Шаблоны моделей аккумуляторов (АКБ)"
+        subtitle="Создание и настройка справочника моделей батарей парка"
+      >
+        <div className="space-y-6 text-xs">
+          {/* Create Model Form */}
+          <form
+            onSubmit={handleCreateModel}
+            className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3"
+          >
+            <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 text-sm">
+              <Plus className="w-4 h-4 text-emerald-500" />
+              Добавить новый шаблон модели АКБ
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-1">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Название модели *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Monster 60V 21Ah"
+                  value={newModelForm.name}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Вольтаж (V) *
+                </label>
+                <input
+                  type="number"
+                  required
+                  placeholder="60"
+                  value={newModelForm.voltage}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, voltage: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Емкость (Ah) *
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  required
+                  placeholder="21"
+                  value={newModelForm.capacityAh}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, capacityAh: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Описание / особенности (необязательно)
+              </label>
+              <input
+                type="text"
+                placeholder="Тяговый Li-ion, для курьерских байков"
+                value={newModelForm.description}
+                onChange={(e) => setNewModelForm({ ...newModelForm, description: e.target.value })}
+                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition shadow-sm"
+              >
+                Создать шаблон
+              </button>
+            </div>
+          </form>
+
+          {/* List of Models */}
+          <div>
+            <div className="font-semibold text-slate-800 dark:text-slate-200 mb-2 flex items-center justify-between">
+              <span>Список созданных шаблонов ({batteryModels.length})</span>
+            </div>
+
+            {batteryModels.length === 0 ? (
+              <div className="p-6 text-center text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                Шаблонов моделей пока нет. Добавьте первый шаблон выше!
+              </div>
+            ) : (
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+                {batteryModels.map((model) => (
+                  <div
+                    key={model.id}
+                    className="p-3 bg-white dark:bg-slate-900/40 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 dark:text-white">{model.name}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${getVoltageBadgeColor(
+                            model.voltage
+                          )}`}
+                        >
+                          {model.voltage}V
+                        </span>
+                        <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          {model.capacityAh} Ah
+                        </span>
+                      </div>
+                      {model.description && (
+                        <p className="text-[11px] text-slate-500 mt-0.5">{model.description}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-[11px] text-slate-500">
+                        {model.batteriesCount ?? 0} АКБ в парке
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteModel(model)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
+                        title="Удалить шаблон"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );

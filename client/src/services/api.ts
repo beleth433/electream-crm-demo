@@ -2,6 +2,7 @@ import {
   Bike,
   BikeModel,
   Battery,
+  BatteryModel,
   BatteryStats,
   Client,
   Rental,
@@ -53,10 +54,18 @@ export const api = {
   getDashboardStats: () => fetchJson<DashboardStats>('/dashboard/stats'),
 
   // Batteries (АКБ)
-  getBatteries: (params?: { status?: string; voltage?: number; search?: string; bikeId?: string }) => {
+  getBatteryModels: () => fetchJson<BatteryModel[]>('/batteries/models'),
+  createBatteryModel: (data: Partial<BatteryModel>) =>
+    fetchJson<BatteryModel>('/batteries/models', { method: 'POST', body: JSON.stringify(data) }),
+  updateBatteryModel: (id: string, data: Partial<BatteryModel>) =>
+    fetchJson<BatteryModel>(`/batteries/models/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteBatteryModel: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/batteries/models/${id}`, { method: 'DELETE' }),
+  getBatteries: (params?: { status?: string; voltage?: number; modelId?: string; search?: string; bikeId?: string }) => {
     const q = new URLSearchParams();
     if (params?.status) q.append('status', params.status);
     if (params?.voltage) q.append('voltage', String(params.voltage));
+    if (params?.modelId) q.append('modelId', params.modelId);
     if (params?.search) q.append('search', params.search);
     if (params?.bikeId) q.append('bikeId', params.bikeId);
     return fetchJson<Battery[]>(`/batteries?${q.toString()}`);

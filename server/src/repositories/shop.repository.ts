@@ -31,11 +31,13 @@ export class ShopRepository {
       .filter((b) => b.status === 'FOR_SALE' || b.status === 'AVAILABLE')
       .map((b) => {
         const model = db.models.find((m) => m.id === b.modelId);
-        // Estimated retail and cost price based on model specs
+        const battery = b.batteryId ? db.batteries.find((bt) => bt.id === b.batteryId) : null;
+        // Estimated retail and cost price based on bike specs
+        const batCap = battery?.capacityAh || 20;
         const retailPrice =
           b.status === 'FOR_SALE'
-            ? 45000 + (model?.batteryCapacityAh || 20) * 800
-            : 55000 + (model?.batteryCapacityAh || 20) * 1000;
+            ? 45000 + batCap * 800
+            : 55000 + batCap * 1000;
         const costPrice = Math.round(retailPrice * 0.65);
 
         return {
@@ -43,8 +45,6 @@ export class ShopRepository {
           inventoryNumber: b.inventoryNumber,
           modelName: model?.name || 'Электровелосипед',
           powerWatts: model?.powerWatts || 500,
-          batteryCapacityAh: model?.batteryCapacityAh || 20,
-          winterVersion: model?.winterVersion || false,
           status: b.status,
           currentLocation: b.currentLocation,
           mileageKm: b.mileageKm,
@@ -115,10 +115,12 @@ export class ShopRepository {
         }
 
         const model = db.models.find((m) => m.id === bike.modelId);
+        const battery = bike.batteryId ? db.batteries.find((bt) => bt.id === bike.batteryId) : null;
+        const batCap = battery?.capacityAh || 20;
         const defaultPrice =
           bike.status === 'FOR_SALE'
-            ? 45000 + (model?.batteryCapacityAh || 20) * 800
-            : 55000 + (model?.batteryCapacityAh || 20) * 1000;
+            ? 45000 + batCap * 800
+            : 55000 + batCap * 1000;
         const price = item.price !== undefined ? Number(item.price) : defaultPrice;
         const costPrice = Math.round(price * 0.65);
 

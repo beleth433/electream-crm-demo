@@ -107,4 +107,45 @@ export class BatteryController {
       return res.status(400).json({ error: err.message });
     }
   }
+
+  // Battery Models (Templates)
+  static getModels(req: Request, res: Response) {
+    try {
+      const models = BatteryRepository.getBatteryModels();
+      return res.json(models);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  static createModel(req: Request, res: Response) {
+    try {
+      const created = BatteryRepository.createBatteryModel(req.body);
+      return res.status(201).json(created);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  static updateModel(req: Request, res: Response) {
+    try {
+      const updated = BatteryRepository.updateBatteryModel(req.params.id, req.body);
+      return res.json(updated);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
+  static deleteModel(req: Request, res: Response) {
+    try {
+      const removed = BatteryRepository.deleteBatteryModel(req.params.id);
+      return res.json({
+        success: true,
+        message: `Шаблон модели АКБ "${removed.name}" успешно удален`,
+        data: removed,
+      });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
 }

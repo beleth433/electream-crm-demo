@@ -21,9 +21,7 @@ export class BikeService {
   static createModel(data: {
     name: string;
     powerWatts: number;
-    batteryCapacityAh: number;
     wheelSizeInch?: number | null;
-    winterVersion: boolean;
     description?: string | null;
   }) {
     return BikeRepository.createModel(data);

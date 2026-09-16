@@ -65,11 +65,18 @@ export interface BikeModel {
   id: string;
   name: string;
   powerWatts: number;
-  batteryCapacityAh: number;
   wheelSizeInch?: number | null;
-  winterVersion: boolean;
   description?: string | null;
   bikesCount?: number;
+}
+
+export interface BatteryModel {
+  id: string;
+  name: string;
+  voltage: number;
+  capacityAh: number;
+  description?: string | null;
+  batteriesCount?: number;
 }
 
 export type BatteryStatus =
@@ -83,14 +90,16 @@ export type BatteryStatus =
 export interface Battery {
   id: string;
   serialNumber: string;
+  modelId?: string | null;
+  modelName?: string | null;
   voltage: number;
   capacityAh: number;
-  connector: string;
+  connector?: string;
   cycleCount?: number;
   healthPercent?: number;
   status: BatteryStatus;
   installedBikeId?: string | null;
-  location: string;
+  location?: string;
   notes?: string | null;
   createdAt?: string;
   updatedAt?: string;

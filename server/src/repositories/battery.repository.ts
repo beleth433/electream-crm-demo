@@ -1,13 +1,111 @@
-import { getDb, BatteryRecord, BatteryStatus } from "./db.js";
+import { getDb, BatteryRecord, BatteryStatus, BatteryModelRecord } from "./db.js";
 
 export class BatteryRepository {
-  static getAll(filters?: { status?: BatteryStatus; voltage?: number; search?: string; bikeId?: string }) {
+  // Battery Model Templates CRUD
+  static getBatteryModels() {
+    const db = getDb();
+    return db.batteryModels.map((m) => {
+      const batteriesCount = db.batteries.filter((b) => b.modelId === m.id).length;
+      return {
+        ...m,
+        batteriesCount,
+      };
+    });
+  }
+
+  static createBatteryModel(data: {
+    name: string;
+    voltage: number;
+    capacityAh: number;
+    description?: string | null;
+  }) {
+    const db = getDb();
+    if (!data.name || !data.name.trim()) {
+      throw new Error("Название модели аккумулятора обязательно для заполнения");
+    }
+    const cleanName = data.name.trim();
+    if (db.batteryModels.some((m) => m.name.toLowerCase() === cleanName.toLowerCase())) {
+      throw new Error(`Шаблон модели "${cleanName}" уже существует`);
+    }
+
+    const newModel: BatteryModelRecord = {
+      id: `bat-mdl-${Date.now()}`,
+      name: cleanName,
+      voltage: Number(data.voltage) || 60,
+      capacityAh: Number(data.capacityAh) || 20,
+      description: data.description || null,
+    };
+    db.batteryModels.push(newModel);
+    return {
+      ...newModel,
+      batteriesCount: 0,
+    };
+  }
+
+  static updateBatteryModel(
+    id: string,
+    data: {
+      name?: string;
+      voltage?: number;
+      capacityAh?: number;
+      description?: string | null;
+    }
+  ) {
+    const db = getDb();
+    const model = db.batteryModels.find((m) => m.id === id);
+    if (!model) {
+      throw new Error("Шаблон модели аккумулятора не найден");
+    }
+
+    if (data.name !== undefined) {
+      const cleanName = data.name.trim();
+      const duplicate = db.batteryModels.find(
+        (m) => m.id !== id && m.name.toLowerCase() === cleanName.toLowerCase()
+      );
+      if (duplicate) {
+        throw new Error(`Шаблон модели "${cleanName}" уже существует`);
+      }
+      model.name = cleanName;
+    }
+
+    if (data.voltage !== undefined) model.voltage = Number(data.voltage);
+    if (data.capacityAh !== undefined) model.capacityAh = Number(data.capacityAh);
+    if (data.description !== undefined) model.description = data.description;
+
+    const batteriesCount = db.batteries.filter((b) => b.modelId === model.id).length;
+    return {
+      ...model,
+      batteriesCount,
+    };
+  }
+
+  static deleteBatteryModel(id: string) {
+    const db = getDb();
+    const index = db.batteryModels.findIndex((m) => m.id === id);
+    if (index === -1) {
+      throw new Error("Шаблон модели аккумулятора не найден");
+    }
+
+    const batteriesWithModel = db.batteries.filter((b) => b.modelId === id);
+    if (batteriesWithModel.length > 0) {
+      throw new Error(
+        `Невозможно удалить шаблон "${db.batteryModels[index].name}": в парке зарегистрировано ${batteriesWithModel.length} батарей этой модели (${batteriesWithModel.map((b) => b.serialNumber).join(', ')})`
+      );
+    }
+
+    const removed = db.batteryModels.splice(index, 1)[0];
+    return removed;
+  }
+
+  static getAll(filters?: { status?: BatteryStatus; voltage?: number; modelId?: string; search?: string; bikeId?: string }) {
     const db = getDb();
     let list = db.batteries.map((bat) => {
       const bike = bat.installedBikeId ? db.bikes.find((b) => b.id === bat.installedBikeId) : null;
       const bikeModel = bike ? db.models.find((m) => m.id === bike.modelId) : null;
+      const batModel = bat.modelId ? db.batteryModels.find((m) => m.id === bat.modelId) : null;
       return {
         ...bat,
+        modelName: batModel?.name || bat.modelName,
         installedBike: bike
           ? {
               id: bike.id,
@@ -26,6 +124,9 @@ export class BatteryRepository {
     if (filters?.voltage) {
       list = list.filter((b) => b.voltage === Number(filters.voltage));
     }
+    if (filters?.modelId) {
+      list = list.filter((b) => b.modelId === filters.modelId);
+    }
     if (filters?.bikeId) {
       list = list.filter((b) => b.installedBikeId === filters.bikeId);
     }
@@ -34,7 +135,7 @@ export class BatteryRepository {
       list = list.filter(
         (b) =>
           b.serialNumber.toLowerCase().includes(q) ||
-          b.location.toLowerCase().includes(q) ||
+          (b.modelName && b.modelName.toLowerCase().includes(q)) ||
           (b.notes && b.notes.toLowerCase().includes(q)) ||
           (b.installedBike && b.installedBike.inventoryNumber.toLowerCase().includes(q))
       );
@@ -50,9 +151,11 @@ export class BatteryRepository {
 
     const bike = bat.installedBikeId ? db.bikes.find((b) => b.id === bat.installedBikeId) : null;
     const bikeModel = bike ? db.models.find((m) => m.id === bike.modelId) : null;
+    const batModel = bat.modelId ? db.batteryModels.find((m) => m.id === bat.modelId) : null;
 
     return {
       ...bat,
+      modelName: batModel?.name || bat.modelName,
       installedBike: bike
         ? {
             id: bike.id,
@@ -75,14 +178,6 @@ export class BatteryRepository {
     const inMaintenance = all.filter((b) => b.status === "IN_MAINTENANCE").length;
     const decommissioned = all.filter((b) => b.status === "DECOMMISSIONED").length;
 
-    const activeBatteries = all.filter((b) => b.status !== "DECOMMISSIONED" && b.status !== "SOLD");
-    const avgHealth =
-      activeBatteries.length > 0
-        ? Math.round(
-            (activeBatteries.reduce((sum, b) => sum + (b.healthPercent || 100), 0) / activeBatteries.length) * 10
-          ) / 10
-        : 100;
-
     return {
       total,
       available,
@@ -90,23 +185,19 @@ export class BatteryRepository {
       issuedSpare,
       inMaintenance,
       decommissioned,
-      avgHealth,
     };
   }
 
   static create(data: {
     serialNumber: string;
-    voltage: number;
-    capacityAh: number;
-    connector?: string;
-    cycleCount?: number;
-    healthPercent?: number;
+    modelId?: string;
+    voltage?: number;
+    capacityAh?: number;
     status?: BatteryStatus;
-    location?: string;
     notes?: string;
   }) {
     const db = getDb();
-    const cleanSerial = data.serialNumber.trim();
+    const cleanSerial = data.serialNumber?.trim();
     if (!cleanSerial) {
       throw new Error("Серийный номер аккумулятора обязателен");
     }
@@ -115,17 +206,28 @@ export class BatteryRepository {
       throw new Error(`Аккумулятор с серийным номером ${cleanSerial} уже зарегистрирован в системе`);
     }
 
+    let modelName: string | null = null;
+    let voltage = Number(data.voltage) || 60;
+    let capacityAh = Number(data.capacityAh) || 20;
+
+    if (data.modelId) {
+      const batModel = db.batteryModels.find((m) => m.id === data.modelId);
+      if (batModel) {
+        modelName = batModel.name;
+        voltage = batModel.voltage;
+        capacityAh = batModel.capacityAh;
+      }
+    }
+
     const newBattery: BatteryRecord = {
       id: `bat-${Date.now()}`,
       serialNumber: cleanSerial,
-      voltage: Number(data.voltage) || 60,
-      capacityAh: Number(data.capacityAh) || 20,
-      connector: data.connector || "XT60",
-      cycleCount: Number(data.cycleCount) || 0,
-      healthPercent: Math.min(100, Math.max(0, Number(data.healthPercent) || 100)),
+      modelId: data.modelId || null,
+      modelName,
+      voltage,
+      capacityAh,
       status: data.status || "AVAILABLE",
       installedBikeId: null,
-      location: data.location || "Стеллаж зарядки на центральной базе",
       notes: data.notes || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -153,15 +255,21 @@ export class BatteryRepository {
       db.batteries[index].serialNumber = cleanSerial;
     }
 
+    if (data.modelId !== undefined) {
+      db.batteries[index].modelId = data.modelId;
+      if (data.modelId) {
+        const batModel = db.batteryModels.find((m) => m.id === data.modelId);
+        if (batModel) {
+          db.batteries[index].modelName = batModel.name;
+          db.batteries[index].voltage = batModel.voltage;
+          db.batteries[index].capacityAh = batModel.capacityAh;
+        }
+      }
+    }
+
     if (data.voltage !== undefined) db.batteries[index].voltage = Number(data.voltage);
     if (data.capacityAh !== undefined) db.batteries[index].capacityAh = Number(data.capacityAh);
-    if (data.connector !== undefined) db.batteries[index].connector = data.connector;
-    if (data.cycleCount !== undefined) db.batteries[index].cycleCount = Number(data.cycleCount);
-    if (data.healthPercent !== undefined) {
-      db.batteries[index].healthPercent = Math.min(100, Math.max(0, Number(data.healthPercent)));
-    }
     if (data.status !== undefined) db.batteries[index].status = data.status;
-    if (data.location !== undefined) db.batteries[index].location = data.location;
     if (data.notes !== undefined) db.batteries[index].notes = data.notes;
 
     db.batteries[index].updatedAt = new Date().toISOString();
@@ -218,7 +326,6 @@ export class BatteryRepository {
       if (oldBattery) {
         oldBattery.installedBikeId = null;
         oldBattery.status = "AVAILABLE";
-        oldBattery.location = "Центральная база (склад АКБ)";
         oldBattery.updatedAt = new Date().toISOString();
       }
     }
@@ -235,7 +342,6 @@ export class BatteryRepository {
     // 3. Attach new battery to bike
     newBattery.installedBikeId = bike.id;
     newBattery.status = "INSTALLED";
-    newBattery.location = `Байк ${bike.inventoryNumber}${bike.status === "RENTED" ? " (В аренде)" : ""}`;
     newBattery.updatedAt = new Date().toISOString();
 
     bike.batteryId = newBattery.id;
@@ -262,7 +368,6 @@ export class BatteryRepository {
       if (battery) {
         battery.installedBikeId = null;
         battery.status = "AVAILABLE";
-        battery.location = "Центральная база (склад АКБ, стеллаж зарядки)";
         battery.updatedAt = new Date().toISOString();
         detachedBattery = battery;
       }
@@ -274,7 +379,6 @@ export class BatteryRepository {
       if (orphanBattery) {
         orphanBattery.installedBikeId = null;
         orphanBattery.status = "AVAILABLE";
-        orphanBattery.location = "Центральная база (склад АКБ, стеллаж зарядки)";
         orphanBattery.updatedAt = new Date().toISOString();
         detachedBattery = orphanBattery;
       }

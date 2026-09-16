@@ -20,9 +20,6 @@ export class BikeRepository {
               serialNumber: battery.serialNumber,
               voltage: battery.voltage,
               capacityAh: battery.capacityAh,
-              connector: battery.connector,
-              cycleCount: battery.cycleCount,
-              healthPercent: battery.healthPercent,
               status: battery.status,
             }
           : null,
@@ -111,9 +108,7 @@ export class BikeRepository {
   static createModel(data: {
     name: string;
     powerWatts: number;
-    batteryCapacityAh: number;
     wheelSizeInch?: number | null;
-    winterVersion: boolean;
     description?: string | null;
   }) {
     const db = getDb();
@@ -124,9 +119,7 @@ export class BikeRepository {
       id: `mdl-${Date.now()}`,
       name: data.name.trim(),
       powerWatts: Number(data.powerWatts) || 500,
-      batteryCapacityAh: Number(data.batteryCapacityAh) || 20.0,
       wheelSizeInch: data.wheelSizeInch ? Number(data.wheelSizeInch) : 16.0,
-      winterVersion: Boolean(data.winterVersion),
       description: data.description || null,
     };
     db.models.push(newModel);
@@ -141,9 +134,7 @@ export class BikeRepository {
     data: {
       name?: string;
       powerWatts?: number;
-      batteryCapacityAh?: number;
       wheelSizeInch?: number | null;
-      winterVersion?: boolean;
       description?: string | null;
     }
   ) {
@@ -154,9 +145,7 @@ export class BikeRepository {
     }
     if (data.name !== undefined) model.name = data.name.trim();
     if (data.powerWatts !== undefined) model.powerWatts = Number(data.powerWatts);
-    if (data.batteryCapacityAh !== undefined) model.batteryCapacityAh = Number(data.batteryCapacityAh);
     if (data.wheelSizeInch !== undefined) model.wheelSizeInch = data.wheelSizeInch ? Number(data.wheelSizeInch) : null;
-    if (data.winterVersion !== undefined) model.winterVersion = Boolean(data.winterVersion);
     if (data.description !== undefined) model.description = data.description;
 
     const bikesCount = db.bikes.filter((b) => b.modelId === model.id).length;
@@ -223,7 +212,6 @@ export class BikeRepository {
       if (battery) {
         battery.installedBikeId = newBike.id;
         battery.status = "INSTALLED";
-        battery.location = `Байк ${newBike.inventoryNumber}`;
         battery.updatedAt = new Date().toISOString();
       }
     }
@@ -279,7 +267,6 @@ export class BikeRepository {
     if (attachedBattery) {
       attachedBattery.installedBikeId = null;
       attachedBattery.status = "AVAILABLE";
-      attachedBattery.location = "Центральная база (склад АКБ)";
       attachedBattery.updatedAt = new Date().toISOString();
     }
 
