@@ -13,6 +13,7 @@ import {
   Zap,
   Check,
   AlertCircle,
+  AlertTriangle,
   Snowflake,
   UploadCloud,
 } from 'lucide-react';
@@ -558,12 +559,19 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                           <Zap className="w-3 h-3 text-amber-500" />
                           {bike.model?.powerWatts}W
                         </span>
-                        <span className="flex items-center gap-0.5">
-                          <BatteryCharging className="w-3 h-3 text-emerald-500" />
-                          {bike.model?.batteryCapacityAh}Ah
-                        </span>
                         <span>Пробег: {bike.mileageKm} км</span>
                       </div>
+                      {bike.battery ? (
+                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium mt-1">
+                          <BatteryCharging className="w-3.5 h-3.5 shrink-0" />
+                          <span>АКБ: {bike.battery.serialNumber} ({bike.battery.voltage}V {bike.battery.capacityAh}Ah • SoH {bike.battery.healthPercent}%)</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-1">
+                          <AlertTriangle className="w-3 h-3 shrink-0" />
+                          <span>⚠️ Без АКБ (рама пустая)</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -72,10 +72,53 @@ export interface BikeModel {
   bikesCount?: number;
 }
 
+export type BatteryStatus =
+  | "AVAILABLE"
+  | "INSTALLED"
+  | "ISSUED_SPARE"
+  | "IN_MAINTENANCE"
+  | "DECOMMISSIONED"
+  | "SOLD";
+
+export interface Battery {
+  id: string;
+  serialNumber: string;
+  voltage: number;
+  capacityAh: number;
+  connector: string;
+  cycleCount: number;
+  healthPercent: number;
+  status: BatteryStatus;
+  installedBikeId?: string | null;
+  location: string;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  installedBike?: {
+    id: string;
+    inventoryNumber: string;
+    status: BikeStatus;
+    modelName?: string;
+    currentLocation?: string;
+  } | null;
+}
+
+export interface BatteryStats {
+  total: number;
+  available: number;
+  installed: number;
+  issuedSpare: number;
+  inMaintenance: number;
+  decommissioned: number;
+  avgHealth: number;
+}
+
 export interface Bike {
   id: string;
   inventoryNumber: string;
   modelId: string;
+  batteryId?: string | null;
+  battery?: Battery | null;
   model?: BikeModel;
   frameNumber?: string | null;
   motorNumber?: string | null;

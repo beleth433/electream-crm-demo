@@ -6,6 +6,7 @@ import { Sidebar } from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
 import { RentalsPage } from './pages/RentalsPage';
 import { BikesPage } from './pages/BikesPage';
+import { BatteriesPage } from './pages/BatteriesPage';
 import { OutfitsPage } from './pages/OutfitsPage';
 import { ClientsPage } from './pages/ClientsPage';
 import { RepairsPage } from './pages/RepairsPage';
@@ -146,6 +147,7 @@ const MainLayout: React.FC = () => {
 
           {currentTab === 'shop' && <ShopPage />}
           {currentTab === 'bikes' && <BikesPage />}
+          {currentTab === 'batteries' && <BatteriesPage />}
           {currentTab === 'outfits' && <OutfitsPage />}
           {currentTab === 'clients' && <ClientsPage />}
           {currentTab === 'employees' && <EmployeesPage />}

@@ -14,6 +14,7 @@ import { UploadController, uploadMiddleware } from "../controllers/upload.contro
 import { SystemController } from "../controllers/system.controller.js";
 import { EmployeeController } from "../controllers/employee.controller.js";
 import { ShopController } from "../controllers/shop.controller.js";
+import { BatteryController } from "../controllers/battery.controller.js";
 
 const router = Router();
 
@@ -24,7 +25,18 @@ router.get("/auth/me", AuthController.getMe);
 // 2. Dashboard
 router.get("/dashboard/stats", DashboardController.getStats);
 
-// 3. Bikes
+// 3. Batteries (АКБ)
+router.get("/batteries/stats", BatteryController.getStats);
+router.get("/batteries", BatteryController.getAll);
+router.get("/batteries/:id", BatteryController.getById);
+router.post("/batteries", BatteryController.create);
+router.patch("/batteries/:id", BatteryController.update);
+router.delete("/batteries/:id", BatteryController.delete);
+router.post("/batteries/attach", BatteryController.attach);
+router.post("/batteries/detach", BatteryController.detach);
+router.post("/batteries/swap", BatteryController.swap);
+
+// 4. Bikes
 router.get("/bikes/models", BikeController.getModels);
 router.post("/bikes/models", BikeController.createModel);
 router.patch("/bikes/models/:id", BikeController.updateModel);

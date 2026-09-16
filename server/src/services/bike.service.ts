@@ -40,6 +40,7 @@ export class BikeService {
   static createBike(data: {
     inventoryNumber: string;
     modelId: string;
+    batteryId?: string | null;
     frameNumber?: string;
     motorNumber?: string;
     status?: BikeStatus;

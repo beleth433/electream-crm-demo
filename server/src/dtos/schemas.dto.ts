@@ -8,6 +8,7 @@ export const LoginDto = z.object({
 export const BikeCreateDto = z.object({
   inventoryNumber: z.string().min(2, "Инвентарный номер обязателен"),
   modelId: z.string().min(1, "Модель байка обязательна"),
+  batteryId: z.string().optional().nullable(),
   frameNumber: z.string().optional(),
   motorNumber: z.string().optional(),
   status: z.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED"]).optional(),
@@ -19,6 +20,7 @@ export const BikeCreateDto = z.object({
 export const BikeUpdateDto = z.object({
   inventoryNumber: z.string().optional(),
   modelId: z.string().optional(),
+  batteryId: z.string().optional().nullable(),
   frameNumber: z.string().optional(),
   motorNumber: z.string().optional(),
   status: z.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED"]).optional(),

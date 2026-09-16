@@ -19,6 +19,7 @@ export class RentalRepository {
       const client = db.clients.find((c) => c.id === r.clientId);
       const bike = db.bikes.find((b) => b.id === r.bikeId);
       const bikeModel = bike ? db.models.find((m) => m.id === bike.modelId) : null;
+      const battery = bike?.batteryId ? db.batteries.find((bt) => bt.id === bike.batteryId) : null;
       const tariff = db.tariffs.find((t) => t.id === r.tariffId);
       const outfits = db.outfits.filter((o) => r.outfitIds.includes(o.id));
       const payments = db.payments.filter((p) => p.rentalId === r.id);
@@ -26,7 +27,7 @@ export class RentalRepository {
       return {
         ...r,
         client,
-        bike: bike ? { ...bike, model: bikeModel } : null,
+        bike: bike ? { ...bike, model: bikeModel, battery } : null,
         tariff,
         outfits,
         payments,
@@ -62,6 +63,7 @@ export class RentalRepository {
     const client = db.clients.find((c) => c.id === r.clientId);
     const bike = db.bikes.find((b) => b.id === r.bikeId);
     const bikeModel = bike ? db.models.find((m) => m.id === bike.modelId) : null;
+    const battery = bike?.batteryId ? db.batteries.find((bt) => bt.id === bike.batteryId) : null;
     const tariff = db.tariffs.find((t) => t.id === r.tariffId);
     const outfits = db.outfits.filter((o) => r.outfitIds.includes(o.id));
     const payments = db.payments.filter((p) => p.rentalId === r.id);
@@ -70,7 +72,7 @@ export class RentalRepository {
     return {
       ...r,
       client,
-      bike: bike ? { ...bike, model: bikeModel } : null,
+      bike: bike ? { ...bike, model: bikeModel, battery } : null,
       tariff,
       outfits,
       payments,

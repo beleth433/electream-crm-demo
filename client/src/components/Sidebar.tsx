@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   KeyRound,
   Bike as BikeIcon,
+  BatteryCharging,
   ShieldCheck,
   Users,
   Wrench,
@@ -61,6 +62,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'bikes',
       label: 'Парк техники',
       icon: BikeIcon,
+      badge: null,
+    },
+    {
+      id: 'batteries',
+      label: 'Аккумуляторы (АКБ)',
+      icon: BatteryCharging,
       badge: null,
     },
     {

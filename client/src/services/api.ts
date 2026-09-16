@@ -1,6 +1,8 @@
 import {
   Bike,
   BikeModel,
+  Battery,
+  BatteryStats,
   Client,
   Rental,
   Tariff,
@@ -49,6 +51,39 @@ export const api = {
 
   // Dashboard
   getDashboardStats: () => fetchJson<DashboardStats>('/dashboard/stats'),
+
+  // Batteries (АКБ)
+  getBatteries: (params?: { status?: string; voltage?: number; search?: string; bikeId?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.append('status', params.status);
+    if (params?.voltage) q.append('voltage', String(params.voltage));
+    if (params?.search) q.append('search', params.search);
+    if (params?.bikeId) q.append('bikeId', params.bikeId);
+    return fetchJson<Battery[]>(`/batteries?${q.toString()}`);
+  },
+  getBatteryStats: () => fetchJson<BatteryStats>('/batteries/stats'),
+  getBattery: (id: string) => fetchJson<Battery>(`/batteries/${id}`),
+  createBattery: (data: Partial<Battery>) =>
+    fetchJson<Battery>('/batteries', { method: 'POST', body: JSON.stringify(data) }),
+  updateBattery: (id: string, data: Partial<Battery>) =>
+    fetchJson<Battery>(`/batteries/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteBattery: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/batteries/${id}`, { method: 'DELETE' }),
+  attachBattery: (batteryId: string, bikeId: string) =>
+    fetchJson<{ bike: Bike; battery: Battery }>('/batteries/attach', {
+      method: 'POST',
+      body: JSON.stringify({ batteryId, bikeId }),
+    }),
+  detachBattery: (bikeId: string) =>
+    fetchJson<{ bike: Bike; battery: Battery | null }>('/batteries/detach', {
+      method: 'POST',
+      body: JSON.stringify({ bikeId }),
+    }),
+  swapBattery: (bikeId: string, newBatteryId: string) =>
+    fetchJson<{ bike: Bike; battery: Battery }>('/batteries/swap', {
+      method: 'POST',
+      body: JSON.stringify({ bikeId, newBatteryId }),
+    }),
 
   // Bikes
   getBikes: (params?: { status?: string; modelId?: string; search?: string }) => {

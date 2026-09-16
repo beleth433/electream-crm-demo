@@ -5,6 +5,7 @@ export class BikeRepository {
     const db = getDb();
     let list = db.bikes.map((bike) => {
       const model = db.models.find((m) => m.id === bike.modelId);
+      const battery = bike.batteryId ? db.batteries.find((bt) => bt.id === bike.batteryId) : null;
       const activeRental = db.rentals.find(
         (r) => r.bikeId === bike.id && (r.status === "ACTIVE" || r.status === "OVERDUE")
       );
@@ -13,6 +14,18 @@ export class BikeRepository {
       return {
         ...bike,
         model,
+        battery: battery
+          ? {
+              id: battery.id,
+              serialNumber: battery.serialNumber,
+              voltage: battery.voltage,
+              capacityAh: battery.capacityAh,
+              connector: battery.connector,
+              cycleCount: battery.cycleCount,
+              healthPercent: battery.healthPercent,
+              status: battery.status,
+            }
+          : null,
         activeRental: activeRental
           ? {
               id: activeRental.id,
@@ -40,6 +53,7 @@ export class BikeRepository {
           b.frameNumber?.toLowerCase().includes(q) ||
           b.motorNumber?.toLowerCase().includes(q) ||
           b.model?.name.toLowerCase().includes(q) ||
+          b.battery?.serialNumber.toLowerCase().includes(q) ||
           b.currentLocation.toLowerCase().includes(q)
       );
     }
@@ -53,6 +67,7 @@ export class BikeRepository {
     if (!bike) return null;
 
     const model = db.models.find((m) => m.id === bike.modelId);
+    const battery = bike.batteryId ? db.batteries.find((bt) => bt.id === bike.batteryId) : null;
     const rentals = db.rentals
       .filter((r) => r.bikeId === bike.id)
       .map((r) => {
@@ -75,6 +90,7 @@ export class BikeRepository {
     return {
       ...bike,
       model,
+      battery,
       rentals,
       repairs,
       reviews,
@@ -171,6 +187,7 @@ export class BikeRepository {
   static create(data: {
     inventoryNumber: string;
     modelId: string;
+    batteryId?: string | null;
     frameNumber?: string;
     motorNumber?: string;
     status?: BikeStatus;
@@ -187,6 +204,7 @@ export class BikeRepository {
       id: `bike-${Date.now()}`,
       inventoryNumber: data.inventoryNumber,
       modelId: data.modelId,
+      batteryId: data.batteryId || null,
       frameNumber: data.frameNumber || null,
       motorNumber: data.motorNumber || null,
       status: data.status || ("AVAILABLE" as BikeStatus),
@@ -198,6 +216,18 @@ export class BikeRepository {
     };
 
     db.bikes.push(newBike);
+
+    // If battery was selected, link it
+    if (newBike.batteryId) {
+      const battery = db.batteries.find((b) => b.id === newBike.batteryId);
+      if (battery) {
+        battery.installedBikeId = newBike.id;
+        battery.status = "INSTALLED";
+        battery.location = `Байк ${newBike.inventoryNumber}`;
+        battery.updatedAt = new Date().toISOString();
+      }
+    }
+
     return this.getById(newBike.id);
   }
 
@@ -241,6 +271,18 @@ export class BikeRepository {
     }
 
     const removed = db.bikes.splice(index, 1)[0];
+
+    // Detach any battery that was on this bike so it returns to AVAILABLE on base
+    const attachedBattery = db.batteries.find(
+      (b) => b.installedBikeId === id || (removed.batteryId && b.id === removed.batteryId)
+    );
+    if (attachedBattery) {
+      attachedBattery.installedBikeId = null;
+      attachedBattery.status = "AVAILABLE";
+      attachedBattery.location = "Центральная база (склад АКБ)";
+      attachedBattery.updatedAt = new Date().toISOString();
+    }
+
     return removed;
   }
 }

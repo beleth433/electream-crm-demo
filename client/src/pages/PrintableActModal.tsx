@@ -103,7 +103,8 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
                 <tr className="bg-slate-100 font-semibold">
                   <th className="border border-slate-300 p-1.5">Инвентарный №</th>
                   <th className="border border-slate-300 p-1.5">Модель</th>
-                  <th className="border border-slate-300 p-1.5">Мощность / АКБ</th>
+                  <th className="border border-slate-300 p-1.5">Серийный № АКБ</th>
+                  <th className="border border-slate-300 p-1.5">Мощность электромотора</th>
                   <th className="border border-slate-300 p-1.5">№ Рамы</th>
                   <th className="border border-slate-300 p-1.5">№ Мотор-колеса</th>
                   <th className="border border-slate-300 p-1.5">Пробег на момент выдачи</th>
@@ -115,8 +116,13 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
                     {rental.bike?.inventoryNumber}
                   </td>
                   <td className="border border-slate-300 p-1.5">{rental.bike?.model?.name}</td>
+                  <td className="border border-slate-300 p-1.5 font-mono font-bold text-emerald-800">
+                    {rental.bike?.battery
+                      ? `${rental.bike.battery.serialNumber} (${rental.bike.battery.voltage}V ${rental.bike.battery.capacityAh}Ah, SoH ${rental.bike.battery.healthPercent}%)`
+                      : 'Без аккумулятора'}
+                  </td>
                   <td className="border border-slate-300 p-1.5">
-                    {rental.bike?.model?.powerWatts}W / {rental.bike?.model?.batteryCapacityAh}Ah
+                    {rental.bike?.model?.powerWatts}W
                   </td>
                   <td className="border border-slate-300 p-1.5 font-mono text-[10px]">
                     {rental.bike?.frameNumber || '—'}
