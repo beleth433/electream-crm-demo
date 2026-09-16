@@ -86,8 +86,8 @@ export interface Battery {
   voltage: number;
   capacityAh: number;
   connector: string;
-  cycleCount: number;
-  healthPercent: number;
+  cycleCount?: number;
+  healthPercent?: number;
   status: BatteryStatus;
   installedBikeId?: string | null;
   location: string;
@@ -110,7 +110,7 @@ export interface BatteryStats {
   issuedSpare: number;
   inMaintenance: number;
   decommissioned: number;
-  avgHealth: number;
+  avgHealth?: number;
 }
 
 export interface Bike {

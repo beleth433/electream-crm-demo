@@ -118,7 +118,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
                   <td className="border border-slate-300 p-1.5">{rental.bike?.model?.name}</td>
                   <td className="border border-slate-300 p-1.5 font-mono font-bold text-emerald-800">
                     {rental.bike?.battery
-                      ? `${rental.bike.battery.serialNumber} (${rental.bike.battery.voltage}V ${rental.bike.battery.capacityAh}Ah, SoH ${rental.bike.battery.healthPercent}%)`
+                      ? `${rental.bike.battery.serialNumber} (${rental.bike.battery.voltage}V ${rental.bike.battery.capacityAh}Ah, ${rental.bike.battery.connector})`
                       : 'Без аккумулятора'}
                   </td>
                   <td className="border border-slate-300 p-1.5">

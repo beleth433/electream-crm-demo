@@ -564,7 +564,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                       {bike.battery ? (
                         <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium mt-1">
                           <BatteryCharging className="w-3.5 h-3.5 shrink-0" />
-                          <span>АКБ: {bike.battery.serialNumber} ({bike.battery.voltage}V {bike.battery.capacityAh}Ah • SoH {bike.battery.healthPercent}%)</span>
+                          <span>АКБ: {bike.battery.serialNumber} ({bike.battery.voltage}V {bike.battery.capacityAh}Ah • {bike.battery.connector})</span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-1">

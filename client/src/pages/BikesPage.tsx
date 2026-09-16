@@ -365,18 +365,18 @@ export const BikesPage: React.FC = () => {
 
               {/* Battery Unit Block */}
               {bike.battery ? (
-                <div className="mt-3 p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-800/40 text-xs flex items-center justify-between">
+                <div className="mt-3 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 text-xs flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <BatteryCharging className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <BatteryCharging className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <div>
                       <div className="font-mono font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                         <span>{bike.battery.serialNumber}</span>
-                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300">
+                        <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
                           {bike.battery.voltage}V {bike.battery.capacityAh}Ah
                         </span>
                       </div>
-                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400/80">
-                        SoH: {bike.battery.healthPercent}% • {bike.battery.cycleCount} ц. • {bike.battery.connector}
+                      <div className="text-[10px] text-slate-500 dark:text-emerald-400/80">
+                        Разъем: {bike.battery.connector}
                       </div>
                     </div>
                   </div>
@@ -619,7 +619,7 @@ export const BikesPage: React.FC = () => {
               <option value="">-- Без аккумулятора (пустая рама на складе / в резерве) --</option>
               {availableBatteries.map((bat) => (
                 <option key={bat.id} value={bat.id}>
-                  {bat.serialNumber} [{bat.voltage}V {bat.capacityAh}Ah, SoH: {bat.healthPercent}%, {bat.connector}] — {bat.location}
+                  {bat.serialNumber} [{bat.voltage}V {bat.capacityAh}Ah, {bat.connector}] — {bat.location}
                 </option>
               ))}
             </select>
@@ -902,36 +902,36 @@ export const BikesPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-slate-300 font-medium mb-1">
+            <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
               Выберите заряженный АКБ со склада:
             </label>
             {availableBatteries.length === 0 ? (
-              <div className="p-3 rounded-lg bg-amber-950/20 border border-amber-800/40 text-amber-300 text-xs">
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs">
                 ⚠️ На складе нет свободных заряженных аккумуляторов. Сначала оприходуйте новый АКБ или снимите батарею с другого байка.
               </div>
             ) : (
               <select
                 value={attachSelectedBatteryId}
                 onChange={(e) => setAttachSelectedBatteryId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:border-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
               >
                 {availableBatteries.map((bat) => (
                   <option key={bat.id} value={bat.id}>
-                    {bat.serialNumber} [{bat.voltage}V {bat.capacityAh}Ah, SoH: {bat.healthPercent}%, {bat.connector}] — {bat.location}
+                    {bat.serialNumber} [{bat.voltage}V {bat.capacityAh}Ah, {bat.connector}] — {bat.location}
                   </option>
                 ))}
               </select>
             )}
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => {
                 setIsAttachModalOpen(false);
                 setAttachTargetBike(null);
               }}
-              className="px-4 py-2 border border-slate-700 rounded-xl text-slate-300"
+              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300"
             >
               Отмена
             </button>
@@ -958,52 +958,52 @@ export const BikesPage: React.FC = () => {
         maxWidth="md"
       >
         <form onSubmit={handleSwapSubmit} className="space-y-4 text-xs">
-          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-            <div className="text-slate-400">Байк и текущий аккумулятор:</div>
-            <div className="text-sm font-bold text-white flex items-center gap-2">
-              <BikeIcon className="w-4 h-4 text-sky-400" />
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
+            <div className="text-slate-500 dark:text-slate-400">Байк и текущий аккумулятор:</div>
+            <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <BikeIcon className="w-4 h-4 text-sky-500" />
               {swapTargetBike?.inventoryNumber} — {swapTargetBike?.model?.name}
             </div>
             {swapTargetBike?.battery ? (
-              <div className="text-amber-400 text-xs mt-1">
+              <div className="text-amber-600 dark:text-amber-400 text-xs mt-1">
                 Текущий АКБ: <b>{swapTargetBike.battery.serialNumber}</b> ({swapTargetBike.battery.voltage}V {swapTargetBike.battery.capacityAh}Ah) будет возвращен на зарядный стеллаж базы.
               </div>
             ) : (
-              <div className="text-slate-400 text-xs mt-1">Байк в данный момент без батареи.</div>
+              <div className="text-slate-500 dark:text-slate-400 text-xs mt-1">Байк в данный момент без батареи.</div>
             )}
           </div>
 
           <div>
-            <label className="block text-slate-300 font-medium mb-1">
+            <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
               Выберите новый заряженный АКБ со склада:
             </label>
             {availableBatteries.length === 0 ? (
-              <div className="p-3 rounded-lg bg-amber-950/20 border border-amber-800/40 text-amber-300 text-xs">
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs">
                 ⚠️ Нет свободных заряженных аккумуляторов на складе.
               </div>
             ) : (
               <select
                 value={swapNewBatteryId}
                 onChange={(e) => setSwapNewBatteryId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:border-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
               >
                 {availableBatteries.map((bat) => (
                   <option key={bat.id} value={bat.id}>
-                    {bat.serialNumber} [{bat.voltage}V {bat.capacityAh}Ah, SoH: {bat.healthPercent}%, {bat.connector}] — {bat.location}
+                    {bat.serialNumber} [{bat.voltage}V {bat.capacityAh}Ah, {bat.connector}] — {bat.location}
                   </option>
                 ))}
               </select>
             )}
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
               onClick={() => {
                 setIsSwapModalOpen(false);
                 setSwapTargetBike(null);
               }}
-              className="px-4 py-2 border border-slate-700 rounded-xl text-slate-300"
+              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300"
             >
               Отмена
             </button>
