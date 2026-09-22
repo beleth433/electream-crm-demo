@@ -1,0 +1,170 @@
+{
+  "users": [
+    {
+      "id": "usr-admin-1",
+      "email": "admin@ebike-crm.ru",
+      "passwordHash": "hash_admin_secret",
+      "fullName": "Дмитрий Орлов",
+      "phone": "+7 (999) 111-22-33",
+      "role": "ADMIN",
+      "isActive": true
+    },
+    {
+      "id": "usr-mgr-1",
+      "email": "manager@ebike-crm.ru",
+      "passwordHash": "hash_manager_secret",
+      "fullName": "Иван Ковалев",
+      "phone": "+7 (999) 222-33-44",
+      "role": "MANAGER",
+      "isActive": true
+    },
+    {
+      "id": "usr-mech-1",
+      "email": "mechanic@ebike-crm.ru",
+      "passwordHash": "hash_mechanic_secret",
+      "fullName": "Алексей Смирнов",
+      "phone": "+7 (999) 333-44-55",
+      "role": "MECHANIC",
+      "isActive": true
+    }
+  ],
+  "models": [],
+  "batteryModels": [],
+  "bikes": [],
+  "batteries": [],
+  "outfits": [],
+  "outfitCategories": [
+    {
+      "id": "HELMET",
+      "name": "Шлемы и защита",
+      "isSystem": true
+    },
+    {
+      "id": "LOCK",
+      "name": "Замки и безопасность",
+      "isSystem": true
+    },
+    {
+      "id": "BAG",
+      "name": "Термосумки и кофры",
+      "isSystem": true
+    },
+    {
+      "id": "BATTERY",
+      "name": "Дополнительные АКБ",
+      "isSystem": true
+    },
+    {
+      "id": "CHARGER",
+      "name": "Зарядные устройства",
+      "isSystem": true
+    },
+    {
+      "id": "PHONE_HOLDER",
+      "name": "Держатели смартфона",
+      "isSystem": true
+    },
+    {
+      "id": "WINTER_GLOVES",
+      "name": "Зимние муфты и перчатки",
+      "isSystem": true
+    }
+  ],
+  "outfitTemplates": [],
+  "clients": [],
+  "tariffs": [
+    {
+      "id": "trf-1",
+      "name": "Суточный (Тест-драйв)",
+      "type": "STANDARD",
+      "durationDays": 1,
+      "price": 1200,
+      "depositRequired": 3000,
+      "isActive": true
+    },
+    {
+      "id": "trf-2",
+      "name": "Недельный рабочий (7 дней)",
+      "type": "STANDARD",
+      "durationDays": 7,
+      "price": 6000,
+      "depositRequired": 5000,
+      "isActive": true
+    },
+    {
+      "id": "trf-3",
+      "name": "Месячный оптимал (30 дней)",
+      "type": "STANDARD",
+      "durationDays": 30,
+      "price": 21000,
+      "depositRequired": 7000,
+      "isActive": true
+    },
+    {
+      "id": "trf-4",
+      "name": "Выкуп байка Rent-to-Own (9 месяцев)",
+      "type": "RENT_TO_OWN",
+      "durationDays": 30,
+      "price": 25000,
+      "depositRequired": 10000,
+      "isActive": true
+    }
+  ],
+  "parts": [],
+  "rentals": [],
+  "repairs": [],
+  "payments": [],
+  "reviews": [],
+  "articles": [],
+  "employees": [
+    {
+      "id": "emp-1",
+      "fullName": "Иван Ковалев",
+      "phone": "+7 (999) 222-33-44",
+      "email": "manager@ebike-crm.ru",
+      "role": "Менеджер смены",
+      "salaryType": "MONTHLY",
+      "salaryAmount": 75000,
+      "status": "ACTIVE",
+      "hiredAt": "2025-10-01",
+      "notes": "Ответственный за выдачу/прием техники и кассовые операции"
+    },
+    {
+      "id": "emp-2",
+      "fullName": "Алексей Смирнов",
+      "phone": "+7 (999) 333-44-55",
+      "email": "mechanic@ebike-crm.ru",
+      "role": "Старший мастер СТО",
+      "salaryType": "PER_SHIFT",
+      "salaryAmount": 3800,
+      "status": "ACTIVE",
+      "hiredAt": "2025-11-15",
+      "notes": "Диагностика электроники, сборка АКБ, сложный ремонт моторов"
+    },
+    {
+      "id": "emp-3",
+      "fullName": "Рустам Алиев",
+      "phone": "+7 (999) 444-55-66",
+      "email": "rustam.tech@ebike-crm.ru",
+      "role": "Помощник механика",
+      "salaryType": "MONTHLY",
+      "salaryAmount": 55000,
+      "status": "ACTIVE",
+      "hiredAt": "2026-01-10",
+      "notes": "Шиномонтаж, регламентная замена колодок и цепей"
+    },
+    {
+      "id": "emp-4",
+      "fullName": "Дмитрий Орлов",
+      "phone": "+7 (999) 111-22-33",
+      "email": "admin@ebike-crm.ru",
+      "role": "Управляющий базой",
+      "salaryType": "MONTHLY",
+      "salaryAmount": 95000,
+      "status": "ACTIVE",
+      "hiredAt": "2025-09-01",
+      "notes": "Руководитель филиала, контроль парка и финансового баланса"
+    }
+  ],
+  "retailOrders": []
+}

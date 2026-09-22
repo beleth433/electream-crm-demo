@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import {
   INITIAL_USERS,
   INITIAL_MODELS,
@@ -288,27 +290,145 @@ export interface DBStore {
   retailOrders: RetailOrderRecord[];
 }
 
-// In-Memory state clone initialized with seed data
-let db: DBStore = {
+const DATA_DIR = typeof __dirname !== "undefined"
+  ? path.resolve(__dirname, "../../data")
+  : path.resolve(process.cwd(), "data");
+const DB_FILE = path.join(DATA_DIR, "crm_db.json");
+
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+export const createDefaultEmptyDb = (): DBStore => ({
   users: JSON.parse(JSON.stringify(INITIAL_USERS)),
-  models: JSON.parse(JSON.stringify(INITIAL_MODELS)),
-  batteryModels: JSON.parse(JSON.stringify(INITIAL_BATTERY_MODELS)),
-  bikes: JSON.parse(JSON.stringify(INITIAL_BIKES)),
-  batteries: JSON.parse(JSON.stringify(INITIAL_BATTERIES)),
-  outfits: JSON.parse(JSON.stringify(INITIAL_OUTFITS)),
+  models: [],
+  batteryModels: [],
+  bikes: [],
+  batteries: [],
+  outfits: [],
   outfitCategories: JSON.parse(JSON.stringify(INITIAL_OUTFIT_CATEGORIES)),
-  outfitTemplates: JSON.parse(JSON.stringify(INITIAL_OUTFIT_TEMPLATES)),
-  clients: JSON.parse(JSON.stringify(INITIAL_CLIENTS)),
+  outfitTemplates: [],
+  clients: [],
   tariffs: JSON.parse(JSON.stringify(INITIAL_TARIFFS)),
-  parts: JSON.parse(JSON.stringify(INITIAL_PARTS)),
-  rentals: JSON.parse(JSON.stringify(INITIAL_RENTALS)),
-  repairs: JSON.parse(JSON.stringify(INITIAL_REPAIRS)),
-  payments: JSON.parse(JSON.stringify(INITIAL_PAYMENTS)),
-  reviews: JSON.parse(JSON.stringify(INITIAL_REVIEWS)),
-  articles: JSON.parse(JSON.stringify(INITIAL_ARTICLES)),
+  parts: [],
+  rentals: [],
+  repairs: [],
+  payments: [],
+  reviews: [],
+  articles: [],
   employees: JSON.parse(JSON.stringify(INITIAL_EMPLOYEES)),
-  retailOrders: JSON.parse(JSON.stringify(INITIAL_RETAIL_ORDERS)),
+  retailOrders: [],
+});
+
+let rawDb: DBStore;
+
+function loadFromDisk(): DBStore {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const fileContent = fs.readFileSync(DB_FILE, "utf-8").trim();
+      if (fileContent) {
+        const parsed = JSON.parse(fileContent);
+        const defaultDb = createDefaultEmptyDb();
+        const merged: DBStore = {
+          users: parsed.users && parsed.users.length > 0 ? parsed.users : defaultDb.users,
+          models: parsed.models || [],
+          batteryModels: parsed.batteryModels || [],
+          bikes: parsed.bikes || [],
+          batteries: parsed.batteries || [],
+          outfits: parsed.outfits || [],
+          outfitCategories: parsed.outfitCategories && parsed.outfitCategories.length > 0 ? parsed.outfitCategories : defaultDb.outfitCategories,
+          outfitTemplates: parsed.outfitTemplates || [],
+          clients: parsed.clients || [],
+          tariffs: parsed.tariffs && parsed.tariffs.length > 0 ? parsed.tariffs : defaultDb.tariffs,
+          parts: parsed.parts || [],
+          rentals: parsed.rentals || [],
+          repairs: parsed.repairs || [],
+          payments: parsed.payments || [],
+          reviews: parsed.reviews || [],
+          articles: parsed.articles || [],
+          employees: parsed.employees && parsed.employees.length > 0 ? parsed.employees : defaultDb.employees,
+          retailOrders: parsed.retailOrders || [],
+        };
+        return merged;
+      }
+    }
+  } catch (err) {
+    console.error("[CRM DB] Ошибка чтения crm_db.json, инициализация чистого хранилища:", err);
+  }
+
+  const cleanDb = createDefaultEmptyDb();
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(cleanDb, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[CRM DB] Ошибка создания crm_db.json:", err);
+  }
+  return cleanDb;
+}
+
+rawDb = loadFromDisk();
+
+let saveTimeout: NodeJS.Timeout | null = null;
+
+export const saveDb = (immediate = false) => {
+  if (immediate) {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = null;
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(rawDb, null, 2), "utf-8");
+    } catch (err) {
+      console.error("[CRM DB] Ошибка немедленной записи crm_db.json:", err);
+    }
+    return;
+  }
+
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    try {
+      fs.writeFileSync(DB_FILE, JSON.stringify(rawDb, null, 2), "utf-8");
+    } catch (err) {
+      console.error("[CRM DB] Ошибка фоновой записи crm_db.json:", err);
+    }
+  }, 50);
 };
+
+process.on("beforeExit", () => saveDb(true));
+
+function createAutoSavingProxy<T extends object>(targetObj: T, onMutate: () => void): T {
+  const proxyCache = new WeakMap<object, any>();
+
+  function wrap<O extends object>(obj: O): O {
+    if (proxyCache.has(obj)) {
+      return proxyCache.get(obj);
+    }
+
+    const proxy = new Proxy(obj, {
+      get(target, prop, receiver) {
+        const val = Reflect.get(target, prop, receiver);
+        if (val !== null && typeof val === "object") {
+          return wrap(val);
+        }
+        return val;
+      },
+      set(target, prop, value, receiver) {
+        const res = Reflect.set(target, prop, value, receiver);
+        onMutate();
+        return res;
+      },
+      deleteProperty(target, prop) {
+        const res = Reflect.deleteProperty(target, prop);
+        onMutate();
+        return res;
+      },
+    });
+
+    proxyCache.set(obj, proxy);
+    return proxy;
+  }
+
+  return wrap(targetObj);
+}
+
+const db = createAutoSavingProxy(rawDb, () => saveDb(false));
 
 export const getDb = () => db;
 
@@ -333,47 +453,26 @@ export const addSystemDays = (days: number): Date => {
 
 export const isTimeSimulated = (): boolean => simulatedDate !== null;
 
-// Reset to Full Seed Template
-export const resetDb = () => {
-  simulatedDate = null;
-  db = {
-    users: JSON.parse(JSON.stringify(INITIAL_USERS)),
-    models: JSON.parse(JSON.stringify(INITIAL_MODELS)),
-    batteryModels: JSON.parse(JSON.stringify(INITIAL_BATTERY_MODELS)),
-    bikes: JSON.parse(JSON.stringify(INITIAL_BIKES)),
-    batteries: JSON.parse(JSON.stringify(INITIAL_BATTERIES)),
-    outfits: JSON.parse(JSON.stringify(INITIAL_OUTFITS)),
-    outfitCategories: JSON.parse(JSON.stringify(INITIAL_OUTFIT_CATEGORIES)),
-    outfitTemplates: JSON.parse(JSON.stringify(INITIAL_OUTFIT_TEMPLATES)),
-    clients: JSON.parse(JSON.stringify(INITIAL_CLIENTS)),
-    tariffs: JSON.parse(JSON.stringify(INITIAL_TARIFFS)),
-    parts: JSON.parse(JSON.stringify(INITIAL_PARTS)),
-    rentals: JSON.parse(JSON.stringify(INITIAL_RENTALS)),
-    repairs: JSON.parse(JSON.stringify(INITIAL_REPAIRS)),
-    payments: JSON.parse(JSON.stringify(INITIAL_PAYMENTS)),
-    reviews: JSON.parse(JSON.stringify(INITIAL_REVIEWS)),
-    articles: JSON.parse(JSON.stringify(INITIAL_ARTICLES)),
-    employees: JSON.parse(JSON.stringify(INITIAL_EMPLOYEES)),
-    retailOrders: JSON.parse(JSON.stringify(INITIAL_RETAIL_ORDERS)),
-  };
-};
-
-// Clear All Test Operational Data (Start fresh with 0 items)
+// Reset / Clear database to completely clean state
 export const clearDb = () => {
   simulatedDate = null;
-  // All active and past transactions cleared
-  db.rentals = [];
-  db.repairs = [];
-  db.payments = [];
-  db.reviews = [];
-  db.retailOrders = [];
-  // Clear fleet, couriers, equipment and warehouse inventory
-  db.bikes = [];
-  db.batteries = [];
-  db.clients = [];
-  db.outfits = [];
-  db.parts = [];
-  // Retain employees or reset to empty
-  db.employees = [];
+  rawDb.rentals = [];
+  rawDb.repairs = [];
+  rawDb.payments = [];
+  rawDb.reviews = [];
+  rawDb.retailOrders = [];
+  rawDb.bikes = [];
+  rawDb.batteries = [];
+  rawDb.clients = [];
+  rawDb.outfits = [];
+  rawDb.parts = [];
+  rawDb.models = [];
+  rawDb.batteryModels = [];
+  rawDb.outfitTemplates = [];
+  saveDb(true);
+};
+
+export const resetDb = () => {
+  clearDb();
 };
 

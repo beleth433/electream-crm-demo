@@ -71,6 +71,9 @@ export const BikesPage: React.FC = () => {
       inventoryNumber: nextNum,
       modelId: prev.modelId || models[0]?.id || '',
     }));
+    if (models.length === 0) {
+      setIsQuickCreateModelOpen(true);
+    }
     setIsAddModalOpen(true);
   };
 
@@ -638,6 +641,17 @@ export const BikesPage: React.FC = () => {
                     Сохранить и выбрать
                   </button>
                 </div>
+              </div>
+            ) : models.length === 0 ? (
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs flex items-center justify-between">
+                <span>⚠️ Нет шаблонов моделей байков.</span>
+                <button
+                  type="button"
+                  onClick={() => setIsQuickCreateModelOpen(true)}
+                  className="font-bold underline text-emerald-600 dark:text-emerald-400 hover:text-emerald-500"
+                >
+                  + Создать шаблон
+                </button>
               </div>
             ) : (
               <select

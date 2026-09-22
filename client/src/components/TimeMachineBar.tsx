@@ -43,18 +43,7 @@ export const TimeMachineBar: React.FC = () => {
     },
   });
 
-  // Mutate templates (reset/clear)
-  const resetMutation = useMutation({
-    mutationFn: api.resetTemplates,
-    onSuccess: (res) => {
-      toast.success(res.message);
-      invalidateAll();
-    },
-    onError: (err: any) => {
-      toast.error(err.message || 'Ошибка сброса шаблонов');
-    },
-  });
-
+  // Clear DB to clean state
   const clearMutation = useMutation({
     mutationFn: api.clearTemplates,
     onSuccess: (res) => {
@@ -94,15 +83,11 @@ export const TimeMachineBar: React.FC = () => {
   const handleClearTemplates = () => {
     if (
       window.confirm(
-        'Вы уверены, что хотите полностью очистить систему? Будут удалены все тестовые электровелосипеды, база курьеров, склад экипировки и запчастей, договоры аренды и наряды СТО.\n\nВы сможете в любой момент вернуть полный демонстрационный набор кнопкой "Вернуть шаблоны".'
+        'Вы уверены, что хотите очистить всю базу данных? Все созданные вами модели, байки, аккумуляторы, курьеры и записи будут удалены, и база вернется к исходному чистому состоянию.'
       )
     ) {
       clearMutation.mutate();
     }
-  };
-
-  const handleResetTemplates = () => {
-    resetMutation.mutate();
   };
 
   return (
@@ -182,26 +167,16 @@ export const TimeMachineBar: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Template Control Buttons */}
+        {/* Right: Reset to fresh database */}
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handleClearTemplates}
             disabled={clearMutation.isPending}
-            title="Полная очистка базы (0 байков, 0 курьеров, 0 запчастей) для тестирования с чистого листа"
+            title="Очистить все добавленные данные и начать тестирование с чистого листа"
             className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-300 dark:border-rose-600/50 text-rose-700 dark:text-rose-300 rounded-xl font-bold text-xs transition-all hover:scale-105 active:scale-95 shadow-2xs"
           >
             <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-            Очистить все шаблоны
-          </button>
-
-          <button
-            onClick={handleResetTemplates}
-            disabled={resetMutation.isPending}
-            title="Восстановить демонстрационный заполненный шаблон с байками, арендами и СТО"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-600/25 transition-all hover:scale-105 active:scale-95"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-white" />
-            Вернуть шаблоны
+            Сброс к чистому листу (0)
           </button>
         </div>
       </div>
