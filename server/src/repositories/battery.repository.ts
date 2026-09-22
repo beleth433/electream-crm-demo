@@ -1,4 +1,4 @@
-import { getDb, BatteryRecord, BatteryStatus, BatteryModelRecord } from "./db.js";
+import { getDb, BatteryRecord, BatteryStatus, BatteryModelRecord, BatteryChemistry } from "./db.js";
 
 export class BatteryRepository {
   // Battery Model Templates CRUD
@@ -17,6 +17,7 @@ export class BatteryRepository {
     name: string;
     voltage: number;
     capacityAh: number;
+    chemistry?: BatteryChemistry;
     description?: string | null;
   }) {
     const db = getDb();
@@ -33,6 +34,7 @@ export class BatteryRepository {
       name: cleanName,
       voltage: Number(data.voltage) || 60,
       capacityAh: Number(data.capacityAh) || 20,
+      chemistry: data.chemistry === 'LiFePO4' ? 'LiFePO4' : 'Li-ion',
       description: data.description || null,
     };
     db.batteryModels.push(newModel);
@@ -48,6 +50,7 @@ export class BatteryRepository {
       name?: string;
       voltage?: number;
       capacityAh?: number;
+      chemistry?: BatteryChemistry;
       description?: string | null;
     }
   ) {
@@ -70,6 +73,7 @@ export class BatteryRepository {
 
     if (data.voltage !== undefined) model.voltage = Number(data.voltage);
     if (data.capacityAh !== undefined) model.capacityAh = Number(data.capacityAh);
+    if (data.chemistry !== undefined) model.chemistry = data.chemistry;
     if (data.description !== undefined) model.description = data.description;
 
     const batteriesCount = db.batteries.filter((b) => b.modelId === model.id).length;
@@ -193,6 +197,7 @@ export class BatteryRepository {
     modelId?: string;
     voltage?: number;
     capacityAh?: number;
+    chemistry?: BatteryChemistry;
     status?: BatteryStatus;
     notes?: string;
   }) {
@@ -209,6 +214,7 @@ export class BatteryRepository {
     let modelName: string | null = null;
     let voltage = Number(data.voltage) || 60;
     let capacityAh = Number(data.capacityAh) || 20;
+    let chemistry: BatteryChemistry = (data.chemistry as BatteryChemistry) || 'Li-ion';
 
     if (data.modelId) {
       const batModel = db.batteryModels.find((m) => m.id === data.modelId);
@@ -216,6 +222,9 @@ export class BatteryRepository {
         modelName = batModel.name;
         voltage = batModel.voltage;
         capacityAh = batModel.capacityAh;
+        if (batModel.chemistry) {
+          chemistry = batModel.chemistry;
+        }
       }
     }
 
@@ -226,6 +235,7 @@ export class BatteryRepository {
       modelName,
       voltage,
       capacityAh,
+      chemistry,
       status: data.status || "AVAILABLE",
       installedBikeId: null,
       notes: data.notes || null,
@@ -263,12 +273,16 @@ export class BatteryRepository {
           db.batteries[index].modelName = batModel.name;
           db.batteries[index].voltage = batModel.voltage;
           db.batteries[index].capacityAh = batModel.capacityAh;
+          if (batModel.chemistry) {
+            db.batteries[index].chemistry = batModel.chemistry;
+          }
         }
       }
     }
 
     if (data.voltage !== undefined) db.batteries[index].voltage = Number(data.voltage);
     if (data.capacityAh !== undefined) db.batteries[index].capacityAh = Number(data.capacityAh);
+    if (data.chemistry !== undefined) db.batteries[index].chemistry = data.chemistry;
     if (data.status !== undefined) db.batteries[index].status = data.status;
     if (data.notes !== undefined) db.batteries[index].notes = data.notes;
 

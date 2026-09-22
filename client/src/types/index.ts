@@ -70,11 +70,14 @@ export interface BikeModel {
   bikesCount?: number;
 }
 
+export type BatteryChemistry = 'Li-ion' | 'LiFePO4';
+
 export interface BatteryModel {
   id: string;
   name: string;
   voltage: number;
   capacityAh: number;
+  chemistry?: BatteryChemistry;
   description?: string | null;
   batteriesCount?: number;
 }
@@ -94,6 +97,7 @@ export interface Battery {
   modelName?: string | null;
   voltage: number;
   capacityAh: number;
+  chemistry?: BatteryChemistry;
   connector?: string;
   cycleCount?: number;
   healthPercent?: number;

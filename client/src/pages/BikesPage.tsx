@@ -384,10 +384,19 @@ export const BikesPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <BatteryCharging className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <div>
-                      <div className="font-mono font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <div className="font-mono font-bold text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
                         <span>{bike.battery.serialNumber}</span>
                         <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
                           {bike.battery.voltage}V {bike.battery.capacityAh}Ah
+                        </span>
+                        <span
+                          className={`text-[9px] font-bold px-1 py-0.2 rounded border ${
+                            bike.battery.chemistry === 'LiFePO4'
+                              ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                              : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          }`}
+                        >
+                          {bike.battery.chemistry || 'Li-ion'}
                         </span>
                       </div>
                     </div>
@@ -661,7 +670,7 @@ export const BikesPage: React.FC = () => {
               <option value="">-- Без аккумулятора (пустая рама на складе / в резерве) --</option>
               {availableBatteries.map((bat) => (
                 <option key={bat.id} value={bat.id}>
-                  {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah)
+                  {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah • {bat.chemistry || 'Li-ion'})
                 </option>
               ))}
             </select>
@@ -928,7 +937,7 @@ export const BikesPage: React.FC = () => {
               >
                 {availableBatteries.map((bat) => (
                   <option key={bat.id} value={bat.id}>
-                    {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah)
+                    {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah • {bat.chemistry || 'Li-ion'})
                   </option>
                 ))}
               </select>
@@ -977,7 +986,7 @@ export const BikesPage: React.FC = () => {
             </div>
             {swapTargetBike?.battery ? (
               <div className="text-amber-600 dark:text-amber-400 text-xs mt-1">
-                Текущий АКБ: <b>{swapTargetBike.battery.serialNumber}</b> ({swapTargetBike.battery.voltage}V {swapTargetBike.battery.capacityAh}Ah) будет снят на склад.
+                Текущий АКБ: <b>{swapTargetBike.battery.serialNumber}</b> ({swapTargetBike.battery.voltage}V {swapTargetBike.battery.capacityAh}Ah • {swapTargetBike.battery.chemistry || 'Li-ion'}) будет снят на склад.
               </div>
             ) : (
               <div className="text-slate-500 dark:text-slate-400 text-xs mt-1">Байк в данный момент без батареи.</div>
@@ -1000,7 +1009,7 @@ export const BikesPage: React.FC = () => {
               >
                 {availableBatteries.map((bat) => (
                   <option key={bat.id} value={bat.id}>
-                    {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah)
+                    {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah • {bat.chemistry || 'Li-ion'})
                   </option>
                 ))}
               </select>

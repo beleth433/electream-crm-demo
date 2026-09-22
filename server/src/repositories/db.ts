@@ -37,12 +37,14 @@ export type RepairStatus = "DIAGNOSTICS" | "WAITING_PARTS" | "IN_PROGRESS" | "CO
 export type RepairFaultType = "COMPANY_EXPENSE" | "CLIENT_FAULT";
 export type PaymentType = "RENTAL" | "DEPOSIT" | "DEPOSIT_REFUND" | "REPAIR" | "OUTFIT_SALE" | "FINE" | "SALARY_PAYMENT" | "RETAIL_SALE";
 export type PaymentMethod = "CASH" | "CARD" | "SBP" | "BANK_TRANSFER";
+export type BatteryChemistry = "Li-ion" | "LiFePO4";
 
 export interface BatteryModelRecord {
   id: string;
   name: string;
   voltage: number;
   capacityAh: number;
+  chemistry?: BatteryChemistry;
   description?: string | null;
 }
 
@@ -53,6 +55,7 @@ export interface BatteryRecord {
   modelName?: string | null;
   voltage: number;
   capacityAh: number;
+  chemistry?: BatteryChemistry;
   cycleCount?: number;
   healthPercent?: number;
   status: BatteryStatus;

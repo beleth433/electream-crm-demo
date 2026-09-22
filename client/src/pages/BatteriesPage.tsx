@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Battery, BatteryModel, BatteryStats, BatteryStatus, Bike } from '../types';
+import { Battery, BatteryModel, BatteryStats, BatteryStatus, Bike, BatteryChemistry } from '../types';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
 import {
@@ -40,10 +40,17 @@ export const BatteriesPage: React.FC = () => {
 
   // Modal: Manage Battery Models (Templates)
   const [isManageModelsOpen, setIsManageModelsOpen] = useState(false);
-  const [newModelForm, setNewModelForm] = useState({
+  const [newModelForm, setNewModelForm] = useState<{
+    name: string;
+    voltage: number;
+    capacityAh: number;
+    chemistry: BatteryChemistry;
+    description: string;
+  }>({
     name: '',
     voltage: 60,
     capacityAh: 21,
+    chemistry: 'Li-ion',
     description: '',
   });
 
@@ -86,6 +93,7 @@ export const BatteriesPage: React.FC = () => {
     serialNumber: '',
     voltage: 60,
     capacityAh: 21,
+    chemistry: 'Li-ion' as BatteryChemistry,
     status: 'AVAILABLE' as BatteryStatus,
     notes: '',
   });
@@ -144,6 +152,7 @@ export const BatteriesPage: React.FC = () => {
         name: '',
         voltage: 60,
         capacityAh: 21,
+        chemistry: 'Li-ion',
         description: '',
       });
     } catch (err: any) {
@@ -151,44 +160,44 @@ export const BatteriesPage: React.FC = () => {
     }
   };
 
-  // Delete battery model submit
+  // Delete battery model
   const handleDeleteModel = async (model: BatteryModel) => {
     if ((model.batteriesCount ?? 0) > 0) {
-      toast.error(
-        `Невозможно удалить шаблон "${model.name}": в парке зарегистрировано ${model.batteriesCount} АКБ этой модели!`
-      );
+      toast.error(`Невозможно удалить шаблон "${model.name}": к нему привязано ${model.batteriesCount} АКБ`);
       return;
     }
-    if (window.confirm(`Вы уверены, что хотите удалить шаблон модели "${model.name}"?`)) {
-      try {
-        await api.deleteBatteryModel(model.id);
-        toast.success(`Шаблон модели "${model.name}" удален`);
-        const updated = await api.getBatteryModels();
-        setBatteryModels(updated);
-        if (createForm.modelId === model.id && updated.length > 0) {
-          setCreateForm((prev) => ({ ...prev, modelId: updated[0].id }));
-        }
-      } catch (err: any) {
-        toast.error(err.message || 'Ошибка удаления шаблона');
+    if (!confirm(`Вы действительно хотите удалить шаблон модели "${model.name}"?`)) {
+      return;
+    }
+    try {
+      await api.deleteBatteryModel(model.id);
+      toast.success(`Шаблон "${model.name}" удален`);
+      const updated = await api.getBatteryModels();
+      setBatteryModels(updated);
+      if (createForm.modelId === model.id && updated.length > 0) {
+        setCreateForm((prev) => ({ ...prev, modelId: updated[0].id }));
       }
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка удаления шаблона АКБ');
     }
   };
 
   // Create battery submit
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!createForm.serialNumber.trim()) {
-      toast.error('Укажите серийный номер аккумулятора');
-      return;
-    }
-
     try {
-      await api.createBattery(createForm);
-      toast.success(`Аккумулятор ${createForm.serialNumber} успешно оприходован`);
-      const nextNum = getNextSequentialNumber(
-        [...batteries.map((b) => b.serialNumber), createForm.serialNumber],
+      const selectedModel = batteryModels.find((m) => m.id === createForm.modelId);
+      await api.createBattery({
+        modelId: createForm.modelId,
+        serialNumber: createForm.serialNumber,
+        voltage: selectedModel?.voltage || 60,
+        capacityAh: selectedModel?.capacityAh || 21,
+        notes: createForm.notes,
+      });
+      toast.success(`АКБ ${createForm.serialNumber} успешно оприходован`);
+      const nextNum = calculateNextBatteryNumber(
         batteryPrefix,
-        3
+        batteries.concat([{ serialNumber: createForm.serialNumber } as Battery])
       );
       setIsCreateModalOpen(false);
       setCreateForm((prev) => ({
@@ -210,6 +219,7 @@ export const BatteriesPage: React.FC = () => {
       serialNumber: bat.serialNumber,
       voltage: bat.voltage,
       capacityAh: bat.capacityAh,
+      chemistry: bat.chemistry || 'Li-ion',
       status: bat.status,
       notes: bat.notes || '',
     });
@@ -363,12 +373,13 @@ export const BatteriesPage: React.FC = () => {
       const q = searchQuery.toLowerCase().trim();
       const matchSerial = bat.serialNumber.toLowerCase().includes(q);
       const matchModel = bat.modelName ? bat.modelName.toLowerCase().includes(q) : false;
+      const matchChem = (bat.chemistry || 'li-ion').toLowerCase().includes(q);
       const matchNotes = bat.notes ? bat.notes.toLowerCase().includes(q) : false;
       const matchBike = bat.installedBike
         ? bat.installedBike.inventoryNumber.toLowerCase().includes(q) ||
           (bat.installedBike.modelName && bat.installedBike.modelName.toLowerCase().includes(q))
         : false;
-      if (!matchSerial && !matchModel && !matchNotes && !matchBike) return false;
+      if (!matchSerial && !matchModel && !matchChem && !matchNotes && !matchBike) return false;
     }
     return true;
   });
@@ -678,7 +689,7 @@ export const BatteriesPage: React.FC = () => {
                 className="contour-card p-5 flex flex-col justify-between"
               >
                 <div>
-                  {/* Top Bar: Voltage badge, Model name & Status badge */}
+                  {/* Top Bar: Voltage badge, Chemistry, Model name & Status badge */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
@@ -687,6 +698,15 @@ export const BatteriesPage: React.FC = () => {
                         )}`}
                       >
                         {bat.voltage}V {bat.capacityAh}Ah
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-bold border ${
+                          bat.chemistry === 'LiFePO4'
+                            ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                        }`}
+                      >
+                        {bat.chemistry || 'Li-ion'}
                       </span>
                       {bat.modelName && (
                         <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">
@@ -846,13 +866,24 @@ export const BatteriesPage: React.FC = () => {
                       {bat.modelName || '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-mono font-semibold border ${getVoltageBadgeColor(
-                          bat.voltage
-                        )}`}
-                      >
-                        {bat.voltage}V {bat.capacityAh}Ah
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-mono font-semibold border ${getVoltageBadgeColor(
+                            bat.voltage
+                          )}`}
+                        >
+                          {bat.voltage}V {bat.capacityAh}Ah
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[11px] font-bold border ${
+                            bat.chemistry === 'LiFePO4'
+                              ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                              : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          }`}
+                        >
+                          {bat.chemistry || 'Li-ion'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3">{getStatusBadge(bat.status, bat.installedBike)}</td>
                     <td className="px-4 py-3 text-xs">
@@ -953,7 +984,7 @@ export const BatteriesPage: React.FC = () => {
               >
                 {batteryModels.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.name} ({m.voltage}V {m.capacityAh}Ah)
+                    {m.name} ({m.voltage}V {m.capacityAh}Ah • {m.chemistry || 'Li-ion'})
                   </option>
                 ))}
               </select>
@@ -966,7 +997,7 @@ export const BatteriesPage: React.FC = () => {
               return (
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1">
                   <div className="text-slate-500 font-medium">Характеристики из выбранного шаблона:</div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-mono font-bold border ${getVoltageBadgeColor(
                         selectedModel.voltage
@@ -976,6 +1007,15 @@ export const BatteriesPage: React.FC = () => {
                     </span>
                     <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
                       {selectedModel.capacityAh} Ah
+                    </span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-bold border ${
+                        selectedModel.chemistry === 'LiFePO4'
+                          ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                          : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      }`}
+                    >
+                      {selectedModel.chemistry || 'Li-ion'}
                     </span>
                     {selectedModel.description && (
                       <span className="text-slate-500 text-[11px] truncate">
@@ -1287,6 +1327,36 @@ export const BatteriesPage: React.FC = () => {
 
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Тип химии (АКБ)
+              </label>
+              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-[38px] items-center">
+                <button
+                  type="button"
+                  onClick={() => setEditForm({ ...editForm, chemistry: 'Li-ion' })}
+                  className={`h-full text-xs font-bold rounded-md transition ${
+                    editForm.chemistry === 'Li-ion'
+                      ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  Li-ion
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditForm({ ...editForm, chemistry: 'LiFePO4' })}
+                  className={`h-full text-xs font-bold rounded-md transition ${
+                    editForm.chemistry === 'LiFePO4'
+                      ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  LiFePO4
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Вольтаж (V)
               </label>
               <input
@@ -1362,8 +1432,8 @@ export const BatteriesPage: React.FC = () => {
               Добавить новый шаблон модели АКБ
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Название модели *
                 </label>
@@ -1375,6 +1445,36 @@ export const BatteriesPage: React.FC = () => {
                   onChange={(e) => setNewModelForm({ ...newModelForm, name: e.target.value })}
                   className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                 />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Тип химии (АКБ) *
+                </label>
+                <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-[38px] items-center">
+                  <button
+                    type="button"
+                    onClick={() => setNewModelForm({ ...newModelForm, chemistry: 'Li-ion' })}
+                    className={`h-full text-xs font-bold rounded-md transition ${
+                      newModelForm.chemistry === 'Li-ion'
+                        ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Li-ion
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewModelForm({ ...newModelForm, chemistry: 'LiFePO4' })}
+                    className={`h-full text-xs font-bold rounded-md transition ${
+                      newModelForm.chemistry === 'LiFePO4'
+                        ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    LiFePO4
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -1448,7 +1548,7 @@ export const BatteriesPage: React.FC = () => {
                     className="p-3 bg-white dark:bg-slate-900/40 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
                   >
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-slate-900 dark:text-white">{model.name}</span>
                         <span
                           className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${getVoltageBadgeColor(
@@ -1459,6 +1559,15 @@ export const BatteriesPage: React.FC = () => {
                         </span>
                         <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
                           {model.capacityAh} Ah
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
+                            model.chemistry === 'LiFePO4'
+                              ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                              : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          }`}
+                        >
+                          {model.chemistry || 'Li-ion'}
                         </span>
                       </div>
                       {model.description && (
