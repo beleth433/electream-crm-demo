@@ -24,8 +24,10 @@ import {
   LogOut,
   AlertTriangle,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
 export const BikesPage: React.FC = () => {
   const [bikes, setBikes] = useState<Bike[]>([]);
@@ -35,8 +37,9 @@ export const BikesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
 
-  // Add Bike Modal
+  // Add Bike Modal & Prefix state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [bikePrefix, setBikePrefix] = useState<string>(() => getStoredPrefix('bike', 'EV-'));
   const [isQuickCreateModelOpen, setIsQuickCreateModelOpen] = useState(false);
   const [newBikeForm, setNewBikeForm] = useState({
     inventoryNumber: '',
@@ -48,6 +51,28 @@ export const BikesPage: React.FC = () => {
     mileageKm: 0,
     note: '',
   });
+
+  const calculateNextBikeNumber = (prefixToUse: string, bikeList: Bike[] = bikes) => {
+    const existing = bikeList.map((b) => b.inventoryNumber);
+    return getNextSequentialNumber(existing, prefixToUse, 3);
+  };
+
+  const handlePrefixChange = (newPrefix: string) => {
+    setBikePrefix(newPrefix);
+    setStoredPrefix('bike', newPrefix);
+    const nextNum = calculateNextBikeNumber(newPrefix);
+    setNewBikeForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
+  };
+
+  const handleOpenAddModal = () => {
+    const nextNum = calculateNextBikeNumber(bikePrefix);
+    setNewBikeForm((prev) => ({
+      ...prev,
+      inventoryNumber: nextNum,
+      modelId: prev.modelId || models[0]?.id || '',
+    }));
+    setIsAddModalOpen(true);
+  };
 
   // Battery Attach Modal
   const [isAttachModalOpen, setIsAttachModalOpen] = useState(false);
@@ -268,7 +293,7 @@ export const BikesPage: React.FC = () => {
             Шаблоны моделей ({models.length})
           </button>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={handleOpenAddModal}
             className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all"
           >
             <Plus className="w-4 h-4" />
@@ -482,15 +507,66 @@ export const BikesPage: React.FC = () => {
       >
         <form onSubmit={handleCreateBike} className="space-y-3 text-xs">
           <div>
-            <label className="block text-slate-500 mb-1">Инвентарный номер *</label>
-            <input
-              required
-              type="text"
-              placeholder="EV-016"
-              value={newBikeForm.inventoryNumber}
-              onChange={(e) => setNewBikeForm({ ...newBikeForm, inventoryNumber: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold">
+                Инвентарный номер *
+              </label>
+              <div className="flex items-center gap-1 text-[11px]">
+                <span className="text-slate-400 text-[10px]">Пресеты:</span>
+                {['EV-', 'ВЕЛ-', 'ЭВ-'].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => handlePrefixChange(p)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition ${
+                      bikePrefix === p
+                        ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="w-24 shrink-0">
+                <input
+                  type="text"
+                  placeholder="Префикс"
+                  value={bikePrefix}
+                  onChange={(e) => handlePrefixChange(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold font-mono text-center text-xs focus:border-emerald-500 focus:outline-none"
+                  title="Префикс инвентарного номера (например, EV- или русский ВЕЛ-)"
+                />
+              </div>
+
+              <div className="flex-1 relative">
+                <input
+                  required
+                  type="text"
+                  placeholder="EV-016"
+                  value={newBikeForm.inventoryNumber}
+                  onChange={(e) => setNewBikeForm({ ...newBikeForm, inventoryNumber: e.target.value })}
+                  className="w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold font-mono text-sm focus:border-emerald-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextNum = calculateNextBikeNumber(bikePrefix);
+                    setNewBikeForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition"
+                  title="Подобрать следующий свободный номер для этого префикса"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Префикс подбирает следующий номер (русский или английский). Номер можно свободно править вручную.
+            </p>
           </div>
 
           <div>

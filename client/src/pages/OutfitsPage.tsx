@@ -22,6 +22,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
 export const OutfitsPage: React.FC = () => {
   const [outfits, setOutfits] = useState<Outfit[]>([]);
@@ -32,8 +33,9 @@ export const OutfitsPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
 
-  // Add Outfit Modal
+  // Add Outfit Modal & Prefix state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [outfitPrefix, setOutfitPrefix] = useState<string>(() => getStoredPrefix('outfit', 'EQ-'));
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [isQuickCategoryCreating, setIsQuickCategoryCreating] = useState(false);
   const [quickCategoryName, setQuickCategoryName] = useState('');
@@ -43,6 +45,30 @@ export const OutfitsPage: React.FC = () => {
     inventoryNumber: '',
     depositValue: 2000,
   });
+
+  const calculateNextOutfitNumber = (prefixToUse: string, outfitList: Outfit[] = outfits) => {
+    const existing = outfitList.map((o) => o.inventoryNumber);
+    return getNextSequentialNumber(existing, prefixToUse, 3);
+  };
+
+  const handlePrefixChange = (newPrefix: string) => {
+    setOutfitPrefix(newPrefix);
+    setStoredPrefix('outfit', newPrefix);
+    const nextNum = calculateNextOutfitNumber(newPrefix);
+    setNewOutfitForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
+  };
+
+  const handleOpenAddModal = () => {
+    setSelectedTemplateId('');
+    const nextNum = calculateNextOutfitNumber(outfitPrefix);
+    setNewOutfitForm({
+      name: '',
+      category: categories[0]?.id || 'HELMET',
+      inventoryNumber: nextNum,
+      depositValue: 2000,
+    });
+    setIsAddModalOpen(true);
+  };
 
   // Manage Categories & Templates Modal
   const [isManageMetaOpen, setIsManageMetaOpen] = useState(false);
@@ -86,10 +112,11 @@ export const OutfitsPage: React.FC = () => {
     setSelectedTemplateId(templateId);
     const tmpl = templates.find((t) => t.id === templateId);
     if (tmpl) {
+      const nextNum = calculateNextOutfitNumber(outfitPrefix);
       setNewOutfitForm({
         name: tmpl.name,
         category: tmpl.categoryId,
-        inventoryNumber: `EQ-${Date.now().toString().slice(-4)}`,
+        inventoryNumber: nextNum,
         depositValue: tmpl.defaultDeposit,
       });
     }
@@ -174,12 +201,17 @@ export const OutfitsPage: React.FC = () => {
     try {
       await api.createOutfit(newOutfitForm);
       toast.success(`Экипировка "${newOutfitForm.name}" добавлена на склад!`);
+      const nextNum = getNextSequentialNumber(
+        [...outfits.map((o) => o.inventoryNumber), newOutfitForm.inventoryNumber],
+        outfitPrefix,
+        3
+      );
       setIsAddModalOpen(false);
       setSelectedTemplateId('');
       setNewOutfitForm({
         name: '',
         category: categories[0]?.id || 'HELMET',
-        inventoryNumber: '',
+        inventoryNumber: nextNum,
         depositValue: 2000,
       });
       loadData();
@@ -241,10 +273,7 @@ export const OutfitsPage: React.FC = () => {
             Категории и шаблоны ({categories.length})
           </button>
           <button
-            onClick={() => {
-              setSelectedTemplateId('');
-              setIsAddModalOpen(true);
-            }}
+            onClick={handleOpenAddModal}
             className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all self-start sm:self-auto"
           >
             <Plus className="w-4 h-4" />
@@ -498,27 +527,77 @@ export const OutfitsPage: React.FC = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Инвентарный номер</label>
-              <input
-                type="text"
-                placeholder="EQ-HLM-003"
-                value={newOutfitForm.inventoryNumber}
-                onChange={(e) => setNewOutfitForm({ ...newOutfitForm, inventoryNumber: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-slate-100"
-              />
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold">
+                Инвентарный номер
+              </label>
+              <div className="flex items-center gap-1 text-[11px]">
+                <span className="text-slate-400 text-[10px]">Пресеты:</span>
+                {['EQ-', 'ЭК-', 'ШЛЕМ-', 'СУМКА-'].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => handlePrefixChange(p)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition ${
+                      outfitPrefix === p
+                        ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Залоговая стоимость (₽) *</label>
-              <input
-                type="number"
-                min="0"
-                value={newOutfitForm.depositValue}
-                onChange={(e) => setNewOutfitForm({ ...newOutfitForm, depositValue: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-slate-100"
-              />
+
+            <div className="flex items-center gap-2">
+              <div className="w-24 shrink-0">
+                <input
+                  type="text"
+                  placeholder="Префикс"
+                  value={outfitPrefix}
+                  onChange={(e) => handlePrefixChange(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold font-mono text-center text-xs focus:border-emerald-500 focus:outline-none"
+                  title="Префикс инвентарного номера (например, EQ- или ЭК-)"
+                />
+              </div>
+
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="EQ-001"
+                  value={newOutfitForm.inventoryNumber}
+                  onChange={(e) => setNewOutfitForm({ ...newOutfitForm, inventoryNumber: e.target.value })}
+                  className="w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-slate-100 font-bold text-sm focus:border-emerald-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextNum = calculateNextOutfitNumber(outfitPrefix);
+                    setNewOutfitForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition"
+                  title="Подобрать следующий свободный номер для этого префикса"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Префикс подбирает следующий номер по порядку (русский или английский). Можно свободно править руками.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Залоговая стоимость (₽) *</label>
+            <input
+              type="number"
+              min="0"
+              value={newOutfitForm.depositValue}
+              onChange={(e) => setNewOutfitForm({ ...newOutfitForm, depositValue: Number(e.target.value) })}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-slate-100"
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-emerald-500/15">

@@ -20,8 +20,10 @@ import {
   LayoutGrid,
   Table as TableIcon,
   ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
 export const BatteriesPage: React.FC = () => {
   const [batteries, setBatteries] = useState<Battery[]>([]);
@@ -45,13 +47,36 @@ export const BatteriesPage: React.FC = () => {
     description: '',
   });
 
-  // Modal: Create Battery
+  // Modal: Create Battery & Prefix state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [batteryPrefix, setBatteryPrefix] = useState<string>(() => getStoredPrefix('battery', 'BAT-'));
   const [createForm, setCreateForm] = useState({
     modelId: '',
     serialNumber: '',
     notes: '',
   });
+
+  const calculateNextBatteryNumber = (prefixToUse: string, batteryList: Battery[] = batteries) => {
+    const existing = batteryList.map((b) => b.serialNumber);
+    return getNextSequentialNumber(existing, prefixToUse, 3);
+  };
+
+  const handlePrefixChange = (newPrefix: string) => {
+    setBatteryPrefix(newPrefix);
+    setStoredPrefix('battery', newPrefix);
+    const nextNum = calculateNextBatteryNumber(newPrefix);
+    setCreateForm((prev) => ({ ...prev, serialNumber: nextNum }));
+  };
+
+  const handleOpenCreateModal = () => {
+    const nextNum = calculateNextBatteryNumber(batteryPrefix);
+    setCreateForm((prev) => ({
+      ...prev,
+      modelId: prev.modelId || batteryModels[0]?.id || '',
+      serialNumber: nextNum,
+    }));
+    setIsCreateModalOpen(true);
+  };
 
   // Modal: Edit Battery
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -160,10 +185,15 @@ export const BatteriesPage: React.FC = () => {
     try {
       await api.createBattery(createForm);
       toast.success(`Аккумулятор ${createForm.serialNumber} успешно оприходован`);
+      const nextNum = getNextSequentialNumber(
+        [...batteries.map((b) => b.serialNumber), createForm.serialNumber],
+        batteryPrefix,
+        3
+      );
       setIsCreateModalOpen(false);
       setCreateForm((prev) => ({
         ...prev,
-        serialNumber: '',
+        serialNumber: nextNum,
         notes: '',
       }));
       loadData();
@@ -461,12 +491,7 @@ export const BatteriesPage: React.FC = () => {
           </button>
 
           <button
-            onClick={() => {
-              if (batteryModels.length > 0 && !createForm.modelId) {
-                setCreateForm((prev) => ({ ...prev, modelId: batteryModels[0].id }));
-              }
-              setIsCreateModalOpen(true);
-            }}
+            onClick={handleOpenCreateModal}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm transition shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -963,17 +988,66 @@ export const BatteriesPage: React.FC = () => {
             })()}
 
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Серийный номер *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Например: BAT-001, SN6021004"
-                value={createForm.serialNumber}
-                onChange={(e) => setCreateForm({ ...createForm, serialNumber: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none font-bold"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold">
+                  Серийный номер / Код *
+                </label>
+                <div className="flex items-center gap-1 text-[11px]">
+                  <span className="text-slate-400 text-[10px]">Пресеты:</span>
+                  {['BAT-', 'АКБ-', 'БАТ-'].map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => handlePrefixChange(p)}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition ${
+                        batteryPrefix === p
+                          ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="w-24 shrink-0">
+                  <input
+                    type="text"
+                    placeholder="Префикс"
+                    value={batteryPrefix}
+                    onChange={(e) => handlePrefixChange(e.target.value)}
+                    className="w-full px-2.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-bold font-mono text-center text-xs focus:border-emerald-500 focus:outline-none"
+                    title="Префикс серийного номера (например, BAT- или АКБ-)"
+                  />
+                </div>
+
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Например: BAT-001 или заводской SN"
+                    value={createForm.serialNumber}
+                    onChange={(e) => setCreateForm({ ...createForm, serialNumber: e.target.value })}
+                    className="w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none font-bold"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextNum = calculateNextBatteryNumber(batteryPrefix);
+                      setCreateForm((prev) => ({ ...prev, serialNumber: nextNum }));
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition"
+                    title="Подобрать следующий свободный номер для этого префикса"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                Префикс подбирает следующий номер (русский или английский). Также можно стереть и вставить заводской номер с корпуса.
+              </p>
             </div>
 
             <div>
