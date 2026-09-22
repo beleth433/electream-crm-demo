@@ -149,6 +149,7 @@ export class RentalRepository {
     outfitIds: string[];
     batteryIds?: string[];
     paymentMethod: PaymentMethod;
+    rentalNumber?: string;
     customDeposit?: number;
     notes?: string;
   }) {
@@ -190,7 +191,9 @@ export class RentalRepository {
 
     const now = new Date();
     const expiresAt = new Date(now.getTime() + tariff.durationDays * 86400000);
-    const rentalNumber = `RNT-${now.getFullYear()}-${(db.rentals.length + 1).toString().padStart(3, "0")}`;
+    const rentalNumber = data.rentalNumber && data.rentalNumber.trim()
+      ? data.rentalNumber.trim()
+      : `RNT-${now.getFullYear()}-${(db.rentals.length + 1).toString().padStart(3, "0")}`;
     const depositAmount = data.customDeposit !== undefined ? data.customDeposit : tariff.depositRequired;
 
     // 6. Create Rental record

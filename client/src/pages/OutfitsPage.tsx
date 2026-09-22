@@ -520,7 +520,7 @@ export const OutfitsPage: React.FC = () => {
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} ({c.id})
+                    {c.name}
                   </option>
                 ))}
               </select>
@@ -534,7 +534,7 @@ export const OutfitsPage: React.FC = () => {
               </label>
               <div className="flex items-center gap-1 text-[11px]">
                 <span className="text-slate-400 text-[10px]">Пресеты:</span>
-                {['EQ-', 'ЭК-', 'ШЛЕМ-', 'СУМКА-'].map((p) => (
+                {['EQ-', 'ЭК-'].map((p) => (
                   <button
                     key={p}
                     type="button"
@@ -686,7 +686,6 @@ export const OutfitsPage: React.FC = () => {
                   <thead className="bg-slate-50/80 dark:bg-[#08100c] text-slate-500 dark:text-emerald-400/80 border-b border-slate-200 dark:border-emerald-500/15">
                     <tr>
                       <th className="p-3 font-semibold">Название</th>
-                      <th className="p-3 font-semibold">Код / ID</th>
                       <th className="p-3 font-semibold text-center">Предметов на складе</th>
                       <th className="p-3 font-semibold text-right">Действия</th>
                     </tr>
@@ -696,9 +695,6 @@ export const OutfitsPage: React.FC = () => {
                       <tr key={cat.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
                         <td className="p-3 font-bold text-slate-900 dark:text-white">
                           {cat.name}
-                        </td>
-                        <td className="p-3 font-mono text-slate-500 dark:text-slate-400">
-                          {cat.id}
                         </td>
                         <td className="p-3 text-center">
                           <span
@@ -778,7 +774,7 @@ export const OutfitsPage: React.FC = () => {
                     >
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.name} ({c.id})
+                          {c.name}
                         </option>
                       ))}
                     </select>

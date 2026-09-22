@@ -17,6 +17,7 @@ export class RepairService {
   static createRepair(data: {
     bikeId: string;
     mechanicId?: string;
+    orderNumber?: string;
     faultType: RepairFaultType;
     description: string;
     laborCost?: number;

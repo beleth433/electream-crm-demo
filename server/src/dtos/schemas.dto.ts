@@ -77,6 +77,7 @@ export const RentalCreateDto = z.object({
   outfitIds: z.array(z.string()).optional().default([]),
   batteryIds: z.array(z.string()).optional().default([]),
   paymentMethod: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),
+  rentalNumber: z.string().optional(),
   customDeposit: z.number().optional(),
   notes: z.string().optional(),
 });
@@ -117,6 +118,7 @@ export const OutfitCreateDto = z.object({
 export const RepairCreateDto = z.object({
   bikeId: z.string().min(1, "Байк обязателен"),
   mechanicId: z.string().optional(),
+  orderNumber: z.string().optional(),
   faultType: z.enum(["COMPANY_EXPENSE", "CLIENT_FAULT"]).default("COMPANY_EXPENSE"),
   description: z.string().min(5, "Описание дефекта обязательно"),
   laborCost: z.number().min(0).optional().default(0),

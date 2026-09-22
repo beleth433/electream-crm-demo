@@ -164,6 +164,7 @@ export const api = {
     outfitIds: string[];
     batteryIds?: string[];
     paymentMethod: string;
+    rentalNumber?: string;
     customDeposit?: number;
     notes?: string;
   }) => fetchJson<Rental>('/rentals', { method: 'POST', body: JSON.stringify(data) }),
@@ -232,6 +233,7 @@ export const api = {
   getRepair: (id: string) => fetchJson<RepairOrder>(`/repairs/${id}`),
   createRepair: (data: {
     bikeId: string;
+    orderNumber?: string;
     faultType: string;
     description: string;
     laborCost?: number;
@@ -373,6 +375,7 @@ export const api = {
       price?: number;
     }>;
     paymentMethod: string;
+    orderNumber?: string;
     notes?: string | null;
   }) =>
     fetchJson<{ success: boolean; message: string; order: RetailOrder }>('/shop/orders', {

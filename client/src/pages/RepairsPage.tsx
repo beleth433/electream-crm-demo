@@ -15,8 +15,10 @@ import {
   Shield,
   FileText,
   DollarSign,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
 export const RepairsPage: React.FC = () => {
   const [repairs, setRepairs] = useState<RepairOrder[]>([]);
@@ -25,14 +27,40 @@ export const RepairsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-  // Create Order Modal
+  // Create Order Modal & Prefix State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [repairPrefix, setRepairPrefix] = useState<string>(() => getStoredPrefix('repair', 'ЗН-'));
   const [createForm, setCreateForm] = useState({
     bikeId: '',
+    orderNumber: '',
     faultType: 'COMPANY_EXPENSE' as RepairFaultType,
     description: '',
     laborCost: 0,
   });
+
+  const calculateNextRepairNumber = (prefixToUse: string, repairList: RepairOrder[] = repairs) => {
+    const existing = repairList.map((r) => r.orderNumber);
+    return getNextSequentialNumber(existing, prefixToUse, 3);
+  };
+
+  const handlePrefixChange = (newPrefix: string) => {
+    setRepairPrefix(newPrefix);
+    setStoredPrefix('repair', newPrefix);
+    const nextNum = calculateNextRepairNumber(newPrefix);
+    setCreateForm((prev) => ({ ...prev, orderNumber: nextNum }));
+  };
+
+  const handleOpenCreateModal = () => {
+    const nextNum = calculateNextRepairNumber(repairPrefix);
+    setCreateForm({
+      bikeId: bikes[0]?.id || '',
+      orderNumber: nextNum,
+      faultType: 'COMPANY_EXPENSE',
+      description: '',
+      laborCost: 0,
+    });
+    setIsCreateModalOpen(true);
+  };
 
   // Complete Order Modal
   const [completingRepair, setCompletingRepair] = useState<RepairOrder | null>(null);
@@ -73,9 +101,15 @@ export const RepairsPage: React.FC = () => {
     try {
       await api.createRepair(createForm);
       toast.success('Заказ-наряд СТО успешно создан! Байк переведен в статус IN_MAINTENANCE.');
+      const nextNum = getNextSequentialNumber(
+        [...repairs.map((r) => r.orderNumber), createForm.orderNumber],
+        repairPrefix,
+        3
+      );
       setIsCreateModalOpen(false);
       setCreateForm({
         bikeId: bikes[0]?.id || '',
+        orderNumber: nextNum,
         faultType: 'COMPANY_EXPENSE',
         description: '',
         laborCost: 0,
@@ -150,7 +184,7 @@ export const RepairsPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={handleOpenCreateModal}
           className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
@@ -307,6 +341,69 @@ export const RepairsPage: React.FC = () => {
         maxWidth="md"
       >
         <form onSubmit={handleCreateRepair} className="space-y-3 text-xs">
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold">
+                Номер заказ-наряда *
+              </label>
+              <div className="flex items-center gap-1 text-[11px]">
+                <span className="text-slate-400 text-[10px]">Пресеты:</span>
+                {['ЗН-', 'REP-', 'СТО-'].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => handlePrefixChange(p)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition ${
+                      repairPrefix === p
+                        ? 'bg-sky-600 text-white font-bold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="w-24 shrink-0">
+                <input
+                  type="text"
+                  placeholder="Префикс"
+                  value={repairPrefix}
+                  onChange={(e) => handlePrefixChange(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold font-mono text-center text-xs focus:border-sky-500 focus:outline-none"
+                  title="Префикс номера наряда (например, ЗН- или REP-)"
+                />
+              </div>
+
+              <div className="flex-1 relative">
+                <input
+                  required
+                  type="text"
+                  placeholder="ЗН-001"
+                  value={createForm.orderNumber}
+                  onChange={(e) => setCreateForm({ ...createForm, orderNumber: e.target.value })}
+                  className="w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-slate-900 dark:text-slate-100 font-bold text-sm focus:border-sky-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextNum = calculateNextRepairNumber(repairPrefix);
+                    setCreateForm((prev) => ({ ...prev, orderNumber: nextNum }));
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-sky-500 transition"
+                  title="Подобрать следующий свободный номер для этого префикса"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Префикс подбирает следующий номер по порядку. Можно свободно править вручную.
+            </p>
+          </div>
+
           <div>
             <label className="block text-slate-500 mb-1">Электровелосипед *</label>
             <select

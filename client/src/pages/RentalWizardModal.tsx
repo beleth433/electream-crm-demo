@@ -16,8 +16,10 @@ import {
   AlertTriangle,
   Snowflake,
   UploadCloud,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
 interface RentalWizardModalProps {
   isOpen: boolean;
@@ -62,7 +64,10 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   const [selectedBatteryIds, setSelectedBatteryIds] = useState<string[]>([]);
   const [selectedOutfitIds, setSelectedOutfitIds] = useState<string[]>([]);
 
-  // Step 3: Tariff, deposit, payment method
+  // Step 3: Tariff, deposit, payment method, contract prefix
+  const [allRentals, setAllRentals] = useState<Rental[]>([]);
+  const [rentalPrefix, setRentalPrefix] = useState<string>(() => getStoredPrefix('rental', 'ДОГ-'));
+  const [rentalNumber, setRentalNumber] = useState<string>('');
   const [selectedTariffId, setSelectedTariffId] = useState<string>('');
   const [customDeposit, setCustomDeposit] = useState<number>(3000);
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'SBP' | 'BANK_TRANSFER'>('CASH');
@@ -77,6 +82,18 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     price: 6000,
     depositRequired: 5000,
   });
+
+  const calculateNextRentalNumber = (prefixToUse: string, rentalList: Rental[] = allRentals) => {
+    const existing = rentalList.map((r) => r.rentalNumber);
+    return getNextSequentialNumber(existing, prefixToUse, 3);
+  };
+
+  const handleRentalPrefixChange = (newPrefix: string) => {
+    setRentalPrefix(newPrefix);
+    setStoredPrefix('rental', newPrefix);
+    const nextNum = calculateNextRentalNumber(newPrefix);
+    setRentalNumber(nextNum);
+  };
 
   // Load initial options when modal opens
   useEffect(() => {
@@ -97,13 +114,22 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         api.getAvailableOutfits(),
         api.getRentalTariffs(),
         api.getBatteries(),
+        api.getRentals(),
       ])
-        .then(([clientsRes, bikesRes, outfitsRes, tariffsRes, batteriesRes]) => {
+        .then(([clientsRes, bikesRes, outfitsRes, tariffsRes, batteriesRes, rentalsRes]) => {
           setClients(clientsRes);
           setAvailableBikes(bikesRes);
           setAvailableOutfits(outfitsRes);
           setTariffs(tariffsRes);
           setAllBatteries(batteriesRes);
+          setAllRentals(rentalsRes);
+
+          const nextNum = getNextSequentialNumber(
+            rentalsRes.map((r) => r.rentalNumber),
+            rentalPrefix,
+            3
+          );
+          setRentalNumber(nextNum);
 
           if (tariffsRes.length > 0) {
             setSelectedTariffId(tariffsRes[0].id);
@@ -230,6 +256,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         outfitIds: selectedOutfitIds,
         batteryIds: selectedBatteryIds,
         paymentMethod,
+        rentalNumber: rentalNumber.trim() ? rentalNumber.trim() : undefined,
         customDeposit: Number(customDeposit),
         notes,
       });
@@ -945,6 +972,70 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
             </div>
           )}
 
+          {/* Contract / Rental Number with Prefix */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                Номер договора аренды *
+              </label>
+              <div className="flex items-center gap-1 text-[11px]">
+                <span className="text-slate-400 text-[10px]">Пресеты:</span>
+                {['ДОГ-', 'RNT-', 'АР-'].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => handleRentalPrefixChange(p)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition ${
+                      rentalPrefix === p
+                        ? 'bg-sky-600 text-white font-bold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="w-24 shrink-0">
+                <input
+                  type="text"
+                  placeholder="Префикс"
+                  value={rentalPrefix}
+                  onChange={(e) => handleRentalPrefixChange(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold font-mono text-center text-xs focus:border-sky-500 focus:outline-none"
+                  title="Префикс договора аренды (например, ДОГ- или RNT-)"
+                />
+              </div>
+
+              <div className="flex-1 relative">
+                <input
+                  required
+                  type="text"
+                  placeholder="ДОГ-001"
+                  value={rentalNumber}
+                  onChange={(e) => setRentalNumber(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-slate-900 dark:text-slate-100 font-bold text-xs focus:border-sky-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextNum = calculateNextRentalNumber(rentalPrefix);
+                    setRentalNumber(nextNum);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-sky-500 transition"
+                  title="Подобрать следующий свободный номер для этого префикса"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Префикс подбирает следующий номер договора по порядку. Можно свободно править вручную.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
               <label className="block text-slate-500 mb-1">
@@ -990,6 +1081,10 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
 
           {/* Checkout Summary Box */}
           <div className="p-4 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white space-y-2 text-xs">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-700">
+              <span className="text-slate-400">Договор:</span>
+              <span className="font-mono font-bold text-sky-400">{rentalNumber || 'Авто'}</span>
+            </div>
             <div className="flex justify-between items-center pb-2 border-b border-slate-700">
               <span className="text-slate-400">Курьер:</span>
               <span className="font-bold">{selectedClient?.fullName}</span>

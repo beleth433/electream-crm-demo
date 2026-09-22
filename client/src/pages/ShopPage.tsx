@@ -26,6 +26,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
 interface CartItem {
   itemType: 'BIKE' | 'PART' | 'OUTFIT';
@@ -50,14 +51,28 @@ export const ShopPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'BIKES' | 'PARTS' | 'OUTFITS'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Cart State
+  // Cart & Order State
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [shopOrderPrefix, setShopOrderPrefix] = useState<string>(() => getStoredPrefix('shop', 'ЧЕК-'));
+  const [shopOrderNumber, setShopOrderNumber] = useState<string>('');
   const [customerType, setCustomerType] = useState<'GUEST' | 'CLIENT' | 'EXTERNAL'>('GUEST');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('SBP');
   const [orderNotes, setOrderNotes] = useState('');
+
+  const calculateNextShopOrderNumber = (prefixToUse: string, orderList: RetailOrder[] = orders) => {
+    const existing = orderList.map((o) => o.orderNumber);
+    return getNextSequentialNumber(existing, prefixToUse, 3);
+  };
+
+  const handleShopPrefixChange = (newPrefix: string) => {
+    setShopOrderPrefix(newPrefix);
+    setStoredPrefix('shop', newPrefix);
+    const nextNum = calculateNextShopOrderNumber(newPrefix);
+    setShopOrderNumber(nextNum);
+  };
 
   // Printable Receipt Modal
   const [printedOrder, setPrintedOrder] = useState<RetailOrder | null>(null);
@@ -69,6 +84,12 @@ export const ShopPage: React.FC = () => {
         setCatalog(catalogData);
         setOrders(ordersData);
         setClients(clientsData);
+        const nextNum = getNextSequentialNumber(
+          ordersData.map((o) => o.orderNumber),
+          shopOrderPrefix,
+          3
+        );
+        setShopOrderNumber(nextNum);
       })
       .catch((err) => toast.error('Ошибка загрузки данных магазина: ' + err.message))
       .finally(() => setIsLoading(false));
@@ -190,10 +211,17 @@ export const ShopPage: React.FC = () => {
           price: i.price,
         })),
         paymentMethod,
+        orderNumber: shopOrderNumber.trim() ? shopOrderNumber.trim() : undefined,
         notes: orderNotes.trim() || undefined,
       });
 
       toast.success(res.message);
+      const nextNum = getNextSequentialNumber(
+        [...orders.map((o) => o.orderNumber), res.order.orderNumber],
+        shopOrderPrefix,
+        3
+      );
+      setShopOrderNumber(nextNum);
       setCart([]);
       setCustomerName('');
       setCustomerPhone('');
@@ -679,6 +707,66 @@ export const ShopPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Order / Receipt Number with Prefix */}
+              <div className="pt-2 border-t border-slate-200 dark:border-emerald-500/15 space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider block">
+                    Номер чека / продажи:
+                  </span>
+                  <div className="flex items-center gap-1 text-[10px]">
+                    <span className="text-slate-400">Пресеты:</span>
+                    {['ЧЕК-', 'ORD-', 'ПР-'].map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => handleShopPrefixChange(p)}
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition ${
+                          shopOrderPrefix === p
+                            ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                            : 'bg-slate-100 dark:bg-[#101d17] text-slate-600 dark:text-slate-400 hover:text-white border border-slate-200 dark:border-emerald-500/10'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="w-24 shrink-0">
+                    <input
+                      type="text"
+                      placeholder="Префикс"
+                      value={shopOrderPrefix}
+                      onChange={(e) => handleShopPrefixChange(e.target.value)}
+                      className="w-full px-2 py-1.5 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold font-mono text-center text-xs text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                      title="Префикс чека (например, ЧЕК- или ORD-)"
+                    />
+                  </div>
+
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      placeholder="ЧЕК-001"
+                      value={shopOrderNumber}
+                      onChange={(e) => setShopOrderNumber(e.target.value)}
+                      className="w-full pl-3 pr-8 py-1.5 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-white font-bold text-xs focus:border-emerald-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextNum = calculateNextShopOrderNumber(shopOrderPrefix);
+                        setShopOrderNumber(nextNum);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-400 transition"
+                      title="Подобрать следующий свободный номер чека"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Payment Method */}

@@ -82,15 +82,15 @@
       "id": "bike-1790100410944",
       "inventoryNumber": "ЭВ-001",
       "modelId": "mdl-1790100370284",
-      "batteryId": null,
+      "batteryId": "bat-1790100534376",
       "frameNumber": null,
       "motorNumber": null,
-      "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
+      "status": "RENTED",
+      "currentLocation": "В аренде у Александр Андреевич Кузнецов",
       "mileageKm": 0,
       "note": null,
       "createdAt": "2026-09-22T18:06:50.944Z",
-      "updatedAt": "2026-09-22T18:06:50.944Z"
+      "updatedAt": "2026-09-22T19:10:34.486Z"
     },
     {
       "id": "bike-1790100415623",
@@ -172,11 +172,11 @@
       "voltage": 60,
       "capacityAh": 30,
       "chemistry": "Li-ion",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
+      "status": "INSTALLED",
+      "installedBikeId": "bike-1790100410944",
       "notes": null,
       "createdAt": "2026-09-22T18:08:54.376Z",
-      "updatedAt": "2026-09-22T18:08:54.376Z"
+      "updatedAt": "2026-09-22T19:10:34.486Z"
     },
     {
       "id": "bat-1790100541495",
@@ -186,11 +186,11 @@
       "voltage": 60,
       "capacityAh": 30,
       "chemistry": "Li-ion",
-      "status": "AVAILABLE",
+      "status": "ISSUED_SPARE",
       "installedBikeId": null,
       "notes": null,
       "createdAt": "2026-09-22T18:09:01.495Z",
-      "updatedAt": "2026-09-22T18:09:01.495Z"
+      "updatedAt": "2026-09-22T19:10:34.486Z"
     },
     {
       "id": "bat-1790100543564",
@@ -291,7 +291,16 @@
       "updatedAt": "2026-09-22T18:09:59.534Z"
     }
   ],
-  "outfits": [],
+  "outfits": [
+    {
+      "id": "outfit-1790120086433",
+      "name": "Держатель смартфона hoco",
+      "category": "cat-1790119454641",
+      "inventoryNumber": "ЭК-001",
+      "depositValue": 0,
+      "status": "IN_STOCK"
+    }
+  ],
   "outfitCategories": [
     {
       "id": "HELMET",
@@ -304,32 +313,30 @@
       "isSystem": true
     },
     {
-      "id": "BAG",
-      "name": "Термосумки и кофры",
-      "isSystem": true
-    },
-    {
-      "id": "BATTERY",
-      "name": "Дополнительные АКБ",
-      "isSystem": true
-    },
-    {
       "id": "CHARGER",
       "name": "Зарядные устройства",
-      "isSystem": true
-    },
-    {
-      "id": "PHONE_HOLDER",
-      "name": "Держатели смартфона",
       "isSystem": true
     },
     {
       "id": "WINTER_GLOVES",
       "name": "Зимние муфты и перчатки",
       "isSystem": true
+    },
+    {
+      "id": "cat-1790119454641",
+      "name": "Держатель смартфона",
+      "isSystem": false
     }
   ],
-  "outfitTemplates": [],
+  "outfitTemplates": [
+    {
+      "id": "tmpl-1790119717906",
+      "name": "Держатель смартфона hoco",
+      "categoryId": "cat-1790119454641",
+      "defaultDeposit": 0,
+      "description": null
+    }
+  ],
   "clients": [
     {
       "id": "cli-1790100640539",
@@ -395,6 +402,29 @@
       "outfitIds": [],
       "createdAt": "2026-09-22T18:38:23.961Z",
       "updatedAt": "2026-09-22T18:38:23.961Z"
+    },
+    {
+      "id": "rnt-1790104234486",
+      "rentalNumber": "RNT-2026-002",
+      "clientId": "cli-1790100658244",
+      "bikeId": "bike-1790100410944",
+      "tariffId": "trf-1790102254558",
+      "managerId": "usr-mgr-1",
+      "status": "ACTIVE",
+      "type": "STANDARD",
+      "startedAt": "2026-09-22T19:10:34.486Z",
+      "expiresAt": "2026-09-29T19:10:34.486Z",
+      "nextPaymentDue": "2026-09-29T19:10:34.486Z",
+      "depositAmount": 0,
+      "depositRefunded": false,
+      "notes": null,
+      "outfitIds": [],
+      "batteryIds": [
+        "bat-1790100534376",
+        "bat-1790100541495"
+      ],
+      "createdAt": "2026-09-22T19:10:34.486Z",
+      "updatedAt": "2026-09-22T19:10:34.486Z"
     }
   ],
   "repairs": [],
@@ -407,6 +437,15 @@
       "method": "SBP",
       "description": "Оплата тарифа \"Недельный\" по договору RNT-2026-001",
       "createdAt": "2026-09-22T18:38:23.961Z"
+    },
+    {
+      "id": "pay-1790104234487-1",
+      "rentalId": "rnt-1790104234486",
+      "type": "RENTAL",
+      "amount": 3500,
+      "method": "SBP",
+      "description": "Оплата тарифа \"Недельный\" по договору RNT-2026-002",
+      "createdAt": "2026-09-22T19:10:34.486Z"
     }
   ],
   "reviews": [],
@@ -416,9 +455,9 @@
       "id": "emp-1790100947687",
       "fullName": "Андрей Сергеевич Кузнецов ",
       "phone": "+7 3242342352344",
-      "email": null,
+      "email": "",
       "role": "Механик",
-      "salaryType": "MONTHLY",
+      "salaryType": "PIECEWORK",
       "salaryAmount": 30000,
       "status": "ACTIVE",
       "hiredAt": "2026-09-22",

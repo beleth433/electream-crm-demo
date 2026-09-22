@@ -337,7 +337,7 @@ function loadFromDisk(): DBStore {
           bikes: parsed.bikes || [],
           batteries: parsed.batteries || [],
           outfits: parsed.outfits || [],
-          outfitCategories: parsed.outfitCategories && parsed.outfitCategories.length > 0 ? parsed.outfitCategories : defaultDb.outfitCategories,
+          outfitCategories: Array.isArray(parsed.outfitCategories) ? parsed.outfitCategories : defaultDb.outfitCategories,
           outfitTemplates: parsed.outfitTemplates || [],
           clients: parsed.clients || [],
           tariffs: parsed.tariffs || [],

@@ -63,6 +63,7 @@ export class RepairRepository {
   static create(data: {
     bikeId: string;
     mechanicId?: string;
+    orderNumber?: string;
     faultType: RepairFaultType;
     description: string;
     laborCost?: number;
@@ -73,7 +74,9 @@ export class RepairRepository {
     if (!bike) throw new Error("Байк не найден");
 
     const now = new Date();
-    const orderNumber = `REP-${now.getFullYear()}-${(db.repairs.length + 1).toString().padStart(3, "0")}`;
+    const orderNumber = data.orderNumber && data.orderNumber.trim()
+      ? data.orderNumber.trim()
+      : `REP-${now.getFullYear()}-${(db.repairs.length + 1).toString().padStart(3, "0")}`;
 
     // Calculate initial parts cost
     let partsCost = 0;

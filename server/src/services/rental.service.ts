@@ -38,6 +38,7 @@ export class RentalService {
     outfitIds: string[];
     batteryIds?: string[];
     paymentMethod: PaymentMethod;
+    rentalNumber?: string;
     customDeposit?: number;
     notes?: string;
   }) {

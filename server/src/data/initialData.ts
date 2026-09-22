@@ -44,13 +44,12 @@ export const INITIAL_ARTICLES: any[] = [];
 export const INITIAL_RETAIL_ORDERS: any[] = [];
 
 export const INITIAL_OUTFIT_CATEGORIES = [
-  { id: "HELMET", name: "Шлемы и защита", isSystem: true },
-  { id: "LOCK", name: "Замки и безопасность", isSystem: true },
-  { id: "BAG", name: "Термосумки и кофры", isSystem: true },
-  { id: "BATTERY", name: "Дополнительные АКБ", isSystem: true },
-  { id: "CHARGER", name: "Зарядные устройства", isSystem: true },
-  { id: "PHONE_HOLDER", name: "Держатели смартфона", isSystem: true },
-  { id: "WINTER_GLOVES", name: "Зимние муфты и перчатки", isSystem: true },
+  { id: "cat-helmet", name: "Шлемы и защита", isSystem: false },
+  { id: "cat-lock", name: "Замки и безопасность", isSystem: false },
+  { id: "cat-bag", name: "Термосумки и кофры", isSystem: false },
+  { id: "cat-charger", name: "Зарядные устройства", isSystem: false },
+  { id: "cat-phone-holder", name: "Держатели смартфона", isSystem: false },
+  { id: "cat-winter-gloves", name: "Зимние муфты и перчатки", isSystem: false },
 ];
 
 export const INITIAL_TARIFFS: any[] = [];

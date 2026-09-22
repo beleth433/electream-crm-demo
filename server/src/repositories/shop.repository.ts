@@ -19,6 +19,7 @@ export interface CreateOrderDto {
     price?: number;
   }>;
   paymentMethod: PaymentMethod;
+  orderNumber?: string;
   notes?: string | null;
 }
 
@@ -196,7 +197,9 @@ export class ShopRepository {
       }
     }
 
-    const orderNumber = `ORD-${Date.now().toString().slice(-6)}`;
+    const orderNumber = data.orderNumber && data.orderNumber.trim()
+      ? data.orderNumber.trim()
+      : `ORD-${Date.now().toString().slice(-6)}`;
     const profit = totalAmount - totalCost;
 
     const order: RetailOrderRecord = {

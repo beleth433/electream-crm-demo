@@ -12,8 +12,10 @@ import {
   Layers,
   PackagePlus,
   Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
 export const InventoryPage: React.FC = () => {
   const [parts, setParts] = useState<Part[]>([]);
@@ -25,8 +27,9 @@ export const InventoryPage: React.FC = () => {
   const [restockPart, setRestockPart] = useState<Part | null>(null);
   const [quantityToAdd, setQuantityToAdd] = useState<number>(5);
 
-  // Add Part Modal
+  // Add Part Modal & Prefix State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [partPrefix, setPartPrefix] = useState<string>(() => getStoredPrefix('part', 'PRT-'));
   const [newPartForm, setNewPartForm] = useState({
     name: '',
     sku: '',
@@ -35,6 +38,31 @@ export const InventoryPage: React.FC = () => {
     purchasePrice: 500,
     clientPrice: 1200,
   });
+
+  const calculateNextPartSku = (prefixToUse: string, partList: Part[] = parts) => {
+    const existing = partList.map((p) => p.sku);
+    return getNextSequentialNumber(existing, prefixToUse, 3);
+  };
+
+  const handlePrefixChange = (newPrefix: string) => {
+    setPartPrefix(newPrefix);
+    setStoredPrefix('part', newPrefix);
+    const nextNum = calculateNextPartSku(newPrefix);
+    setNewPartForm((prev) => ({ ...prev, sku: nextNum }));
+  };
+
+  const handleOpenAddModal = () => {
+    const nextNum = calculateNextPartSku(partPrefix);
+    setNewPartForm({
+      name: '',
+      sku: nextNum,
+      quantity: 10,
+      minQuantity: 3,
+      purchasePrice: 500,
+      clientPrice: 1200,
+    });
+    setIsAddModalOpen(true);
+  };
 
   const loadData = () => {
     setIsLoading(true);
@@ -63,10 +91,15 @@ export const InventoryPage: React.FC = () => {
         clientPrice: Number(newPartForm.clientPrice),
       });
       toast.success(`Деталь "${newPartForm.name}" добавлена на склад!`);
+      const nextNum = getNextSequentialNumber(
+        [...parts.map((p) => p.sku), newPartForm.sku],
+        partPrefix,
+        3
+      );
       setIsAddModalOpen(false);
       setNewPartForm({
         name: '',
-        sku: '',
+        sku: nextNum,
         quantity: 10,
         minQuantity: 3,
         purchasePrice: 500,
@@ -121,7 +154,7 @@ export const InventoryPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={handleOpenAddModal}
           className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
@@ -311,15 +344,66 @@ export const InventoryPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-slate-500 mb-1">Артикул (SKU) *</label>
-            <input
-              required
-              type="text"
-              placeholder="SKU-BRAKE-02"
-              value={newPartForm.sku}
-              onChange={(e) => setNewPartForm({ ...newPartForm, sku: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold">
+                Артикул (SKU) *
+              </label>
+              <div className="flex items-center gap-1 text-[11px]">
+                <span className="text-slate-400 text-[10px]">Пресеты:</span>
+                {['PRT-', 'ЗЧ-', 'ДЕТ-'].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => handlePrefixChange(p)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold transition ${
+                      partPrefix === p
+                        ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="w-24 shrink-0">
+                <input
+                  type="text"
+                  placeholder="Префикс"
+                  value={partPrefix}
+                  onChange={(e) => handlePrefixChange(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold font-mono text-center text-xs focus:border-emerald-500 focus:outline-none"
+                  title="Префикс артикула (например, PRT- или русский ЗЧ-)"
+                />
+              </div>
+
+              <div className="flex-1 relative">
+                <input
+                  required
+                  type="text"
+                  placeholder="PRT-001"
+                  value={newPartForm.sku}
+                  onChange={(e) => setNewPartForm({ ...newPartForm, sku: e.target.value })}
+                  className="w-full pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-slate-900 dark:text-slate-100 font-bold text-sm focus:border-emerald-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextNum = calculateNextPartSku(partPrefix);
+                    setNewPartForm((prev) => ({ ...prev, sku: nextNum }));
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition"
+                  title="Подобрать следующий свободный номер для этого префикса"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Префикс подбирает следующий артикул по порядку. Можно свободно править вручную.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
