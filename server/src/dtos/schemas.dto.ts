@@ -58,6 +58,17 @@ export const ClientUpdateDto = z.object({
   blackListReason: z.string().optional().nullable(),
 });
 
+export const TariffCreateDto = z.object({
+  name: z.string().min(2, "Название тарифа обязательно"),
+  type: z.enum(["STANDARD", "RENT_TO_OWN"]).default("STANDARD"),
+  durationDays: z.number().int().positive("Срок аренды должен быть больше 0 дней"),
+  price: z.number().min(0, "Стоимость аренды должна быть >= 0"),
+  depositRequired: z.number().min(0, "Сумма залога должна быть >= 0").default(0),
+  isActive: z.boolean().optional().default(true),
+});
+
+export const TariffUpdateDto = TariffCreateDto.partial();
+
 export const RentalCreateDto = z.object({
   clientId: z.string().min(1, "Курьер обязателен"),
   bikeId: z.string().min(1, "Байк обязателен"),

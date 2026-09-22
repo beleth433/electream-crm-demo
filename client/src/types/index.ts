@@ -330,7 +330,7 @@ export interface Employee {
   phone: string;
   email?: string | null;
   role: string;
-  salaryType: 'MONTHLY' | 'PER_SHIFT';
+  salaryType: 'MONTHLY' | 'PER_SHIFT' | 'PIECEWORK';
   salaryAmount: number;
   status: 'ACTIVE' | 'ON_LEAVE' | 'DISMISSED';
   hiredAt: string;

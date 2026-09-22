@@ -237,7 +237,7 @@ export interface EmployeeRecord {
   phone: string;
   email?: string | null;
   role: string;
-  salaryType: "MONTHLY" | "PER_SHIFT";
+  salaryType: "MONTHLY" | "PER_SHIFT" | "PIECEWORK";
   salaryAmount: number;
   status: "ACTIVE" | "ON_LEAVE" | "DISMISSED";
   hiredAt: string;
@@ -309,7 +309,7 @@ export const createDefaultEmptyDb = (): DBStore => ({
   outfitCategories: JSON.parse(JSON.stringify(INITIAL_OUTFIT_CATEGORIES)),
   outfitTemplates: [],
   clients: [],
-  tariffs: JSON.parse(JSON.stringify(INITIAL_TARIFFS)),
+  tariffs: [],
   parts: [],
   rentals: [],
   repairs: [],
@@ -339,7 +339,7 @@ function loadFromDisk(): DBStore {
           outfitCategories: parsed.outfitCategories && parsed.outfitCategories.length > 0 ? parsed.outfitCategories : defaultDb.outfitCategories,
           outfitTemplates: parsed.outfitTemplates || [],
           clients: parsed.clients || [],
-          tariffs: parsed.tariffs && parsed.tariffs.length > 0 ? parsed.tariffs : defaultDb.tariffs,
+          tariffs: parsed.tariffs || [],
           parts: parsed.parts || [],
           rentals: parsed.rentals || [],
           repairs: parsed.repairs || [],
@@ -469,6 +469,7 @@ export const clearDb = () => {
   rawDb.models = [];
   rawDb.batteryModels = [];
   rawDb.outfitTemplates = [];
+  rawDb.tariffs = [];
   saveDb(true);
 };
 

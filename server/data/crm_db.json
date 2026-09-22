@@ -28,10 +28,269 @@
       "isActive": true
     }
   ],
-  "models": [],
-  "batteryModels": [],
-  "bikes": [],
-  "batteries": [],
+  "models": [
+    {
+      "id": "mdl-1790100370284",
+      "name": "Monster",
+      "powerWatts": 840,
+      "wheelSizeInch": 16,
+      "description": null
+    },
+    {
+      "id": "mdl-1790100378109",
+      "name": "U2",
+      "powerWatts": 1240,
+      "wheelSizeInch": 16,
+      "description": null
+    },
+    {
+      "id": "mdl-1790100384471",
+      "name": "U5",
+      "powerWatts": 1240,
+      "wheelSizeInch": 16,
+      "description": null
+    }
+  ],
+  "batteryModels": [
+    {
+      "id": "bat-mdl-1790100453807",
+      "name": "Монстры",
+      "voltage": 60,
+      "capacityAh": 30,
+      "chemistry": "Li-ion",
+      "description": null
+    },
+    {
+      "id": "bat-mdl-1790100490191",
+      "name": "Юшки фосфат",
+      "voltage": 60,
+      "capacityAh": 45,
+      "chemistry": "LiFePO4",
+      "description": null
+    },
+    {
+      "id": "bat-mdl-1790100501973",
+      "name": "Юшки лион",
+      "voltage": 60,
+      "capacityAh": 70,
+      "chemistry": "Li-ion",
+      "description": null
+    }
+  ],
+  "bikes": [
+    {
+      "id": "bike-1790100410944",
+      "inventoryNumber": "ЭВ-001",
+      "modelId": "mdl-1790100370284",
+      "batteryId": null,
+      "frameNumber": null,
+      "motorNumber": null,
+      "status": "AVAILABLE",
+      "currentLocation": "Центральная база (м. Дмитровская)",
+      "mileageKm": 0,
+      "note": null,
+      "createdAt": "2026-09-22T18:06:50.944Z",
+      "updatedAt": "2026-09-22T18:06:50.944Z"
+    },
+    {
+      "id": "bike-1790100415623",
+      "inventoryNumber": "ЭВ-002",
+      "modelId": "mdl-1790100370284",
+      "batteryId": null,
+      "frameNumber": null,
+      "motorNumber": null,
+      "status": "AVAILABLE",
+      "currentLocation": "Центральная база (м. Дмитровская)",
+      "mileageKm": 0,
+      "note": null,
+      "createdAt": "2026-09-22T18:06:55.623Z",
+      "updatedAt": "2026-09-22T18:06:55.623Z"
+    },
+    {
+      "id": "bike-1790100417566",
+      "inventoryNumber": "ЭВ-003",
+      "modelId": "mdl-1790100370284",
+      "batteryId": null,
+      "frameNumber": null,
+      "motorNumber": null,
+      "status": "AVAILABLE",
+      "currentLocation": "Центральная база (м. Дмитровская)",
+      "mileageKm": 0,
+      "note": null,
+      "createdAt": "2026-09-22T18:06:57.566Z",
+      "updatedAt": "2026-09-22T18:06:57.566Z"
+    },
+    {
+      "id": "bike-1790100422931",
+      "inventoryNumber": "ЭВ-004",
+      "modelId": "mdl-1790100378109",
+      "batteryId": null,
+      "frameNumber": null,
+      "motorNumber": null,
+      "status": "AVAILABLE",
+      "currentLocation": "Центральная база (м. Дмитровская)",
+      "mileageKm": 0,
+      "note": null,
+      "createdAt": "2026-09-22T18:07:02.931Z",
+      "updatedAt": "2026-09-22T18:07:02.931Z"
+    },
+    {
+      "id": "bike-1790100426433",
+      "inventoryNumber": "ЭВ-005",
+      "modelId": "mdl-1790100378109",
+      "batteryId": null,
+      "frameNumber": null,
+      "motorNumber": null,
+      "status": "AVAILABLE",
+      "currentLocation": "Центральная база (м. Дмитровская)",
+      "mileageKm": 0,
+      "note": null,
+      "createdAt": "2026-09-22T18:07:06.433Z",
+      "updatedAt": "2026-09-22T18:07:06.433Z"
+    },
+    {
+      "id": "bike-1790100429836",
+      "inventoryNumber": "ЭВ-006",
+      "modelId": "mdl-1790100384471",
+      "batteryId": "bat-1790100572673",
+      "frameNumber": null,
+      "motorNumber": null,
+      "status": "AVAILABLE",
+      "currentLocation": "Центральная база (м. Дмитровская)",
+      "mileageKm": 0,
+      "note": null,
+      "createdAt": "2026-09-22T18:07:09.836Z",
+      "updatedAt": "2026-09-22T18:09:59.535Z"
+    }
+  ],
+  "batteries": [
+    {
+      "id": "bat-1790100534376",
+      "serialNumber": "АКБ-001",
+      "modelId": "bat-mdl-1790100453807",
+      "modelName": "Монстры",
+      "voltage": 60,
+      "capacityAh": 30,
+      "chemistry": "Li-ion",
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "notes": null,
+      "createdAt": "2026-09-22T18:08:54.376Z",
+      "updatedAt": "2026-09-22T18:08:54.376Z"
+    },
+    {
+      "id": "bat-1790100541495",
+      "serialNumber": "АКБ-002",
+      "modelId": "bat-mdl-1790100453807",
+      "modelName": "Монстры",
+      "voltage": 60,
+      "capacityAh": 30,
+      "chemistry": "Li-ion",
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "notes": null,
+      "createdAt": "2026-09-22T18:09:01.495Z",
+      "updatedAt": "2026-09-22T18:09:01.495Z"
+    },
+    {
+      "id": "bat-1790100543564",
+      "serialNumber": "АКБ-003",
+      "modelId": "bat-mdl-1790100453807",
+      "modelName": "Монстры",
+      "voltage": 60,
+      "capacityAh": 30,
+      "chemistry": "Li-ion",
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "notes": null,
+      "createdAt": "2026-09-22T18:09:03.564Z",
+      "updatedAt": "2026-09-22T18:09:03.564Z"
+    },
+    {
+      "id": "bat-1790100547248",
+      "serialNumber": "АКБ-004",
+      "modelId": "bat-mdl-1790100453807",
+      "modelName": "Монстры",
+      "voltage": 60,
+      "capacityAh": 30,
+      "chemistry": "Li-ion",
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "notes": null,
+      "createdAt": "2026-09-22T18:09:07.248Z",
+      "updatedAt": "2026-09-22T18:09:07.248Z"
+    },
+    {
+      "id": "bat-1790100548373",
+      "serialNumber": "АКБ-005",
+      "modelId": "bat-mdl-1790100453807",
+      "modelName": "Монстры",
+      "voltage": 60,
+      "capacityAh": 30,
+      "chemistry": "Li-ion",
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "notes": null,
+      "createdAt": "2026-09-22T18:09:08.373Z",
+      "updatedAt": "2026-09-22T18:09:08.373Z"
+    },
+    {
+      "id": "bat-1790100549530",
+      "serialNumber": "АКБ-006",
+      "modelId": "bat-mdl-1790100453807",
+      "modelName": "Монстры",
+      "voltage": 60,
+      "capacityAh": 30,
+      "chemistry": "Li-ion",
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "notes": null,
+      "createdAt": "2026-09-22T18:09:09.530Z",
+      "updatedAt": "2026-09-22T18:09:09.530Z"
+    },
+    {
+      "id": "bat-1790100562677",
+      "serialNumber": "АКБ-007",
+      "modelId": "bat-mdl-1790100490191",
+      "modelName": "Юшки фосфат",
+      "voltage": 60,
+      "capacityAh": 45,
+      "chemistry": "LiFePO4",
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "notes": null,
+      "createdAt": "2026-09-22T18:09:22.677Z",
+      "updatedAt": "2026-09-22T18:09:22.677Z"
+    },
+    {
+      "id": "bat-1790100568313",
+      "serialNumber": "АКБ-008",
+      "modelId": "bat-mdl-1790100490191",
+      "modelName": "Юшки фосфат",
+      "voltage": 60,
+      "capacityAh": 45,
+      "chemistry": "LiFePO4",
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "notes": null,
+      "createdAt": "2026-09-22T18:09:28.313Z",
+      "updatedAt": "2026-09-22T18:09:28.313Z"
+    },
+    {
+      "id": "bat-1790100572673",
+      "serialNumber": "АКБ-009",
+      "modelId": "bat-mdl-1790100501973",
+      "modelName": "Юшки лион",
+      "voltage": 60,
+      "capacityAh": 70,
+      "chemistry": "Li-ion",
+      "status": "INSTALLED",
+      "installedBikeId": "bike-1790100429836",
+      "notes": null,
+      "createdAt": "2026-09-22T18:09:32.673Z",
+      "updatedAt": "2026-09-22T18:09:59.534Z"
+    }
+  ],
   "outfits": [],
   "outfitCategories": [
     {
@@ -71,45 +330,41 @@
     }
   ],
   "outfitTemplates": [],
-  "clients": [],
-  "tariffs": [
+  "clients": [
     {
-      "id": "trf-1",
-      "name": "Суточный (Тест-драйв)",
-      "type": "STANDARD",
-      "durationDays": 1,
-      "price": 1200,
-      "depositRequired": 3000,
-      "isActive": true
+      "id": "cli-1790100640539",
+      "fullName": "Иван Иванович Иванов",
+      "phone": "+7999999991",
+      "telegram": null,
+      "passportSerial": null,
+      "passportNumber": null,
+      "citizenship": "РФ",
+      "migrationCard": null,
+      "patentNumber": null,
+      "courierService": "Яндекс Еда",
+      "documentPhotoUrls": [],
+      "status": "NORMAL",
+      "blackListReason": null,
+      "createdAt": "2026-09-22T18:10:40.539Z"
     },
     {
-      "id": "trf-2",
-      "name": "Недельный рабочий (7 дней)",
-      "type": "STANDARD",
-      "durationDays": 7,
-      "price": 6000,
-      "depositRequired": 5000,
-      "isActive": true
-    },
-    {
-      "id": "trf-3",
-      "name": "Месячный оптимал (30 дней)",
-      "type": "STANDARD",
-      "durationDays": 30,
-      "price": 21000,
-      "depositRequired": 7000,
-      "isActive": true
-    },
-    {
-      "id": "trf-4",
-      "name": "Выкуп байка Rent-to-Own (9 месяцев)",
-      "type": "RENT_TO_OWN",
-      "durationDays": 30,
-      "price": 25000,
-      "depositRequired": 10000,
-      "isActive": true
+      "id": "cli-1790100658244",
+      "fullName": "Александр Андреевич Кузнецов",
+      "phone": "1212423423423423",
+      "telegram": null,
+      "passportSerial": null,
+      "passportNumber": null,
+      "citizenship": "РФ",
+      "migrationCard": null,
+      "patentNumber": null,
+      "courierService": "Яндекс Еда",
+      "documentPhotoUrls": [],
+      "status": "NORMAL",
+      "blackListReason": null,
+      "createdAt": "2026-09-22T18:10:58.244Z"
     }
   ],
+  "tariffs": [],
   "parts": [],
   "rentals": [],
   "repairs": [],
@@ -118,52 +373,28 @@
   "articles": [],
   "employees": [
     {
-      "id": "emp-1",
-      "fullName": "Иван Ковалев",
-      "phone": "+7 (999) 222-33-44",
-      "email": "manager@ebike-crm.ru",
-      "role": "Менеджер смены",
+      "id": "emp-1790100947687",
+      "fullName": "Андрей Сергеевич Кузнецов ",
+      "phone": "+7 3242342352344",
+      "email": null,
+      "role": "Механик",
       "salaryType": "MONTHLY",
-      "salaryAmount": 75000,
+      "salaryAmount": 30000,
       "status": "ACTIVE",
-      "hiredAt": "2025-10-01",
-      "notes": "Ответственный за выдачу/прием техники и кассовые операции"
+      "hiredAt": "2026-09-22",
+      "notes": "Механик"
     },
     {
-      "id": "emp-2",
-      "fullName": "Алексей Смирнов",
-      "phone": "+7 (999) 333-44-55",
-      "email": "mechanic@ebike-crm.ru",
-      "role": "Старший мастер СТО",
-      "salaryType": "PER_SHIFT",
-      "salaryAmount": 3800,
-      "status": "ACTIVE",
-      "hiredAt": "2025-11-15",
-      "notes": "Диагностика электроники, сборка АКБ, сложный ремонт моторов"
-    },
-    {
-      "id": "emp-3",
-      "fullName": "Рустам Алиев",
-      "phone": "+7 (999) 444-55-66",
-      "email": "rustam.tech@ebike-crm.ru",
-      "role": "Помощник механика",
+      "id": "emp-1790100885318",
+      "fullName": "Максимов Максим",
+      "phone": "+7 3423423423423",
+      "email": null,
+      "role": "Владелец",
       "salaryType": "MONTHLY",
-      "salaryAmount": 55000,
+      "salaryAmount": 30000,
       "status": "ACTIVE",
-      "hiredAt": "2026-01-10",
-      "notes": "Шиномонтаж, регламентная замена колодок и цепей"
-    },
-    {
-      "id": "emp-4",
-      "fullName": "Дмитрий Орлов",
-      "phone": "+7 (999) 111-22-33",
-      "email": "admin@ebike-crm.ru",
-      "role": "Управляющий базой",
-      "salaryType": "MONTHLY",
-      "salaryAmount": 95000,
-      "status": "ACTIVE",
-      "hiredAt": "2025-09-01",
-      "notes": "Руководитель филиала, контроль парка и финансового баланса"
+      "hiredAt": "2026-09-22",
+      "notes": null
     }
   ],
   "retailOrders": []

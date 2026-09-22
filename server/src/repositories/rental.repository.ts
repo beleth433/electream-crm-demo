@@ -84,6 +84,59 @@ export class RentalRepository {
     return getDb().tariffs;
   }
 
+  static createTariff(data: {
+    name: string;
+    type?: RentalType;
+    durationDays: number;
+    price: number;
+    depositRequired?: number;
+    isActive?: boolean;
+  }) {
+    const db = getDb();
+    const newTariff = {
+      id: `trf-${Date.now()}`,
+      name: data.name,
+      type: data.type || ("STANDARD" as RentalType),
+      durationDays: data.durationDays,
+      price: data.price,
+      depositRequired: data.depositRequired ?? 0,
+      isActive: data.isActive ?? true,
+    };
+    db.tariffs.push(newTariff);
+    return newTariff;
+  }
+
+  static updateTariff(id: string, data: Partial<{
+    name: string;
+    type: RentalType;
+    durationDays: number;
+    price: number;
+    depositRequired: number;
+    isActive: boolean;
+  }>) {
+    const db = getDb();
+    const tariff = db.tariffs.find((t) => t.id === id);
+    if (!tariff) throw new Error("Тариф не найден");
+    Object.assign(tariff, data);
+    return tariff;
+  }
+
+  static deleteTariff(id: string) {
+    const db = getDb();
+    const inUse = db.rentals.some(
+      (r) => r.tariffId === id && (r.status === "ACTIVE" || r.status === "OVERDUE")
+    );
+    if (inUse) {
+      throw new Error(
+        "Нельзя удалить шаблон, так как по нему есть активные договоры аренды. Вы можете деактивировать его."
+      );
+    }
+    const idx = db.tariffs.findIndex((t) => t.id === id);
+    if (idx === -1) throw new Error("Тариф не найден");
+    db.tariffs.splice(idx, 1);
+    return { success: true, message: "Шаблон тарифа удален" };
+  }
+
   static create(data: {
     clientId: string;
     bikeId: string;

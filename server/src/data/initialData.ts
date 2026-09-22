@@ -53,44 +53,7 @@ export const INITIAL_OUTFIT_CATEGORIES = [
   { id: "WINTER_GLOVES", name: "Зимние муфты и перчатки", isSystem: true },
 ];
 
-export const INITIAL_TARIFFS = [
-  {
-    id: "trf-1",
-    name: "Суточный (Тест-драйв)",
-    type: "STANDARD" as const,
-    durationDays: 1,
-    price: 1200,
-    depositRequired: 3000,
-    isActive: true,
-  },
-  {
-    id: "trf-2",
-    name: "Недельный рабочий (7 дней)",
-    type: "STANDARD" as const,
-    durationDays: 7,
-    price: 6000,
-    depositRequired: 5000,
-    isActive: true,
-  },
-  {
-    id: "trf-3",
-    name: "Месячный оптимал (30 дней)",
-    type: "STANDARD" as const,
-    durationDays: 30,
-    price: 21000,
-    depositRequired: 7000,
-    isActive: true,
-  },
-  {
-    id: "trf-4",
-    name: "Выкуп байка Rent-to-Own (9 месяцев)",
-    type: "RENT_TO_OWN" as const,
-    durationDays: 30,
-    price: 25000,
-    depositRequired: 10000,
-    isActive: true,
-  },
-];
+export const INITIAL_TARIFFS: any[] = [];
 
 export const INITIAL_EMPLOYEES = [
   {

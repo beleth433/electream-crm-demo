@@ -66,6 +66,16 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'SBP' | 'BANK_TRANSFER'>('CASH');
   const [notes, setNotes] = useState('');
 
+  // Inline Tariff Creation state
+  const [isCreatingTariff, setIsCreatingTariff] = useState(false);
+  const [newTariffForm, setNewTariffForm] = useState({
+    name: '',
+    type: 'STANDARD' as 'STANDARD' | 'RENT_TO_OWN',
+    durationDays: 7,
+    price: 6000,
+    depositRequired: 5000,
+  });
+
   // Load initial options when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -75,6 +85,8 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       setSelectedOutfitIds([]);
       setPhoneQuery('');
       setIsCreatingClient(false);
+      setIsCreatingTariff(false);
+      setSelectedTariffId('');
 
       Promise.all([
         api.getClients(),
@@ -128,6 +140,30 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     const trf = tariffs.find((t) => t.id === tariffId);
     if (trf) {
       setCustomDeposit(trf.depositRequired);
+    }
+  };
+
+  const handleCreateTariffInline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+      const created = await api.createRentalTariff(newTariffForm);
+      setTariffs((prev) => [...prev, created]);
+      setSelectedTariffId(created.id);
+      setCustomDeposit(created.depositRequired);
+      setIsCreatingTariff(false);
+      setNewTariffForm({
+        name: '',
+        type: 'STANDARD',
+        durationDays: 7,
+        price: 6000,
+        depositRequired: 5000,
+      });
+      toast.success(`Шаблон тарифа "${created.name}" создан и выбран!`);
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка создания шаблона');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -637,32 +673,165 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       {/* STEP 3: Tariff, Deposit and Checkout */}
       {step === 3 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {tariffs.map((tariff) => {
-              const isSelected = selectedTariffId === tariff.id;
-              return (
-                <div
-                  key={tariff.id}
-                  onClick={() => handleTariffChange(tariff.id)}
-                  className={`p-3 rounded-xl border text-center cursor-pointer transition-all ${
-                    isSelected
-                      ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 ring-2 ring-sky-400/20'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40'
-                  }`}
-                >
-                  <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                    {tariff.name}
-                  </p>
-                  <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">
-                    {tariff.price.toLocaleString('ru-RU')} ₽
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
-                    {tariff.durationDays} {tariff.durationDays === 1 ? 'день' : 'дней'}
+          {/* Tariffs selection or inline creation */}
+          {tariffs.length === 0 || isCreatingTariff ? (
+            <div className="p-4 rounded-xl border border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-xs text-amber-900 dark:text-amber-200">
+                    {tariffs.length === 0 ? 'Нет созданных шаблонов аренды' : 'Создание нового шаблона тарифа'}
+                  </h4>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                    {tariffs.length === 0
+                      ? 'Создайте шаблон сейчас, и он сразу применится к этой выдаче'
+                      : 'Заполните параметры тарифа для сохранения в CRM'}
                   </p>
                 </div>
-              );
-            })}
-          </div>
+                {tariffs.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingTariff(false)}
+                    className="text-xs text-slate-500 hover:text-slate-700"
+                  >
+                    Отмена
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleCreateTariffInline} className="space-y-3 pt-1">
+                <div>
+                  <label className="block text-slate-500 mb-1 text-[11px]">Название тарифа *</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="Например: Недельный рабочий, Месячный..."
+                    value={newTariffForm.name}
+                    onChange={(e) => setNewTariffForm({ ...newTariffForm, name: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-slate-500 mb-1 text-[11px]">Тип аренды *</label>
+                    <select
+                      value={newTariffForm.type}
+                      onChange={(e) =>
+                        setNewTariffForm({
+                          ...newTariffForm,
+                          type: e.target.value as 'STANDARD' | 'RENT_TO_OWN',
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                    >
+                      <option value="STANDARD">Обычная аренда</option>
+                      <option value="RENT_TO_OWN">Аренда с правом выкупа</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 mb-1 text-[11px]">Срок аренды (дней) *</label>
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      value={newTariffForm.durationDays}
+                      onChange={(e) =>
+                        setNewTariffForm({ ...newTariffForm, durationDays: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-slate-500 mb-1 text-[11px]">Стоимость аренды (₽) *</label>
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={newTariffForm.price}
+                      onChange={(e) =>
+                        setNewTariffForm({ ...newTariffForm, price: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-emerald-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 mb-1 text-[11px]">Залог (₽) *</label>
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      step="500"
+                      value={newTariffForm.depositRequired}
+                      onChange={(e) =>
+                        setNewTariffForm({ ...newTariffForm, depositRequired: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs shadow-sm"
+                  >
+                    Сохранить и выбрать тариф
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <label className="text-slate-500 font-semibold">Выберите шаблон тарифа:</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingTariff(true)}
+                  className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
+                >
+                  <Plus className="w-3 h-3" /> Новый шаблон
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {tariffs.map((tariff) => {
+                  const isSelected = selectedTariffId === tariff.id;
+                  return (
+                    <div
+                      key={tariff.id}
+                      onClick={() => handleTariffChange(tariff.id)}
+                      className={`p-3 rounded-xl border text-center cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 ring-2 ring-sky-400/20'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 hover:border-slate-300'
+                      }`}
+                    >
+                      <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate">
+                        {tariff.name}
+                      </p>
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">
+                        {tariff.price.toLocaleString('ru-RU')} ₽
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {tariff.durationDays} {tariff.durationDays === 1 ? 'день' : 'дней'}
+                      </p>
+                      {tariff.type === 'RENT_TO_OWN' && (
+                        <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold">
+                          Выкуп
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
@@ -743,9 +912,9 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
             </button>
             <button
               type="button"
-              disabled={isLoading}
+              disabled={isLoading || !selectedTariffId}
               onClick={handleSubmitCheckout}
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2"
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
               {isLoading ? 'Оформление...' : 'Оформить и сгенерировать акт'}

@@ -15,6 +15,7 @@ import {
   Star,
   CheckCircle,
   Trash2,
+  Edit2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,6 +44,51 @@ export const ClientsPage: React.FC = () => {
     patentNumber: '',
     courierService: 'Яндекс Еда',
   });
+
+  // Edit Courier Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [editClientForm, setEditClientForm] = useState({
+    fullName: '',
+    phone: '',
+    telegram: '',
+    passportSerial: '',
+    passportNumber: '',
+    citizenship: 'РФ',
+    migrationCard: '',
+    patentNumber: '',
+    courierService: 'Яндекс Еда',
+  });
+
+  const handleOpenEditModal = (client: Client) => {
+    setEditingClient(client);
+    setEditClientForm({
+      fullName: client.fullName || '',
+      phone: client.phone || '',
+      telegram: client.telegram || '',
+      passportSerial: client.passportSerial || '',
+      passportNumber: client.passportNumber || '',
+      citizenship: client.citizenship || 'РФ',
+      migrationCard: client.migrationCard || '',
+      patentNumber: client.patentNumber || '',
+      courierService: client.courierService || 'Яндекс Еда',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClient) return;
+    try {
+      await api.updateClient(editingClient.id, editClientForm as any);
+      toast.success(`Данные курьера ${editClientForm.fullName} успешно обновлены`);
+      setIsEditModalOpen(false);
+      setEditingClient(null);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка обновления данных курьера');
+    }
+  };
 
   const loadData = () => {
     setIsLoading(true);
@@ -275,6 +321,13 @@ export const ClientsPage: React.FC = () => {
                     <td className="p-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
+                          onClick={() => handleOpenEditModal(c)}
+                          title="Редактировать данные курьера"
+                          className="p-1 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleOpenStatusModal(c)}
                           className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
                         >
@@ -500,6 +553,160 @@ export const ClientsPage: React.FC = () => {
               className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-sm"
             >
               Зарегистрировать
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Edit Courier */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingClient(null);
+        }}
+        title="Редактирование данных курьера"
+        subtitle={editingClient ? `Курьер ID: ${editingClient.id}` : ''}
+        maxWidth="lg"
+      >
+        <form onSubmit={handleUpdateClient} className="space-y-3 text-xs">
+          <div>
+            <label className="block text-slate-500 mb-1">ФИО курьера полностью *</label>
+            <input
+              required
+              type="text"
+              placeholder="Азизов Бахром Искандерович"
+              value={editClientForm.fullName}
+              onChange={(e) => setEditClientForm({ ...editClientForm, fullName: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-500 mb-1">Номер телефона *</label>
+              <input
+                required
+                type="text"
+                placeholder="+7 (999) 000-00-00"
+                value={editClientForm.phone}
+                onChange={(e) => setEditClientForm({ ...editClientForm, phone: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-500 mb-1">Telegram (@username)</label>
+              <input
+                type="text"
+                placeholder="@courier_tg"
+                value={editClientForm.telegram}
+                onChange={(e) => setEditClientForm({ ...editClientForm, telegram: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-500 mb-1">Гражданство *</label>
+              <select
+                value={editClientForm.citizenship}
+                onChange={(e) => setEditClientForm({ ...editClientForm, citizenship: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
+              >
+                <option value="РФ">Российская Федерация (РФ)</option>
+                <option value="Узбекистан">Узбекистан</option>
+                <option value="Кыргызстан">Кыргызстан (ЕАЭС)</option>
+                <option value="Таджикистан">Таджикистан</option>
+                <option value="Беларусь">Беларусь (ЕАЭС)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-slate-500 mb-1">Служба доставки</label>
+              <select
+                value={editClientForm.courierService}
+                onChange={(e) => setEditClientForm({ ...editClientForm, courierService: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+              >
+                <option value="Яндекс Еда">Яндекс Еда / Маркет</option>
+                <option value="Самокат">Самокат</option>
+                <option value="Купер">Купер</option>
+                <option value="Частный курьер">Частный курьер</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-500 mb-1">Серия паспорта</label>
+              <input
+                type="text"
+                placeholder="4518 / FA"
+                value={editClientForm.passportSerial}
+                onChange={(e) => setEditClientForm({ ...editClientForm, passportSerial: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-500 mb-1">Номер паспорта</label>
+              <input
+                type="text"
+                placeholder="123456"
+                value={editClientForm.passportNumber}
+                onChange={(e) => setEditClientForm({ ...editClientForm, passportNumber: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+              />
+            </div>
+          </div>
+
+          {editClientForm.citizenship !== 'РФ' && (
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 space-y-2">
+              <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300">
+                Обязательные поля для иностранных граждан (СНГ / ЕАЭС):
+              </span>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-500 mb-1">Миграционная карта *</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="МК 77-00-123456"
+                    value={editClientForm.migrationCard}
+                    onChange={(e) => setEditClientForm({ ...editClientForm, migrationCard: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-500 mb-1">Патент / ЕАЭС *</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="ПАТ-77-991204"
+                    value={editClientForm.patentNumber}
+                    onChange={(e) => setEditClientForm({ ...editClientForm, patentNumber: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingClient(null);
+              }}
+              className="px-4 py-2 border border-slate-200 rounded-xl"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm"
+            >
+              Сохранить изменения
             </button>
           </div>
         </form>

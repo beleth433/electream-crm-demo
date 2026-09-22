@@ -18,6 +18,18 @@ export class RentalService {
     return RentalRepository.getTariffs();
   }
 
+  static createTariff(data: any) {
+    return RentalRepository.createTariff(data);
+  }
+
+  static updateTariff(id: string, data: any) {
+    return RentalRepository.updateTariff(id, data);
+  }
+
+  static deleteTariff(id: string) {
+    return RentalRepository.deleteTariff(id);
+  }
+
   static createRental(data: {
     clientId: string;
     bikeId: string;

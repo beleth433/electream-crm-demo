@@ -149,6 +149,12 @@ export const api = {
     return fetchJson<Rental[]>(`/rentals?${q.toString()}`);
   },
   getRentalTariffs: () => fetchJson<Tariff[]>('/rentals/tariffs'),
+  createRentalTariff: (data: Partial<Tariff>) =>
+    fetchJson<Tariff>('/rentals/tariffs', { method: 'POST', body: JSON.stringify(data) }),
+  updateRentalTariff: (id: string, data: Partial<Tariff>) =>
+    fetchJson<Tariff>(`/rentals/tariffs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteRentalTariff: (id: string) =>
+    fetchJson<{ success: boolean; message?: string }>(`/rentals/tariffs/${id}`, { method: 'DELETE' }),
   getRental: (id: string) => fetchJson<Rental>(`/rentals/${id}`),
   createRental: (data: {
     clientId: string;

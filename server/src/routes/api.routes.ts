@@ -63,6 +63,9 @@ router.delete("/clients/:id", ClientController.delete);
 
 // 5. Rentals
 router.get("/rentals/tariffs", RentalController.getTariffs);
+router.post("/rentals/tariffs", RentalController.createTariff);
+router.patch("/rentals/tariffs/:id", RentalController.updateTariff);
+router.delete("/rentals/tariffs/:id", RentalController.deleteTariff);
 router.get("/rentals", RentalController.getAll);
 router.get("/rentals/:id", RentalController.getById);
 router.post("/rentals", RentalController.create);

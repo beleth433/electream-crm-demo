@@ -32,9 +32,9 @@ export const EmployeesPage: React.FC = () => {
     fullName: '',
     phone: '',
     email: '',
-    role: 'Менеджер смены',
-    salaryType: 'MONTHLY' as 'MONTHLY' | 'PER_SHIFT',
-    salaryAmount: 70000,
+    role: '',
+    salaryType: 'MONTHLY' as 'MONTHLY' | 'PER_SHIFT' | 'PIECEWORK',
+    salaryAmount: 50000,
     status: 'ACTIVE' as 'ACTIVE' | 'ON_LEAVE' | 'DISMISSED',
     notes: '',
   });
@@ -65,9 +65,9 @@ export const EmployeesPage: React.FC = () => {
       fullName: '',
       phone: '+7 ',
       email: '',
-      role: 'Менеджер смены',
+      role: '',
       salaryType: 'MONTHLY',
-      salaryAmount: 70000,
+      salaryAmount: 50000,
       status: 'ACTIVE',
       notes: '',
     });
@@ -123,10 +123,14 @@ export const EmployeesPage: React.FC = () => {
     const defaultAmount =
       emp.salaryType === 'MONTHLY'
         ? Math.round(emp.salaryAmount / 2)
-        : emp.salaryAmount * 5;
+        : emp.salaryAmount;
     setPayoutAmount(defaultAmount);
     setPayoutComment(
-      emp.salaryType === 'MONTHLY' ? 'Аванс за текущий месяц' : 'Оплата отработанных смен'
+      emp.salaryType === 'MONTHLY'
+        ? 'Аванс за текущий месяц'
+        : emp.salaryType === 'PER_SHIFT'
+        ? 'Оплата отработанных смен'
+        : 'Оплата за выполненную работу / заказ'
     );
     setPayoutMethod('CASH');
     setIsPayoutModalOpen(true);
@@ -155,7 +159,7 @@ export const EmployeesPage: React.FC = () => {
   const activeEmployees = employees.filter((e) => e.status === 'ACTIVE').length;
   const totalMonthlyPayroll = employees.reduce((sum, e) => {
     if (e.status !== 'ACTIVE') return sum;
-    return sum + (e.salaryType === 'MONTHLY' ? e.salaryAmount : e.salaryAmount * 22);
+    return sum + (e.salaryType === 'MONTHLY' ? e.salaryAmount : e.salaryType === 'PER_SHIFT' ? e.salaryAmount * 22 : e.salaryAmount);
   }, 0);
   const totalPaidThisMonth = employees.reduce((sum, e) => sum + (e.thisMonthPaid || 0), 0);
 
@@ -333,7 +337,11 @@ export const EmployeesPage: React.FC = () => {
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/15">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                    {emp.salaryType === 'MONTHLY' ? 'Оклад в месяц' : 'Ставка за смену'}:
+                    {emp.salaryType === 'MONTHLY'
+                      ? 'Оклад в месяц'
+                      : emp.salaryType === 'PER_SHIFT'
+                      ? 'Ставка за смену'
+                      : 'Сдельная оплата'}:
                   </span>
                   <p className="text-sm font-black text-slate-900 dark:text-white">
                     {emp.salaryAmount.toLocaleString('ru-RU')} ₽
@@ -429,7 +437,7 @@ export const EmployeesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Role & Quick Presets */}
+          {/* Role (free-form text input) */}
           <div>
             <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
               Должность / Роль в сервисе *
@@ -437,30 +445,11 @@ export const EmployeesPage: React.FC = () => {
             <input
               required
               type="text"
-              placeholder="Старший мастер СТО, Менеджер..."
+              placeholder="Например: Механик, Мастер СТО, Администратор..."
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white mb-1.5"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
             />
-            {/* Quick role preset buttons */}
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                'Менеджер смены',
-                'Старший мастер СТО',
-                'Помощник механика',
-                'Управляющий базой',
-                'Ночной дежурный',
-              ].map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, role: r })}
-                  className="px-2 py-0.5 rounded-lg text-[10px] bg-slate-100 dark:bg-[#101d17] hover:bg-emerald-500/20 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-emerald-500/10 transition-all"
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Salary Type & Amount */}
@@ -474,18 +463,23 @@ export const EmployeesPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    salaryType: e.target.value as 'MONTHLY' | 'PER_SHIFT',
+                    salaryType: e.target.value as 'MONTHLY' | 'PER_SHIFT' | 'PIECEWORK',
                   })
                 }
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
               >
                 <option value="MONTHLY">Фиксированный оклад (в месяц)</option>
                 <option value="PER_SHIFT">Ставка за смену (выход)</option>
+                <option value="PIECEWORK">Сдельная (за объем / выполненную работу)</option>
               </select>
             </div>
             <div>
               <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
-                Сумма ставки (₽) *
+                {formData.salaryType === 'MONTHLY'
+                  ? 'Сумма оклада (₽) *'
+                  : formData.salaryType === 'PER_SHIFT'
+                  ? 'Ставка за смену (₽) *'
+                  : 'Базовая ставка (₽) *'}
               </label>
               <input
                 required
@@ -577,7 +571,11 @@ export const EmployeesPage: React.FC = () => {
                   {payoutEmployee.salaryAmount.toLocaleString('ru-RU')} ₽
                   <span className="text-[10px] font-normal text-slate-400">
                     {' '}
-                    /{payoutEmployee.salaryType === 'MONTHLY' ? 'мес' : 'смена'}
+                    /{payoutEmployee.salaryType === 'MONTHLY'
+                      ? 'мес'
+                      : payoutEmployee.salaryType === 'PER_SHIFT'
+                      ? 'смена'
+                      : 'сдельно'}
                   </span>
                 </p>
               </div>
