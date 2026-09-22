@@ -36,6 +36,7 @@ export class RentalService {
     tariffId: string;
     managerId: string;
     outfitIds: string[];
+    batteryIds?: string[];
     paymentMethod: PaymentMethod;
     customDeposit?: number;
     notes?: string;

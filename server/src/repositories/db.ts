@@ -176,6 +176,7 @@ export interface RentalRecord {
   depositRefunded: boolean;
   notes?: string | null;
   outfitIds: string[];
+  batteryIds?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

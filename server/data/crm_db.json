@@ -155,12 +155,12 @@
       "batteryId": "bat-1790100572673",
       "frameNumber": null,
       "motorNumber": null,
-      "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
+      "status": "RENTED",
+      "currentLocation": "В аренде у Иван Иванович Иванов",
       "mileageKm": 0,
       "note": null,
       "createdAt": "2026-09-22T18:07:09.836Z",
-      "updatedAt": "2026-09-22T18:09:59.535Z"
+      "updatedAt": "2026-09-22T18:38:23.961Z"
     }
   ],
   "batteries": [
@@ -364,11 +364,51 @@
       "createdAt": "2026-09-22T18:10:58.244Z"
     }
   ],
-  "tariffs": [],
+  "tariffs": [
+    {
+      "id": "trf-1790102254558",
+      "name": "Недельный",
+      "type": "STANDARD",
+      "durationDays": 7,
+      "price": 3500,
+      "depositRequired": 0,
+      "isActive": true
+    }
+  ],
   "parts": [],
-  "rentals": [],
+  "rentals": [
+    {
+      "id": "rnt-1790102303961",
+      "rentalNumber": "RNT-2026-001",
+      "clientId": "cli-1790100640539",
+      "bikeId": "bike-1790100429836",
+      "tariffId": "trf-1790102254558",
+      "managerId": "usr-mgr-1",
+      "status": "ACTIVE",
+      "type": "STANDARD",
+      "startedAt": "2026-09-22T18:38:23.961Z",
+      "expiresAt": "2026-09-29T18:38:23.961Z",
+      "nextPaymentDue": "2026-09-29T18:38:23.961Z",
+      "depositAmount": 0,
+      "depositRefunded": false,
+      "notes": null,
+      "outfitIds": [],
+      "createdAt": "2026-09-22T18:38:23.961Z",
+      "updatedAt": "2026-09-22T18:38:23.961Z"
+    }
+  ],
   "repairs": [],
-  "payments": [],
+  "payments": [
+    {
+      "id": "pay-1790102303961-1",
+      "rentalId": "rnt-1790102303961",
+      "type": "RENTAL",
+      "amount": 3500,
+      "method": "SBP",
+      "description": "Оплата тарифа \"Недельный\" по договору RNT-2026-001",
+      "createdAt": "2026-09-22T18:38:23.961Z"
+    }
+  ],
   "reviews": [],
   "articles": [],
   "employees": [

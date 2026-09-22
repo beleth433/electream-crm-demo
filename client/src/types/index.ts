@@ -237,6 +237,8 @@ export interface Rental {
   notes?: string | null;
   outfitIds: string[];
   outfits?: Outfit[];
+  batteryIds?: string[];
+  batteries?: Battery[];
   payments?: Payment[];
   createdAt: string;
   updatedAt: string;

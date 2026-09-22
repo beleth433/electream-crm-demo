@@ -23,11 +23,13 @@ export class RentalRepository {
       const tariff = db.tariffs.find((t) => t.id === r.tariffId);
       const outfits = db.outfits.filter((o) => r.outfitIds.includes(o.id));
       const payments = db.payments.filter((p) => p.rentalId === r.id);
+      const batteries = db.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
 
       return {
         ...r,
         client,
         bike: bike ? { ...bike, model: bikeModel, battery } : null,
+        batteries,
         tariff,
         outfits,
         payments,
@@ -67,12 +69,14 @@ export class RentalRepository {
     const tariff = db.tariffs.find((t) => t.id === r.tariffId);
     const outfits = db.outfits.filter((o) => r.outfitIds.includes(o.id));
     const payments = db.payments.filter((p) => p.rentalId === r.id);
+    const batteries = db.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
     const manager = db.users.find((u) => u.id === r.managerId);
 
     return {
       ...r,
       client,
       bike: bike ? { ...bike, model: bikeModel, battery } : null,
+      batteries,
       tariff,
       outfits,
       payments,
@@ -143,6 +147,7 @@ export class RentalRepository {
     tariffId: string;
     managerId: string;
     outfitIds: string[];
+    batteryIds?: string[];
     paymentMethod: PaymentMethod;
     customDeposit?: number;
     notes?: string;
@@ -174,12 +179,21 @@ export class RentalRepository {
       throw new Error(`Экипировка "${unavailableOutfit.name}" недоступна на складе (статус: ${unavailableOutfit.status})`);
     }
 
+    // 5. Verify Batteries
+    const requestedBatteryIds = data.batteryIds || [];
+    const batteries = db.batteries.filter((b) => requestedBatteryIds.includes(b.id));
+    for (const b of batteries) {
+      if (b.status !== "AVAILABLE" && b.installedBikeId !== bike.id && b.id !== bike.batteryId) {
+        throw new Error(`Аккумулятор ${b.serialNumber} недоступен для выдачи (текущий статус: ${b.status})`);
+      }
+    }
+
     const now = new Date();
     const expiresAt = new Date(now.getTime() + tariff.durationDays * 86400000);
     const rentalNumber = `RNT-${now.getFullYear()}-${(db.rentals.length + 1).toString().padStart(3, "0")}`;
     const depositAmount = data.customDeposit !== undefined ? data.customDeposit : tariff.depositRequired;
 
-    // 5. Create Rental record
+    // 6. Create Rental record
     const rental = {
       id: `rnt-${Date.now()}`,
       rentalNumber,
@@ -196,18 +210,38 @@ export class RentalRepository {
       depositRefunded: false,
       notes: data.notes || null,
       outfitIds: data.outfitIds,
+      batteryIds: requestedBatteryIds,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
     };
 
     db.rentals.push(rental);
 
-    // 6. Transition Bike status -> RENTED
+    // 7. Manage batteries assignment
+    // If bike currently has no battery and manager selected batteries, install the first one
+    if (!bike.batteryId && batteries.length > 0) {
+      const primaryBattery = batteries[0];
+      bike.batteryId = primaryBattery.id;
+      primaryBattery.status = "INSTALLED";
+      primaryBattery.installedBikeId = bike.id;
+      primaryBattery.updatedAt = now.toISOString();
+    }
+
+    // Any other batteries in requestedBatteryIds are marked ISSUED_SPARE
+    for (const b of batteries) {
+      if (b.id !== bike.batteryId) {
+        b.status = "ISSUED_SPARE";
+        b.installedBikeId = null;
+        b.updatedAt = now.toISOString();
+      }
+    }
+
+    // 8. Transition Bike status -> RENTED
     bike.status = "RENTED";
     bike.currentLocation = `В аренде у ${client.fullName}`;
     bike.updatedAt = now.toISOString();
 
-    // 7. Transition Outfits status -> ISSUED
+    // 9. Transition Outfits status -> ISSUED
     outfits.forEach((o) => {
       o.status = "ISSUED";
     });
@@ -379,6 +413,17 @@ export class RentalRepository {
     rental.updatedAt = now.toISOString();
     if (data.notes) {
       rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[Закрытие ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
+    }
+
+    // 5. Return spare batteries to AVAILABLE
+    if (rental.batteryIds && rental.batteryIds.length > 0) {
+      rental.batteryIds.forEach((bId) => {
+        const bat = db.batteries.find((b) => b.id === bId);
+        if (bat && bat.status === "ISSUED_SPARE") {
+          bat.status = "AVAILABLE";
+          bat.updatedAt = now.toISOString();
+        }
+      });
     }
 
     return {

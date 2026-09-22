@@ -162,6 +162,7 @@ export const api = {
     tariffId: string;
     managerId?: string;
     outfitIds: string[];
+    batteryIds?: string[];
     paymentMethod: string;
     customDeposit?: number;
     notes?: string;

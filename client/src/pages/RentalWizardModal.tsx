@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../components/Modal';
-import { Client, Bike, Tariff, Outfit, Rental } from '../types';
+import { Client, Bike, Tariff, Outfit, Rental, Battery } from '../types';
 import { api } from '../services/api';
 import {
   UserCheck,
@@ -38,6 +38,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   const [availableBikes, setAvailableBikes] = useState<Bike[]>([]);
   const [availableOutfits, setAvailableOutfits] = useState<Outfit[]>([]);
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
+  const [allBatteries, setAllBatteries] = useState<Battery[]>([]);
 
   // Wizard state
   // Step 1: Client selection or creation
@@ -56,8 +57,9 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     courierService: 'Яндекс Еда',
   });
 
-  // Step 2: Bike and Outfit selection
+  // Step 2: Bike, Batteries and Outfit selection
   const [selectedBikeId, setSelectedBikeId] = useState<string>('');
+  const [selectedBatteryIds, setSelectedBatteryIds] = useState<string[]>([]);
   const [selectedOutfitIds, setSelectedOutfitIds] = useState<string[]>([]);
 
   // Step 3: Tariff, deposit, payment method
@@ -82,6 +84,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       setStep(1);
       setSelectedClient(null);
       setSelectedBikeId('');
+      setSelectedBatteryIds([]);
       setSelectedOutfitIds([]);
       setPhoneQuery('');
       setIsCreatingClient(false);
@@ -93,12 +96,14 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         api.getBikes({ status: 'AVAILABLE' }),
         api.getAvailableOutfits(),
         api.getRentalTariffs(),
+        api.getBatteries(),
       ])
-        .then(([clientsRes, bikesRes, outfitsRes, tariffsRes]) => {
+        .then(([clientsRes, bikesRes, outfitsRes, tariffsRes, batteriesRes]) => {
           setClients(clientsRes);
           setAvailableBikes(bikesRes);
           setAvailableOutfits(outfitsRes);
           setTariffs(tariffsRes);
+          setAllBatteries(batteriesRes);
 
           if (tariffsRes.length > 0) {
             setSelectedTariffId(tariffsRes[0].id);
@@ -167,6 +172,21 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     }
   };
 
+  const handleSelectBike = (bike: Bike) => {
+    setSelectedBikeId(bike.id);
+    if (bike.batteryId) {
+      setSelectedBatteryIds([bike.batteryId]);
+    } else {
+      setSelectedBatteryIds([]);
+    }
+  };
+
+  const toggleBatterySelection = (batteryId: string) => {
+    setSelectedBatteryIds((prev) =>
+      prev.includes(batteryId) ? prev.filter((id) => id !== batteryId) : [...prev, batteryId]
+    );
+  };
+
   const toggleOutfit = (outfitId: string) => {
     setSelectedOutfitIds((prev) =>
       prev.includes(outfitId) ? prev.filter((id) => id !== outfitId) : [...prev, outfitId]
@@ -174,6 +194,13 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   };
 
   const selectedBike = availableBikes.find((b) => b.id === selectedBikeId);
+  const relevantBatteries = allBatteries.filter(
+    (b) =>
+      b.status === 'AVAILABLE' ||
+      (selectedBike && (b.installedBikeId === selectedBike.id || b.id === selectedBike.batteryId))
+  );
+  const selectedBatteries = allBatteries.filter((b) => selectedBatteryIds.includes(b.id));
+
   const selectedTariff = tariffs.find((t) => t.id === selectedTariffId);
   const totalDue = (selectedTariff?.price || 0) + Number(customDeposit || 0);
 
@@ -201,6 +228,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         bikeId: selectedBikeId,
         tariffId: selectedTariffId,
         outfitIds: selectedOutfitIds,
+        batteryIds: selectedBatteryIds,
         paymentMethod,
         customDeposit: Number(customDeposit),
         notes,
@@ -569,7 +597,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   return (
                     <div
                       key={bike.id}
-                      onClick={() => setSelectedBikeId(bike.id)}
+                      onClick={() => handleSelectBike(bike)}
                       className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                         isSelected
                           ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 ring-2 ring-sky-400/20'
@@ -605,6 +633,90 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Battery selection row */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <BatteryCharging className="w-4 h-4 text-emerald-500" />
+                <span>Выдаваемые аккумуляторы (АКБ):</span>
+              </label>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                {selectedBatteries.length > 0
+                  ? `Выбрано: ${selectedBatteries.length} шт.`
+                  : 'АКБ не выбран'}
+              </span>
+            </div>
+
+            {!selectedBikeId ? (
+              <div className="p-3 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 text-center">
+                Сначала выберите электровелосипед выше
+              </div>
+            ) : relevantBatteries.length === 0 ? (
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>На складе нет свободных аккумуляторов и на выбранном байке не установлен АКБ.</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {selectedBike?.battery
+                    ? 'Аккумулятор с велосипеда предвыбран автоматически. Вы можете также кликнуть дополнительный АКБ со склада для выдачи 2-го аккумулятора.'
+                    : 'На выбранном велосипеде нет аккумулятора. Выберите один или несколько аккумуляторов со склада:'}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                  {relevantBatteries.map((bat) => {
+                    const isSelected = selectedBatteryIds.includes(bat.id);
+                    const isBikeBat = selectedBike?.batteryId === bat.id || selectedBike?.id === bat.installedBikeId;
+                    return (
+                      <div
+                        key={bat.id}
+                        onClick={() => toggleBatterySelection(bat.id)}
+                        className={`p-2.5 rounded-xl border text-xs cursor-pointer transition-all flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/40 ring-2 ring-emerald-400/20'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-1 mb-1">
+                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                            {bat.serialNumber}
+                          </span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {isBikeBat && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300">
+                                На байке
+                              </span>
+                            )}
+                            <div
+                              className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                                isSelected
+                                  ? 'border-emerald-600 bg-emerald-600 text-white'
+                                  : 'border-slate-300 dark:border-slate-600'
+                              }`}
+                            >
+                              {isSelected && <Check className="w-3 h-3" />}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between mt-1">
+                          <span>
+                            {bat.voltage}V • {bat.capacityAh}Ah
+                          </span>
+                          {bat.chemistry && (
+                            <span className="font-mono text-[9px] px-1 py-0.2 bg-slate-100 dark:bg-slate-700/60 rounded">
+                              {bat.chemistry}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -887,6 +999,20 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               <span className="font-bold text-sky-400">
                 {selectedBike?.inventoryNumber} ({selectedBike?.model?.name})
               </span>
+            </div>
+            <div className="flex justify-between items-start pb-2 border-b border-slate-700">
+              <span className="text-slate-400">АКБ ({selectedBatteries.length} шт.):</span>
+              <div className="text-right">
+                {selectedBatteries.length > 0 ? (
+                  selectedBatteries.map((b) => (
+                    <div key={b.id} className="font-semibold text-emerald-400">
+                      {b.serialNumber} ({b.voltage}V {b.capacityAh}Ah)
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-amber-400 font-semibold">Без аккумулятора</span>
+                )}
+              </div>
             </div>
             <div className="flex justify-between items-center text-slate-300">
               <span>Стоимость тарифа:</span>
