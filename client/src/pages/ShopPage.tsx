@@ -56,7 +56,7 @@ export const ShopPage: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [shopOrderPrefix, setShopOrderPrefix] = useState<string>(() => getStoredPrefix('shop', 'ЧЕК-'));
   const [shopOrderNumber, setShopOrderNumber] = useState<string>('');
-  const [customerType, setCustomerType] = useState<'GUEST' | 'CLIENT' | 'EXTERNAL'>('GUEST');
+  const [customerType, setCustomerType] = useState<'GUEST' | 'CLIENT' | 'EXTERNAL'>('EXTERNAL');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('');
@@ -197,7 +197,19 @@ export const ShopPage: React.FC = () => {
   };
 
   // Calculations
-  const selectedClient = customerType === 'CLIENT' ? clients.find((c) => c.id === selectedClientId) : null;
+  const cleanedCustomerPhone = customerPhone.replace(/\D/g, '');
+  const matchedClientByPhone =
+    cleanedCustomerPhone.length >= 6
+      ? clients.find((c) => c.phone.replace(/\D/g, '') === cleanedCustomerPhone)
+      : null;
+
+  const selectedClient =
+    customerType === 'CLIENT'
+      ? clients.find((c) => c.id === selectedClientId)
+      : customerType !== 'GUEST'
+        ? matchedClientByPhone
+        : null;
+
   const loyaltyDiscountPercent = selectedClient?.loyaltyTier?.discountPartsPercent || 0;
 
   const rawTotalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -220,17 +232,18 @@ export const ShopPage: React.FC = () => {
       return;
     }
 
+    const effectiveClient = selectedClient;
     const finalCustomerName =
-      customerType === 'CLIENT'
-        ? customerName
-        : customerName.trim() || (customerType === 'GUEST' ? 'Розничный покупатель (Гость)' : 'Покупатель');
+      customerName.trim() ||
+      effectiveClient?.fullName ||
+      (customerType === 'GUEST' ? 'Розничный покупатель (Гость)' : 'Покупатель');
 
     try {
       const res = await api.createShopOrder({
-        customerType,
+        customerType: customerType === 'GUEST' ? 'GUEST' : effectiveClient ? 'CLIENT' : 'EXTERNAL',
         customerName: finalCustomerName,
-        customerPhone: customerPhone.trim() || undefined,
-        clientId: customerType === 'CLIENT' ? selectedClientId : undefined,
+        customerPhone: customerPhone.trim() || effectiveClient?.phone || undefined,
+        clientId: effectiveClient ? effectiveClient.id : undefined,
         items: cart.map((i) => {
           const discountPerItem =
             (i.itemType === 'PART' || i.itemType === 'OUTFIT') && loyaltyDiscountPercent > 0
@@ -742,14 +755,17 @@ export const ShopPage: React.FC = () => {
                 <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-[#101d17] rounded-xl border border-slate-200 dark:border-emerald-500/10">
                   <button
                     type="button"
-                    onClick={() => setCustomerType('GUEST')}
+                    onClick={() => {
+                      setCustomerType('EXTERNAL');
+                      setSelectedClientId('');
+                    }}
                     className={`py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      customerType === 'GUEST'
+                      customerType === 'EXTERNAL'
                         ? 'bg-white dark:bg-emerald-500 text-slate-900 dark:text-slate-950 shadow-sm'
                         : 'text-slate-500 hover:text-slate-300'
                     }`}
                   >
-                    Гость
+                    Покупатель
                   </button>
                   <button
                     type="button"
@@ -760,18 +776,21 @@ export const ShopPage: React.FC = () => {
                         : 'text-slate-500 hover:text-slate-300'
                     }`}
                   >
-                    Курьер CRM
+                    Из базы CRM
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCustomerType('EXTERNAL')}
+                    onClick={() => {
+                      setCustomerType('GUEST');
+                      setSelectedClientId('');
+                    }}
                     className={`py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      customerType === 'EXTERNAL'
+                      customerType === 'GUEST'
                         ? 'bg-white dark:bg-emerald-500 text-slate-900 dark:text-slate-950 shadow-sm'
                         : 'text-slate-500 hover:text-slate-300'
                     }`}
                   >
-                    Физическое лицо
+                    Гость
                   </button>
                 </div>
 
@@ -805,26 +824,57 @@ export const ShopPage: React.FC = () => {
                       </div>
                     )}
                   </div>
+                ) : customerType === 'EXTERNAL' ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Телефон (+7...)*"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs text-slate-900 dark:text-white font-medium"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder={matchedClientByPhone ? matchedClientByPhone.fullName : "ФИО покупателя..."}
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {matchedClientByPhone ? (
+                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] space-y-1">
+                        <div className="flex items-center justify-between font-bold text-emerald-600 dark:text-emerald-400">
+                          <span>✓ Найден в базе: {matchedClientByPhone.fullName}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-semibold">
+                            {matchedClientByPhone.courierService || (matchedClientByPhone.isCourier ? 'Курьер' : 'Покупатель')}
+                          </span>
+                        </div>
+                        {matchedClientByPhone.loyaltyTier && (
+                          <div className="flex items-center justify-between text-amber-500 font-semibold text-[10px]">
+                            <span>★ Программа лояльности: {matchedClientByPhone.loyaltyTier.name}</span>
+                            <span>Скидка {loyaltyDiscountPercent}% на запчасти/экип</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : cleanedCustomerPhone.length >= 6 ? (
+                      <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                        <span>✓ Новый покупатель: будет автоматически сохранен в базу клиентов для гарантии и скидок</span>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-slate-400">
+                        Введите номер телефона: клиент автоматически сохранится или свяжется с существующим профилем.
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <input
-                        type="text"
-                        placeholder="ФИО покупателя..."
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="w-full px-3 py-1.5 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs text-slate-900 dark:text-white font-medium"
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="text"
-                        placeholder="Телефон для гарантии..."
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        className="w-full px-3 py-1.5 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs text-slate-900 dark:text-white"
-                      />
-                    </div>
+                  <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/10 text-[11px] text-slate-500 dark:text-slate-400">
+                    Чек оформляется без привязки к клиенту. Накопительная программа и гарантийный учет по номеру телефона отключены.
                   </div>
                 )}
               </div>

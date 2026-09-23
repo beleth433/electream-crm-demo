@@ -41,6 +41,12 @@ export class RentalService {
     rentalNumber?: string;
     customDeposit?: number;
     notes?: string;
+    courierService?: string;
+    passportSerial?: string;
+    passportNumber?: string;
+    citizenship?: string;
+    patentNumber?: string;
+    telegram?: string;
   }) {
     return RentalRepository.create(data);
   }

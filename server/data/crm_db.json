@@ -99,12 +99,12 @@
       "batteryId": null,
       "frameNumber": null,
       "motorNumber": null,
-      "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
+      "status": "RENTED",
+      "currentLocation": "В аренде у Семенов Петр Сергеевич",
       "mileageKm": 0,
       "note": null,
       "createdAt": "2026-09-22T18:06:55.623Z",
-      "updatedAt": "2026-09-22T18:06:55.623Z"
+      "updatedAt": "2026-09-23T15:16:49.071Z"
     },
     {
       "id": "bike-1790100417566",
@@ -188,7 +188,6 @@
       "chemistry": "Li-ion",
       "status": "ISSUED_SPARE",
       "installedBikeId": null,
-      "issuedBikeId": "bike-1790100410944",
       "notes": null,
       "createdAt": "2026-09-22T18:09:01.495Z",
       "updatedAt": "2026-09-22T19:10:34.486Z"
@@ -386,6 +385,24 @@
       "status": "NORMAL",
       "blackListReason": null,
       "createdAt": "2026-09-22T18:10:58.244Z"
+    },
+    {
+      "id": "cli-1790176603281",
+      "fullName": "Семенов Петр Сергеевич",
+      "phone": "+7 (999) 777-12-34",
+      "telegram": null,
+      "passportSerial": "4518",
+      "passportNumber": "998877",
+      "citizenship": "РФ",
+      "migrationCard": null,
+      "patentNumber": null,
+      "courierService": "Яндекс Еда",
+      "documentPhotoUrls": [],
+      "status": "NORMAL",
+      "clientType": "COURIER",
+      "manualLoyaltyTierId": null,
+      "blackListReason": null,
+      "createdAt": "2026-09-23T15:16:43.281Z"
     }
   ],
   "tariffs": [
@@ -404,7 +421,7 @@
       "id": "prt-1790148535420",
       "name": "Задний суппорт U2",
       "sku": "СУП001",
-      "quantity": 9,
+      "quantity": 7,
       "minQuantity": 3,
       "purchasePrice": 500,
       "clientPrice": 1200
@@ -452,10 +469,48 @@
       ],
       "createdAt": "2026-09-22T19:10:34.486Z",
       "updatedAt": "2026-09-22T19:10:34.486Z"
+    },
+    {
+      "id": "rnt-1790176609071",
+      "rentalNumber": "RNT-2026-003",
+      "clientId": "cli-1790176603281",
+      "bikeId": "bike-1790100415623",
+      "tariffId": "trf-1790102254558",
+      "managerId": "usr-mgr-1",
+      "status": "ACTIVE",
+      "type": "STANDARD",
+      "startedAt": "2026-09-23T15:16:49.071Z",
+      "expiresAt": "2026-09-30T15:16:49.071Z",
+      "nextPaymentDue": "2026-09-30T15:16:49.071Z",
+      "depositAmount": 0,
+      "depositRefunded": false,
+      "notes": null,
+      "outfitIds": [],
+      "batteryIds": [],
+      "createdAt": "2026-09-23T15:16:49.071Z",
+      "updatedAt": "2026-09-23T15:16:49.071Z"
     }
   ],
   "repairs": [],
   "payments": [
+    {
+      "id": "pay-1790176603282",
+      "orderId": "ord-1790176603281",
+      "type": "RETAIL_SALE",
+      "amount": 1200,
+      "method": "SBP",
+      "description": "Розничная продажа (Чек ORD-603281): Семенов Петр Сергеевич",
+      "createdAt": "2026-09-23T15:16:43.282Z"
+    },
+    {
+      "id": "pay-1790175396660",
+      "orderId": "ord-1790175396659",
+      "type": "RETAIL_SALE",
+      "amount": 1200,
+      "method": "SBP",
+      "description": "Розничная продажа (Чек ORD-396659): Петр Николаевич",
+      "createdAt": "2026-09-23T14:56:36.660Z"
+    },
     {
       "id": "pay-1790148551198",
       "orderId": "ord-1790148551191",
@@ -482,6 +537,15 @@
       "method": "SBP",
       "description": "Оплата тарифа \"Недельный\" по договору RNT-2026-002",
       "createdAt": "2026-09-22T19:10:34.486Z"
+    },
+    {
+      "id": "pay-1790176609071-1",
+      "rentalId": "rnt-1790176609071",
+      "type": "RENTAL",
+      "amount": 3500,
+      "method": "SBP",
+      "description": "Оплата тарифа \"Недельный\" по договору RNT-2026-003",
+      "createdAt": "2026-09-23T15:16:49.071Z"
     }
   ],
   "reviews": [],
@@ -513,6 +577,54 @@
     }
   ],
   "retailOrders": [
+    {
+      "id": "ord-1790176603281",
+      "orderNumber": "ORD-603281",
+      "customerType": "EXTERNAL",
+      "customerName": "Семенов Петр Сергеевич",
+      "customerPhone": "+7 (999) 777-12-34",
+      "clientId": "cli-1790176603281",
+      "items": [
+        {
+          "itemType": "PART",
+          "itemId": "prt-1790148535420",
+          "name": "Задний суппорт U2 [СУП001]",
+          "quantity": 1,
+          "price": 1200,
+          "costPrice": 500
+        }
+      ],
+      "totalAmount": 1200,
+      "totalCost": 500,
+      "profit": 700,
+      "paymentMethod": "SBP",
+      "notes": null,
+      "createdAt": "2026-09-23T15:16:43.281Z"
+    },
+    {
+      "id": "ord-1790175396659",
+      "orderNumber": "ORD-396659",
+      "customerType": "GUEST",
+      "customerName": "Петр Николаевич",
+      "customerPhone": "+71234561234",
+      "clientId": null,
+      "items": [
+        {
+          "itemType": "PART",
+          "itemId": "prt-1790148535420",
+          "name": "Задний суппорт U2 [СУП001]",
+          "quantity": 1,
+          "price": 1200,
+          "costPrice": 500
+        }
+      ],
+      "totalAmount": 1200,
+      "totalCost": 500,
+      "profit": 700,
+      "paymentMethod": "SBP",
+      "notes": null,
+      "createdAt": "2026-09-23T14:56:36.660Z"
+    },
     {
       "id": "ord-1790148551191",
       "orderNumber": "ORD-551191",

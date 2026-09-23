@@ -1,6 +1,7 @@
 import {
   getDb,
   getSystemTime,
+  ClientRecord,
   RetailOrderRecord,
   RetailOrderItem,
   PaymentRecord,
@@ -277,13 +278,70 @@ export class ShopRepository {
       : `ORD-${Date.now().toString().slice(-6)}`;
     const profit = totalAmount - totalCost;
 
+    // 1. Resolve or Auto-create Client in db.clients
+    let resolvedClientId = data.clientId || null;
+    let customerFullName = data.customerName?.trim() || 'Розничный покупатель';
+    const customerPhone = data.customerPhone?.trim() || null;
+
+    if (!resolvedClientId && customerPhone) {
+      const cleanPhone = customerPhone.replace(/\D/g, '');
+      if (cleanPhone.length >= 6) {
+        const existing = db.clients.find((c) => c.phone.replace(/\D/g, '') === cleanPhone);
+        if (existing) {
+          resolvedClientId = existing.id;
+          if (
+            existing.fullName &&
+            (!customerFullName ||
+              customerFullName === 'Розничный покупатель' ||
+              customerFullName === 'Покупатель' ||
+              customerFullName.includes('Гость'))
+          ) {
+            customerFullName = existing.fullName;
+          }
+        } else {
+          // Auto-create client in database so they are saved for warranty and loyalty
+          const newClient: ClientRecord = {
+            id: `cli-${Date.now()}`,
+            fullName:
+              customerFullName !== 'Розничный покупатель' &&
+              customerFullName !== 'Покупатель' &&
+              !customerFullName.includes('Гость')
+                ? customerFullName
+                : `Покупатель ${customerPhone}`,
+            phone: customerPhone,
+            telegram: null,
+            passportSerial: null,
+            passportNumber: null,
+            citizenship: 'РФ',
+            migrationCard: null,
+            patentNumber: null,
+            courierService: null,
+            documentPhotoUrls: [],
+            status: 'NORMAL',
+            clientType: 'RETAIL',
+            manualLoyaltyTierId: null,
+            blackListReason: null,
+            createdAt: getSystemTime().toISOString(),
+          };
+          db.clients.push(newClient);
+          resolvedClientId = newClient.id;
+          customerFullName = newClient.fullName;
+        }
+      }
+    } else if (resolvedClientId) {
+      const existing = db.clients.find((c) => c.id === resolvedClientId);
+      if (existing) {
+        customerFullName = existing.fullName;
+      }
+    }
+
     const order: RetailOrderRecord = {
       id: `ord-${Date.now()}`,
       orderNumber,
       customerType: data.customerType || 'GUEST',
-      customerName: data.customerName?.trim() || 'Розничный покупатель',
-      customerPhone: data.customerPhone?.trim() || null,
-      clientId: data.clientId || null,
+      customerName: customerFullName,
+      customerPhone,
+      clientId: resolvedClientId,
       items: processedItems,
       totalAmount,
       totalCost,

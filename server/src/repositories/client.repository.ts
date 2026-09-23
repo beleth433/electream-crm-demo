@@ -66,11 +66,16 @@ export class ClientRepository {
         (r) => r.clientId === c.id && (r.status === "ACTIVE" || r.status === "OVERDUE")
       );
       const totalRentals = db.rentals.filter((r) => r.clientId === c.id).length;
+      const clientOrders = (db.retailOrders || []).filter((ro) => ro.clientId === c.id);
+      const retailOrdersCount = clientOrders.length;
+      const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
+      const isCourier = c.clientType === "COURIER" || totalRentals > 0 || Boolean(c.courierService);
+      const isRetailBuyer = c.clientType === "RETAIL" || retailOrdersCount > 0;
       const loyalty = this.computeClientLoyalty(c);
 
       return {
         ...c,
-        clientType: c.clientType || "COURIER",
+        clientType: c.clientType || (totalRentals > 0 || c.courierService ? "COURIER" : "RETAIL"),
         activeRental: activeRental
           ? {
               id: activeRental.id,
@@ -80,6 +85,10 @@ export class ClientRepository {
             }
           : null,
         totalRentals,
+        retailOrdersCount,
+        retailOrdersSpent,
+        isCourier,
+        isRetailBuyer,
         ...loyalty,
       };
     });
@@ -91,7 +100,13 @@ export class ClientRepository {
       list = list.filter((c) => c.courierService === filters.courierService);
     }
     if (filters?.clientType && filters.clientType !== "ALL") {
-      list = list.filter((c) => c.clientType === filters.clientType);
+      if (filters.clientType === "COURIER") {
+        list = list.filter((c) => c.isCourier || c.clientType === "COURIER");
+      } else if (filters.clientType === "RETAIL") {
+        list = list.filter((c) => c.isRetailBuyer || c.clientType === "RETAIL");
+      } else {
+        list = list.filter((c) => c.clientType === filters.clientType);
+      }
     }
     if (filters?.search) {
       const q = filters.search.toLowerCase();
@@ -128,13 +143,27 @@ export class ClientRepository {
         return { ...rv, bike };
       });
 
+    const clientOrders = (db.retailOrders || [])
+      .filter((ro) => ro.clientId === client.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const retailOrdersCount = clientOrders.length;
+    const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
+    const totalRentals = rentals.length;
+    const isCourier = client.clientType === "COURIER" || totalRentals > 0 || Boolean(client.courierService);
+    const isRetailBuyer = client.clientType === "RETAIL" || retailOrdersCount > 0;
+
     const loyalty = this.computeClientLoyalty(client);
 
     return {
       ...client,
-      clientType: client.clientType || "COURIER",
+      clientType: client.clientType || (totalRentals > 0 || client.courierService ? "COURIER" : "RETAIL"),
       rentals,
       reviews,
+      retailOrders: clientOrders,
+      retailOrdersCount,
+      retailOrdersSpent,
+      isCourier,
+      isRetailBuyer,
       ...loyalty,
     };
   }

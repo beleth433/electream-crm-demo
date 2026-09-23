@@ -78,7 +78,7 @@ export const TariffCreateDto = z.object({
 export const TariffUpdateDto = TariffCreateDto.partial();
 
 export const RentalCreateDto = z.object({
-  clientId: z.string().min(1, "Курьер обязателен"),
+  clientId: z.string().min(1, "Клиент обязателен"),
   bikeId: z.string().min(1, "Байк обязателен"),
   tariffId: z.string().min(1, "Тариф обязателен"),
   managerId: z.string().optional().default("usr-mgr-1"),
@@ -88,6 +88,12 @@ export const RentalCreateDto = z.object({
   rentalNumber: z.string().optional(),
   customDeposit: z.number().optional(),
   notes: z.string().optional(),
+  courierService: z.string().optional(),
+  passportSerial: z.string().optional(),
+  passportNumber: z.string().optional(),
+  citizenship: z.string().optional(),
+  patentNumber: z.string().optional(),
+  telegram: z.string().optional(),
 });
 
 export const RentalRenewDto = z.object({

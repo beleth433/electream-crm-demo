@@ -152,15 +152,30 @@ export class RentalRepository {
     rentalNumber?: string;
     customDeposit?: number;
     notes?: string;
+    courierService?: string;
+    passportSerial?: string;
+    passportNumber?: string;
+    citizenship?: string;
+    patentNumber?: string;
+    telegram?: string;
   }) {
     const db = getDb();
 
     // 1. Verify Client
     const client = db.clients.find((c) => c.id === data.clientId);
-    if (!client) throw new Error("Курьер не найден");
+    if (!client) throw new Error("Клиент не найден");
     if (client.status === "BLACKLIST") {
-      throw new Error(`Курьер в Черном Списке! Причина: ${client.blackListReason || "запрет аренды"}`);
+      throw new Error(`Клиент в Черном Списке! Причина: ${client.blackListReason || "запрет аренды"}`);
     }
+
+    // Seamlessly transition or complement courier and passport details
+    if (data.courierService) client.courierService = data.courierService;
+    if (data.passportSerial) client.passportSerial = data.passportSerial;
+    if (data.passportNumber) client.passportNumber = data.passportNumber;
+    if (data.citizenship) client.citizenship = data.citizenship;
+    if (data.patentNumber) client.patentNumber = data.patentNumber;
+    if (data.telegram && !client.telegram) client.telegram = data.telegram;
+    client.clientType = "COURIER";
 
     // 2. Verify Bike
     const bike = db.bikes.find((b) => b.id === data.bikeId);

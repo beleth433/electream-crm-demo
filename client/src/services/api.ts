@@ -184,6 +184,12 @@ export const api = {
     rentalNumber?: string;
     customDeposit?: number;
     notes?: string;
+    courierService?: string;
+    passportSerial?: string;
+    passportNumber?: string;
+    citizenship?: string;
+    patentNumber?: string;
+    telegram?: string;
   }) => fetchJson<Rental>('/rentals', { method: 'POST', body: JSON.stringify(data) }),
   renewRental: (id: string, data: { durationDays?: number; amount?: number; method: string; notes?: string }) =>
     fetchJson<Rental>(`/rentals/${id}/renew`, { method: 'POST', body: JSON.stringify(data) }),

@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'clients',
-      label: 'База курьеров',
+      label: 'База клиентов',
       icon: Users,
       badge: null,
     },

@@ -72,7 +72,7 @@ const MainLayout: React.FC = () => {
       case 'outfits':
         return 'Склад экипировки и аксессуаров';
       case 'clients':
-        return 'База курьеров и проверка документов';
+        return 'База клиентов (курьеры, покупатели, СТО)';
       case 'employees':
         return 'Штат сотрудников и фонд оплаты труда';
       case 'repairs':

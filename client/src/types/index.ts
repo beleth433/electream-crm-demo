@@ -254,6 +254,11 @@ export interface Client {
     expiresAt: string;
   } | null;
   totalRentals?: number;
+  retailOrdersCount?: number;
+  retailOrdersSpent?: number;
+  retailOrders?: RetailOrder[];
+  isCourier?: boolean;
+  isRetailBuyer?: boolean;
 }
 
 export interface Tariff {

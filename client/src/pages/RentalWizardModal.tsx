@@ -59,6 +59,27 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     courierService: 'Яндекс Еда',
   });
 
+  const [clientExtraDetails, setClientExtraDetails] = useState({
+    courierService: 'Яндекс Еда',
+    passportSerial: '',
+    passportNumber: '',
+    citizenship: 'РФ',
+    patentNumber: '',
+    telegram: '',
+  });
+
+  const handleSelectClient = (client: Client) => {
+    setSelectedClient(client);
+    setClientExtraDetails({
+      courierService: client.courierService || 'Яндекс Еда',
+      passportSerial: client.passportSerial || '',
+      passportNumber: client.passportNumber || '',
+      citizenship: client.citizenship || 'РФ',
+      patentNumber: client.patentNumber || '',
+      telegram: client.telegram || '',
+    });
+  };
+
   // Step 2: Bike, Batteries and Outfit selection
   const [selectedBikeId, setSelectedBikeId] = useState<string>('');
   const [selectedBatteryIds, setSelectedBatteryIds] = useState<string[]>([]);
@@ -264,6 +285,12 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         rentalNumber: rentalNumber.trim() ? rentalNumber.trim() : undefined,
         customDeposit: Number(customDeposit),
         notes,
+        courierService: clientExtraDetails.courierService || selectedClient.courierService || undefined,
+        passportSerial: clientExtraDetails.passportSerial || selectedClient.passportSerial || undefined,
+        passportNumber: clientExtraDetails.passportNumber || selectedClient.passportNumber || undefined,
+        citizenship: clientExtraDetails.citizenship || selectedClient.citizenship || undefined,
+        patentNumber: clientExtraDetails.patentNumber || selectedClient.patentNumber || undefined,
+        telegram: clientExtraDetails.telegram || selectedClient.telegram || undefined,
       });
 
       toast.success(`Договор аренды ${newRental.rentalNumber} успешно оформлен!`);
@@ -373,7 +400,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                           toast.error(`ВНИМАНИЕ! Курьер в черном списке: ${client.blackListReason}`);
                           return;
                         }
-                        setSelectedClient(client);
+                        handleSelectClient(client);
                       }}
                       className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
                         isSelected
@@ -438,29 +465,93 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               </div>
 
               {selectedClient && (
-                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between">
-                  <div className="text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="text-emerald-800 dark:text-emerald-200 font-semibold">
-                        Выбран клиент: {selectedClient.fullName}
-                      </span>
-                      {selectedClient.loyaltyTier && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-500 border border-amber-500/30">
-                          {selectedClient.loyaltyTier.name} (-{rentalDiscountPercent}%)
+                <div className="space-y-3">
+                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between">
+                    <div className="text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-800 dark:text-emerald-200 font-semibold">
+                          Выбран клиент: {selectedClient.fullName}
                         </span>
-                      )}
+                        {selectedClient.loyaltyTier && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                            {selectedClient.loyaltyTier.name} (-{rentalDiscountPercent}%)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                        {selectedClient.phone} ({clientExtraDetails.courierService || selectedClient.courierService || 'Клиент базы'})
+                      </p>
                     </div>
-                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                      {selectedClient.phone} ({selectedClient.courierService || 'Клиент базы'})
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!clientExtraDetails.passportNumber && !selectedClient.passportNumber) {
+                          toast.error('Пожалуйста, укажите номер паспорта для оформления договора');
+                          return;
+                        }
+                        setStep(2);
+                      }}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+                    >
+                      Далее: Техника →
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
-                  >
-                    Далее: Техника →
-                  </button>
+
+                  {(!selectedClient.passportNumber || !selectedClient.courierService) && (
+                    <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 space-y-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
+                        <AlertTriangle className="w-4 h-4" />
+                        <span>Дополните данные для договора аренды (клиент будет сохранен как курьер):</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div>
+                          <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-0.5">Служба доставки *</label>
+                          <select
+                            value={clientExtraDetails.courierService}
+                            onChange={(e) => setClientExtraDetails({ ...clientExtraDetails, courierService: e.target.value })}
+                            className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                          >
+                            <option value="Яндекс Еда">Яндекс Еда</option>
+                            <option value="Купер (СберМаркет)">Купер (СберМаркет)</option>
+                            <option value="Самокат">Самокат</option>
+                            <option value="Достависта">Достависта</option>
+                            <option value="Ozon fresh">Ozon fresh</option>
+                            <option value="Частный курьер">Частный курьер</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-0.5">Серия паспорта</label>
+                          <input
+                            type="text"
+                            value={clientExtraDetails.passportSerial}
+                            onChange={(e) => setClientExtraDetails({ ...clientExtraDetails, passportSerial: e.target.value })}
+                            placeholder="4510"
+                            className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-0.5">Номер паспорта *</label>
+                          <input
+                            type="text"
+                            value={clientExtraDetails.passportNumber}
+                            onChange={(e) => setClientExtraDetails({ ...clientExtraDetails, passportNumber: e.target.value })}
+                            placeholder="123456"
+                            className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-0.5">Гражданство</label>
+                          <input
+                            type="text"
+                            value={clientExtraDetails.citizenship}
+                            onChange={(e) => setClientExtraDetails({ ...clientExtraDetails, citizenship: e.target.value })}
+                            placeholder="РФ"
+                            className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
