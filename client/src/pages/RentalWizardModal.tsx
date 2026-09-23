@@ -25,12 +25,14 @@ interface RentalWizardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (newRental: Rental) => void;
+  initialClient?: { name: string; phone: string; company: string } | null;
 }
 
 export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  initialClient,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -124,8 +126,22 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       setSelectedBikeId('');
       setSelectedBatteryIds([]);
       setSelectedOutfitIds([]);
-      setPhoneQuery('');
-      setIsCreatingClient(false);
+      if (initialClient) {
+        setIsCreatingClient(true);
+        setNewClientForm({
+          fullName: initialClient.name,
+          phone: initialClient.phone,
+          telegram: '',
+          passportSerial: '',
+          passportNumber: '',
+          citizenship: 'РФ',
+          migrationCard: '',
+          patentNumber: '',
+          courierService: initialClient.company || 'Яндекс Еда',
+        });
+      } else {
+        setIsCreatingClient(false);
+      }
       setIsCreatingTariff(false);
       setSelectedTariffId('');
 

@@ -20,6 +20,10 @@ import { RentalWizardModal } from './pages/RentalWizardModal';
 import { PrintableActModal } from './pages/PrintableActModal';
 import { RentalCloseModal } from './pages/RentalCloseModal';
 import { TimeMachineBar } from './components/TimeMachineBar';
+import { SimulationProvider } from './context/SimulationContext';
+import { SimulationBar } from './components/simulation/SimulationBar';
+import { SimulationQueueDrawer } from './components/simulation/SimulationQueueDrawer';
+import { DaySummaryModal } from './components/simulation/DaySummaryModal';
 import { api } from './services/api';
 import { Rental } from './types';
 import { Plus, Bell, Search, ShieldCheck } from 'lucide-react';
@@ -38,6 +42,11 @@ const MainLayout: React.FC = () => {
 
   // Modals state
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardInitialClient, setWizardInitialClient] = useState<{
+    name: string;
+    phone: string;
+    company: string;
+  } | null>(null);
   const [printableRental, setPrintableRental] = useState<Rental | null>(null);
   const [closingRental, setClosingRental] = useState<Rental | null>(null);
 
@@ -50,8 +59,14 @@ const MainLayout: React.FC = () => {
 
   const handleCheckoutSuccess = (newRental: Rental) => {
     setIsWizardOpen(false);
+    setWizardInitialClient(null);
     refetchStats();
     setPrintableRental(newRental);
+  };
+
+  const handleOpenWizardWithClient = (prefill?: { name: string; phone: string; company: string }) => {
+    setWizardInitialClient(prefill || null);
+    setIsWizardOpen(true);
   };
 
   const handleCloseSuccess = () => {
@@ -103,6 +118,9 @@ const MainLayout: React.FC = () => {
       <div className="grow flex flex-col min-w-0">
         {/* Testing Time Machine & Template Management */}
         <TimeMachineBar />
+
+        {/* Interactive Client Simulation Bar (1 day = 15 min) */}
+        <SimulationBar />
 
         {/* Top Navbar */}
         <header className="h-16 px-6 bg-white/95 dark:bg-[#09120e]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-emerald-500/20 flex items-center justify-between sticky top-0 z-30 transition-colors">
@@ -162,8 +180,12 @@ const MainLayout: React.FC = () => {
       {/* Global Modals */}
       <RentalWizardModal
         isOpen={isWizardOpen}
-        onClose={() => setIsWizardOpen(false)}
+        onClose={() => {
+          setIsWizardOpen(false);
+          setWizardInitialClient(null);
+        }}
         onSuccess={handleCheckoutSuccess}
+        initialClient={wizardInitialClient}
       />
 
       <PrintableActModal
@@ -179,6 +201,15 @@ const MainLayout: React.FC = () => {
         onSuccess={handleCloseSuccess}
       />
 
+      {/* Simulation Queue Slide-Over Drawer */}
+      <SimulationQueueDrawer
+        onOpenRentalWizard={handleOpenWizardWithClient}
+        onNavigateToTab={(tab) => setCurrentTab(tab)}
+      />
+
+      {/* Day Summary Evening Modal */}
+      <DaySummaryModal />
+
       {/* Toast Notifications */}
       <Toaster position="top-right" richColors closeButton />
     </div>
@@ -189,7 +220,9 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <MainLayout />
+        <SimulationProvider>
+          <MainLayout />
+        </SimulationProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
