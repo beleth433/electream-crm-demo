@@ -1,28 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DashboardStats } from '../types';
 import {
   Bike as BikeIcon,
   KeyRound,
-  AlertTriangle,
-  TrendingUp,
   Wrench,
   Boxes,
   Users,
   CreditCard,
   Plus,
-  RotateCcw,
   Phone,
   ArrowUpRight,
   ShieldAlert,
-  Percent,
   Calendar,
-  ChevronDown,
-  ArrowUp,
   CheckCircle2,
-  Clock,
   Ban,
   Activity,
   BarChart3,
+  TrendingUp,
+  ShoppingBag,
   Layers,
 } from 'lucide-react';
 
@@ -37,8 +32,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenCheckoutWizard,
   onNavigateToTab,
 }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('week');
-
   if (!stats) {
     return (
       <div className="flex items-center justify-center h-64 text-slate-400">
@@ -49,39 +42,41 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const { fleet, rentals, repairs, inventory, financials } = stats;
 
+  const totalRev = financials.totalRevenue || 0;
+  const rentalPercent = totalRev > 0 ? Math.round((financials.rentalRevenue / totalRev) * 100) : 0;
+  const retailPercent = totalRev > 0 ? Math.round(((financials.retailRevenue || 0) / totalRev) * 100) : 0;
+  const repairPercent = totalRev > 0 ? Math.round(((financials.clientRepairRevenue || 0) / totalRev) * 100) : 0;
+  const outfitPercent = totalRev > 0 ? Math.round(((financials.outfitRevenue || 0) / totalRev) * 100) : 0;
+
+  const activeBikes = fleet.activeParkBikes || 0;
+  const rentedPct = activeBikes > 0 ? Math.round((fleet.rentedBikes / activeBikes) * 100) : 0;
+  const availablePct = activeBikes > 0 ? Math.round((fleet.availableBikes / activeBikes) * 100) : 0;
+  const maintenancePct = activeBikes > 0 ? Math.round((fleet.maintenanceBikes / activeBikes) * 100) : 0;
+
+  const currentDateStr = new Date().toLocaleDateString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
   return (
     <div className="space-y-6">
-      {/* Header Bar: Fleet Performance Overview & Period selector */}
+      {/* Header Bar: Clean Russian Title & Quick Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-            Fleet Performance Overview
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            Сводка и ключевые показатели (KPI)
           </h2>
-          <p className="text-xs text-slate-500 dark:text-emerald-400/70 mt-0.5 font-medium">
-            Операционный мониторинг парка, договоров аренды и технического состояния
+          <p className="text-xs text-slate-500 dark:text-emerald-400/80 mt-0.5 font-medium">
+            Операционный мониторинг парка техники, договоров аренды, кассы и мастерской
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#0c1813] border border-slate-200 dark:border-emerald-500/25 text-xs font-semibold text-slate-600 dark:text-slate-300 shadow-2xs">
             <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="text-slate-400 text-[11px]">Updated:</span>
-            <span>Сегодня</span>
-          </div>
-
-          {/* Period selector */}
-          <div className="relative">
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value as any)}
-              className="appearance-none pl-3 pr-8 py-1.5 rounded-xl bg-white dark:bg-[#0c1813] border border-slate-200 dark:border-emerald-500/25 text-xs font-bold text-slate-800 dark:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shadow-2xs cursor-pointer"
-            >
-              <option value="week">All. Неделя</option>
-              <option value="month">All. Месяц</option>
-              <option value="quarter">All. Квартал</option>
-              <option value="year">All. Год</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <span className="text-slate-400 text-[11px]">Обновлено:</span>
+            <span>{currentDateStr}</span>
           </div>
 
           <button
@@ -89,80 +84,69 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             className="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition-all hover:scale-105 active:scale-95"
           >
             <Plus className="w-3.5 h-3.5" />
-            Новая аренда
+            Оформить аренду
           </button>
         </div>
       </div>
 
-      {/* Row 1: 4 Large Contoured KPI Cards with embedded SVG Charts */}
+      {/* Row 1: 4 Key Indicator Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Card 1: Total Fleet Utilization */}
+        {/* Card 1: Fleet Utilization */}
         <div
           onClick={() => onNavigateToTab('bikes')}
-          className="contour-card p-5 cursor-pointer flex flex-col justify-between"
+          className="contour-card p-5 cursor-pointer flex flex-col justify-between hover:border-emerald-500/50 transition-all"
         >
           <div>
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                  Total Fleet Utilization
+                  Загрузка парка техники
                 </span>
                 <div className="mt-1 flex items-baseline gap-1.5">
                   <span className="text-3xl font-black text-slate-900 dark:text-emerald-400">
                     {fleet.fleetUtilization}%
                   </span>
-                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center">
-                    <ArrowUp className="w-3 h-3" />
-                    +{Math.round(fleet.fleetUtilization / 10)}%
-                  </span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  ({fleet.rentedBikes} из {fleet.activeParkBikes} байков на линии)
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  {fleet.rentedBikes} из {fleet.activeParkBikes} байков на линии
                 </p>
               </div>
 
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shrink-0">
                 <Activity className="w-4 h-4" />
               </div>
             </div>
           </div>
 
-          {/* SVG Spline Area Chart */}
-          <div className="mt-4 pt-2">
-            <svg viewBox="0 0 280 80" className="w-full h-20 overflow-visible">
-              <defs>
-                <linearGradient id="utilGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-              {/* Grid Lines */}
-              <line x1="0" y1="20" x2="280" y2="20" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" strokeDasharray="3 3" />
-              <line x1="0" y1="45" x2="280" y2="45" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" strokeDasharray="3 3" />
-              <line x1="0" y1="70" x2="280" y2="70" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" />
-              {/* Filled Area */}
-              <path
-                d="M 0 70 Q 35 60 70 40 T 140 50 T 210 20 T 280 15 L 280 75 L 0 75 Z"
-                fill="url(#utilGrad)"
+          {/* Real Segmented Progress Bar */}
+          <div className="mt-4 pt-2 border-t border-slate-100 dark:border-emerald-500/15">
+            <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+              <div
+                style={{ width: `${rentedPct}%` }}
+                title={`В аренде: ${fleet.rentedBikes} шт.`}
+                className="bg-emerald-500 h-full"
               />
-              {/* Smooth Spline Curve */}
-              <path
-                d="M 0 70 Q 35 60 70 40 T 140 50 T 210 20 T 280 15"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="2.5"
-                strokeLinecap="round"
+              <div
+                style={{ width: `${availablePct}%` }}
+                title={`Свободно: ${fleet.availableBikes} шт.`}
+                className="bg-sky-500 h-full"
               />
-              {/* Active Dot */}
-              <circle cx="280" cy="15" r="4" fill="#10b981" className="animate-pulse" />
-            </svg>
-            <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1">
-              <span>Jan</span>
-              <span>Feb</span>
-              <span>Mar</span>
-              <span>Apr</span>
-              <span>May</span>
-              <span>Jun</span>
+              <div
+                style={{ width: `${maintenancePct}%` }}
+                title={`В ремонте: ${fleet.maintenanceBikes} шт.`}
+                className="bg-amber-500 h-full"
+              />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> В аренде: {fleet.rentedBikes}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" /> Свободно: {fleet.availableBikes}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> В СТО: {fleet.maintenanceBikes}
+              </span>
             </div>
           </div>
         </div>
@@ -170,84 +154,55 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Card 2: Active Rentals */}
         <div
           onClick={() => onNavigateToTab('rentals')}
-          className="contour-card p-5 cursor-pointer flex flex-col justify-between"
+          className="contour-card p-5 cursor-pointer flex flex-col justify-between hover:border-sky-500/50 transition-all"
         >
           <div>
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                  Active Rentals
+                  Действующие договоры
                 </span>
                 <div className="mt-1 flex items-baseline gap-2">
                   <span className="text-3xl font-black text-slate-900 dark:text-white">
                     {rentals.activeRentalsCount}
                   </span>
-                  <span className="text-xs text-emerald-500 font-black flex items-center gap-0.5">
-                    <ArrowUp className="w-3.5 h-3.5" />
-                    {rentals.activeRentalsCount > 0 ? '+15%' : '0%'}
+                  <span className="text-xs text-sky-500 font-bold">
+                    активно
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] mt-0.5">
                   {rentals.overdueCount > 0 ? (
-                    <span className="text-rose-500 font-bold">Внимание: {rentals.overdueCount} должника!</span>
+                    <span className="text-rose-500 font-bold">⚠️ Просрочено: {rentals.overdueCount} договоров!</span>
                   ) : (
-                    <span className="text-emerald-500">Все оплаты внесены в срок</span>
+                    <span className="text-emerald-500 font-medium">✓ Все курьеры платят вовремя</span>
                   )}
                 </p>
               </div>
 
-              <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-500 flex items-center justify-center shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/30 text-sky-500 flex items-center justify-center shrink-0">
                 <KeyRound className="w-4 h-4" />
               </div>
             </div>
           </div>
 
-          {/* SVG Monthly Curve */}
-          <div className="mt-4 pt-2">
-            <svg viewBox="0 0 280 80" className="w-full h-20 overflow-visible">
-              <defs>
-                <linearGradient id="rentGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-              <line x1="0" y1="20" x2="280" y2="20" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" strokeDasharray="3 3" />
-              <line x1="0" y1="45" x2="280" y2="45" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" strokeDasharray="3 3" />
-              <line x1="0" y1="70" x2="280" y2="70" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" />
-              <path
-                d="M 0 65 Q 40 45 80 50 T 160 40 T 240 18 L 280 12 L 280 75 L 0 75 Z"
-                fill="url(#rentGrad)"
-              />
-              <path
-                d="M 0 65 Q 40 45 80 50 T 160 40 T 240 18 L 280 12"
-                fill="none"
-                stroke="#0ea5e9"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-              <circle cx="280" cy="12" r="4" fill="#0ea5e9" />
-            </svg>
-            <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1">
-              <span>Jul</span>
-              <span>Aug</span>
-              <span>Sep</span>
-              <span>Oct</span>
-              <span>Nov</span>
-              <span>Dec</span>
-            </div>
+          <div className="mt-4 pt-2 border-t border-slate-100 dark:border-emerald-500/15 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Залогов в кассе:</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">
+              {financials.activeDepositsHeld.toLocaleString('ru-RU')} ₽
+            </span>
           </div>
         </div>
 
-        {/* Card 3: Revenue (Last 30 Days) */}
+        {/* Card 3: Total Revenue */}
         <div
           onClick={() => onNavigateToTab('finance')}
-          className="contour-card p-5 cursor-pointer flex flex-col justify-between"
+          className="contour-card p-5 cursor-pointer flex flex-col justify-between hover:border-emerald-500/50 transition-all"
         >
           <div>
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                  Revenue
+                  Общая выручка кассы
                 </span>
                 <div className="mt-1 flex items-baseline gap-1">
                   <span className="text-3xl font-black text-slate-900 dark:text-white">
@@ -255,79 +210,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </span>
                   <span className="text-sm font-bold text-emerald-500">₽</span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  (Last 30 Days: {financials.totalRevenue.toLocaleString('ru-RU')} ₽)
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Все фактические поступления
                 </p>
               </div>
 
-              <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-500 flex items-center justify-center shadow-xs">
-                <BarChart3 className="w-4 h-4" />
+              <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-500 flex items-center justify-center shrink-0">
+                <CreditCard className="w-4 h-4" />
               </div>
             </div>
           </div>
 
-          {/* Vertical Glowing Bar Chart */}
-          <div className="mt-4 pt-2">
-            <svg viewBox="0 0 280 80" className="w-full h-20 overflow-visible">
-              <line x1="0" y1="20" x2="280" y2="20" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" strokeDasharray="3 3" />
-              <line x1="0" y1="45" x2="280" y2="45" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" strokeDasharray="3 3" />
-              <line x1="0" y1="70" x2="280" y2="70" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" />
-              {/* Bars */}
-              {[
-                { x: 15, h: 32 },
-                { x: 50, h: 48 },
-                { x: 85, h: 40 },
-                { x: 120, h: 56 },
-                { x: 155, h: 65 },
-                { x: 190, h: 44 },
-                { x: 225, h: 58 },
-                { x: 260, h: 46 },
-              ].map((b, i) => (
-                <g key={i}>
-                  <rect
-                    x={b.x}
-                    y={70 - b.h}
-                    width="14"
-                    height={b.h}
-                    rx="3"
-                    className="fill-emerald-500/85 hover:fill-emerald-400 transition-colors"
-                  />
-                  <rect
-                    x={b.x}
-                    y={70 - b.h}
-                    width="14"
-                    height={b.h}
-                    rx="3"
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="1"
-                    className="opacity-60"
-                  />
-                </g>
-              ))}
-            </svg>
-            <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1">
-              <span>0</span>
-              <span>6</span>
-              <span>12</span>
-              <span>15</span>
-              <span>20</span>
-              <span>29</span>
-              <span>30</span>
-            </div>
+          <div className="mt-4 pt-2 border-t border-slate-100 dark:border-emerald-500/15 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Аренда: <strong className="text-slate-700 dark:text-slate-200">{financials.rentalRevenue.toLocaleString('ru-RU')} ₽</strong></span>
+            <span>Магазин: <strong className="text-slate-700 dark:text-slate-200">{(financials.retailRevenue || 0).toLocaleString('ru-RU')} ₽</strong></span>
           </div>
         </div>
 
-        {/* Card 4: Net Profit / Чистая маржа */}
+        {/* Card 4: Net Margin / Profit */}
         <div
           onClick={() => onNavigateToTab('finance')}
-          className="contour-card p-5 cursor-pointer flex flex-col justify-between"
+          className="contour-card p-5 cursor-pointer flex flex-col justify-between hover:border-emerald-500/50 transition-all"
         >
           <div>
             <div className="flex items-start justify-between">
               <div>
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                  Net Profit (Чистая прибыль)
+                  Чистая прибыль
                 </span>
                 <div className="mt-1 flex items-baseline gap-1">
                   <span
@@ -342,67 +251,39 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </span>
                   <span className="text-sm font-bold text-emerald-500">₽</span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  За вычетом деталей ({financials.totalPartsCost} ₽) и ФОТ
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  За вычетом деталей, закупки и ФОТ
                 </p>
               </div>
 
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 flex items-center justify-center shrink-0">
                 <TrendingUp className="w-4 h-4" />
               </div>
             </div>
           </div>
 
-          {/* SVG Profit Growth Curve */}
-          <div className="mt-4 pt-2">
-            <svg viewBox="0 0 280 80" className="w-full h-20 overflow-visible">
-              <defs>
-                <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-              <line x1="0" y1="20" x2="280" y2="20" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" strokeDasharray="3 3" />
-              <line x1="0" y1="45" x2="280" y2="45" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" strokeDasharray="3 3" />
-              <line x1="0" y1="70" x2="280" y2="70" stroke="currentColor" className="text-slate-100 dark:text-emerald-950/60" />
-              <path
-                d="M 0 70 Q 40 30 80 48 T 160 22 T 240 18 L 280 8 L 280 75 L 0 75 Z"
-                fill="url(#profitGrad)"
-              />
-              <path
-                d="M 0 70 Q 40 30 80 48 T 160 22 T 240 18 L 280 8"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-              <circle cx="280" cy="8" r="4" fill="#10b981" />
-            </svg>
-            <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1">
-              <span>Jan</span>
-              <span>Feb</span>
-              <span>Mar</span>
-              <span>Apr</span>
-              <span>May</span>
-              <span>Jun</span>
-            </div>
+          <div className="mt-4 pt-2 border-t border-slate-100 dark:border-emerald-500/15 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <span>Расходы на запчасти:</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">
+              {((financials.totalPartsCost || 0) + (financials.retailCogs || 0)).toLocaleString('ru-RU')} ₽
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Row 2: 4 Sleek Contoured Status Cards (Available, On Rent, Maintenance, Retired) */}
+      {/* Row 2: Fleet Status Cards (Свободно, В аренде, В мастерской, Списано) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Available */}
         <div
           onClick={() => onNavigateToTab('bikes')}
-          className="contour-card p-4 cursor-pointer flex items-center justify-between"
+          className="contour-card p-4 cursor-pointer flex items-center justify-between hover:border-emerald-500/40 transition-all"
         >
           <div>
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-              Available (Свободно)
+              Свободно на базе
             </span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-              {fleet.availableBikes}
+              {fleet.availableBikes} <span className="text-xs font-normal text-slate-400">шт.</span>
             </p>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
               Готовы к выдаче курьерам
@@ -416,17 +297,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* On Rent */}
         <div
           onClick={() => onNavigateToTab('bikes')}
-          className="contour-card p-4 cursor-pointer flex items-center justify-between"
+          className="contour-card p-4 cursor-pointer flex items-center justify-between hover:border-sky-500/40 transition-all"
         >
           <div>
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-              On Rent (В аренде)
+              В аренде у курьеров
             </span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-              {fleet.rentedBikes}
+              {fleet.rentedBikes} <span className="text-xs font-normal text-slate-400">шт.</span>
             </p>
             <span className="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">
-              Генерируют доход
+              На линии, приносят доход
             </span>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-sky-500/10 border border-sky-500/30 text-sky-500 flex items-center justify-center shrink-0">
@@ -437,17 +318,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Maintenance */}
         <div
           onClick={() => onNavigateToTab('repairs')}
-          className="contour-card p-4 cursor-pointer flex items-center justify-between"
+          className="contour-card p-4 cursor-pointer flex items-center justify-between hover:border-amber-500/40 transition-all"
         >
           <div>
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-              Maintenance (В СТО)
+              В мастерской СТО
             </span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-              {fleet.maintenanceBikes}
+              {fleet.maintenanceBikes} <span className="text-xs font-normal text-slate-400">шт.</span>
             </p>
             <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
-              В сервисной мастерской
+              На диагностике или ТО
             </span>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-center shrink-0">
@@ -455,20 +336,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
         </div>
 
-        {/* Retired / Decommissioned */}
+        {/* Retired / For Sale */}
         <div
           onClick={() => onNavigateToTab('bikes')}
-          className="contour-card p-4 cursor-pointer flex items-center justify-between"
+          className="contour-card p-4 cursor-pointer flex items-center justify-between hover:border-slate-400/40 transition-all"
         >
           <div>
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-              Retired (Списано)
+              Списано / В магазине
             </span>
             <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-              {fleet.decommissionedBikes + fleet.forSaleBikes}
+              {fleet.decommissionedBikes + fleet.forSaleBikes + (fleet.soldBikes || 0)} <span className="text-xs font-normal text-slate-400">шт.</span>
             </p>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
-              Выбыли / Продажа
+              Выбыли из аренды
             </span>
           </div>
           <div className="w-10 h-10 rounded-2xl bg-slate-500/10 border border-slate-500/30 text-slate-500 flex items-center justify-center shrink-0">
@@ -477,180 +358,173 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
       </div>
 
-      {/* Row 3: 2 Wide Analytical Cards (Fleet Utilization Trend & Revenue by Model) */}
+      {/* Row 3: Real Operational Analytics (Model Breakdown & Revenue Structure) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Fleet Utilization Trend (Last 6 Months) */}
-        <div className="contour-card p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-emerald-500/20">
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                Fleet Utilization Trend (Last 6 Months)
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Процент активной занятости парка по месяцам
-              </p>
+        {/* Left: Real Models Utilization Breakdown */}
+        <div className="contour-card p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-emerald-500/20">
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  Занятость парка по моделям техники
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Соотношение байков на линии и на складе по каждой модели
+                </p>
+              </div>
+              <button
+                onClick={() => onNavigateToTab('bikes')}
+                className="text-xs text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
+              >
+                Все модели →
+              </button>
             </div>
-            <span className="px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 font-bold text-xs">
-              AVG: 68%
-            </span>
+
+            <div className="mt-4 space-y-3.5">
+              {(!stats.modelsBreakdown || stats.modelsBreakdown.length === 0) ? (
+                <div className="py-8 text-center text-slate-400 text-xs">
+                  <p>В парке пока нет добавленных моделей техники.</p>
+                  <button
+                    onClick={() => onNavigateToTab('bikes')}
+                    className="mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  >
+                    + Добавить электровелосипеды в парк
+                  </button>
+                </div>
+              ) : (
+                stats.modelsBreakdown.map((m) => (
+                  <div key={m.modelId} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {m.name} {m.powerWatts ? `(${m.powerWatts}W)` : ''}
+                      </span>
+                      <span className="font-semibold text-slate-500 dark:text-slate-400 text-[11px]">
+                        {m.rented} из {m.total} на линии ({m.utilization}%)
+                      </span>
+                    </div>
+
+                    <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                      <div
+                        style={{ width: `${m.utilization}%` }}
+                        className="bg-emerald-500 h-full rounded-full transition-all"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                      <span>Свободно: <strong className="text-slate-700 dark:text-slate-300">{m.available}</strong></span>
+                      {m.maintenance > 0 && (
+                        <span className="text-amber-500">В ремонте: <strong>{m.maintenance}</strong></span>
+                      )}
+                      <span>Всего в парке: <strong className="text-slate-700 dark:text-slate-300">{m.total}</strong></span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
-          <div className="mt-5">
-            <svg viewBox="0 0 500 200" className="w-full h-48 overflow-visible">
-              <defs>
-                <linearGradient id="wideUtilGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.45" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-              {/* Y Grid & Axis labels */}
-              {[
-                { y: 30, label: '100%' },
-                { y: 65, label: '80%' },
-                { y: 100, label: '60%' },
-                { y: 135, label: '40%' },
-                { y: 170, label: '20%' },
-              ].map((g, i) => (
-                <g key={i}>
-                  <line
-                    x1="45"
-                    y1={g.y}
-                    x2="500"
-                    y2={g.y}
-                    stroke="currentColor"
-                    className="text-slate-100 dark:text-emerald-950/70"
-                    strokeDasharray="4 4"
-                  />
-                  <text x="5" y={g.y + 4} className="fill-slate-400 text-[10px] font-mono">
-                    {g.label}
-                  </text>
-                </g>
-              ))}
-
-              {/* Area Spline */}
-              <path
-                d="M 50 140 Q 110 90 170 125 T 290 55 T 410 40 L 490 60 L 490 180 L 50 180 Z"
-                fill="url(#wideUtilGrad)"
-              />
-              <path
-                d="M 50 140 Q 110 90 170 125 T 290 55 T 410 40 L 490 60"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-
-              {/* Data points */}
-              {[
-                { cx: 50, cy: 140, val: '42%' },
-                { cx: 135, cy: 98, val: '64%' },
-                { cx: 220, cy: 110, val: '58%' },
-                { cx: 305, cy: 52, val: '86%' },
-                { cx: 395, cy: 42, val: '92%' },
-                { cx: 490, cy: 60, val: '80%' },
-              ].map((pt, i) => (
-                <g key={i} className="group cursor-pointer">
-                  <circle cx={pt.cx} cy={pt.cy} r="5" fill="#10b981" className="shadow-lg" />
-                  <circle cx={pt.cx} cy={pt.cy} r="8" fill="#10b981" className="opacity-20 group-hover:opacity-60 transition-opacity" />
-                </g>
-              ))}
-            </svg>
-
-            {/* X Labels */}
-            <div className="flex justify-between pl-10 pr-2 text-xs font-semibold text-slate-400 dark:text-slate-400 mt-2">
-              <span>January</span>
-              <span>February</span>
-              <span>March</span>
-              <span>April</span>
-              <span>May</span>
-              <span>June</span>
-            </div>
+          <div className="pt-3 border-t border-slate-100 dark:border-emerald-500/15 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-4">
+            <span>Всего моделей в парке: <strong className="text-slate-800 dark:text-slate-200">{stats.modelsBreakdown?.length || 0}</strong></span>
+            <span>Рабочий парк: <strong className="text-emerald-600 dark:text-emerald-400">{fleet.activeParkBikes} байков</strong></span>
           </div>
         </div>
 
-        {/* Right: Revenue by Vehicle Type / Model (Outlined Contoured Bar Chart) */}
-        <div className="contour-card p-5">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-emerald-500/20">
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                Revenue by Vehicle Type
-              </h3>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Доходность по моделям парка (аренда + обслуживание)
-              </p>
+        {/* Right: Revenue Structure Breakdown */}
+        <div className="contour-card p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-emerald-500/20">
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  Структура доходов и кассовый баланс
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Распределение денежных поступлений по источникам
+                </p>
+              </div>
+              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                Всего: {totalRev.toLocaleString('ru-RU')} ₽
+              </span>
             </div>
-            <span className="text-xs font-bold text-slate-500 dark:text-emerald-400">
-              Всего: {financials.totalRevenue.toLocaleString('ru-RU')} ₽
-            </span>
+
+            <div className="mt-4 space-y-3">
+              {/* Rental Revenue Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded bg-emerald-500 inline-block" />
+                    Аренда электровелосипедов
+                  </span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {financials.rentalRevenue.toLocaleString('ru-RU')} ₽ ({rentalPercent}%)
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div style={{ width: `${rentalPercent}%` }} className="bg-emerald-500 h-full" />
+                </div>
+              </div>
+
+              {/* Retail Revenue Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded bg-sky-500 inline-block" />
+                    Продажи в магазине (POS)
+                  </span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {(financials.retailRevenue || 0).toLocaleString('ru-RU')} ₽ ({retailPercent}%)
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div style={{ width: `${retailPercent}%` }} className="bg-sky-500 h-full" />
+                </div>
+              </div>
+
+              {/* Client Repairs Revenue Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded bg-amber-500 inline-block" />
+                    Платный ремонт и ТО курьеров
+                  </span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {(financials.clientRepairRevenue || 0).toLocaleString('ru-RU')} ₽ ({repairPercent}%)
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div style={{ width: `${repairPercent}%` }} className="bg-amber-500 h-full" />
+                </div>
+              </div>
+
+              {/* Outfit Sales Revenue Bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded bg-purple-500 inline-block" />
+                    Экипировка и аксессуары
+                  </span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {(financials.outfitRevenue || 0).toLocaleString('ru-RU')} ₽ ({outfitPercent}%)
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div style={{ width: `${outfitPercent}%` }} className="bg-purple-500 h-full" />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-5">
-            <svg viewBox="0 0 500 200" className="w-full h-48 overflow-visible">
-              {/* Y Grid */}
-              {[
-                { y: 30, label: '25k ₽' },
-                { y: 65, label: '20k ₽' },
-                { y: 100, label: '15k ₽' },
-                { y: 135, label: '10k ₽' },
-                { y: 170, label: '5k ₽' },
-              ].map((g, i) => (
-                <g key={i}>
-                  <line
-                    x1="45"
-                    y1={g.y}
-                    x2="500"
-                    y2={g.y}
-                    stroke="currentColor"
-                    className="text-slate-100 dark:text-emerald-950/70"
-                    strokeDasharray="4 4"
-                  />
-                  <text x="5" y={g.y + 4} className="fill-slate-400 text-[10px] font-mono">
-                    {g.label}
-                  </text>
-                </g>
-              ))}
-
-              {/* Outlined / Contoured Bars */}
-              {[
-                { x: 65, h: 140, label: 'Minako' },
-                { x: 155, h: 95, label: 'Wenbox' },
-                { x: 245, h: 105, label: 'Jetson' },
-                { x: 335, h: 115, label: 'Kugoo' },
-                { x: 425, h: 55, label: 'Другие' },
-              ].map((b, i) => (
-                <g key={i} className="group">
-                  {/* Glowing background fill */}
-                  <rect
-                    x={b.x}
-                    y={180 - b.h}
-                    width="48"
-                    height={b.h}
-                    rx="8"
-                    className="fill-emerald-500/15 dark:fill-emerald-500/10 group-hover:fill-emerald-500/30 transition-colors"
-                  />
-                  {/* High-tech Contour Outline */}
-                  <rect
-                    x={b.x}
-                    y={180 - b.h}
-                    width="48"
-                    height={b.h}
-                    rx="8"
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="2"
-                    className="opacity-80 group-hover:opacity-100 group-hover:stroke-emerald-400 transition-all"
-                  />
-                </g>
-              ))}
-            </svg>
-
-            {/* Model labels */}
-            <div className="grid grid-cols-5 pl-10 pr-2 text-center text-[11px] font-bold text-slate-600 dark:text-slate-300 mt-2">
-              <span>Minako Monster</span>
-              <span>Wenbox U3</span>
-              <span>Jetson V8</span>
-              <span>Kugoo V1</span>
-              <span>Прочее</span>
+          <div className="p-3 mt-4 rounded-xl bg-slate-50 dark:bg-[#0c1813] border border-slate-200 dark:border-emerald-500/15 flex items-center justify-between text-xs">
+            <div>
+              <span className="text-slate-400 text-[10px] block">Залоговый фонд на удержании:</span>
+              <span className="font-extrabold text-slate-900 dark:text-white">
+                {financials.activeDepositsHeld.toLocaleString('ru-RU')} ₽
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="text-slate-400 text-[10px] block">Клиентов в базе:</span>
+              <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                {stats.totalClients || 0} чел.
+              </span>
             </div>
           </div>
         </div>

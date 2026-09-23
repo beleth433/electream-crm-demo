@@ -536,6 +536,16 @@ export interface DashboardStats {
   totalClients: number;
   employeesCount?: number;
   retailOrdersCount?: number;
+  modelsBreakdown?: Array<{
+    modelId: string;
+    name: string;
+    powerWatts: number;
+    total: number;
+    rented: number;
+    available: number;
+    maintenance: number;
+    utilization: number;
+  }>;
   systemTime?: {
     currentDate: string;
     isSimulated: boolean;

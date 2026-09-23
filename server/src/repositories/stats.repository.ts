@@ -116,6 +116,28 @@ export class StatsRepository {
       .reduce((sum, p) => sum + p.amount, 0);
     const activeDepositsHeld = totalDepositsCollected - totalDepositsRefunded;
 
+    // Real models breakdown
+    const modelsBreakdown = db.models.map((m) => {
+      const modelBikes = db.bikes.filter(
+        (b) => b.modelId === m.id && b.status !== "DECOMMISSIONED" && b.status !== "SOLD"
+      );
+      const rented = modelBikes.filter((b) => b.status === "RENTED").length;
+      const available = modelBikes.filter((b) => b.status === "AVAILABLE").length;
+      const maintenance = modelBikes.filter((b) => b.status === "IN_MAINTENANCE").length;
+      const total = modelBikes.length;
+      const utilization = total > 0 ? Math.round((rented / total) * 100) : 0;
+      return {
+        modelId: m.id,
+        name: m.name,
+        powerWatts: m.powerWatts,
+        total,
+        rented,
+        available,
+        maintenance,
+        utilization,
+      };
+    }).filter((m) => m.total > 0 || db.models.length <= 6);
+
     return {
       fleet: {
         totalBikes,
@@ -128,6 +150,7 @@ export class StatsRepository {
         soldBikes,
         fleetUtilization,
       },
+      modelsBreakdown,
       rentals: {
         activeRentalsCount,
         overdueCount,
