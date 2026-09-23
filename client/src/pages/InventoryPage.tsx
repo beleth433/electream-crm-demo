@@ -24,6 +24,7 @@ import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../ut
 
 export const InventoryPage: React.FC = () => {
   const [parts, setParts] = useState<Part[]>([]);
+  const [allParts, setAllParts] = useState<Part[]>([]);
   const [categories, setCategories] = useState<PartCategoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lowStockFilter, setLowStockFilter] = useState(false);
@@ -103,7 +104,7 @@ export const InventoryPage: React.FC = () => {
     }
   };
 
-  const calculateNextPartSku = (prefixToUse: string, partList: Part[] = parts) => {
+  const calculateNextPartSku = (prefixToUse: string, partList: Part[] = allParts) => {
     const existing = partList.map((p) => p.sku);
     return getNextSequentialNumber(existing, prefixToUse, 3);
   };
@@ -111,24 +112,52 @@ export const InventoryPage: React.FC = () => {
   const handlePrefixChange = (newPrefix: string) => {
     setPartPrefix(newPrefix);
     setStoredPrefix('part', newPrefix);
-    const nextNum = calculateNextPartSku(newPrefix);
+    const nextNum = calculateNextPartSku(newPrefix, allParts);
     setNewPartForm((prev) => ({ ...prev, sku: nextNum }));
   };
 
-  const handleOpenAddModal = () => {
-    const nextNum = calculateNextPartSku(partPrefix);
+  const handleOpenAddModal = async () => {
     setIsQuickCategoryCreating(false);
     setQuickCategoryName('');
-    setNewPartForm({
-      name: '',
-      sku: nextNum,
-      categoryId: categories[0]?.id || '',
-      quantity: 10,
-      minQuantity: 3,
-      purchasePrice: 500,
-      clientPrice: 1200,
-    });
+    try {
+      const latestAll = await api.getParts();
+      setAllParts(latestAll);
+      const nextNum = calculateNextPartSku(partPrefix, latestAll);
+      setNewPartForm({
+        name: '',
+        sku: nextNum,
+        categoryId: categories[0]?.id || '',
+        quantity: 10,
+        minQuantity: 3,
+        purchasePrice: 500,
+        clientPrice: 1200,
+      });
+    } catch {
+      const nextNum = calculateNextPartSku(partPrefix, allParts);
+      setNewPartForm({
+        name: '',
+        sku: nextNum,
+        categoryId: categories[0]?.id || '',
+        quantity: 10,
+        minQuantity: 3,
+        purchasePrice: 500,
+        clientPrice: 1200,
+      });
+    }
     setIsAddModalOpen(true);
+  };
+
+  const handleRecalculatePartSku = async () => {
+    try {
+      const latestAll = await api.getParts();
+      setAllParts(latestAll);
+      const nextNum = calculateNextPartSku(partPrefix, latestAll);
+      setNewPartForm((prev) => ({ ...prev, sku: nextNum }));
+      toast.success(`Подобран следующий артикул: ${nextNum}`);
+    } catch {
+      const nextNum = calculateNextPartSku(partPrefix, allParts);
+      setNewPartForm((prev) => ({ ...prev, sku: nextNum }));
+    }
   };
 
   const loadData = () => {
@@ -139,10 +168,12 @@ export const InventoryPage: React.FC = () => {
         categoryId: categoryFilter === 'ALL' ? undefined : categoryFilter,
         search,
       }),
+      api.getParts(),
       api.getPartCategories(),
     ])
-      .then(([partsRes, categoriesRes]) => {
+      .then(([partsRes, allPartsRes, categoriesRes]) => {
         setParts(partsRes);
+        setAllParts(allPartsRes);
         setCategories(categoriesRes);
         if (categoriesRes.length > 0 && !newPartForm.categoryId) {
           setNewPartForm((prev) => ({ ...prev, categoryId: categoriesRes[0].id }));
@@ -159,7 +190,7 @@ export const InventoryPage: React.FC = () => {
   const handleCreatePart = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.createPart({
+      const created = await api.createPart({
         ...newPartForm,
         categoryId: newPartForm.categoryId || undefined,
         quantity: Number(newPartForm.quantity),
@@ -168,8 +199,10 @@ export const InventoryPage: React.FC = () => {
         clientPrice: Number(newPartForm.clientPrice),
       });
       toast.success(`Деталь "${newPartForm.name}" добавлена на склад!`);
+      const updatedAll = [...allParts, created];
+      setAllParts(updatedAll);
       const nextNum = getNextSequentialNumber(
-        [...parts.map((p) => p.sku), newPartForm.sku],
+        updatedAll.map((p) => p.sku),
         partPrefix,
         3
       );
@@ -642,12 +675,9 @@ export const InventoryPage: React.FC = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    const nextNum = calculateNextPartSku(partPrefix);
-                    setNewPartForm((prev) => ({ ...prev, sku: nextNum }));
-                  }}
+                  onClick={handleRecalculatePartSku}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition"
-                  title="Подобрать следующий свободный номер для этого префикса"
+                  title="Подобрать следующий свободный номер для этого префикса во всей базе запчастей"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                 </button>

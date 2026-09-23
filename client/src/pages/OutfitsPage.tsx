@@ -26,6 +26,7 @@ import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../ut
 
 export const OutfitsPage: React.FC = () => {
   const [outfits, setOutfits] = useState<Outfit[]>([]);
+  const [allOutfits, setAllOutfits] = useState<Outfit[]>([]);
   const [categories, setCategories] = useState<OutfitCategoryItem[]>([]);
   const [templates, setTemplates] = useState<OutfitTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +49,7 @@ export const OutfitsPage: React.FC = () => {
     salePrice: 2000,
   });
 
-  const calculateNextOutfitNumber = (prefixToUse: string, outfitList: Outfit[] = outfits) => {
+  const calculateNextOutfitNumber = (prefixToUse: string, outfitList: Outfit[] = allOutfits) => {
     const existing = outfitList.map((o) => o.inventoryNumber);
     return getNextSequentialNumber(existing, prefixToUse, 3);
   };
@@ -56,22 +57,49 @@ export const OutfitsPage: React.FC = () => {
   const handlePrefixChange = (newPrefix: string) => {
     setOutfitPrefix(newPrefix);
     setStoredPrefix('outfit', newPrefix);
-    const nextNum = calculateNextOutfitNumber(newPrefix);
+    const nextNum = calculateNextOutfitNumber(newPrefix, allOutfits);
     setNewOutfitForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
   };
 
-  const handleOpenAddModal = () => {
+  const handleOpenAddModal = async () => {
     setSelectedTemplateId('');
-    const nextNum = calculateNextOutfitNumber(outfitPrefix);
-    setNewOutfitForm({
-      name: '',
-      category: categories[0]?.id || 'HELMET',
-      inventoryNumber: nextNum,
-      depositValue: 2000,
-      purchasePrice: 1000,
-      salePrice: 2000,
-    });
+    try {
+      const latestAll = await api.getOutfits();
+      setAllOutfits(latestAll);
+      const nextNum = calculateNextOutfitNumber(outfitPrefix, latestAll);
+      setNewOutfitForm({
+        name: '',
+        category: categories[0]?.id || 'HELMET',
+        inventoryNumber: nextNum,
+        depositValue: 2000,
+        purchasePrice: 1000,
+        salePrice: 2000,
+      });
+    } catch {
+      const nextNum = calculateNextOutfitNumber(outfitPrefix, allOutfits);
+      setNewOutfitForm({
+        name: '',
+        category: categories[0]?.id || 'HELMET',
+        inventoryNumber: nextNum,
+        depositValue: 2000,
+        purchasePrice: 1000,
+        salePrice: 2000,
+      });
+    }
     setIsAddModalOpen(true);
+  };
+
+  const handleRecalculateNumber = async () => {
+    try {
+      const latestAll = await api.getOutfits();
+      setAllOutfits(latestAll);
+      const nextNum = calculateNextOutfitNumber(outfitPrefix, latestAll);
+      setNewOutfitForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
+      toast.success(`Подобран следующий свободный номер: ${nextNum}`);
+    } catch {
+      const nextNum = calculateNextOutfitNumber(outfitPrefix, allOutfits);
+      setNewOutfitForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
+    }
   };
 
   // Manage Categories & Templates Modal
@@ -95,11 +123,13 @@ export const OutfitsPage: React.FC = () => {
         category: categoryFilter === 'ALL' ? undefined : categoryFilter,
         search,
       }),
+      api.getOutfits(),
       api.getOutfitCategories(),
       api.getOutfitTemplates(),
     ])
-      .then(([outfitsData, categoriesData, templatesData]) => {
+      .then(([outfitsData, allOutfitsData, categoriesData, templatesData]) => {
         setOutfits(outfitsData);
+        setAllOutfits(allOutfitsData);
         setCategories(categoriesData);
         setTemplates(templatesData);
         if (categoriesData.length > 0 && !newOutfitForm.category) {
@@ -118,7 +148,7 @@ export const OutfitsPage: React.FC = () => {
     setSelectedTemplateId(templateId);
     const tmpl = templates.find((t) => t.id === templateId);
     if (tmpl) {
-      const nextNum = calculateNextOutfitNumber(outfitPrefix);
+      const nextNum = calculateNextOutfitNumber(outfitPrefix, allOutfits);
       setNewOutfitForm({
         name: tmpl.name,
         category: tmpl.categoryId,
@@ -209,10 +239,12 @@ export const OutfitsPage: React.FC = () => {
   const handleCreateOutfit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.createOutfit(newOutfitForm);
+      const created = await api.createOutfit(newOutfitForm);
       toast.success(`Экипировка "${newOutfitForm.name}" добавлена на склад!`);
+      const updatedAll = [...allOutfits, created];
+      setAllOutfits(updatedAll);
       const nextNum = getNextSequentialNumber(
-        [...outfits.map((o) => o.inventoryNumber), newOutfitForm.inventoryNumber],
+        updatedAll.map((o) => o.inventoryNumber),
         outfitPrefix,
         3
       );
@@ -594,12 +626,9 @@ export const OutfitsPage: React.FC = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    const nextNum = calculateNextOutfitNumber(outfitPrefix);
-                    setNewOutfitForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
-                  }}
+                  onClick={handleRecalculateNumber}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition"
-                  title="Подобрать следующий свободный номер для этого префикса"
+                  title="Подобрать следующий свободный номер для этого префикса во всей базе экипировки"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                 </button>

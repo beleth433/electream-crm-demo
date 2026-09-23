@@ -96,18 +96,46 @@ export const BatteriesPage: React.FC = () => {
     }));
   };
 
-  const handleOpenCreateModal = () => {
-    const nextNum = calculateNextBatteryNumber(batteryPrefix);
-    const selectedId = createForm.modelId || batteryModels[0]?.id || '';
-    const selectedModel = batteryModels.find((m) => m.id === selectedId) || batteryModels[0];
-    setCreateForm((prev) => ({
-      ...prev,
-      modelId: selectedId,
-      serialNumber: nextNum,
-      purchasePrice: selectedModel?.purchasePrice !== undefined ? selectedModel.purchasePrice : 15000,
-      salePrice: selectedModel?.salePrice !== undefined ? selectedModel.salePrice : 25000,
-    }));
+  const handleOpenCreateModal = async () => {
+    try {
+      const latestAll = await api.getBatteries();
+      setBatteries(latestAll);
+      const nextNum = calculateNextBatteryNumber(batteryPrefix, latestAll);
+      const selectedId = createForm.modelId || batteryModels[0]?.id || '';
+      const selectedModel = batteryModels.find((m) => m.id === selectedId) || batteryModels[0];
+      setCreateForm((prev) => ({
+        ...prev,
+        modelId: selectedId,
+        serialNumber: nextNum,
+        purchasePrice: selectedModel?.purchasePrice !== undefined ? selectedModel.purchasePrice : 15000,
+        salePrice: selectedModel?.salePrice !== undefined ? selectedModel.salePrice : 25000,
+      }));
+    } catch {
+      const nextNum = calculateNextBatteryNumber(batteryPrefix, batteries);
+      const selectedId = createForm.modelId || batteryModels[0]?.id || '';
+      const selectedModel = batteryModels.find((m) => m.id === selectedId) || batteryModels[0];
+      setCreateForm((prev) => ({
+        ...prev,
+        modelId: selectedId,
+        serialNumber: nextNum,
+        purchasePrice: selectedModel?.purchasePrice !== undefined ? selectedModel.purchasePrice : 15000,
+        salePrice: selectedModel?.salePrice !== undefined ? selectedModel.salePrice : 25000,
+      }));
+    }
     setIsCreateModalOpen(true);
+  };
+
+  const handleRecalculateBatteryNumber = async () => {
+    try {
+      const latestAll = await api.getBatteries();
+      setBatteries(latestAll);
+      const nextNum = calculateNextBatteryNumber(batteryPrefix, latestAll);
+      setCreateForm((prev) => ({ ...prev, serialNumber: nextNum }));
+      toast.success(`Подобран следующий номер АКБ: ${nextNum}`);
+    } catch {
+      const nextNum = calculateNextBatteryNumber(batteryPrefix, batteries);
+      setCreateForm((prev) => ({ ...prev, serialNumber: nextNum }));
+    }
   };
 
   // Modal: Edit Battery
@@ -1213,12 +1241,9 @@ export const BatteriesPage: React.FC = () => {
                   />
                   <button
                     type="button"
-                    onClick={() => {
-                      const nextNum = calculateNextBatteryNumber(batteryPrefix);
-                      setCreateForm((prev) => ({ ...prev, serialNumber: nextNum }));
-                    }}
+                    onClick={handleRecalculateBatteryNumber}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition"
-                    title="Подобрать следующий свободный номер для этого префикса"
+                    title="Подобрать следующий свободный номер для этого префикса во всем парке АКБ"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                   </button>

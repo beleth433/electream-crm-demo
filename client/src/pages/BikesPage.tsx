@@ -33,6 +33,7 @@ import { QuickSendToRepairModal } from '../components/QuickSendToRepairModal';
 
 export const BikesPage: React.FC = () => {
   const [bikes, setBikes] = useState<Bike[]>([]);
+  const [allBikes, setAllBikes] = useState<Bike[]>([]);
   const [models, setModels] = useState<BikeModel[]>([]);
   const [availableBatteries, setAvailableBatteries] = useState<Battery[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,7 +107,7 @@ export const BikesPage: React.FC = () => {
     }
   };
 
-  const calculateNextBikeNumber = (prefixToUse: string, bikeList: Bike[] = bikes) => {
+  const calculateNextBikeNumber = (prefixToUse: string, bikeList: Bike[] = allBikes) => {
     const existing = bikeList.map((b) => b.inventoryNumber);
     return getNextSequentialNumber(existing, prefixToUse, 3);
   };
@@ -114,7 +115,7 @@ export const BikesPage: React.FC = () => {
   const handlePrefixChange = (newPrefix: string) => {
     setBikePrefix(newPrefix);
     setStoredPrefix('bike', newPrefix);
-    const nextNum = calculateNextBikeNumber(newPrefix);
+    const nextNum = calculateNextBikeNumber(newPrefix, allBikes);
     setNewBikeForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
   };
 
@@ -128,20 +129,47 @@ export const BikesPage: React.FC = () => {
     }));
   };
 
-  const handleOpenAddModal = () => {
-    const nextNum = calculateNextBikeNumber(bikePrefix);
-    const initialModel = models.find((m) => m.id === (newBikeForm.modelId || models[0]?.id));
-    setNewBikeForm((prev) => ({
-      ...prev,
-      inventoryNumber: nextNum,
-      modelId: prev.modelId || models[0]?.id || '',
-      purchasePrice: initialModel?.purchasePrice ?? 0,
-      salePrice: initialModel?.salePrice ?? 0,
-    }));
+  const handleOpenAddModal = async () => {
+    try {
+      const latestAll = await api.getBikes();
+      setAllBikes(latestAll);
+      const nextNum = calculateNextBikeNumber(bikePrefix, latestAll);
+      const initialModel = models.find((m) => m.id === (newBikeForm.modelId || models[0]?.id));
+      setNewBikeForm((prev) => ({
+        ...prev,
+        inventoryNumber: nextNum,
+        modelId: prev.modelId || models[0]?.id || '',
+        purchasePrice: initialModel?.purchasePrice ?? 0,
+        salePrice: initialModel?.salePrice ?? 0,
+      }));
+    } catch {
+      const nextNum = calculateNextBikeNumber(bikePrefix, allBikes);
+      const initialModel = models.find((m) => m.id === (newBikeForm.modelId || models[0]?.id));
+      setNewBikeForm((prev) => ({
+        ...prev,
+        inventoryNumber: nextNum,
+        modelId: prev.modelId || models[0]?.id || '',
+        purchasePrice: initialModel?.purchasePrice ?? 0,
+        salePrice: initialModel?.salePrice ?? 0,
+      }));
+    }
     if (models.length === 0) {
       setIsQuickCreateModelOpen(true);
     }
     setIsAddModalOpen(true);
+  };
+
+  const handleRecalculateBikeNumber = async () => {
+    try {
+      const latestAll = await api.getBikes();
+      setAllBikes(latestAll);
+      const nextNum = calculateNextBikeNumber(bikePrefix, latestAll);
+      setNewBikeForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
+      toast.success(`Подобран следующий номер байка: ${nextNum}`);
+    } catch {
+      const nextNum = calculateNextBikeNumber(bikePrefix, allBikes);
+      setNewBikeForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
+    }
   };
 
   // Battery Attach Modal
@@ -169,11 +197,13 @@ export const BikesPage: React.FC = () => {
         status: statusFilter === 'ALL' ? undefined : statusFilter,
         search,
       }),
+      api.getBikes(),
       api.getBikeModels(),
       api.getBatteries({ status: 'AVAILABLE' }),
     ])
-      .then(([bikesRes, modelsRes, batteriesRes]) => {
+      .then(([bikesRes, allBikesRes, modelsRes, batteriesRes]) => {
         setBikes(bikesRes);
+        setAllBikes(allBikesRes);
         setModels(modelsRes);
         setAvailableBatteries(batteriesRes);
         if (modelsRes.length > 0 && !newBikeForm.modelId) {
@@ -690,12 +720,9 @@ export const BikesPage: React.FC = () => {
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    const nextNum = calculateNextBikeNumber(bikePrefix);
-                    setNewBikeForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
-                  }}
+                  onClick={handleRecalculateBikeNumber}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-emerald-500 transition"
-                  title="Подобрать следующий свободный номер для этого префикса"
+                  title="Подобрать следующий свободный номер для этого префикса во всем парке байков"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                 </button>

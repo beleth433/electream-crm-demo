@@ -335,19 +335,29 @@
       "purchasePrice": 500,
       "salePrice": 1000,
       "status": "IN_STOCK"
+    },
+    {
+      "id": "outfit-1790207422050",
+      "name": "Держатель hoco",
+      "category": "cat-1790119454641",
+      "inventoryNumber": "ЭК-005",
+      "depositValue": 0,
+      "purchasePrice": 500,
+      "salePrice": 1000,
+      "status": "IN_STOCK"
+    },
+    {
+      "id": "outfit-1790207644526",
+      "name": "Замок platinum",
+      "category": "cat-1790207477036",
+      "inventoryNumber": "ЗМК001",
+      "depositValue": 0,
+      "purchasePrice": 5000,
+      "salePrice": 7000,
+      "status": "IN_STOCK"
     }
   ],
   "outfitCategories": [
-    {
-      "id": "LOCK",
-      "name": "Замки и безопасность",
-      "isSystem": true
-    },
-    {
-      "id": "WINTER_GLOVES",
-      "name": "Зимние муфты и перчатки",
-      "isSystem": true
-    },
     {
       "id": "cat-1790119454641",
       "name": "Держатель смартфона",
@@ -356,6 +366,11 @@
     {
       "id": "cat-1790204877162",
       "name": "Шлемы",
+      "isSystem": false
+    },
+    {
+      "id": "cat-1790207477036",
+      "name": "Замки",
       "isSystem": false
     }
   ],
@@ -377,9 +392,37 @@
       "description": null,
       "purchasePrice": 500,
       "salePrice": 1000
+    },
+    {
+      "id": "tmpl-1790207515981",
+      "name": "Замок platinum",
+      "categoryId": "cat-1790207477036",
+      "defaultDeposit": 0,
+      "description": null,
+      "purchasePrice": 5000,
+      "salePrice": 7000
     }
   ],
-  "clients": [],
+  "clients": [
+    {
+      "id": "cli-1790207788520",
+      "fullName": "Фарход Каримов",
+      "phone": "+7 (925) 880-14-11",
+      "telegram": null,
+      "passportSerial": null,
+      "passportNumber": null,
+      "citizenship": "РФ",
+      "migrationCard": null,
+      "patentNumber": null,
+      "courierService": null,
+      "documentPhotoUrls": [],
+      "status": "NORMAL",
+      "clientType": "RETAIL",
+      "manualLoyaltyTierId": null,
+      "blackListReason": null,
+      "createdAt": "2026-09-23T23:56:28.520Z"
+    }
+  ],
   "tariffs": [],
   "parts": [
     {
@@ -390,6 +433,17 @@
       "minQuantity": 3,
       "purchasePrice": 500,
       "clientPrice": 1000
+    },
+    {
+      "id": "prt-1790207220843",
+      "name": "Фара арктик",
+      "sku": "СВТ001",
+      "categoryId": "cat-part-1790207194942",
+      "categoryName": "Свет",
+      "quantity": 9,
+      "minQuantity": 3,
+      "purchasePrice": 500,
+      "clientPrice": 1200
     }
   ],
   "partCategories": [
@@ -432,11 +486,26 @@
       "id": "cat-part-other",
       "name": "Прочее",
       "isSystem": false
+    },
+    {
+      "id": "cat-part-1790207194942",
+      "name": "Свет",
+      "isSystem": false
     }
   ],
   "rentals": [],
   "repairs": [],
-  "payments": [],
+  "payments": [
+    {
+      "id": "pay-1790207788520",
+      "orderId": "ord-1790207788520",
+      "type": "RETAIL_SALE",
+      "amount": 1200,
+      "method": "SBP",
+      "description": "Розничная продажа (Чек ORD-788520): Фарход Каримов",
+      "createdAt": "2026-09-23T23:56:28.520Z"
+    }
+  ],
   "reviews": [],
   "articles": [],
   "employees": [
@@ -465,7 +534,32 @@
       "notes": null
     }
   ],
-  "retailOrders": [],
+  "retailOrders": [
+    {
+      "id": "ord-1790207788520",
+      "orderNumber": "ORD-788520",
+      "customerType": "EXTERNAL",
+      "customerName": "Фарход Каримов",
+      "customerPhone": "+7 (925) 880-14-11",
+      "clientId": "cli-1790207788520",
+      "items": [
+        {
+          "itemType": "PART",
+          "itemId": "prt-1790207220843",
+          "name": "Фара арктик [СВТ001]",
+          "quantity": 1,
+          "price": 1200,
+          "costPrice": 500
+        }
+      ],
+      "totalAmount": 1200,
+      "totalCost": 500,
+      "profit": 700,
+      "paymentMethod": "SBP",
+      "notes": null,
+      "createdAt": "2026-09-23T23:56:28.520Z"
+    }
+  ],
   "loyaltyTiers": [
     {
       "id": "tier-bronze",
