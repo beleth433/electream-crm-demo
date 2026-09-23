@@ -28,287 +28,11 @@
       "isActive": true
     }
   ],
-  "models": [
-    {
-      "id": "mdl-1790100370284",
-      "name": "Monster",
-      "powerWatts": 840,
-      "wheelSizeInch": 16,
-      "description": null
-    },
-    {
-      "id": "mdl-1790100378109",
-      "name": "U2",
-      "powerWatts": 1240,
-      "wheelSizeInch": 16,
-      "description": null
-    },
-    {
-      "id": "mdl-1790100384471",
-      "name": "U5",
-      "powerWatts": 1240,
-      "wheelSizeInch": 16,
-      "description": null
-    }
-  ],
-  "batteryModels": [
-    {
-      "id": "bat-mdl-1790100453807",
-      "name": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "description": null
-    },
-    {
-      "id": "bat-mdl-1790100490191",
-      "name": "Юшки фосфат",
-      "voltage": 60,
-      "capacityAh": 45,
-      "chemistry": "LiFePO4",
-      "description": null
-    },
-    {
-      "id": "bat-mdl-1790100501973",
-      "name": "Юшки лион",
-      "voltage": 60,
-      "capacityAh": 70,
-      "chemistry": "Li-ion",
-      "description": null
-    }
-  ],
-  "bikes": [
-    {
-      "id": "bike-1790100410944",
-      "inventoryNumber": "ЭВ-001",
-      "modelId": "mdl-1790100370284",
-      "batteryId": "bat-1790100534376",
-      "frameNumber": null,
-      "motorNumber": null,
-      "status": "RENTED",
-      "currentLocation": "В аренде у Александр Андреевич Кузнецов",
-      "mileageKm": 0,
-      "note": null,
-      "createdAt": "2026-09-22T18:06:50.944Z",
-      "updatedAt": "2026-09-22T19:10:34.486Z"
-    },
-    {
-      "id": "bike-1790100415623",
-      "inventoryNumber": "ЭВ-002",
-      "modelId": "mdl-1790100370284",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
-      "status": "RENTED",
-      "currentLocation": "В аренде у Семенов Петр Сергеевич",
-      "mileageKm": 0,
-      "note": null,
-      "createdAt": "2026-09-22T18:06:55.623Z",
-      "updatedAt": "2026-09-23T15:16:49.071Z"
-    },
-    {
-      "id": "bike-1790100417566",
-      "inventoryNumber": "ЭВ-003",
-      "modelId": "mdl-1790100370284",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
-      "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
-      "mileageKm": 0,
-      "note": null,
-      "createdAt": "2026-09-22T18:06:57.566Z",
-      "updatedAt": "2026-09-22T18:06:57.566Z"
-    },
-    {
-      "id": "bike-1790100422931",
-      "inventoryNumber": "ЭВ-004",
-      "modelId": "mdl-1790100378109",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
-      "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
-      "mileageKm": 0,
-      "note": null,
-      "createdAt": "2026-09-22T18:07:02.931Z",
-      "updatedAt": "2026-09-22T18:07:02.931Z"
-    },
-    {
-      "id": "bike-1790100426433",
-      "inventoryNumber": "ЭВ-005",
-      "modelId": "mdl-1790100378109",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
-      "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
-      "mileageKm": 0,
-      "note": null,
-      "createdAt": "2026-09-22T18:07:06.433Z",
-      "updatedAt": "2026-09-22T18:07:06.433Z"
-    },
-    {
-      "id": "bike-1790100429836",
-      "inventoryNumber": "ЭВ-006",
-      "modelId": "mdl-1790100384471",
-      "batteryId": "bat-1790100572673",
-      "frameNumber": null,
-      "motorNumber": null,
-      "status": "RENTED",
-      "currentLocation": "В аренде у Иван Иванович Иванов",
-      "mileageKm": 0,
-      "note": null,
-      "createdAt": "2026-09-22T18:07:09.836Z",
-      "updatedAt": "2026-09-22T18:38:23.961Z"
-    }
-  ],
-  "batteries": [
-    {
-      "id": "bat-1790100534376",
-      "serialNumber": "АКБ-001",
-      "modelId": "bat-mdl-1790100453807",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "INSTALLED",
-      "installedBikeId": "bike-1790100410944",
-      "notes": null,
-      "createdAt": "2026-09-22T18:08:54.376Z",
-      "updatedAt": "2026-09-22T19:10:34.486Z"
-    },
-    {
-      "id": "bat-1790100541495",
-      "serialNumber": "АКБ-002",
-      "modelId": "bat-mdl-1790100453807",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "ISSUED_SPARE",
-      "installedBikeId": null,
-      "notes": null,
-      "createdAt": "2026-09-22T18:09:01.495Z",
-      "updatedAt": "2026-09-22T19:10:34.486Z"
-    },
-    {
-      "id": "bat-1790100543564",
-      "serialNumber": "АКБ-003",
-      "modelId": "bat-mdl-1790100453807",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
-      "notes": null,
-      "createdAt": "2026-09-22T18:09:03.564Z",
-      "updatedAt": "2026-09-22T18:09:03.564Z"
-    },
-    {
-      "id": "bat-1790100547248",
-      "serialNumber": "АКБ-004",
-      "modelId": "bat-mdl-1790100453807",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
-      "notes": null,
-      "createdAt": "2026-09-22T18:09:07.248Z",
-      "updatedAt": "2026-09-22T18:09:07.248Z"
-    },
-    {
-      "id": "bat-1790100548373",
-      "serialNumber": "АКБ-005",
-      "modelId": "bat-mdl-1790100453807",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
-      "notes": null,
-      "createdAt": "2026-09-22T18:09:08.373Z",
-      "updatedAt": "2026-09-22T18:09:08.373Z"
-    },
-    {
-      "id": "bat-1790100549530",
-      "serialNumber": "АКБ-006",
-      "modelId": "bat-mdl-1790100453807",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
-      "notes": null,
-      "createdAt": "2026-09-22T18:09:09.530Z",
-      "updatedAt": "2026-09-22T18:09:09.530Z"
-    },
-    {
-      "id": "bat-1790100562677",
-      "serialNumber": "АКБ-007",
-      "modelId": "bat-mdl-1790100490191",
-      "modelName": "Юшки фосфат",
-      "voltage": 60,
-      "capacityAh": 45,
-      "chemistry": "LiFePO4",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
-      "notes": null,
-      "createdAt": "2026-09-22T18:09:22.677Z",
-      "updatedAt": "2026-09-22T18:09:22.677Z"
-    },
-    {
-      "id": "bat-1790100568313",
-      "serialNumber": "АКБ-008",
-      "modelId": "bat-mdl-1790100490191",
-      "modelName": "Юшки фосфат",
-      "voltage": 60,
-      "capacityAh": 45,
-      "chemistry": "LiFePO4",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
-      "notes": null,
-      "createdAt": "2026-09-22T18:09:28.313Z",
-      "updatedAt": "2026-09-22T18:09:28.313Z"
-    },
-    {
-      "id": "bat-1790100572673",
-      "serialNumber": "АКБ-009",
-      "modelId": "bat-mdl-1790100501973",
-      "modelName": "Юшки лион",
-      "voltage": 60,
-      "capacityAh": 70,
-      "chemistry": "Li-ion",
-      "status": "INSTALLED",
-      "installedBikeId": "bike-1790100429836",
-      "notes": null,
-      "createdAt": "2026-09-22T18:09:32.673Z",
-      "updatedAt": "2026-09-22T18:09:59.534Z"
-    }
-  ],
-  "outfits": [
-    {
-      "id": "outfit-1790120086433",
-      "name": "Держатель смартфона hoco",
-      "category": "cat-1790119454641",
-      "inventoryNumber": "ЭК-001",
-      "depositValue": 0,
-      "status": "IN_STOCK"
-    },
-    {
-      "id": "outfit-1790148467894",
-      "name": "Шлем Guardian",
-      "category": "cat-1790148343452",
-      "inventoryNumber": "ЭК-002",
-      "depositValue": 0,
-      "status": "IN_STOCK"
-    }
-  ],
+  "models": [],
+  "batteryModels": [],
+  "bikes": [],
+  "batteries": [],
+  "outfits": [],
   "outfitCategories": [
     {
       "id": "LOCK",
@@ -336,218 +60,13 @@
       "isSystem": false
     }
   ],
-  "outfitTemplates": [
-    {
-      "id": "tmpl-1790119717906",
-      "name": "Держатель смартфона hoco",
-      "categoryId": "cat-1790119454641",
-      "defaultDeposit": 0,
-      "description": null
-    },
-    {
-      "id": "tmpl-1790148415722",
-      "name": "Шлем Guardian",
-      "categoryId": "cat-1790148343452",
-      "defaultDeposit": 0,
-      "description": null
-    }
-  ],
-  "clients": [
-    {
-      "id": "cli-1790100640539",
-      "fullName": "Иван Иванович Иванов",
-      "phone": "+7999999991",
-      "telegram": null,
-      "passportSerial": null,
-      "passportNumber": null,
-      "citizenship": "РФ",
-      "migrationCard": null,
-      "patentNumber": null,
-      "courierService": "Яндекс Еда",
-      "documentPhotoUrls": [],
-      "status": "NORMAL",
-      "blackListReason": null,
-      "createdAt": "2026-09-22T18:10:40.539Z",
-      "manualLoyaltyTierId": null
-    },
-    {
-      "id": "cli-1790100658244",
-      "fullName": "Александр Андреевич Кузнецов",
-      "phone": "1212423423423423",
-      "telegram": null,
-      "passportSerial": null,
-      "passportNumber": null,
-      "citizenship": "РФ",
-      "migrationCard": null,
-      "patentNumber": null,
-      "courierService": "Яндекс Еда",
-      "documentPhotoUrls": [],
-      "status": "NORMAL",
-      "blackListReason": null,
-      "createdAt": "2026-09-22T18:10:58.244Z"
-    },
-    {
-      "id": "cli-1790176603281",
-      "fullName": "Семенов Петр Сергеевич",
-      "phone": "+7 (999) 777-12-34",
-      "telegram": null,
-      "passportSerial": "4518",
-      "passportNumber": "998877",
-      "citizenship": "РФ",
-      "migrationCard": null,
-      "patentNumber": null,
-      "courierService": "Яндекс Еда",
-      "documentPhotoUrls": [],
-      "status": "NORMAL",
-      "clientType": "COURIER",
-      "manualLoyaltyTierId": null,
-      "blackListReason": null,
-      "createdAt": "2026-09-23T15:16:43.281Z"
-    }
-  ],
-  "tariffs": [
-    {
-      "id": "trf-1790102254558",
-      "name": "Недельный",
-      "type": "STANDARD",
-      "durationDays": 7,
-      "price": 3500,
-      "depositRequired": 0,
-      "isActive": true
-    }
-  ],
-  "parts": [
-    {
-      "id": "prt-1790148535420",
-      "name": "Задний суппорт U2",
-      "sku": "СУП001",
-      "quantity": 7,
-      "minQuantity": 3,
-      "purchasePrice": 500,
-      "clientPrice": 1200
-    }
-  ],
-  "rentals": [
-    {
-      "id": "rnt-1790102303961",
-      "rentalNumber": "RNT-2026-001",
-      "clientId": "cli-1790100640539",
-      "bikeId": "bike-1790100429836",
-      "tariffId": "trf-1790102254558",
-      "managerId": "usr-mgr-1",
-      "status": "ACTIVE",
-      "type": "STANDARD",
-      "startedAt": "2026-09-22T18:38:23.961Z",
-      "expiresAt": "2026-09-29T18:38:23.961Z",
-      "nextPaymentDue": "2026-09-29T18:38:23.961Z",
-      "depositAmount": 0,
-      "depositRefunded": false,
-      "notes": null,
-      "outfitIds": [],
-      "createdAt": "2026-09-22T18:38:23.961Z",
-      "updatedAt": "2026-09-22T18:38:23.961Z"
-    },
-    {
-      "id": "rnt-1790104234486",
-      "rentalNumber": "RNT-2026-002",
-      "clientId": "cli-1790100658244",
-      "bikeId": "bike-1790100410944",
-      "tariffId": "trf-1790102254558",
-      "managerId": "usr-mgr-1",
-      "status": "ACTIVE",
-      "type": "STANDARD",
-      "startedAt": "2026-09-22T19:10:34.486Z",
-      "expiresAt": "2026-09-29T19:10:34.486Z",
-      "nextPaymentDue": "2026-09-29T19:10:34.486Z",
-      "depositAmount": 0,
-      "depositRefunded": false,
-      "notes": null,
-      "outfitIds": [],
-      "batteryIds": [
-        "bat-1790100534376",
-        "bat-1790100541495"
-      ],
-      "createdAt": "2026-09-22T19:10:34.486Z",
-      "updatedAt": "2026-09-22T19:10:34.486Z"
-    },
-    {
-      "id": "rnt-1790176609071",
-      "rentalNumber": "RNT-2026-003",
-      "clientId": "cli-1790176603281",
-      "bikeId": "bike-1790100415623",
-      "tariffId": "trf-1790102254558",
-      "managerId": "usr-mgr-1",
-      "status": "ACTIVE",
-      "type": "STANDARD",
-      "startedAt": "2026-09-23T15:16:49.071Z",
-      "expiresAt": "2026-09-30T15:16:49.071Z",
-      "nextPaymentDue": "2026-09-30T15:16:49.071Z",
-      "depositAmount": 0,
-      "depositRefunded": false,
-      "notes": null,
-      "outfitIds": [],
-      "batteryIds": [],
-      "createdAt": "2026-09-23T15:16:49.071Z",
-      "updatedAt": "2026-09-23T15:16:49.071Z"
-    }
-  ],
+  "outfitTemplates": [],
+  "clients": [],
+  "tariffs": [],
+  "parts": [],
+  "rentals": [],
   "repairs": [],
-  "payments": [
-    {
-      "id": "pay-1790176603282",
-      "orderId": "ord-1790176603281",
-      "type": "RETAIL_SALE",
-      "amount": 1200,
-      "method": "SBP",
-      "description": "Розничная продажа (Чек ORD-603281): Семенов Петр Сергеевич",
-      "createdAt": "2026-09-23T15:16:43.282Z"
-    },
-    {
-      "id": "pay-1790175396660",
-      "orderId": "ord-1790175396659",
-      "type": "RETAIL_SALE",
-      "amount": 1200,
-      "method": "SBP",
-      "description": "Розничная продажа (Чек ORD-396659): Петр Николаевич",
-      "createdAt": "2026-09-23T14:56:36.660Z"
-    },
-    {
-      "id": "pay-1790148551198",
-      "orderId": "ord-1790148551191",
-      "type": "RETAIL_SALE",
-      "amount": 1200,
-      "method": "SBP",
-      "description": "Розничная продажа (Чек ORD-551191): Розничный покупатель (Гость)",
-      "createdAt": "2026-09-23T07:29:11.198Z"
-    },
-    {
-      "id": "pay-1790102303961-1",
-      "rentalId": "rnt-1790102303961",
-      "type": "RENTAL",
-      "amount": 3500,
-      "method": "SBP",
-      "description": "Оплата тарифа \"Недельный\" по договору RNT-2026-001",
-      "createdAt": "2026-09-22T18:38:23.961Z"
-    },
-    {
-      "id": "pay-1790104234487-1",
-      "rentalId": "rnt-1790104234486",
-      "type": "RENTAL",
-      "amount": 3500,
-      "method": "SBP",
-      "description": "Оплата тарифа \"Недельный\" по договору RNT-2026-002",
-      "createdAt": "2026-09-22T19:10:34.486Z"
-    },
-    {
-      "id": "pay-1790176609071-1",
-      "rentalId": "rnt-1790176609071",
-      "type": "RENTAL",
-      "amount": 3500,
-      "method": "SBP",
-      "description": "Оплата тарифа \"Недельный\" по договору RNT-2026-003",
-      "createdAt": "2026-09-23T15:16:49.071Z"
-    }
-  ],
+  "payments": [],
   "reviews": [],
   "articles": [],
   "employees": [
@@ -576,102 +95,29 @@
       "notes": null
     }
   ],
-  "retailOrders": [
-    {
-      "id": "ord-1790176603281",
-      "orderNumber": "ORD-603281",
-      "customerType": "EXTERNAL",
-      "customerName": "Семенов Петр Сергеевич",
-      "customerPhone": "+7 (999) 777-12-34",
-      "clientId": "cli-1790176603281",
-      "items": [
-        {
-          "itemType": "PART",
-          "itemId": "prt-1790148535420",
-          "name": "Задний суппорт U2 [СУП001]",
-          "quantity": 1,
-          "price": 1200,
-          "costPrice": 500
-        }
-      ],
-      "totalAmount": 1200,
-      "totalCost": 500,
-      "profit": 700,
-      "paymentMethod": "SBP",
-      "notes": null,
-      "createdAt": "2026-09-23T15:16:43.281Z"
-    },
-    {
-      "id": "ord-1790175396659",
-      "orderNumber": "ORD-396659",
-      "customerType": "GUEST",
-      "customerName": "Петр Николаевич",
-      "customerPhone": "+71234561234",
-      "clientId": null,
-      "items": [
-        {
-          "itemType": "PART",
-          "itemId": "prt-1790148535420",
-          "name": "Задний суппорт U2 [СУП001]",
-          "quantity": 1,
-          "price": 1200,
-          "costPrice": 500
-        }
-      ],
-      "totalAmount": 1200,
-      "totalCost": 500,
-      "profit": 700,
-      "paymentMethod": "SBP",
-      "notes": null,
-      "createdAt": "2026-09-23T14:56:36.660Z"
-    },
-    {
-      "id": "ord-1790148551191",
-      "orderNumber": "ORD-551191",
-      "customerType": "GUEST",
-      "customerName": "Розничный покупатель (Гость)",
-      "customerPhone": null,
-      "clientId": null,
-      "items": [
-        {
-          "itemType": "PART",
-          "itemId": "prt-1790148535420",
-          "name": "Задний суппорт U2 [СУП001]",
-          "quantity": 1,
-          "price": 1200,
-          "costPrice": 500
-        }
-      ],
-      "totalAmount": 1200,
-      "totalCost": 500,
-      "profit": 700,
-      "paymentMethod": "SBP",
-      "notes": null,
-      "createdAt": "2026-09-23T07:29:11.191Z"
-    }
-  ],
+  "retailOrders": [],
   "loyaltyTiers": [
     {
       "id": "tier-bronze",
       "name": "Бронза",
       "color": "amber",
-      "minRentalDays": 7,
-      "minTotalSpent": 3000,
-      "discountRentalPercent": 3,
-      "discountPartsPercent": 3,
-      "discountRepairsPercent": 3,
+      "minRentalDays": 0,
+      "minTotalSpent": 0,
+      "discountRentalPercent": 0,
+      "discountPartsPercent": 0,
+      "discountRepairsPercent": 0,
       "description": "Начальный базовый ранг для всех новых клиентов и курьеров",
-      "isDefault": false
+      "isDefault": true
     },
     {
       "id": "tier-silver",
       "name": "Серебро",
       "color": "slate",
-      "minRentalDays": 28,
+      "minRentalDays": 14,
       "minTotalSpent": 15000,
-      "discountRentalPercent": 7,
-      "discountPartsPercent": 7,
-      "discountRepairsPercent": 7,
+      "discountRentalPercent": 5,
+      "discountPartsPercent": 5,
+      "discountRepairsPercent": 5,
       "description": "От 14 дней аренды или 15 000 ₽ трат. Скидка 5% на аренду, запчасти и СТО",
       "isDefault": false
     },
@@ -679,11 +125,11 @@
       "id": "tier-gold",
       "name": "Золото",
       "color": "emerald",
-      "minRentalDays": 84,
+      "minRentalDays": 45,
       "minTotalSpent": 45000,
-      "discountRentalPercent": 15,
-      "discountPartsPercent": 15,
-      "discountRepairsPercent": 15,
+      "discountRentalPercent": 10,
+      "discountPartsPercent": 10,
+      "discountRepairsPercent": 10,
       "description": "От 45 дней аренды или 45 000 ₽ трат. Скидка 10% на все услуги и товары",
       "isDefault": false
     },
@@ -691,11 +137,11 @@
       "id": "tier-platinum",
       "name": "Платина",
       "color": "purple",
-      "minRentalDays": 168,
+      "minRentalDays": 90,
       "minTotalSpent": 100000,
-      "discountRentalPercent": 20,
-      "discountPartsPercent": 20,
-      "discountRepairsPercent": 20,
+      "discountRentalPercent": 15,
+      "discountPartsPercent": 15,
+      "discountRepairsPercent": 15,
       "description": "От 90 дней аренды или 100 000 ₽ трат. VIP-статус и максимальная скидка 15%",
       "isDefault": false
     }

@@ -672,8 +672,16 @@ export const BikesPage: React.FC = () => {
                     <label className="block text-[10px] text-slate-400 mb-0.5">Мощность (W)</label>
                     <input
                       type="number"
-                      value={newModelForm.powerWatts}
-                      onChange={(e) => setNewModelForm({ ...newModelForm, powerWatts: Number(e.target.value) })}
+                      min="1"
+                      step="any"
+                      placeholder="Напр. 1200"
+                      value={newModelForm.powerWatts || ''}
+                      onChange={(e) =>
+                        setNewModelForm({
+                          ...newModelForm,
+                          powerWatts: e.target.value === '' ? ('' as any) : Number(e.target.value),
+                        })
+                      }
                       className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs"
                     />
                   </div>
@@ -681,10 +689,15 @@ export const BikesPage: React.FC = () => {
                     <label className="block text-[10px] text-slate-400 mb-0.5">Колеса (")</label>
                     <input
                       type="number"
-                      step="0.5"
-                      value={newModelForm.wheelSizeInch}
+                      min="1"
+                      step="any"
+                      placeholder="Напр. 16"
+                      value={newModelForm.wheelSizeInch || ''}
                       onChange={(e) =>
-                        setNewModelForm({ ...newModelForm, wheelSizeInch: Number(e.target.value) })
+                        setNewModelForm({
+                          ...newModelForm,
+                          wheelSizeInch: e.target.value === '' ? ('' as any) : Number(e.target.value),
+                        })
                       }
                       className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs"
                     />
@@ -926,10 +939,16 @@ export const BikesPage: React.FC = () => {
                 <input
                   required
                   type="number"
-                  min="240"
-                  step="50"
-                  value={newModelForm.powerWatts}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, powerWatts: Number(e.target.value) })}
+                  min="1"
+                  step="any"
+                  placeholder="Любая мощность, напр. 1200"
+                  value={newModelForm.powerWatts || ''}
+                  onChange={(e) =>
+                    setNewModelForm({
+                      ...newModelForm,
+                      powerWatts: e.target.value === '' ? ('' as any) : Number(e.target.value),
+                    })
+                  }
                   className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold"
                 />
               </div>
@@ -938,11 +957,16 @@ export const BikesPage: React.FC = () => {
                 <label className="block text-slate-500 dark:text-slate-400 mb-1">Диаметр колес (дюймы)</label>
                 <input
                   type="number"
-                  min="10"
-                  max="29"
-                  step="0.5"
-                  value={newModelForm.wheelSizeInch}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, wheelSizeInch: Number(e.target.value) })}
+                  min="1"
+                  step="any"
+                  placeholder="Напр. 16"
+                  value={newModelForm.wheelSizeInch || ''}
+                  onChange={(e) =>
+                    setNewModelForm({
+                      ...newModelForm,
+                      wheelSizeInch: e.target.value === '' ? ('' as any) : Number(e.target.value),
+                    })
+                  }
                   className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold"
                 />
               </div>
