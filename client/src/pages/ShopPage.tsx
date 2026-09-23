@@ -7,6 +7,7 @@ import {
   Bike as BikeIcon,
   Wrench,
   ShieldCheck,
+  BatteryCharging,
   Search,
   Plus,
   Minus,
@@ -29,7 +30,7 @@ import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
 interface CartItem {
-  itemType: 'BIKE' | 'PART' | 'OUTFIT';
+  itemType: 'BIKE' | 'PART' | 'OUTFIT' | 'BATTERY';
   itemId: string;
   name: string;
   price: number;
@@ -48,7 +49,7 @@ export const ShopPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Filters for POS catalog
-  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'BIKES' | 'PARTS' | 'OUTFITS'>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'BIKES' | 'BATTERIES' | 'PARTS' | 'OUTFITS'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Cart & Order State
@@ -101,12 +102,27 @@ export const ShopPage: React.FC = () => {
 
   // Cart Management
   const handleAddToCart = (
-    itemType: 'BIKE' | 'PART' | 'OUTFIT',
-    item: { id: string; name?: string; modelName?: string; inventoryNumber?: string | null; sku?: string; price: number; costPrice: number; quantity?: number; inStock?: number }
+    itemType: 'BIKE' | 'PART' | 'OUTFIT' | 'BATTERY',
+    item: {
+      id: string;
+      name?: string;
+      modelName?: string;
+      inventoryNumber?: string | null;
+      serialNumber?: string;
+      voltage?: number;
+      capacityAh?: number;
+      sku?: string;
+      price: number;
+      costPrice: number;
+      quantity?: number;
+      inStock?: number;
+    }
   ) => {
     const itemName =
       itemType === 'BIKE'
         ? `${item.modelName || 'Электробайк'} (${item.inventoryNumber})`
+        : itemType === 'BATTERY'
+        ? `${item.modelName || 'АКБ'} ${item.voltage || ''}V ${item.capacityAh || ''}Ah (${item.serialNumber})`
         : itemType === 'PART'
         ? `${item.name} [${item.sku}]`
         : `${item.name}${item.inventoryNumber ? ` (${item.inventoryNumber})` : ''}`;
@@ -136,7 +152,7 @@ export const ShopPage: React.FC = () => {
           costPrice: item.costPrice,
           quantity: 1,
           maxStock,
-          inventoryNumber: item.inventoryNumber,
+          inventoryNumber: item.inventoryNumber || item.serialNumber,
           sku: item.sku,
         },
       ];
@@ -260,6 +276,17 @@ export const ShopPage: React.FC = () => {
     return b.inventoryNumber.toLowerCase().includes(q) || b.modelName.toLowerCase().includes(q);
   });
 
+  const filteredBatteries = (catalog?.batteries || []).filter((b) => {
+    if (categoryFilter !== 'ALL' && categoryFilter !== 'BATTERIES') return false;
+    const q = searchQuery.toLowerCase();
+    return (
+      b.serialNumber.toLowerCase().includes(q) ||
+      b.modelName.toLowerCase().includes(q) ||
+      `${b.voltage}v`.includes(q) ||
+      `${b.capacityAh}ah`.includes(q)
+    );
+  });
+
   const filteredParts = (catalog?.parts || []).filter((p) => {
     if (categoryFilter !== 'ALL' && categoryFilter !== 'PARTS') return false;
     const q = searchQuery.toLowerCase();
@@ -286,7 +313,7 @@ export const ShopPage: React.FC = () => {
             Магазин и кассовый терминал (POS)
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Продажа электровелосипедов (б/у и новых), запчастей и экипировки сторонним клиентам и курьерам
+            Продажа электровелосипедов, аккумуляторов, запчастей и экипировки
           </p>
         </div>
 
@@ -329,6 +356,7 @@ export const ShopPage: React.FC = () => {
                   {[
                     { id: 'ALL', label: 'Все товары' },
                     { id: 'BIKES', label: 'Электровелосипеды' },
+                    { id: 'BATTERIES', label: 'Аккумуляторы' },
                     { id: 'PARTS', label: 'Запчасти' },
                     { id: 'OUTFITS', label: 'Экипировка' },
                   ].map((tab) => (
@@ -420,6 +448,69 @@ export const ShopPage: React.FC = () => {
                           </div>
                           <button
                             onClick={() => handleAddToCart('BIKE', bike)}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5" />В чек
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Batteries section */}
+              {filteredBatteries.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 px-1">
+                    <BatteryCharging className="w-3.5 h-3.5 text-emerald-400" />
+                    Аккумуляторы (АКБ) ({filteredBatteries.length})
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {filteredBatteries.map((bat) => (
+                      <div
+                        key={bat.id}
+                        className="p-3.5 contour-card flex flex-col justify-between space-y-3 bg-white dark:bg-[#0c1611] hover:border-emerald-500/40 transition-all"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h4 className="font-bold text-xs text-slate-900 dark:text-white">
+                                {bat.modelName}
+                              </h4>
+                              <span className="font-mono text-[11px] font-bold text-emerald-500">
+                                {bat.serialNumber}
+                              </span>
+                            </div>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              На складе
+                            </span>
+                          </div>
+
+                          <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-slate-500">
+                            <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-semibold text-slate-300">
+                              {bat.voltage}V • {bat.capacityAh}Ah
+                            </span>
+                            {bat.chemistry && (
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400">
+                                {bat.chemistry}
+                              </span>
+                            )}
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
+                              Здоровье: {bat.healthPercent}%
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-emerald-500/10">
+                          <div>
+                            <span className="text-[10px] text-slate-400">Цена продажи:</span>
+                            <p className="text-sm font-black text-slate-900 dark:text-white">
+                              {bat.price.toLocaleString('ru-RU')} ₽
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleAddToCart('BATTERY', bat)}
                             className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-sm"
                           >
                             <Plus className="w-3.5 h-3.5" />В чек

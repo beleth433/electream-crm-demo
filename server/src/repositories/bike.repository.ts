@@ -110,6 +110,8 @@ export class BikeRepository {
     powerWatts: number;
     wheelSizeInch?: number | null;
     description?: string | null;
+    purchasePrice?: number;
+    salePrice?: number;
   }) {
     const db = getDb();
     if (!data.name || !data.name.trim()) {
@@ -121,6 +123,8 @@ export class BikeRepository {
       powerWatts: Number(data.powerWatts) || 500,
       wheelSizeInch: data.wheelSizeInch ? Number(data.wheelSizeInch) : 16.0,
       description: data.description || null,
+      purchasePrice: data.purchasePrice !== undefined ? Number(data.purchasePrice) : undefined,
+      salePrice: data.salePrice !== undefined ? Number(data.salePrice) : undefined,
     };
     db.models.push(newModel);
     return {
@@ -136,6 +140,8 @@ export class BikeRepository {
       powerWatts?: number;
       wheelSizeInch?: number | null;
       description?: string | null;
+      purchasePrice?: number;
+      salePrice?: number;
     }
   ) {
     const db = getDb();
@@ -147,6 +153,8 @@ export class BikeRepository {
     if (data.powerWatts !== undefined) model.powerWatts = Number(data.powerWatts);
     if (data.wheelSizeInch !== undefined) model.wheelSizeInch = data.wheelSizeInch ? Number(data.wheelSizeInch) : null;
     if (data.description !== undefined) model.description = data.description;
+    if (data.purchasePrice !== undefined) model.purchasePrice = Number(data.purchasePrice);
+    if (data.salePrice !== undefined) model.salePrice = Number(data.salePrice);
 
     const bikesCount = db.bikes.filter((b) => b.modelId === model.id).length;
     return {
@@ -183,11 +191,19 @@ export class BikeRepository {
     currentLocation?: string;
     mileageKm?: number;
     note?: string;
+    purchasePrice?: number;
+    salePrice?: number;
   }) {
     const db = getDb();
     if (db.bikes.some((b) => b.inventoryNumber.toLowerCase() === data.inventoryNumber.toLowerCase())) {
       throw new Error(`Байк с инвентарным номером ${data.inventoryNumber} уже существует`);
     }
+
+    const model = db.models.find((m) => m.id === data.modelId);
+    const purchasePrice =
+      data.purchasePrice !== undefined ? Number(data.purchasePrice) : (model?.purchasePrice ?? 0);
+    const salePrice =
+      data.salePrice !== undefined ? Number(data.salePrice) : (model?.salePrice ?? 0);
 
     const newBike = {
       id: `bike-${Date.now()}`,
@@ -200,6 +216,8 @@ export class BikeRepository {
       currentLocation: data.currentLocation || "Центральная база (м. Дмитровская)",
       mileageKm: data.mileageKm || 0,
       note: data.note || null,
+      purchasePrice,
+      salePrice,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

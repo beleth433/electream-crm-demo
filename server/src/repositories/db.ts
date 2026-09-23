@@ -63,6 +63,8 @@ export interface BatteryModelRecord {
   capacityAh: number;
   chemistry?: BatteryChemistry;
   description?: string | null;
+  purchasePrice?: number;
+  salePrice?: number;
 }
 
 export interface BatteryRecord {
@@ -78,6 +80,8 @@ export interface BatteryRecord {
   status: BatteryStatus;
   installedBikeId?: string | null; // Привязка к байку
   notes?: string | null;
+  purchasePrice?: number;
+  salePrice?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -98,6 +102,8 @@ export interface BikeModelRecord {
   powerWatts: number;
   wheelSizeInch?: number | null;
   description?: string | null;
+  purchasePrice?: number;
+  salePrice?: number;
 }
 
 export interface BikeRecord {
@@ -111,6 +117,8 @@ export interface BikeRecord {
   currentLocation: string;
   mileageKm: number;
   note?: string | null;
+  purchasePrice?: number;
+  salePrice?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -127,6 +135,8 @@ export interface OutfitTemplateRecord {
   categoryId: string;
   defaultDeposit: number;
   description?: string | null;
+  purchasePrice?: number;
+  salePrice?: number;
 }
 
 export interface OutfitRecord {
@@ -136,6 +146,8 @@ export interface OutfitRecord {
   inventoryNumber?: string | null;
   depositValue: number;
   status: OutfitStatus;
+  purchasePrice?: number;
+  salePrice?: number;
 }
 
 export interface ClientRecord {
@@ -263,7 +275,7 @@ export interface EmployeeRecord {
 }
 
 export interface RetailOrderItem {
-  itemType: "BIKE" | "PART" | "OUTFIT";
+  itemType: "BIKE" | "PART" | "OUTFIT" | "BATTERY";
   itemId: string;
   name: string;
   quantity: number;

@@ -46,12 +46,16 @@ export const BatteriesPage: React.FC = () => {
     capacityAh: number;
     chemistry: BatteryChemistry;
     description: string;
+    purchasePrice: number;
+    salePrice: number;
   }>({
     name: '',
     voltage: 60,
     capacityAh: 21,
     chemistry: 'Li-ion',
     description: '',
+    purchasePrice: 15000,
+    salePrice: 25000,
   });
 
   // Modal: Create Battery & Prefix state
@@ -60,6 +64,8 @@ export const BatteriesPage: React.FC = () => {
   const [createForm, setCreateForm] = useState({
     modelId: '',
     serialNumber: '',
+    purchasePrice: 15000,
+    salePrice: 25000,
     notes: '',
   });
 
@@ -75,12 +81,26 @@ export const BatteriesPage: React.FC = () => {
     setCreateForm((prev) => ({ ...prev, serialNumber: nextNum }));
   };
 
-  const handleOpenCreateModal = () => {
-    const nextNum = calculateNextBatteryNumber(batteryPrefix);
+  const handleModelSelectChange = (modelId: string) => {
+    const selected = batteryModels.find((m) => m.id === modelId);
     setCreateForm((prev) => ({
       ...prev,
-      modelId: prev.modelId || batteryModels[0]?.id || '',
+      modelId,
+      purchasePrice: selected?.purchasePrice !== undefined ? selected.purchasePrice : prev.purchasePrice,
+      salePrice: selected?.salePrice !== undefined ? selected.salePrice : prev.salePrice,
+    }));
+  };
+
+  const handleOpenCreateModal = () => {
+    const nextNum = calculateNextBatteryNumber(batteryPrefix);
+    const selectedId = createForm.modelId || batteryModels[0]?.id || '';
+    const selectedModel = batteryModels.find((m) => m.id === selectedId) || batteryModels[0];
+    setCreateForm((prev) => ({
+      ...prev,
+      modelId: selectedId,
       serialNumber: nextNum,
+      purchasePrice: selectedModel?.purchasePrice !== undefined ? selectedModel.purchasePrice : 15000,
+      salePrice: selectedModel?.salePrice !== undefined ? selectedModel.salePrice : 25000,
     }));
     setIsCreateModalOpen(true);
   };
@@ -95,6 +115,8 @@ export const BatteriesPage: React.FC = () => {
     capacityAh: 21,
     chemistry: 'Li-ion' as BatteryChemistry,
     status: 'AVAILABLE' as BatteryStatus,
+    purchasePrice: 15000,
+    salePrice: 25000,
     notes: '',
   });
 
@@ -154,6 +176,8 @@ export const BatteriesPage: React.FC = () => {
         capacityAh: 21,
         chemistry: 'Li-ion',
         description: '',
+        purchasePrice: 15000,
+        salePrice: 25000,
       });
     } catch (err: any) {
       toast.error(err.message || 'Ошибка создания шаблона АКБ');
@@ -192,6 +216,8 @@ export const BatteriesPage: React.FC = () => {
         serialNumber: createForm.serialNumber,
         voltage: selectedModel?.voltage || 60,
         capacityAh: selectedModel?.capacityAh || 21,
+        purchasePrice: Number(createForm.purchasePrice) || 0,
+        salePrice: Number(createForm.salePrice) || 0,
         notes: createForm.notes,
       });
       toast.success(`АКБ ${createForm.serialNumber} успешно оприходован`);
@@ -213,6 +239,7 @@ export const BatteriesPage: React.FC = () => {
 
   // Open edit modal
   const handleOpenEdit = (bat: Battery) => {
+    const batModel = batteryModels.find((m) => m.id === bat.modelId);
     setEditingBattery(bat);
     setEditForm({
       modelId: bat.modelId || '',
@@ -221,6 +248,8 @@ export const BatteriesPage: React.FC = () => {
       capacityAh: bat.capacityAh,
       chemistry: bat.chemistry || 'Li-ion',
       status: bat.status,
+      purchasePrice: bat.purchasePrice !== undefined ? bat.purchasePrice : (batModel?.purchasePrice ?? 15000),
+      salePrice: bat.salePrice !== undefined ? bat.salePrice : (batModel?.salePrice ?? 25000),
       notes: bat.notes || '',
     });
     setIsEditModalOpen(true);
@@ -232,7 +261,11 @@ export const BatteriesPage: React.FC = () => {
     if (!editingBattery) return;
 
     try {
-      await api.updateBattery(editingBattery.id, editForm);
+      await api.updateBattery(editingBattery.id, {
+        ...editForm,
+        purchasePrice: Number(editForm.purchasePrice) || 0,
+        salePrice: Number(editForm.salePrice) || 0,
+      });
       toast.success(`Параметры АКБ ${editForm.serialNumber} обновлены`);
       setIsEditModalOpen(false);
       setEditingBattery(null);
@@ -757,6 +790,22 @@ export const BatteriesPage: React.FC = () => {
                         "{bat.notes}"
                       </p>
                     )}
+
+                    {/* Prices */}
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Себестоимость:</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono">
+                          {bat.purchasePrice ? `${bat.purchasePrice.toLocaleString()} ₽` : '—'}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-slate-400 block text-[10px]">Цена в магазине:</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                          {bat.salePrice ? `${bat.salePrice.toLocaleString()} ₽` : '—'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -850,6 +899,7 @@ export const BatteriesPage: React.FC = () => {
                 <th className="px-4 py-3">Модель</th>
                 <th className="px-4 py-3">Характеристики</th>
                 <th className="px-4 py-3">Статус</th>
+                <th className="px-4 py-3">Цены (себест. / продажа)</th>
                 <th className="px-4 py-3">Текущее размещение</th>
                 <th className="px-4 py-3">Заметки</th>
                 <th className="px-4 py-3 text-right">Действия</th>
@@ -886,6 +936,14 @@ export const BatteriesPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3">{getStatusBadge(bat.status, bat.installedBike)}</td>
+                    <td className="px-4 py-3 text-xs whitespace-nowrap">
+                      <div className="font-mono text-slate-600 dark:text-slate-300">
+                        {bat.purchasePrice ? `${bat.purchasePrice.toLocaleString()} ₽` : '—'}
+                      </div>
+                      <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {bat.salePrice ? `${bat.salePrice.toLocaleString()} ₽` : '—'}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-xs">
                       {bat.installedBike ? (
                         <span className="text-sky-700 dark:text-sky-300 font-bold font-mono">
@@ -979,7 +1037,7 @@ export const BatteriesPage: React.FC = () => {
               <select
                 required
                 value={createForm.modelId}
-                onChange={(e) => setCreateForm({ ...createForm, modelId: e.target.value })}
+                onChange={(e) => handleModelSelectChange(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none font-medium"
               >
                 {batteryModels.map((m) => (
@@ -1088,6 +1146,38 @@ export const BatteriesPage: React.FC = () => {
               <p className="text-[10px] text-slate-400 mt-1">
                 Префикс подбирает следующий номер (русский или английский). Также можно стереть и вставить заводской номер с корпуса.
               </p>
+            </div>
+
+            {/* Prices */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Себестоимость закупки (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={createForm.purchasePrice}
+                  onChange={(e) => setCreateForm({ ...createForm, purchasePrice: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                  placeholder="15000"
+                />
+                <span className="text-[10px] text-slate-400">Себестоимость для финучета и магазина</span>
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Цена продажи в магазине (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={createForm.salePrice}
+                  onChange={(e) => setCreateForm({ ...createForm, salePrice: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                  placeholder="25000"
+                />
+                <span className="text-[10px] text-slate-400">Розничная цена при продаже в POS Магазине</span>
+              </div>
             </div>
 
             <div>
@@ -1379,6 +1469,32 @@ export const BatteriesPage: React.FC = () => {
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
               />
             </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Себестоимость закупки (₽)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={editForm.purchasePrice}
+                onChange={(e) => setEditForm({ ...editForm, purchasePrice: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Цена продажи в магазине (₽)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={editForm.salePrice}
+                onChange={(e) => setEditForm({ ...editForm, salePrice: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
           </div>
 
           <div>
@@ -1505,6 +1621,34 @@ export const BatteriesPage: React.FC = () => {
                   className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                 />
               </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Себестоимость (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="15000"
+                  value={newModelForm.purchasePrice}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Цена продажи (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="25000"
+                  value={newModelForm.salePrice}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, salePrice: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
             </div>
 
             <div>
@@ -1568,6 +1712,9 @@ export const BatteriesPage: React.FC = () => {
                           }`}
                         >
                           {model.chemistry || 'Li-ion'}
+                        </span>
+                        <span className="text-[11px] font-mono text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                          Себест: {model.purchasePrice?.toLocaleString() || '—'} ₽ • Продажа: {model.salePrice?.toLocaleString() || '—'} ₽
                         </span>
                       </div>
                       {model.description && (

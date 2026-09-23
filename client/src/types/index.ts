@@ -81,6 +81,8 @@ export interface BikeModel {
   powerWatts: number;
   wheelSizeInch?: number | null;
   description?: string | null;
+  purchasePrice?: number;
+  salePrice?: number;
   bikesCount?: number;
 }
 
@@ -93,6 +95,8 @@ export interface BatteryModel {
   capacityAh: number;
   chemistry?: BatteryChemistry;
   description?: string | null;
+  purchasePrice?: number;
+  salePrice?: number;
   batteriesCount?: number;
 }
 
@@ -119,6 +123,8 @@ export interface Battery {
   installedBikeId?: string | null;
   location?: string;
   notes?: string | null;
+  purchasePrice?: number;
+  salePrice?: number;
   createdAt?: string;
   updatedAt?: string;
   installedBike?: {
@@ -153,6 +159,8 @@ export interface Bike {
   currentLocation: string;
   mileageKm: number;
   note?: string | null;
+  purchasePrice?: number;
+  salePrice?: number;
   createdAt?: string;
   updatedAt?: string;
   activeRental?: {
@@ -179,6 +187,8 @@ export interface OutfitTemplate {
   defaultDeposit: number;
   description?: string | null;
   categoryName?: string;
+  purchasePrice?: number;
+  salePrice?: number;
 }
 
 export interface Outfit {
@@ -189,6 +199,8 @@ export interface Outfit {
   inventoryNumber?: string | null;
   depositValue: number;
   status: OutfitStatus;
+  purchasePrice?: number;
+  salePrice?: number;
   currentRental?: {
     id: string;
     rentalNumber: string;
@@ -364,7 +376,7 @@ export interface Employee {
 }
 
 export interface RetailOrderItem {
-  itemType: 'BIKE' | 'PART' | 'OUTFIT';
+  itemType: 'BIKE' | 'PART' | 'OUTFIT' | 'BATTERY';
   itemId: string;
   name: string;
   quantity: number;
@@ -391,7 +403,7 @@ export interface RetailOrder {
 export interface ShopCatalogItem {
   id: string;
   name: string;
-  type: 'BIKE' | 'PART' | 'OUTFIT';
+  type: 'BIKE' | 'PART' | 'OUTFIT' | 'BATTERY';
   category?: string;
   sku?: string;
   inventoryNumber?: string;
@@ -412,6 +424,19 @@ export interface ShopCatalog {
     status: BikeStatus;
     currentLocation: string;
     mileageKm: number;
+    price: number;
+    costPrice: number;
+    inStock: number;
+  }>;
+  batteries: Array<{
+    id: string;
+    serialNumber: string;
+    modelName: string;
+    voltage: number;
+    capacityAh: number;
+    chemistry?: BatteryChemistry;
+    healthPercent?: number;
+    status: BatteryStatus;
     price: number;
     costPrice: number;
     inStock: number;

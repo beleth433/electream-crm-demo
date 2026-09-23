@@ -44,6 +44,8 @@ export const OutfitsPage: React.FC = () => {
     category: 'HELMET',
     inventoryNumber: '',
     depositValue: 2000,
+    purchasePrice: 1000,
+    salePrice: 2000,
   });
 
   const calculateNextOutfitNumber = (prefixToUse: string, outfitList: Outfit[] = outfits) => {
@@ -66,6 +68,8 @@ export const OutfitsPage: React.FC = () => {
       category: categories[0]?.id || 'HELMET',
       inventoryNumber: nextNum,
       depositValue: 2000,
+      purchasePrice: 1000,
+      salePrice: 2000,
     });
     setIsAddModalOpen(true);
   };
@@ -78,6 +82,8 @@ export const OutfitsPage: React.FC = () => {
     name: '',
     categoryId: 'HELMET',
     defaultDeposit: 2000,
+    purchasePrice: 1000,
+    salePrice: 2000,
     description: '',
   });
 
@@ -118,6 +124,8 @@ export const OutfitsPage: React.FC = () => {
         category: tmpl.categoryId,
         inventoryNumber: nextNum,
         depositValue: tmpl.defaultDeposit,
+        purchasePrice: tmpl.purchasePrice !== undefined ? tmpl.purchasePrice : 1000,
+        salePrice: tmpl.salePrice !== undefined ? tmpl.salePrice : 2000,
       });
     }
   };
@@ -176,6 +184,8 @@ export const OutfitsPage: React.FC = () => {
         name: '',
         categoryId: categories[0]?.id || 'HELMET',
         defaultDeposit: 2000,
+        purchasePrice: 1000,
+        salePrice: 2000,
         description: '',
       });
     } catch (err: any) {
@@ -213,6 +223,8 @@ export const OutfitsPage: React.FC = () => {
         category: categories[0]?.id || 'HELMET',
         inventoryNumber: nextNum,
         depositValue: 2000,
+        purchasePrice: 1000,
+        salePrice: 2000,
       });
       loadData();
     } catch (err: any) {
@@ -361,6 +373,7 @@ export const OutfitsPage: React.FC = () => {
                 <th className="p-3.5 font-semibold">Наименование</th>
                 <th className="p-3.5 font-semibold">Категория</th>
                 <th className="p-3.5 font-semibold">Залоговая стоимость</th>
+                <th className="p-3.5 font-semibold">Цены (себест. / продажа)</th>
                 <th className="p-3.5 font-semibold">Текущее размещение</th>
                 <th className="p-3.5 font-semibold text-center">Статус</th>
                 <th className="p-3.5 font-semibold text-right">Сменить статус</th>
@@ -382,6 +395,14 @@ export const OutfitsPage: React.FC = () => {
                   </td>
                   <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200">
                     {item.depositValue.toLocaleString('ru-RU')} ₽
+                  </td>
+                  <td className="p-3.5 font-mono text-xs whitespace-nowrap">
+                    <div className="text-slate-500">
+                      {item.purchasePrice ? `${item.purchasePrice.toLocaleString('ru-RU')} ₽` : '—'}
+                    </div>
+                    <div className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {item.salePrice ? `${item.salePrice.toLocaleString('ru-RU')} ₽` : '—'}
+                    </div>
                   </td>
                   <td className="p-3.5 text-slate-500">
                     {item.currentRental ? (
@@ -589,15 +610,37 @@ export const OutfitsPage: React.FC = () => {
             </p>
           </div>
 
-          <div>
-            <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Залоговая стоимость (₽) *</label>
-            <input
-              type="number"
-              min="0"
-              value={newOutfitForm.depositValue}
-              onChange={(e) => setNewOutfitForm({ ...newOutfitForm, depositValue: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-slate-100"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Залог (₽) *</label>
+              <input
+                type="number"
+                min="0"
+                value={newOutfitForm.depositValue}
+                onChange={(e) => setNewOutfitForm({ ...newOutfitForm, depositValue: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Себестоимость (₽)</label>
+              <input
+                type="number"
+                min="0"
+                value={newOutfitForm.purchasePrice}
+                onChange={(e) => setNewOutfitForm({ ...newOutfitForm, purchasePrice: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Цена продажи (₽)</label>
+              <input
+                type="number"
+                min="0"
+                value={newOutfitForm.salePrice}
+                onChange={(e) => setNewOutfitForm({ ...newOutfitForm, salePrice: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-slate-100 font-bold"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-emerald-500/15">
@@ -781,10 +824,10 @@ export const OutfitsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
-                      Залоговая стоимость по умолчанию (₽) *
+                      Залог по умолчанию (₽) *
                     </label>
                     <input
                       required
@@ -799,16 +842,47 @@ export const OutfitsPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
-                      Описание / Спецификация
+                      Себестоимость закупки (₽)
                     </label>
                     <input
-                      type="text"
-                      placeholder="Материал ABS, визор, вентиляция"
-                      value={newTemplateForm.description}
-                      onChange={(e) => setNewTemplateForm({ ...newTemplateForm, description: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-slate-900 dark:text-white"
+                      type="number"
+                      min="0"
+                      placeholder="1000"
+                      value={newTemplateForm.purchasePrice}
+                      onChange={(e) =>
+                        setNewTemplateForm({ ...newTemplateForm, purchasePrice: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-white"
                     />
                   </div>
+                  <div>
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                      Цена продажи (₽)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="2000"
+                      value={newTemplateForm.salePrice}
+                      onChange={(e) =>
+                        setNewTemplateForm({ ...newTemplateForm, salePrice: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-white font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                    Описание / Спецификация
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Материал ABS, визор, вентиляция"
+                    value={newTemplateForm.description}
+                    onChange={(e) => setNewTemplateForm({ ...newTemplateForm, description: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-slate-900 dark:text-white"
+                  />
                 </div>
 
                 <div className="flex justify-end pt-1">
@@ -850,10 +924,12 @@ export const OutfitsPage: React.FC = () => {
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-emerald-500/10 text-[11px]">
-                      <span className="text-slate-400">Залог:</span>
-                      <span className="font-bold text-slate-900 dark:text-emerald-400">
-                        {tmpl.defaultDeposit.toLocaleString('ru-RU')} ₽
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-emerald-500/10 text-[11px] flex-wrap gap-1">
+                      <span className="text-slate-400">
+                        Залог: <b className="text-slate-900 dark:text-emerald-400">{tmpl.defaultDeposit.toLocaleString('ru-RU')} ₽</b>
+                      </span>
+                      <span className="text-slate-500 font-mono text-[10px]">
+                        Себест: {tmpl.purchasePrice?.toLocaleString() || '—'} ₽ • Продажа: {tmpl.salePrice?.toLocaleString() || '—'} ₽
                       </span>
                     </div>
                   </div>

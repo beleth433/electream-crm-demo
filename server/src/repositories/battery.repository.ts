@@ -19,6 +19,8 @@ export class BatteryRepository {
     capacityAh: number;
     chemistry?: BatteryChemistry;
     description?: string | null;
+    purchasePrice?: number;
+    salePrice?: number;
   }) {
     const db = getDb();
     if (!data.name || !data.name.trim()) {
@@ -36,6 +38,8 @@ export class BatteryRepository {
       capacityAh: Number(data.capacityAh) || 20,
       chemistry: data.chemistry === 'LiFePO4' ? 'LiFePO4' : 'Li-ion',
       description: data.description || null,
+      purchasePrice: data.purchasePrice !== undefined ? Number(data.purchasePrice) : undefined,
+      salePrice: data.salePrice !== undefined ? Number(data.salePrice) : undefined,
     };
     db.batteryModels.push(newModel);
     return {
@@ -52,6 +56,8 @@ export class BatteryRepository {
       capacityAh?: number;
       chemistry?: BatteryChemistry;
       description?: string | null;
+      purchasePrice?: number;
+      salePrice?: number;
     }
   ) {
     const db = getDb();
@@ -75,6 +81,8 @@ export class BatteryRepository {
     if (data.capacityAh !== undefined) model.capacityAh = Number(data.capacityAh);
     if (data.chemistry !== undefined) model.chemistry = data.chemistry;
     if (data.description !== undefined) model.description = data.description;
+    if (data.purchasePrice !== undefined) model.purchasePrice = Number(data.purchasePrice);
+    if (data.salePrice !== undefined) model.salePrice = Number(data.salePrice);
 
     const batteriesCount = db.batteries.filter((b) => b.modelId === model.id).length;
     return {
@@ -200,6 +208,8 @@ export class BatteryRepository {
     chemistry?: BatteryChemistry;
     status?: BatteryStatus;
     notes?: string;
+    purchasePrice?: number;
+    salePrice?: number;
   }) {
     const db = getDb();
     const cleanSerial = data.serialNumber?.trim();
@@ -215,6 +225,8 @@ export class BatteryRepository {
     let voltage = Number(data.voltage) || 60;
     let capacityAh = Number(data.capacityAh) || 20;
     let chemistry: BatteryChemistry = (data.chemistry as BatteryChemistry) || 'Li-ion';
+    let purchasePrice = data.purchasePrice !== undefined ? Number(data.purchasePrice) : 0;
+    let salePrice = data.salePrice !== undefined ? Number(data.salePrice) : 0;
 
     if (data.modelId) {
       const batModel = db.batteryModels.find((m) => m.id === data.modelId);
@@ -224,6 +236,12 @@ export class BatteryRepository {
         capacityAh = batModel.capacityAh;
         if (batModel.chemistry) {
           chemistry = batModel.chemistry;
+        }
+        if (data.purchasePrice === undefined && batModel.purchasePrice !== undefined) {
+          purchasePrice = batModel.purchasePrice;
+        }
+        if (data.salePrice === undefined && batModel.salePrice !== undefined) {
+          salePrice = batModel.salePrice;
         }
       }
     }
@@ -239,6 +257,8 @@ export class BatteryRepository {
       status: data.status || "AVAILABLE",
       installedBikeId: null,
       notes: data.notes || null,
+      purchasePrice,
+      salePrice,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -285,6 +305,8 @@ export class BatteryRepository {
     if (data.chemistry !== undefined) db.batteries[index].chemistry = data.chemistry;
     if (data.status !== undefined) db.batteries[index].status = data.status;
     if (data.notes !== undefined) db.batteries[index].notes = data.notes;
+    if (data.purchasePrice !== undefined) db.batteries[index].purchasePrice = Number(data.purchasePrice);
+    if (data.salePrice !== undefined) db.batteries[index].salePrice = Number(data.salePrice);
 
     db.batteries[index].updatedAt = new Date().toISOString();
     return this.getById(id);

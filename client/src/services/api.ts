@@ -386,7 +386,7 @@ export const api = {
     customerPhone?: string | null;
     clientId?: string | null;
     items: Array<{
-      itemType: 'BIKE' | 'PART' | 'OUTFIT';
+      itemType: 'BIKE' | 'PART' | 'OUTFIT' | 'BATTERY';
       itemId: string;
       quantity: number;
       price?: number;

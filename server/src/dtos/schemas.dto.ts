@@ -15,6 +15,8 @@ export const BikeCreateDto = z.object({
   currentLocation: z.string().optional(),
   mileageKm: z.number().min(0).optional(),
   note: z.string().optional(),
+  purchasePrice: z.number().min(0).optional(),
+  salePrice: z.number().min(0).optional(),
 });
 
 export const BikeUpdateDto = z.object({
@@ -27,6 +29,8 @@ export const BikeUpdateDto = z.object({
   currentLocation: z.string().optional(),
   mileageKm: z.number().min(0).optional(),
   note: z.string().optional(),
+  purchasePrice: z.number().min(0).optional(),
+  salePrice: z.number().min(0).optional(),
 });
 
 export const ClientCreateDto = z.object({
@@ -116,6 +120,8 @@ export const OutfitCreateDto = z.object({
   category: z.string().min(1, "Категория экипировки обязательна"),
   inventoryNumber: z.string().optional(),
   depositValue: z.number().min(0, "Залоговая стоимость >= 0"),
+  purchasePrice: z.number().min(0).optional(),
+  salePrice: z.number().min(0).optional(),
   status: z.enum(["IN_STOCK", "ISSUED", "DAMAGED", "LOST"]).optional(),
 });
 

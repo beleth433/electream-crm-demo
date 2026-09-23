@@ -13,7 +13,7 @@ export interface CreateOrderDto {
   customerPhone?: string | null;
   clientId?: string | null;
   items: Array<{
-    itemType: 'BIKE' | 'PART' | 'OUTFIT';
+    itemType: 'BIKE' | 'PART' | 'OUTFIT' | 'BATTERY';
     itemId: string;
     quantity: number;
     price?: number;
@@ -33,22 +33,43 @@ export class ShopRepository {
       .map((b) => {
         const model = db.models.find((m) => m.id === b.modelId);
         const battery = b.batteryId ? db.batteries.find((bt) => bt.id === b.batteryId) : null;
-        // Estimated retail and cost price based on bike specs
-        const batCap = battery?.capacityAh || 20;
-        const retailPrice =
-          b.status === 'FOR_SALE'
-            ? 45000 + batCap * 800
-            : 55000 + batCap * 1000;
-        const costPrice = Math.round(retailPrice * 0.65);
+        
+        const retailPrice = b.salePrice || model?.salePrice || (b.status === 'FOR_SALE' ? 45000 : 55000);
+        const costPrice = b.purchasePrice || model?.purchasePrice || Math.round(retailPrice * 0.7);
 
         return {
           id: b.id,
           inventoryNumber: b.inventoryNumber,
           modelName: model?.name || 'Электровелосипед',
           powerWatts: model?.powerWatts || 500,
+          batteryCapacityAh: battery?.capacityAh || 20,
+          winterVersion: false,
           status: b.status,
           currentLocation: b.currentLocation,
           mileageKm: b.mileageKm,
+          price: retailPrice,
+          costPrice,
+          inStock: 1,
+        };
+      });
+
+    // Batteries available for sale (free on rack, not installed on any bike)
+    const batteries = db.batteries
+      .filter((bt) => bt.status === 'AVAILABLE' && !bt.installedBikeId)
+      .map((bt) => {
+        const model = bt.modelId ? db.batteryModels.find((m) => m.id === bt.modelId) : null;
+        const retailPrice = bt.salePrice || model?.salePrice || 25000;
+        const costPrice = bt.purchasePrice || model?.purchasePrice || 16000;
+
+        return {
+          id: bt.id,
+          serialNumber: bt.serialNumber,
+          modelName: model?.name || bt.modelName || 'Аккумулятор',
+          voltage: bt.voltage,
+          capacityAh: bt.capacityAh,
+          chemistry: bt.chemistry,
+          healthPercent: bt.healthPercent ?? 100,
+          status: bt.status,
           price: retailPrice,
           costPrice,
           inStock: 1,
@@ -72,20 +93,27 @@ export class ShopRepository {
       .filter((o) => o.status === 'IN_STOCK')
       .map((o) => {
         const cat = db.outfitCategories.find((c) => c.id === o.category);
+        const tmpl = db.outfitTemplates.find(
+          (t) => (t.categoryId === o.category || t.name === o.name) && t.name.toLowerCase() === o.name.toLowerCase()
+        );
+        const retailPrice = o.salePrice || tmpl?.salePrice || Math.round(o.depositValue * 1.2) || 2000;
+        const costPrice = o.purchasePrice || tmpl?.purchasePrice || o.depositValue || 1500;
+
         return {
           id: o.id,
           name: o.name,
           category: o.category,
           categoryName: cat?.name || o.category,
           inventoryNumber: o.inventoryNumber,
-          price: Math.round(o.depositValue * 1.2) || 2000,
-          costPrice: o.depositValue || 1500,
+          price: retailPrice,
+          costPrice,
           inStock: 1,
         };
       });
 
     return {
       bikes,
+      batteries,
       parts,
       outfits,
     };
@@ -116,24 +144,64 @@ export class ShopRepository {
         }
 
         const model = db.models.find((m) => m.id === bike.modelId);
-        const battery = bike.batteryId ? db.batteries.find((bt) => bt.id === bike.batteryId) : null;
-        const batCap = battery?.capacityAh || 20;
         const defaultPrice =
-          bike.status === 'FOR_SALE'
-            ? 45000 + batCap * 800
-            : 55000 + batCap * 1000;
+          bike.salePrice || model?.salePrice || (bike.status === 'FOR_SALE' ? 45000 : 55000);
         const price = item.price !== undefined ? Number(item.price) : defaultPrice;
-        const costPrice = Math.round(price * 0.65);
+        const costPrice = bike.purchasePrice || model?.purchasePrice || Math.round(price * 0.7);
 
         // Mark bike as SOLD (decommissioned from active fleet due to retail sale)
         bike.status = 'SOLD';
         bike.note = `Продан в розницу покупателю: ${data.customerName || 'Гость'}`;
         bike.updatedAt = getSystemTime().toISOString();
 
+        if (bike.batteryId) {
+          const installedBat = db.batteries.find((bt) => bt.id === bike.batteryId);
+          if (installedBat) {
+            installedBat.status = 'SOLD';
+            installedBat.notes = `Продан в составе байка ${bike.inventoryNumber}`;
+            installedBat.updatedAt = getSystemTime().toISOString();
+          }
+        }
+
         processedItems.push({
           itemType: 'BIKE',
           itemId: bike.id,
           name: `${model?.name || 'Электровелосипед'} (${bike.inventoryNumber})`,
+          quantity: 1,
+          price,
+          costPrice,
+        });
+
+        totalAmount += price;
+        totalCost += costPrice;
+      } else if (item.itemType === 'BATTERY') {
+        const battery = db.batteries.find((b) => b.id === item.itemId);
+        if (!battery) throw new Error(`Аккумулятор с ID ${item.itemId} не найден`);
+        if (battery.status !== 'AVAILABLE' || battery.installedBikeId) {
+          throw new Error(
+            `Аккумулятор ${battery.serialNumber} недоступен для продажи (статус: ${battery.status}${battery.installedBikeId ? ', установлен на байк' : ''})`
+          );
+        }
+
+        const model = battery.modelId ? db.batteryModels.find((m) => m.id === battery.modelId) : null;
+        const defaultPrice = battery.salePrice || model?.salePrice || 25000;
+        const price = item.price !== undefined ? Number(item.price) : defaultPrice;
+        const costPrice = battery.purchasePrice || model?.purchasePrice || 16000;
+
+        // Mark battery as SOLD
+        battery.status = 'SOLD';
+        battery.notes = `Продан в розницу покупателю: ${data.customerName || 'Гость'}`;
+        if (battery.installedBikeId) {
+          const bike = db.bikes.find((b) => b.id === battery.installedBikeId);
+          if (bike) bike.batteryId = null;
+          battery.installedBikeId = null;
+        }
+        battery.updatedAt = getSystemTime().toISOString();
+
+        processedItems.push({
+          itemType: 'BATTERY',
+          itemId: battery.id,
+          name: `${model?.name || battery.modelName || 'Аккумулятор'} ${battery.voltage}V ${battery.capacityAh}Ah (${battery.serialNumber})`,
           quantity: 1,
           price,
           costPrice,
@@ -176,9 +244,16 @@ export class ShopRepository {
           );
         }
 
-        const defaultPrice = Math.round(outfit.depositValue * 1.2) || 2000;
+        const tmpl = db.outfitTemplates.find(
+          (t) =>
+            (t.categoryId === outfit.category || t.name === outfit.name) &&
+            t.name.toLowerCase() === outfit.name.toLowerCase()
+        );
+        const defaultPrice =
+          outfit.salePrice || tmpl?.salePrice || Math.round(outfit.depositValue * 1.2) || 2000;
         const price = item.price !== undefined ? Number(item.price) : defaultPrice;
-        const costPrice = outfit.depositValue || 1500;
+        const costPrice =
+          outfit.purchasePrice || tmpl?.purchasePrice || outfit.depositValue || 1500;
 
         // Mark outfit as SOLD
         outfit.status = 'SOLD';

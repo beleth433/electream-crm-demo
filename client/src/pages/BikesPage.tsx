@@ -50,7 +50,57 @@ export const BikesPage: React.FC = () => {
     currentLocation: 'Центральная база (м. Дмитровская)',
     mileageKm: 0,
     note: '',
+    purchasePrice: 0,
+    salePrice: 0,
   });
+
+  // Edit Bike Modal state
+  const [isEditBikeModalOpen, setIsEditBikeModalOpen] = useState(false);
+  const [editingBike, setEditingBike] = useState<Bike | null>(null);
+  const [editBikeForm, setEditBikeForm] = useState({
+    inventoryNumber: '',
+    modelId: '',
+    status: 'AVAILABLE' as BikeStatus,
+    currentLocation: '',
+    mileageKm: 0,
+    note: '',
+    purchasePrice: 0,
+    salePrice: 0,
+  });
+
+  const handleOpenEditBikeModal = (bike: Bike) => {
+    setEditingBike(bike);
+    setEditBikeForm({
+      inventoryNumber: bike.inventoryNumber,
+      modelId: bike.modelId,
+      status: bike.status,
+      currentLocation: bike.currentLocation,
+      mileageKm: bike.mileageKm,
+      note: bike.note || '',
+      purchasePrice: bike.purchasePrice ?? bike.model?.purchasePrice ?? 0,
+      salePrice: bike.salePrice ?? bike.model?.salePrice ?? 0,
+    });
+    setIsEditBikeModalOpen(true);
+  };
+
+  const handleUpdateBike = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBike) return;
+    try {
+      await api.updateBike(editingBike.id, {
+        ...editBikeForm,
+        purchasePrice: Number(editBikeForm.purchasePrice),
+        salePrice: Number(editBikeForm.salePrice),
+        mileageKm: Number(editBikeForm.mileageKm),
+      });
+      toast.success(`Данные электровелосипеда ${editBikeForm.inventoryNumber} обновлены`);
+      setIsEditBikeModalOpen(false);
+      setEditingBike(null);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка обновления байка');
+    }
+  };
 
   const calculateNextBikeNumber = (prefixToUse: string, bikeList: Bike[] = bikes) => {
     const existing = bikeList.map((b) => b.inventoryNumber);
@@ -64,12 +114,25 @@ export const BikesPage: React.FC = () => {
     setNewBikeForm((prev) => ({ ...prev, inventoryNumber: nextNum }));
   };
 
+  const handleModelSelectChange = (modelId: string) => {
+    const selected = models.find((m) => m.id === modelId);
+    setNewBikeForm((prev) => ({
+      ...prev,
+      modelId,
+      purchasePrice: selected?.purchasePrice ?? prev.purchasePrice ?? 0,
+      salePrice: selected?.salePrice ?? prev.salePrice ?? 0,
+    }));
+  };
+
   const handleOpenAddModal = () => {
     const nextNum = calculateNextBikeNumber(bikePrefix);
+    const initialModel = models.find((m) => m.id === (newBikeForm.modelId || models[0]?.id));
     setNewBikeForm((prev) => ({
       ...prev,
       inventoryNumber: nextNum,
       modelId: prev.modelId || models[0]?.id || '',
+      purchasePrice: initialModel?.purchasePrice ?? 0,
+      salePrice: initialModel?.salePrice ?? 0,
     }));
     if (models.length === 0) {
       setIsQuickCreateModelOpen(true);
@@ -94,6 +157,8 @@ export const BikesPage: React.FC = () => {
     powerWatts: 800,
     wheelSizeInch: 16.0,
     description: '',
+    purchasePrice: 40000,
+    salePrice: 65000,
   });
 
   const loadData = () => {
@@ -111,7 +176,12 @@ export const BikesPage: React.FC = () => {
         setModels(modelsRes);
         setAvailableBatteries(batteriesRes);
         if (modelsRes.length > 0 && !newBikeForm.modelId) {
-          setNewBikeForm((prev) => ({ ...prev, modelId: modelsRes[0].id }));
+          setNewBikeForm((prev) => ({
+            ...prev,
+            modelId: modelsRes[0].id,
+            purchasePrice: modelsRes[0].purchasePrice ?? prev.purchasePrice,
+            salePrice: modelsRes[0].salePrice ?? prev.salePrice,
+          }));
         }
       })
       .catch((err) => toast.error('Ошибка загрузки техники: ' + err.message))
@@ -127,6 +197,8 @@ export const BikesPage: React.FC = () => {
     try {
       await api.createBike({
         ...newBikeForm,
+        purchasePrice: Number(newBikeForm.purchasePrice),
+        salePrice: Number(newBikeForm.salePrice),
         batteryId: newBikeForm.batteryId ? newBikeForm.batteryId : undefined,
       });
       toast.success(`Байк ${newBikeForm.inventoryNumber} успешно добавлен в парк!`);
@@ -140,6 +212,8 @@ export const BikesPage: React.FC = () => {
         currentLocation: 'Центральная база (м. Дмитровская)',
         mileageKm: 0,
         note: '',
+        purchasePrice: 0,
+        salePrice: 0,
       });
       loadData();
     } catch (err: any) {
@@ -226,6 +300,8 @@ export const BikesPage: React.FC = () => {
         powerWatts: 800,
         wheelSizeInch: 16.0,
         description: '',
+        purchasePrice: 40000,
+        salePrice: 65000,
       });
     } catch (err: any) {
       toast.error(err.message || 'Ошибка создания шаблона модели');
@@ -459,6 +535,24 @@ export const BikesPage: React.FC = () => {
                     {bike.mileageKm} км
                   </span>
                 </div>
+                <div className="flex justify-between text-slate-500">
+                  <span>Закупка (себестоимость):</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {((bike.purchasePrice !== undefined && bike.purchasePrice > 0)
+                      ? bike.purchasePrice
+                      : bike.model?.purchasePrice || 0
+                    ).toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-500">
+                  <span>Цена в магазине:</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                    {((bike.salePrice !== undefined && bike.salePrice > 0)
+                      ? bike.salePrice
+                      : bike.model?.salePrice || 0
+                    ).toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
                 <div className="flex items-start gap-1 text-[11px] text-slate-400 mt-2">
                   <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                   <span className="truncate">{bike.currentLocation}</span>
@@ -484,26 +578,36 @@ export const BikesPage: React.FC = () => {
 
             <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
               {bike.note ? (
-                <p className="text-[11px] text-slate-400 italic truncate max-w-[200px]" title={bike.note}>
+                <p className="text-[11px] text-slate-400 italic truncate max-w-[160px]" title={bike.note}>
                   {bike.note}
                 </p>
               ) : (
                 <span className="text-[10px] text-slate-400">ID: {bike.id}</span>
               )}
 
-              <button
-                onClick={() => handleDeleteBike(bike)}
-                title={bike.status === 'RENTED' ? 'Нельзя удалить: байк в аренде' : 'Удалить байк из парка'}
-                disabled={bike.status === 'RENTED'}
-                className={`p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold transition-all ${
-                  bike.status === 'RENTED'
-                    ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
-                    : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                }`}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Удалить</span>
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleOpenEditBikeModal(bike)}
+                  className="p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all"
+                  title="Редактировать параметры и цены байка"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span>Изменить</span>
+                </button>
+                <button
+                  onClick={() => handleDeleteBike(bike)}
+                  title={bike.status === 'RENTED' ? 'Нельзя удалить: байк в аренде' : 'Удалить байк из парка'}
+                  disabled={bike.status === 'RENTED'}
+                  className={`p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold transition-all ${
+                    bike.status === 'RENTED'
+                      ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
+                      : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                  }`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Удалить</span>
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -609,7 +713,7 @@ export const BikesPage: React.FC = () => {
                     className="w-full px-2.5 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[10px] text-slate-400 mb-0.5">Мощность (W)</label>
                     <input
@@ -628,6 +732,28 @@ export const BikesPage: React.FC = () => {
                       onChange={(e) =>
                         setNewModelForm({ ...newModelForm, wheelSizeInch: Number(e.target.value) })
                       }
+                      className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-0.5">Себестоимость закупки (₽)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newModelForm.purchasePrice}
+                      onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
+                      className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-0.5">Цена продажи в магазине (₽)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newModelForm.salePrice}
+                      onChange={(e) => setNewModelForm({ ...newModelForm, salePrice: Number(e.target.value) })}
                       className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs"
                     />
                   </div>
@@ -657,7 +783,7 @@ export const BikesPage: React.FC = () => {
               <select
                 required
                 value={newBikeForm.modelId}
-                onChange={(e) => setNewBikeForm({ ...newBikeForm, modelId: e.target.value })}
+                onChange={(e) => handleModelSelectChange(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-lg font-medium text-slate-900 dark:text-slate-100"
               >
                 {models.map((m) => (
@@ -710,6 +836,35 @@ export const BikesPage: React.FC = () => {
                 onChange={(e) => setNewBikeForm({ ...newBikeForm, motorNumber: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
+            <div>
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                Себестоимость закупки (₽)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={newBikeForm.purchasePrice}
+                onChange={(e) => setNewBikeForm({ ...newBikeForm, purchasePrice: Number(e.target.value) })}
+                className="w-full px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+              />
+              <span className="text-[10px] text-slate-400">Себестоимость для учета COGS</span>
+            </div>
+            <div>
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                Цена продажи в магазине (₽)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={newBikeForm.salePrice}
+                onChange={(e) => setNewBikeForm({ ...newBikeForm, salePrice: Number(e.target.value) })}
+                className="w-full px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+              />
+              <span className="text-[10px] text-slate-400">Розничная цена в POS-терминале</span>
             </div>
           </div>
 
@@ -839,6 +994,35 @@ export const BikesPage: React.FC = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-100/50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                  Себестоимость закупки (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newModelForm.purchasePrice}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
+                  className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+                />
+                <span className="text-[10px] text-slate-400">Базовая закупка для модели</span>
+              </div>
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                  Рекомендуемая цена продажи (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newModelForm.salePrice}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, salePrice: Number(e.target.value) })}
+                  className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                />
+                <span className="text-[10px] text-slate-400">Розничная цена для магазина</span>
+              </div>
+            </div>
+
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
@@ -873,13 +1057,23 @@ export const BikesPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-2 text-[11px]">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[11px]">
                       <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 font-semibold">
                         ⚡ {m.powerWatts}W
                       </span>
                       {m.wheelSizeInch && (
                         <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-[#162720] text-slate-600 dark:text-slate-300 font-medium">
                           ⚙ {m.wheelSizeInch}"
+                        </span>
+                      )}
+                      {m.purchasePrice !== undefined && (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400">
+                          Закупка: {m.purchasePrice.toLocaleString('ru-RU')} ₽
+                        </span>
+                      )}
+                      {m.salePrice !== undefined && (
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold">
+                          Продажа: {m.salePrice.toLocaleString('ru-RU')} ₽
                         </span>
                       )}
                     </div>
@@ -910,6 +1104,128 @@ export const BikesPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </Modal>
+
+      {/* Modal: Редактировать электровелосипед */}
+      <Modal
+        isOpen={isEditBikeModalOpen}
+        onClose={() => {
+          setIsEditBikeModalOpen(false);
+          setEditingBike(null);
+        }}
+        title={`Редактирование байка ${editingBike?.inventoryNumber}`}
+        subtitle="Изменение локации, статуса, себестоимости и цены продажи"
+        maxWidth="md"
+      >
+        <form onSubmit={handleUpdateBike} className="space-y-3.5 text-xs">
+          <div>
+            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+              Инвентарный номер *
+            </label>
+            <input
+              required
+              type="text"
+              value={editBikeForm.inventoryNumber}
+              onChange={(e) => setEditBikeForm({ ...editBikeForm, inventoryNumber: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold font-mono text-xs"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-500 mb-1">Статус байка</label>
+              <select
+                value={editBikeForm.status}
+                onChange={(e) => setEditBikeForm({ ...editBikeForm, status: e.target.value as BikeStatus })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+              >
+                <option value="AVAILABLE">AVAILABLE (Свободен)</option>
+                <option value="RENTED" disabled>RENTED (В аренде)</option>
+                <option value="IN_MAINTENANCE">IN_MAINTENANCE (На СТО)</option>
+                <option value="FOR_SALE">FOR_SALE (На продажу в магазин)</option>
+                <option value="DECOMMISSIONED">DECOMMISSIONED (Списан)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-slate-500 mb-1">Пробег (км)</label>
+              <input
+                type="number"
+                min="0"
+                value={editBikeForm.mileageKm}
+                onChange={(e) => setEditBikeForm({ ...editBikeForm, mileageKm: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
+            <div>
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                Себестоимость закупки (₽)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={editBikeForm.purchasePrice}
+                onChange={(e) => setEditBikeForm({ ...editBikeForm, purchasePrice: Number(e.target.value) })}
+                className="w-full px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+              />
+              <span className="text-[10px] text-slate-400">Себестоимость для учета COGS</span>
+            </div>
+            <div>
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                Цена продажи в магазине (₽)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={editBikeForm.salePrice}
+                onChange={(e) => setEditBikeForm({ ...editBikeForm, salePrice: Number(e.target.value) })}
+                className="w-full px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+              />
+              <span className="text-[10px] text-slate-400">Розничная цена в POS-терминале</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-500 mb-1">Текущая локация</label>
+            <input
+              type="text"
+              value={editBikeForm.currentLocation}
+              onChange={(e) => setEditBikeForm({ ...editBikeForm, currentLocation: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-500 mb-1">Примечание</label>
+            <input
+              type="text"
+              value={editBikeForm.note}
+              onChange={(e) => setEditBikeForm({ ...editBikeForm, note: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditBikeModalOpen(false);
+                setEditingBike(null);
+              }}
+              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-sm"
+            >
+              Сохранить изменения
+            </button>
+          </div>
+        </form>
       </Modal>
 
       {/* Modal: Установить АКБ на байк */}

@@ -69,6 +69,8 @@ export class OutfitRepository {
     categoryId: string;
     defaultDeposit: number;
     description?: string;
+    purchasePrice?: number;
+    salePrice?: number;
   }) {
     const db = getDb();
     if (!data.name || !data.name.trim()) {
@@ -80,6 +82,8 @@ export class OutfitRepository {
       categoryId: data.categoryId,
       defaultDeposit: Number(data.defaultDeposit) || 0,
       description: data.description || null,
+      purchasePrice: data.purchasePrice !== undefined ? Number(data.purchasePrice) : undefined,
+      salePrice: data.salePrice !== undefined ? Number(data.salePrice) : undefined,
     };
     db.outfitTemplates.push(newTemplate);
     const category = db.outfitCategories.find((c) => c.id === newTemplate.categoryId || c.name === newTemplate.categoryId);
@@ -171,6 +175,8 @@ export class OutfitRepository {
     category: string;
     inventoryNumber?: string;
     depositValue: number;
+    purchasePrice?: number;
+    salePrice?: number;
     status?: OutfitStatus;
   }) {
     const db = getDb();
@@ -178,12 +184,28 @@ export class OutfitRepository {
       throw new Error(`Экипировка с инвентарным номером ${data.inventoryNumber} уже существует`);
     }
 
+    const tmpl = db.outfitTemplates.find(
+      (t) =>
+        (t.categoryId === data.category || t.name.toLowerCase() === data.name.toLowerCase()) &&
+        t.name.toLowerCase() === data.name.toLowerCase()
+    );
+    const purchasePrice =
+      data.purchasePrice !== undefined
+        ? Number(data.purchasePrice)
+        : (tmpl?.purchasePrice ?? 0);
+    const salePrice =
+      data.salePrice !== undefined
+        ? Number(data.salePrice)
+        : (tmpl?.salePrice ?? 0);
+
     const newOutfit = {
       id: `outfit-${Date.now()}`,
       name: data.name,
       category: data.category,
       inventoryNumber: data.inventoryNumber || `EQ-${Date.now().toString().slice(-4)}`,
       depositValue: data.depositValue,
+      purchasePrice,
+      salePrice,
       status: data.status || ("IN_STOCK" as OutfitStatus),
     };
 

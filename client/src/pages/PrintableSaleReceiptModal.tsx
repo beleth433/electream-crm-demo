@@ -138,6 +138,8 @@ export const PrintableSaleReceiptModal: React.FC<PrintableSaleReceiptModalProps>
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 print:border print:border-slate-300">
                       {item.itemType === 'BIKE'
                         ? 'Электробайк'
+                        : item.itemType === 'BATTERY'
+                        ? 'Аккумулятор'
                         : item.itemType === 'PART'
                         ? 'Запчасть'
                         : 'Экипировка'}
