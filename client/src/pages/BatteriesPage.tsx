@@ -21,6 +21,7 @@ import {
   Table as TableIcon,
   ShieldAlert,
   Sparkles,
+  Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
@@ -125,10 +126,6 @@ export const BatteriesPage: React.FC = () => {
   const [targetBattery, setTargetBattery] = useState<Battery | null>(null);
   const [selectedBikeId, setSelectedBikeId] = useState<string>('');
 
-  // Modal: Quick Swap
-  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
-  const [swapTargetBike, setSwapTargetBike] = useState<Bike | null>(null);
-  const [swapNewBatteryId, setSwapNewBatteryId] = useState<string>('');
 
   const loadData = async () => {
     setIsLoading(true);
@@ -321,46 +318,16 @@ export const BatteriesPage: React.FC = () => {
 
   // Detach battery
   const handleDetach = async (bikeId: string, serialNumber: string) => {
-    if (!confirm(`Снять АКБ ${serialNumber} с электровелосипеда и вернуть на зарядный стеллаж?`)) {
+    if (!confirm(`Снять АКБ ${serialNumber} с электровелосипеда на склад?`)) {
       return;
     }
 
     try {
       await api.detachBattery(bikeId);
-      toast.success(`АКБ ${serialNumber} снят на базу на зарядку`);
+      toast.success(`АКБ ${serialNumber} снят на склад`);
       loadData();
     } catch (err: any) {
       toast.error('Ошибка снятия АКБ: ' + err.message);
-    }
-  };
-
-  // Open quick swap modal
-  const handleOpenSwap = (bike: Bike) => {
-    setSwapTargetBike(bike);
-    const availableBatteries = batteries.filter((b) => b.status === 'AVAILABLE');
-    setSwapNewBatteryId(availableBatteries[0]?.id || '');
-    setIsSwapModalOpen(true);
-  };
-
-  // Quick swap submit
-  const handleSwapSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!swapTargetBike || !swapNewBatteryId) {
-      toast.error('Выберите аккумулятор для установки');
-      return;
-    }
-
-    try {
-      await api.swapBattery(swapTargetBike.id, swapNewBatteryId);
-      const newBat = batteries.find((b) => b.id === swapNewBatteryId);
-      toast.success(
-        `АКБ на байке ${swapTargetBike.inventoryNumber} успешно заменен на ${newBat?.serialNumber}`
-      );
-      setIsSwapModalOpen(false);
-      setSwapTargetBike(null);
-      loadData();
-    } catch (err: any) {
-      toast.error('Ошибка замены АКБ: ' + err.message);
     }
   };
 
@@ -412,12 +379,20 @@ export const BatteriesPage: React.FC = () => {
         ? bat.installedBike.inventoryNumber.toLowerCase().includes(q) ||
           (bat.installedBike.modelName && bat.installedBike.modelName.toLowerCase().includes(q))
         : false;
-      if (!matchSerial && !matchModel && !matchChem && !matchNotes && !matchBike) return false;
+      const matchIssuedBike = bat.issuedBike
+        ? bat.issuedBike.inventoryNumber.toLowerCase().includes(q) ||
+          (bat.issuedBike.modelName && bat.issuedBike.modelName.toLowerCase().includes(q))
+        : false;
+      const matchRental = bat.currentRental
+        ? bat.currentRental.clientName.toLowerCase().includes(q) ||
+          bat.currentRental.rentalNumber.toLowerCase().includes(q)
+        : false;
+      if (!matchSerial && !matchModel && !matchChem && !matchNotes && !matchBike && !matchIssuedBike && !matchRental) return false;
     }
     return true;
   });
 
-  const getStatusBadge = (status: BatteryStatus, bike?: any) => {
+  const getStatusBadge = (status: BatteryStatus, bike?: any, bat?: Battery) => {
     switch (status) {
       case 'AVAILABLE':
         return (
@@ -431,14 +406,17 @@ export const BatteriesPage: React.FC = () => {
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-500/20">
             <Zap className="w-3 h-3 text-sky-500" />
             На байке {bike ? bike.inventoryNumber : ''}
+            {bat?.currentRental && ' (в аренде)'}
           </span>
         );
-      case 'ISSUED_SPARE':
+      case 'ISSUED_SPARE': {
+        const bikeNum = bat?.issuedBike?.inventoryNumber || bat?.currentRental?.bikeInventoryNumber;
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/20">
-            Доп. АКБ у курьера
+            Доп. АКБ у курьера{bikeNum ? ` (к ${bikeNum})` : ''}
           </span>
         );
+      }
       case 'IN_MAINTENANCE':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20">
@@ -567,7 +545,7 @@ export const BatteriesPage: React.FC = () => {
               <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 {stats.available}
               </span>
-              <span className="text-xs text-emerald-600/80 dark:text-emerald-500/80">на зарядке</span>
+              <span className="text-xs text-emerald-600/80 dark:text-emerald-500/80">на складе</span>
             </div>
           </div>
 
@@ -656,7 +634,7 @@ export const BatteriesPage: React.FC = () => {
         <div className="flex items-center gap-2 overflow-x-auto pt-1 border-t border-slate-100 dark:border-slate-800 text-xs">
           {[
             { id: 'ALL', label: 'Все АКБ', count: batteries.length },
-            { id: 'AVAILABLE', label: 'Свободны на зарядке', count: stats?.available },
+            { id: 'AVAILABLE', label: 'Свободны на складе', count: stats?.available },
             { id: 'INSTALLED', label: 'Установлены на байках', count: stats?.installed },
             { id: 'ISSUED_SPARE', label: 'Доп. у курьеров', count: stats?.issuedSpare },
             { id: 'IN_MAINTENANCE', label: 'В ремонте / ТО', count: stats?.inMaintenance },
@@ -747,7 +725,7 @@ export const BatteriesPage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    {getStatusBadge(bat.status, bat.installedBike)}
+                    {getStatusBadge(bat.status, bat.installedBike, bat)}
                   </div>
 
                   {/* Serial Number */}
@@ -759,7 +737,34 @@ export const BatteriesPage: React.FC = () => {
 
                   {/* Placement Details */}
                   <div className="mt-3 text-xs space-y-1.5">
-                    {bat.installedBike ? (
+                    {bat.status === 'ISSUED_SPARE' ? (
+                      <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                            <BikeIcon className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-slate-800 dark:text-slate-200 font-medium">
+                              У курьера:{' '}
+                              <span className="font-bold text-purple-700 dark:text-purple-300">
+                                {bat.currentRental?.clientName || 'Курьер'}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Доп. АКБ к байку{' '}
+                              <span className="font-bold font-mono text-purple-600 dark:text-purple-400">
+                                {bat.issuedBike?.inventoryNumber || bat.currentRental?.bikeInventoryNumber || '—'}
+                              </span>
+                              {bat.currentRental?.rentalNumber && (
+                                <span className="ml-1 text-[10px] text-slate-400">
+                                  ({bat.currentRental.rentalNumber})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : bat.installedBike ? (
                       <div className="p-3 rounded-xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 text-xs flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center text-sky-600 dark:text-sky-400 shrink-0">
@@ -773,15 +778,21 @@ export const BatteriesPage: React.FC = () => {
                               </span>
                             </div>
                             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                              {bat.installedBike.modelName || 'Электровелосипед'}
+                              {bat.currentRental ? (
+                                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                  В аренде у {bat.currentRental.clientName}
+                                </span>
+                              ) : (
+                                bat.installedBike.modelName || 'Электровелосипед'
+                              )}
                             </div>
                           </div>
                         </div>
                       </div>
                     ) : (
                       <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <Zap className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span className="truncate font-medium">На складе (зарядка)</span>
+                        <Package className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span className="truncate font-medium">На складе (свободен)</span>
                       </div>
                     )}
 
@@ -823,27 +834,14 @@ export const BatteriesPage: React.FC = () => {
                     )}
 
                     {bat.status === 'INSTALLED' && bat.installedBikeId && (
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => {
-                            const bike = bikes.find((b) => b.id === bat.installedBikeId);
-                            if (bike) handleOpenSwap(bike);
-                          }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-lg text-xs font-semibold transition"
-                          title="Заменить АКБ на другой в 1 клик"
-                        >
-                          <ArrowRightLeft className="w-3.5 h-3.5" />
-                          Сменить
-                        </button>
-                        <button
-                          onClick={() => handleDetach(bat.installedBikeId!, bat.serialNumber)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold transition"
-                          title="Снять АКБ на зарядный стеллаж"
-                        >
-                          <LogOut className="w-3.5 h-3.5 text-slate-500" />
-                          Снять
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleDetach(bat.installedBikeId!, bat.serialNumber)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold transition"
+                        title="Снять АКБ на склад"
+                      >
+                        <LogOut className="w-3.5 h-3.5 text-slate-500" />
+                        Снять на склад
+                      </button>
                     )}
 
                     {bat.status === 'IN_MAINTENANCE' && (
@@ -935,7 +933,7 @@ export const BatteriesPage: React.FC = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">{getStatusBadge(bat.status, bat.installedBike)}</td>
+                    <td className="px-4 py-3">{getStatusBadge(bat.status, bat.installedBike, bat)}</td>
                     <td className="px-4 py-3 text-xs whitespace-nowrap">
                       <div className="font-mono text-slate-600 dark:text-slate-300">
                         {bat.purchasePrice ? `${bat.purchasePrice.toLocaleString()} ₽` : '—'}
@@ -945,12 +943,34 @@ export const BatteriesPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs">
-                      {bat.installedBike ? (
-                        <span className="text-sky-700 dark:text-sky-300 font-bold font-mono">
-                          Байк {bat.installedBike.inventoryNumber}
-                        </span>
+                      {bat.status === 'ISSUED_SPARE' ? (
+                        <div>
+                          <div className="text-purple-700 dark:text-purple-300 font-bold">
+                            У курьера: {bat.currentRental?.clientName || 'Курьер'}
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                            к байку{' '}
+                            <span className="font-mono font-semibold text-purple-600 dark:text-purple-400">
+                              {bat.issuedBike?.inventoryNumber || bat.currentRental?.bikeInventoryNumber || '—'}
+                            </span>
+                            {bat.currentRental?.rentalNumber && (
+                              <span className="ml-1 text-[10px]">({bat.currentRental.rentalNumber})</span>
+                            )}
+                          </div>
+                        </div>
+                      ) : bat.installedBike ? (
+                        <div>
+                          <span className="text-sky-700 dark:text-sky-300 font-bold font-mono">
+                            Байк {bat.installedBike.inventoryNumber}
+                          </span>
+                          {bat.currentRental && (
+                            <div className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                              у {bat.currentRental.clientName}
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <span className="text-slate-600 dark:text-slate-400">Склад / Зарядка</span>
+                        <span className="text-slate-600 dark:text-slate-400">На складе</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-500 italic max-w-xs truncate">
@@ -970,8 +990,9 @@ export const BatteriesPage: React.FC = () => {
                           <button
                             onClick={() => handleDetach(bat.installedBikeId!, bat.serialNumber)}
                             className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-xs transition font-semibold"
+                            title="Снять на склад"
                           >
-                            Снять
+                            Снять на склад
                           </button>
                         )}
                         <button
@@ -1267,7 +1288,7 @@ export const BatteriesPage: React.FC = () => {
                     <span className="font-semibold">Внимание: </span>
                     На байке <b>{chosenBike?.inventoryNumber}</b> уже установлен аккумулятор{' '}
                     <b>{currentBat.serialNumber}</b>. При подтверждении старый аккумулятор будет автоматически снят
-                    и переведен на зарядный стеллаж со статусом «Свободен».
+                    и переведен на склад со статусом «Свободен».
                   </div>
                 </div>
               );
@@ -1301,78 +1322,7 @@ export const BatteriesPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* MODAL 3: Быстрая замена АКБ на байке (Своп) */}
-      <Modal
-        isOpen={isSwapModalOpen}
-        onClose={() => {
-          setIsSwapModalOpen(false);
-          setSwapTargetBike(null);
-        }}
-        title={`Быстрая замена аккумулятора на байке ${swapTargetBike?.inventoryNumber}`}
-        subtitle="Замена на заряженный аккумулятор со склада в 1 клик"
-      >
-        <form onSubmit={handleSwapSubmit} className="space-y-4 text-xs">
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
-            <div className="text-slate-500">Текущий электровелосипед:</div>
-            <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <BikeIcon className="w-4 h-4 text-sky-500" />
-              {swapTargetBike?.inventoryNumber} — {swapTargetBike?.model?.name}
-            </div>
-            {swapTargetBike?.batteryId && (() => {
-              const currentBat = batteries.find((b) => b.id === swapTargetBike.batteryId);
-              return (
-                <div className="text-amber-700 dark:text-amber-400 mt-1 font-mono">
-                  Текущий АКБ:{' '}
-                  <b>
-                    {currentBat?.serialNumber} ({currentBat?.voltage}V {currentBat?.capacityAh}Ah)
-                  </b>{' '}
-                  будет снят на зарядный стеллаж.
-                </div>
-              );
-            })()}
-          </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Выберите новый заряженный АКБ со склада:
-            </label>
-            <select
-              value={swapNewBatteryId}
-              onChange={(e) => setSwapNewBatteryId(e.target.value)}
-              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none font-mono"
-            >
-              {batteries
-                .filter((b) => b.status === 'AVAILABLE')
-                .map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.serialNumber} [{b.voltage}V {b.capacityAh}Ah{b.modelName ? ` • ${b.modelName}` : ''}] — Склад
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSwapModalOpen(false);
-                setSwapTargetBike(null);
-              }}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-medium transition shadow-sm"
-            >
-              Заменить в 1 клик
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* MODAL 4: Редактирование АКБ */}
+      {/* MODAL 3: Редактирование АКБ */}
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => {
@@ -1406,7 +1356,7 @@ export const BatteriesPage: React.FC = () => {
                 onChange={(e) => setEditForm({ ...editForm, status: e.target.value as BatteryStatus })}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
               >
-                <option value="AVAILABLE">Свободен на зарядке</option>
+                <option value="AVAILABLE">Свободен на складе</option>
                 <option value="INSTALLED">Установлен на байк</option>
                 <option value="ISSUED_SPARE">Доп. АКБ у курьера</option>
                 <option value="IN_MAINTENANCE">На ТО / Ремонте СТО</option>

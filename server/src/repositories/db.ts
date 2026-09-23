@@ -25,9 +25,9 @@ import {
 export type UserRole = "ADMIN" | "MANAGER" | "MECHANIC";
 export type BikeStatus = "AVAILABLE" | "RENTED" | "IN_MAINTENANCE" | "FOR_SALE" | "DECOMMISSIONED" | "SOLD";
 export type BatteryStatus =
-  | "AVAILABLE"       // Свободен / на зарядном стеллаже на базе
+  | "AVAILABLE"       // Свободен на складе базы
   | "INSTALLED"       // Установлен в электровелосипед
-  | "ISSUED_SPARE"    // Выдан курьеру как дополнительный АКБ в термосумку
+  | "ISSUED_SPARE"    // Выдан курьеру как дополнительный АКБ
   | "IN_MAINTENANCE"  // На диагностике / ремонте BMS / балансировке ячеек
   | "DECOMMISSIONED"  // Списан / утилизирован
   | "SOLD";           // Продан через магазин
@@ -78,7 +78,8 @@ export interface BatteryRecord {
   cycleCount?: number;
   healthPercent?: number;
   status: BatteryStatus;
-  installedBikeId?: string | null; // Привязка к байку
+  installedBikeId?: string | null; // Привязка к байку (установлен)
+  issuedBikeId?: string | null;    // Привязка к байку (доп. АКБ у курьера)
   notes?: string | null;
   purchasePrice?: number;
   salePrice?: number;

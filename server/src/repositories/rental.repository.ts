@@ -235,6 +235,7 @@ export class RentalRepository {
       if (b.id !== bike.batteryId) {
         b.status = "ISSUED_SPARE";
         b.installedBikeId = null;
+        b.issuedBikeId = bike.id;
         b.updatedAt = now.toISOString();
       }
     }
@@ -424,6 +425,7 @@ export class RentalRepository {
         const bat = db.batteries.find((b) => b.id === bId);
         if (bat && bat.status === "ISSUED_SPARE") {
           bat.status = "AVAILABLE";
+          bat.issuedBikeId = null;
           bat.updatedAt = now.toISOString();
         }
       });

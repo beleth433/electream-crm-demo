@@ -109,26 +109,69 @@ export class BatteryRepository {
     return removed;
   }
 
+  private static enrichBattery(bat: BatteryRecord, db: ReturnType<typeof getDb>) {
+    const bike = bat.installedBikeId ? db.bikes.find((b) => b.id === bat.installedBikeId) : null;
+    const bikeModel = bike ? db.models.find((m) => m.id === bike.modelId) : null;
+    const batModel = bat.modelId ? db.batteryModels.find((m) => m.id === bat.modelId) : null;
+
+    // Active rentals: ACTIVE or OVERDUE
+    const activeRentals = db.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+    const activeRental = activeRentals.find(
+      (r) =>
+        (r.batteryIds && r.batteryIds.includes(bat.id)) ||
+        (bat.installedBikeId && r.bikeId === bat.installedBikeId) ||
+        (bat.issuedBikeId && r.bikeId === bat.issuedBikeId)
+    );
+
+    let currentRental = null;
+    if (activeRental) {
+      const client = db.clients.find((c) => c.id === activeRental.clientId);
+      const rentalBike = activeRental.bikeId ? db.bikes.find((b) => b.id === activeRental.bikeId) : null;
+      currentRental = {
+        id: activeRental.id,
+        rentalNumber: activeRental.rentalNumber,
+        clientId: activeRental.clientId,
+        clientName: client?.fullName || "Курьер",
+        clientPhone: client?.phone || null,
+        bikeId: activeRental.bikeId || null,
+        bikeInventoryNumber: rentalBike?.inventoryNumber || null,
+        isSpare: bat.status === "ISSUED_SPARE" || (activeRental.bikeId ? bat.installedBikeId !== activeRental.bikeId : false),
+      };
+    }
+
+    const targetIssuedBikeId = bat.issuedBikeId || (bat.status === "ISSUED_SPARE" && activeRental ? activeRental.bikeId : null);
+    const issuedBikeRecord = targetIssuedBikeId ? db.bikes.find((b) => b.id === targetIssuedBikeId) : null;
+    const issuedBikeModel = issuedBikeRecord ? db.models.find((m) => m.id === issuedBikeRecord.modelId) : null;
+    const issuedBike = issuedBikeRecord
+      ? {
+          id: issuedBikeRecord.id,
+          inventoryNumber: issuedBikeRecord.inventoryNumber,
+          status: issuedBikeRecord.status,
+          modelName: issuedBikeModel?.name,
+          currentLocation: issuedBikeRecord.currentLocation,
+        }
+      : null;
+
+    return {
+      ...bat,
+      modelName: batModel?.name || bat.modelName,
+      installedBike: bike
+        ? {
+            id: bike.id,
+            inventoryNumber: bike.inventoryNumber,
+            status: bike.status,
+            modelName: bikeModel?.name,
+            currentLocation: bike.currentLocation,
+          }
+        : null,
+      issuedBike,
+      currentRental,
+    };
+  }
+
   static getAll(filters?: { status?: BatteryStatus; voltage?: number; modelId?: string; search?: string; bikeId?: string }) {
     const db = getDb();
-    let list = db.batteries.map((bat) => {
-      const bike = bat.installedBikeId ? db.bikes.find((b) => b.id === bat.installedBikeId) : null;
-      const bikeModel = bike ? db.models.find((m) => m.id === bike.modelId) : null;
-      const batModel = bat.modelId ? db.batteryModels.find((m) => m.id === bat.modelId) : null;
-      return {
-        ...bat,
-        modelName: batModel?.name || bat.modelName,
-        installedBike: bike
-          ? {
-              id: bike.id,
-              inventoryNumber: bike.inventoryNumber,
-              status: bike.status,
-              modelName: bikeModel?.name,
-              currentLocation: bike.currentLocation,
-            }
-          : null,
-      };
-    });
+    let list = db.batteries.map((bat) => this.enrichBattery(bat, db));
 
     if (filters?.status) {
       list = list.filter((b) => b.status === filters.status);
@@ -149,7 +192,10 @@ export class BatteryRepository {
           b.serialNumber.toLowerCase().includes(q) ||
           (b.modelName && b.modelName.toLowerCase().includes(q)) ||
           (b.notes && b.notes.toLowerCase().includes(q)) ||
-          (b.installedBike && b.installedBike.inventoryNumber.toLowerCase().includes(q))
+          (b.installedBike && b.installedBike.inventoryNumber.toLowerCase().includes(q)) ||
+          (b.issuedBike && b.issuedBike.inventoryNumber.toLowerCase().includes(q)) ||
+          (b.currentRental && b.currentRental.clientName.toLowerCase().includes(q)) ||
+          (b.currentRental && b.currentRental.rentalNumber.toLowerCase().includes(q))
       );
     }
 
@@ -160,24 +206,7 @@ export class BatteryRepository {
     const db = getDb();
     const bat = db.batteries.find((b) => b.id === id);
     if (!bat) return null;
-
-    const bike = bat.installedBikeId ? db.bikes.find((b) => b.id === bat.installedBikeId) : null;
-    const bikeModel = bike ? db.models.find((m) => m.id === bike.modelId) : null;
-    const batModel = bat.modelId ? db.batteryModels.find((m) => m.id === bat.modelId) : null;
-
-    return {
-      ...bat,
-      modelName: batModel?.name || bat.modelName,
-      installedBike: bike
-        ? {
-            id: bike.id,
-            inventoryNumber: bike.inventoryNumber,
-            status: bike.status,
-            modelName: bikeModel?.name,
-            currentLocation: bike.currentLocation,
-          }
-        : null,
-    };
+    return this.enrichBattery(bat, db);
   }
 
   static getStats() {

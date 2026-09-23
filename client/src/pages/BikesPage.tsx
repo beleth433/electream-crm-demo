@@ -145,10 +145,6 @@ export const BikesPage: React.FC = () => {
   const [attachTargetBike, setAttachTargetBike] = useState<Bike | null>(null);
   const [attachSelectedBatteryId, setAttachSelectedBatteryId] = useState<string>('');
 
-  // Battery Swap Modal
-  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
-  const [swapTargetBike, setSwapTargetBike] = useState<Bike | null>(null);
-  const [swapNewBatteryId, setSwapNewBatteryId] = useState<string>('');
 
   // Model Templates Management Modal
   const [isManageModelsOpen, setIsManageModelsOpen] = useState(false);
@@ -245,39 +241,13 @@ export const BikesPage: React.FC = () => {
     }
   };
 
-  const handleOpenSwapModal = (bike: Bike) => {
-    setSwapTargetBike(bike);
-    setSwapNewBatteryId(availableBatteries[0]?.id || '');
-    setIsSwapModalOpen(true);
-  };
-
-  const handleSwapSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!swapTargetBike || !swapNewBatteryId) {
-      toast.error('Выберите аккумулятор со склада');
-      return;
-    }
-    try {
-      await api.swapBattery(swapTargetBike.id, swapNewBatteryId);
-      const bat = availableBatteries.find((b) => b.id === swapNewBatteryId);
-      toast.success(
-        `АКБ на байке ${swapTargetBike.inventoryNumber} заменен на ${bat?.serialNumber || ''}`
-      );
-      setIsSwapModalOpen(false);
-      setSwapTargetBike(null);
-      loadData();
-    } catch (err: any) {
-      toast.error('Ошибка замены АКБ: ' + err.message);
-    }
-  };
-
   const handleDetachBattery = async (bike: Bike) => {
-    if (!confirm(`Снять аккумулятор с байка ${bike.inventoryNumber} на зарядный стеллаж?`)) {
+    if (!confirm(`Снять аккумулятор с байка ${bike.inventoryNumber} на склад?`)) {
       return;
     }
     try {
       await api.detachBattery(bike.id);
-      toast.success(`АКБ снят с байка ${bike.inventoryNumber} на зарядку`);
+      toast.success(`АКБ снят с байка ${bike.inventoryNumber} на склад`);
       loadData();
     } catch (err: any) {
       toast.error('Ошибка снятия АКБ: ' + err.message);
@@ -479,22 +449,6 @@ export const BikesPage: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleOpenSwapModal(bike)}
-                      title="Быстрая замена АКБ на заряженный"
-                      className="p-1 rounded text-slate-400 hover:text-sky-400 hover:bg-slate-800 transition"
-                    >
-                      <ArrowRightLeft className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDetachBattery(bike)}
-                      title="Снять АКБ на зарядку"
-                      className="p-1 rounded text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 </div>
               ) : (
@@ -1207,6 +1161,71 @@ export const BikesPage: React.FC = () => {
             />
           </div>
 
+          {/* Battery assignment / detach */}
+          {editingBike?.battery ? (
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <BatteryCharging className="w-5 h-5 text-emerald-500 shrink-0" />
+                <div>
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <span>Установлен АКБ: {editingBike.battery.serialNumber}</span>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      ({editingBike.battery.voltage}V {editingBike.battery.capacityAh}Ah)
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {editingBike.battery.modelName || 'Аккумулятор'} • {editingBike.battery.chemistry || 'Li-ion'}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (
+                    confirm(
+                      `Снять аккумулятор ${editingBike.battery?.serialNumber} с байка ${editingBike.inventoryNumber} на склад?`
+                    )
+                  ) {
+                    try {
+                      await api.detachBattery(editingBike.id);
+                      toast.success(`АКБ снят с байка ${editingBike.inventoryNumber} на склад`);
+                      setIsEditBikeModalOpen(false);
+                      setEditingBike(null);
+                      loadData();
+                    } catch (err: any) {
+                      toast.error(err.message || 'Ошибка при снятии АКБ');
+                    }
+                  }
+                }}
+                className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-lg text-xs font-medium transition flex items-center gap-1.5"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Снять АКБ на склад</span>
+              </button>
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between text-slate-500">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>На байке не установлен аккумулятор</span>
+              </div>
+              {editingBike && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const bikeToAttach = editingBike;
+                    setIsEditBikeModalOpen(false);
+                    setEditingBike(null);
+                    handleOpenAttachModal(bikeToAttach);
+                  }}
+                  className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-medium transition"
+                >
+                  + Установить со склада
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
@@ -1253,11 +1272,11 @@ export const BikesPage: React.FC = () => {
 
           <div>
             <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
-              Выберите заряженный АКБ со склада:
+              Выберите свободный АКБ со склада:
             </label>
             {availableBatteries.length === 0 ? (
               <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs">
-                ⚠️ На складе нет свободных заряженных аккумуляторов. Сначала оприходуйте новый АКБ или снимите батарею с другого байка.
+                ⚠️ На складе нет свободных аккумуляторов. Сначала оприходуйте новый АКБ или снимите батарею с другого байка.
               </div>
             ) : (
               <select
@@ -1291,78 +1310,6 @@ export const BikesPage: React.FC = () => {
               className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm"
             >
               Установить АКБ
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Modal: Быстрая замена АКБ (Своп) */}
-      <Modal
-        isOpen={isSwapModalOpen}
-        onClose={() => {
-          setIsSwapModalOpen(false);
-          setSwapTargetBike(null);
-        }}
-        title={`Быстрая замена аккумулятора на байке ${swapTargetBike?.inventoryNumber}`}
-        subtitle="Замена на свежий заряженный аккумулятор в 1 клик"
-        maxWidth="md"
-      >
-        <form onSubmit={handleSwapSubmit} className="space-y-4 text-xs">
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1">
-            <div className="text-slate-500 dark:text-slate-400">Байк и текущий аккумулятор:</div>
-            <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <BikeIcon className="w-4 h-4 text-sky-500" />
-              {swapTargetBike?.inventoryNumber} — {swapTargetBike?.model?.name}
-            </div>
-            {swapTargetBike?.battery ? (
-              <div className="text-amber-600 dark:text-amber-400 text-xs mt-1">
-                Текущий АКБ: <b>{swapTargetBike.battery.serialNumber}</b> ({swapTargetBike.battery.voltage}V {swapTargetBike.battery.capacityAh}Ah • {swapTargetBike.battery.chemistry || 'Li-ion'}) будет снят на склад.
-              </div>
-            ) : (
-              <div className="text-slate-500 dark:text-slate-400 text-xs mt-1">Байк в данный момент без батареи.</div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
-              Выберите новый заряженный АКБ со склада:
-            </label>
-            {availableBatteries.length === 0 ? (
-              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs">
-                ⚠️ Нет свободных заряженных аккумуляторов на складе.
-              </div>
-            ) : (
-              <select
-                value={swapNewBatteryId}
-                onChange={(e) => setSwapNewBatteryId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-              >
-                {availableBatteries.map((bat) => (
-                  <option key={bat.id} value={bat.id}>
-                    {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah • {bat.chemistry || 'Li-ion'})
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSwapModalOpen(false);
-                setSwapTargetBike(null);
-              }}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={availableBatteries.length === 0}
-              className="px-5 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm"
-            >
-              Заменить в 1 клик
             </button>
           </div>
         </form>

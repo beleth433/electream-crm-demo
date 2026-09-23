@@ -121,6 +121,7 @@ export interface Battery {
   healthPercent?: number;
   status: BatteryStatus;
   installedBikeId?: string | null;
+  issuedBikeId?: string | null;
   location?: string;
   notes?: string | null;
   purchasePrice?: number;
@@ -133,6 +134,23 @@ export interface Battery {
     status: BikeStatus;
     modelName?: string;
     currentLocation?: string;
+  } | null;
+  issuedBike?: {
+    id: string;
+    inventoryNumber: string;
+    status?: BikeStatus;
+    modelName?: string;
+    currentLocation?: string;
+  } | null;
+  currentRental?: {
+    id: string;
+    rentalNumber: string;
+    clientId: string;
+    clientName: string;
+    clientPhone?: string | null;
+    bikeId?: string | null;
+    bikeInventoryNumber?: string | null;
+    isSpare?: boolean;
   } | null;
 }
 
