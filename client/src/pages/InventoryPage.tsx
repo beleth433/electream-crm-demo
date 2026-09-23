@@ -55,6 +55,54 @@ export const InventoryPage: React.FC = () => {
     clientPrice: 1200,
   });
 
+  // Edit Part Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingPart, setEditingPart] = useState<Part | null>(null);
+  const [editPartForm, setEditPartForm] = useState({
+    name: '',
+    sku: '',
+    categoryId: '',
+    quantity: 0,
+    minQuantity: 3,
+    purchasePrice: 0,
+    clientPrice: 0,
+  });
+
+  const handleOpenEditModal = (part: Part) => {
+    setEditingPart(part);
+    setEditPartForm({
+      name: part.name,
+      sku: part.sku,
+      categoryId: part.categoryId || categories[0]?.id || '',
+      quantity: part.quantity,
+      minQuantity: part.minQuantity,
+      purchasePrice: part.purchasePrice,
+      clientPrice: part.clientPrice,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdatePart = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPart) return;
+    try {
+      await api.updatePart(editingPart.id, {
+        ...editPartForm,
+        categoryId: editPartForm.categoryId || undefined,
+        quantity: Number(editPartForm.quantity),
+        minQuantity: Number(editPartForm.minQuantity),
+        purchasePrice: Number(editPartForm.purchasePrice),
+        clientPrice: Number(editPartForm.clientPrice),
+      });
+      toast.success(`Запчасть "${editPartForm.name}" успешно обновлена!`);
+      setIsEditModalOpen(false);
+      setEditingPart(null);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка обновления запчасти');
+    }
+  };
+
   const calculateNextPartSku = (prefixToUse: string, partList: Part[] = parts) => {
     const existing = partList.map((p) => p.sku);
     return getNextSequentialNumber(existing, prefixToUse, 3);
@@ -403,7 +451,7 @@ export const InventoryPage: React.FC = () => {
                       {p.clientPrice.toLocaleString('ru-RU')} ₽
                     </td>
                     <td className="p-3.5 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => {
                             setRestockPart(p);
@@ -413,6 +461,13 @@ export const InventoryPage: React.FC = () => {
                         >
                           <PackagePlus className="w-3.5 h-3.5" />
                           Пополнить
+                        </button>
+                        <button
+                          onClick={() => handleOpenEditModal(p)}
+                          title="Редактировать параметры запчасти"
+                          className="p-1 text-slate-400 hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-950/40 rounded-lg transition-all"
+                        >
+                          <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeletePart(p)}
@@ -666,6 +721,129 @@ export const InventoryPage: React.FC = () => {
               className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-sm"
             >
               Создать позицию
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Edit Part */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingPart(null);
+        }}
+        title="Редактировать запчасть"
+        subtitle={editingPart ? `Артикул: ${editingPart.sku}` : ''}
+        maxWidth="md"
+      >
+        <form onSubmit={handleUpdatePart} className="space-y-3 text-xs">
+          <div>
+            <label className="block text-slate-500 mb-1">Наименование детали *</label>
+            <input
+              required
+              type="text"
+              value={editPartForm.name}
+              onChange={(e) => setEditPartForm({ ...editPartForm, name: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-500 mb-1">Категория запчасти *</label>
+            <select
+              required
+              value={editPartForm.categoryId}
+              onChange={(e) => setEditPartForm({ ...editPartForm, categoryId: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+              Артикул (SKU) *
+            </label>
+            <input
+              required
+              type="text"
+              value={editPartForm.sku}
+              onChange={(e) => setEditPartForm({ ...editPartForm, sku: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-slate-900 dark:text-slate-100 font-bold text-sm focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-500 mb-1">Количество на складе (шт.) *</label>
+              <input
+                required
+                type="number"
+                min="0"
+                value={editPartForm.quantity}
+                onChange={(e) => setEditPartForm({ ...editPartForm, quantity: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-500 mb-1">Порог предупреждения *</label>
+              <input
+                required
+                type="number"
+                min="1"
+                value={editPartForm.minQuantity}
+                onChange={(e) => setEditPartForm({ ...editPartForm, minQuantity: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-500 mb-1">Себестоимость / закупка (₽) *</label>
+              <input
+                required
+                type="number"
+                min="0"
+                value={editPartForm.purchasePrice}
+                onChange={(e) => setEditPartForm({ ...editPartForm, purchasePrice: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-slate-500 mb-1">Клиентская цена СТО (₽) *</label>
+              <input
+                required
+                type="number"
+                min="0"
+                value={editPartForm.clientPrice}
+                onChange={(e) => setEditPartForm({ ...editPartForm, clientPrice: Number(e.target.value) })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-emerald-600 dark:text-emerald-400"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingPart(null);
+              }}
+              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm"
+            >
+              Сохранить изменения
             </button>
           </div>
         </form>

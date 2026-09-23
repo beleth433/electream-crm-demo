@@ -190,6 +190,10 @@ export class PartRepository {
     const index = db.parts.findIndex((p) => p.id === id);
     if (index === -1) return null;
 
+    if (data.sku && db.parts.some((p) => p.id !== id && p.sku.toLowerCase() === data.sku!.toLowerCase())) {
+      throw new Error(`Запчасть с артикулом ${data.sku} уже существует`);
+    }
+
     let categoryName = db.parts[index].categoryName;
     if (data.categoryId) {
       const cat = db.partCategories?.find((c) => c.id === data.categoryId);
