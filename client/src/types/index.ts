@@ -300,10 +300,19 @@ export interface Rental {
   updatedAt: string;
 }
 
+export interface PartCategoryItem {
+  id: string;
+  name: string;
+  isSystem?: boolean;
+  partCount?: number;
+}
+
 export interface Part {
   id: string;
   name: string;
   sku: string;
+  categoryId?: string;
+  categoryName?: string;
   quantity: number;
   minQuantity: number;
   purchasePrice: number;

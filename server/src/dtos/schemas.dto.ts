@@ -167,10 +167,15 @@ export const RepairCompleteDto = z.object({
 export const PartCreateDto = z.object({
   name: z.string().min(2, "Название запчасти обязательно"),
   sku: z.string().min(2, "Артикул (SKU) обязателен"),
+  categoryId: z.string().optional(),
   quantity: z.number().min(0),
   minQuantity: z.number().min(0).optional().default(3),
   purchasePrice: z.number().min(0),
   clientPrice: z.number().min(0),
+});
+
+export const PartCategoryCreateDto = z.object({
+  name: z.string().min(2, "Название категории обязательно"),
 });
 
 export const PartRestockDto = z.object({

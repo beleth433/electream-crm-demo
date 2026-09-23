@@ -1,20 +1,107 @@
 import { getDb, PartRecord } from "./db.js";
 
 export class PartRepository {
-  static getAll(filters?: { search?: string; lowStockOnly?: boolean }) {
+  static getCategories() {
     const db = getDb();
-    let list = db.parts.map((p) => ({
-      ...p,
-      isLowStock: p.quantity <= p.minQuantity,
+    if (!db.partCategories) {
+      db.partCategories = [];
+    }
+    return db.partCategories.map((c) => ({
+      ...c,
+      partCount: db.parts.filter((p) => p.categoryId === c.id).length,
     }));
+  }
 
+  static createCategory(data: { name: string }) {
+    const db = getDb();
+    if (!db.partCategories) {
+      db.partCategories = [];
+    }
+    const trimmed = data.name.trim();
+    if (db.partCategories.some((c) => c.name.toLowerCase() === trimmed.toLowerCase())) {
+      throw new Error(`Категория запчастей "${trimmed}" уже существует`);
+    }
+
+    const newCategory = {
+      id: `cat-part-${Date.now()}`,
+      name: trimmed,
+      isSystem: false,
+    };
+
+    db.partCategories.push(newCategory);
+    return {
+      ...newCategory,
+      partCount: 0,
+    };
+  }
+
+  static deleteCategory(id: string) {
+    const db = getDb();
+    if (!db.partCategories) {
+      db.partCategories = [];
+    }
+    const index = db.partCategories.findIndex((c) => c.id === id);
+    if (index === -1) {
+      throw new Error("Категория запчастей не найдена");
+    }
+
+    const usedCount = db.parts.filter((p) => p.categoryId === id).length;
+    if (usedCount > 0) {
+      throw new Error(`Нельзя удалить категорию: к ней привязано ${usedCount} поз. запчастей`);
+    }
+
+    const removed = db.partCategories.splice(index, 1)[0];
+    return removed;
+  }
+
+  static getAll(filters?: { search?: string; lowStockOnly?: boolean; categoryId?: string }) {
+    const db = getDb();
+    if (!db.partCategories) {
+      db.partCategories = [];
+    }
+
+    let list = db.parts.map((p) => {
+      let categoryId = p.categoryId;
+      if (!categoryId) {
+        const lower = p.name.toLowerCase();
+        if (lower.includes('колодк') || lower.includes('тормоз')) {
+          categoryId = 'cat-part-brakes';
+        } else if (lower.includes('рул') || lower.includes('грипс')) {
+          categoryId = 'cat-part-steering';
+        } else if (lower.includes('диспл') || lower.includes('экран')) {
+          categoryId = 'cat-part-displays';
+        } else if (lower.includes('контроллер')) {
+          categoryId = 'cat-part-controllers';
+        } else if (lower.includes('колес') || lower.includes('обод')) {
+          categoryId = 'cat-part-wheels';
+        } else if (lower.includes('шин') || lower.includes('покрышк') || lower.includes('камер')) {
+          categoryId = 'cat-part-tires';
+        } else {
+          categoryId = db.partCategories[0]?.id;
+        }
+      }
+      const cat = db.partCategories.find((c) => c.id === categoryId);
+      return {
+        ...p,
+        categoryId,
+        categoryName: cat?.name || p.categoryName || 'Без категории',
+        isLowStock: p.quantity <= p.minQuantity,
+      };
+    });
+
+    if (filters?.categoryId && filters.categoryId !== 'ALL') {
+      list = list.filter((p) => p.categoryId === filters.categoryId);
+    }
     if (filters?.lowStockOnly) {
       list = list.filter((p) => p.isLowStock);
     }
     if (filters?.search) {
       const q = filters.search.toLowerCase();
       list = list.filter(
-        (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.sku.toLowerCase().includes(q) ||
+          (p.categoryName && p.categoryName.toLowerCase().includes(q))
       );
     }
 
@@ -25,8 +112,10 @@ export class PartRepository {
     const db = getDb();
     const part = db.parts.find((p) => p.id === id);
     if (!part) return null;
+    const cat = db.partCategories?.find((c) => c.id === part.categoryId);
     return {
       ...part,
+      categoryName: cat?.name || part.categoryName || 'Без категории',
       isLowStock: part.quantity <= part.minQuantity,
     };
   }
@@ -34,6 +123,7 @@ export class PartRepository {
   static create(data: {
     name: string;
     sku: string;
+    categoryId?: string;
     quantity: number;
     minQuantity?: number;
     purchasePrice: number;
@@ -44,10 +134,14 @@ export class PartRepository {
       throw new Error(`Запчасть с артикулом ${data.sku} уже существует`);
     }
 
+    const cat = data.categoryId ? db.partCategories?.find((c) => c.id === data.categoryId) : null;
+
     const newPart = {
       id: `prt-${Date.now()}`,
       name: data.name,
       sku: data.sku,
+      categoryId: data.categoryId || (db.partCategories && db.partCategories[0]?.id) || undefined,
+      categoryName: cat?.name || (db.partCategories && db.partCategories[0]?.name) || undefined,
       quantity: data.quantity,
       minQuantity: data.minQuantity || 3,
       purchasePrice: data.purchasePrice,
@@ -66,9 +160,16 @@ export class PartRepository {
     const index = db.parts.findIndex((p) => p.id === id);
     if (index === -1) return null;
 
+    let categoryName = db.parts[index].categoryName;
+    if (data.categoryId) {
+      const cat = db.partCategories?.find((c) => c.id === data.categoryId);
+      if (cat) categoryName = cat.name;
+    }
+
     db.parts[index] = {
       ...db.parts[index],
       ...data,
+      categoryName: data.categoryName || categoryName,
     };
 
     return {

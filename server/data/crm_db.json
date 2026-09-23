@@ -295,16 +295,52 @@
       "updatedAt": "2026-09-23T22:50:45.729Z"
     }
   ],
-  "outfits": [],
+  "outfits": [
+    {
+      "id": "outfit-1790204955401",
+      "name": "Шлем Guardian",
+      "category": "cat-1790204877162",
+      "inventoryNumber": "ЭК-001",
+      "depositValue": 0,
+      "purchasePrice": 1000,
+      "salePrice": 2000,
+      "status": "IN_STOCK"
+    },
+    {
+      "id": "outfit-1790204974918",
+      "name": "Шлем Guardian",
+      "category": "cat-1790204877162",
+      "inventoryNumber": "ЭК-002",
+      "depositValue": 0,
+      "purchasePrice": 1000,
+      "salePrice": 2000,
+      "status": "IN_STOCK"
+    },
+    {
+      "id": "outfit-1790204984059",
+      "name": "Шлем Guardian",
+      "category": "cat-1790204877162",
+      "inventoryNumber": "ЭК-003",
+      "depositValue": 0,
+      "purchasePrice": 1000,
+      "salePrice": 2000,
+      "status": "IN_STOCK"
+    },
+    {
+      "id": "outfit-1790205070203",
+      "name": "Держатель hoco",
+      "category": "cat-1790119454641",
+      "inventoryNumber": "ЭК-004",
+      "depositValue": 0,
+      "purchasePrice": 500,
+      "salePrice": 1000,
+      "status": "IN_STOCK"
+    }
+  ],
   "outfitCategories": [
     {
       "id": "LOCK",
       "name": "Замки и безопасность",
-      "isSystem": true
-    },
-    {
-      "id": "CHARGER",
-      "name": "Зарядные устройства",
       "isSystem": true
     },
     {
@@ -318,15 +354,44 @@
       "isSystem": false
     },
     {
-      "id": "cat-1790148343452",
+      "id": "cat-1790204877162",
       "name": "Шлемы",
       "isSystem": false
     }
   ],
-  "outfitTemplates": [],
+  "outfitTemplates": [
+    {
+      "id": "tmpl-1790204905307",
+      "name": "Шлем Guardian",
+      "categoryId": "cat-1790204877162",
+      "defaultDeposit": 0,
+      "description": null,
+      "purchasePrice": 1000,
+      "salePrice": 2000
+    },
+    {
+      "id": "tmpl-1790204937332",
+      "name": "Держатель hoco",
+      "categoryId": "cat-1790119454641",
+      "defaultDeposit": 0,
+      "description": null,
+      "purchasePrice": 500,
+      "salePrice": 1000
+    }
+  ],
   "clients": [],
   "tariffs": [],
-  "parts": [],
+  "parts": [
+    {
+      "id": "prt-1790205322887",
+      "name": "Колодки керамика",
+      "sku": "КОЛК001",
+      "quantity": 5,
+      "minQuantity": 3,
+      "purchasePrice": 500,
+      "clientPrice": 1000
+    }
+  ],
   "rentals": [],
   "repairs": [],
   "payments": [],

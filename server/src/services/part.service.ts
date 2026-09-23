@@ -1,7 +1,19 @@
 import { PartRepository } from "../repositories/part.repository.js";
 
 export class PartService {
-  static getAll(filters?: { search?: string; lowStockOnly?: boolean }) {
+  static getCategories() {
+    return PartRepository.getCategories();
+  }
+
+  static createCategory(data: { name: string }) {
+    return PartRepository.createCategory(data);
+  }
+
+  static deleteCategory(id: string) {
+    return PartRepository.deleteCategory(id);
+  }
+
+  static getAll(filters?: { search?: string; lowStockOnly?: boolean; categoryId?: string }) {
     return PartRepository.getAll(filters);
   }
 
@@ -16,6 +28,7 @@ export class PartService {
   static create(data: {
     name: string;
     sku: string;
+    categoryId?: string;
     quantity: number;
     minQuantity?: number;
     purchasePrice: number;

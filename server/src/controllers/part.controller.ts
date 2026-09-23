@@ -1,14 +1,43 @@
 import { Request, Response } from "express";
 import { PartService } from "../services/part.service.js";
-import { PartCreateDto, PartRestockDto } from "../dtos/schemas.dto.js";
+import { PartCreateDto, PartCategoryCreateDto, PartRestockDto } from "../dtos/schemas.dto.js";
 
 export class PartController {
+  static getCategories(req: Request, res: Response) {
+    try {
+      const categories = PartService.getCategories();
+      return res.json(categories);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  static createCategory(req: Request, res: Response) {
+    try {
+      const parsed = PartCategoryCreateDto.parse(req.body);
+      const category = PartService.createCategory(parsed);
+      return res.status(201).json(category);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+
+  static deleteCategory(req: Request, res: Response) {
+    try {
+      const removed = PartService.deleteCategory(req.params.id);
+      return res.json({ success: true, message: `Категория "${removed.name}" удалена`, data: removed });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+
   static getAll(req: Request, res: Response) {
     try {
-      const { search, lowStockOnly } = req.query;
+      const { search, lowStockOnly, categoryId } = req.query;
       const parts = PartService.getAll({
         search: search as string,
         lowStockOnly: lowStockOnly === "true",
+        categoryId: categoryId as string,
       });
       return res.json(parts);
     } catch (err: any) {

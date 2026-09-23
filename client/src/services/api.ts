@@ -12,6 +12,7 @@ import {
   OutfitTemplate,
   RepairOrder,
   Part,
+  PartCategoryItem,
   Payment,
   Review,
   Article,
@@ -280,10 +281,16 @@ export const api = {
   ) => fetchJson<RepairOrder>(`/repairs/${id}/complete`, { method: 'POST', body: JSON.stringify(data) }),
 
   // Parts
-  getParts: (params?: { search?: string; lowStockOnly?: boolean }) => {
+  getPartCategories: () => fetchJson<PartCategoryItem[]>('/parts/categories'),
+  createPartCategory: (data: { name: string }) =>
+    fetchJson<PartCategoryItem>('/parts/categories', { method: 'POST', body: JSON.stringify(data) }),
+  deletePartCategory: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/parts/categories/${id}`, { method: 'DELETE' }),
+  getParts: (params?: { search?: string; lowStockOnly?: boolean; categoryId?: string }) => {
     const q = new URLSearchParams();
     if (params?.search) q.append('search', params.search);
     if (params?.lowStockOnly) q.append('lowStockOnly', 'true');
+    if (params?.categoryId) q.append('categoryId', params.categoryId);
     return fetchJson<Part[]>(`/parts?${q.toString()}`);
   },
   getPart: (id: string) => fetchJson<Part>(`/parts/${id}`),

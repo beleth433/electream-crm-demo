@@ -52,6 +52,17 @@ export const INITIAL_OUTFIT_CATEGORIES = [
   { id: "cat-winter-gloves", name: "Зимние муфты и перчатки", isSystem: false },
 ];
 
+export const INITIAL_PART_CATEGORIES = [
+  { id: "cat-part-brakes", name: "Тормозная система (колодки, диски, гидролинии)", isSystem: true },
+  { id: "cat-part-steering", name: "Рули и управление (рули, выносы, грипсы)", isSystem: true },
+  { id: "cat-part-displays", name: "Экраны и дисплеи (спидометры, дисплеи, пульты)", isSystem: true },
+  { id: "cat-part-controllers", name: "Контроллеры и электрика (контроллеры, проводка, PAS)", isSystem: true },
+  { id: "cat-part-wheels", name: "Колеса и обода (мотор-колеса, обода, спицы)", isSystem: true },
+  { id: "cat-part-tires", name: "Шины и камеры (покрышки, камеры, антипрокол)", isSystem: true },
+  { id: "cat-part-consumables", name: "Расходники и крепеж (тросики, болты, смазка)", isSystem: true },
+  { id: "cat-part-other", name: "Прочие запчасти и аксессуары", isSystem: false },
+];
+
 export const INITIAL_TARIFFS: any[] = [];
 
 export const INITIAL_EMPLOYEES = [

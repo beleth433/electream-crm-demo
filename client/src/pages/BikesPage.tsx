@@ -502,17 +502,17 @@ export const BikesPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="mt-3 p-2.5 rounded-xl bg-amber-950/20 border border-amber-800/40 text-xs flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400">
-                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                <div className="mt-3 p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/25 border border-amber-200/80 dark:border-amber-800/40 text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                     <div>
-                      <span className="font-bold">Без аккумулятора</span>
-                      <p className="text-[10px] text-amber-600 dark:text-amber-500/80">Не готов к выдаче</p>
+                      <span className="font-bold text-amber-950 dark:text-amber-300">Без аккумулятора</span>
+                      <p className="text-[10px] text-amber-700/80 dark:text-amber-500/80 font-medium">Не готов к выдаче</p>
                     </div>
                   </div>
                   <button
                     onClick={() => handleOpenAttachModal(bike)}
-                    className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-lg text-xs font-semibold transition"
+                    className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200/90 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 border border-amber-300/70 dark:border-amber-500/30 rounded-lg text-xs font-bold transition shadow-sm"
                   >
                     + Установить
                   </button>

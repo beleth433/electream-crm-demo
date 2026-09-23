@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Part } from '../types';
+import { Part, PartCategoryItem } from '../types';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
 import {
@@ -13,26 +13,37 @@ import {
   PackagePlus,
   Trash2,
   Sparkles,
+  Tag,
+  FolderPlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
 export const InventoryPage: React.FC = () => {
   const [parts, setParts] = useState<Part[]>([]);
+  const [categories, setCategories] = useState<PartCategoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lowStockFilter, setLowStockFilter] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
 
   // Restock Modal
   const [restockPart, setRestockPart] = useState<Part | null>(null);
   const [quantityToAdd, setQuantityToAdd] = useState<number>(5);
 
+  // Manage Categories Modal
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
   // Add Part Modal & Prefix State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [partPrefix, setPartPrefix] = useState<string>(() => getStoredPrefix('part', 'PRT-'));
+  const [isQuickCategoryCreating, setIsQuickCategoryCreating] = useState(false);
+  const [quickCategoryName, setQuickCategoryName] = useState('');
   const [newPartForm, setNewPartForm] = useState({
     name: '',
     sku: '',
+    categoryId: '',
     quantity: 10,
     minQuantity: 3,
     purchasePrice: 500,
@@ -53,9 +64,12 @@ export const InventoryPage: React.FC = () => {
 
   const handleOpenAddModal = () => {
     const nextNum = calculateNextPartSku(partPrefix);
+    setIsQuickCategoryCreating(false);
+    setQuickCategoryName('');
     setNewPartForm({
       name: '',
       sku: nextNum,
+      categoryId: categories[0]?.id || '',
       quantity: 10,
       minQuantity: 3,
       purchasePrice: 500,
@@ -66,25 +80,35 @@ export const InventoryPage: React.FC = () => {
 
   const loadData = () => {
     setIsLoading(true);
-    api
-      .getParts({
+    Promise.all([
+      api.getParts({
         lowStockOnly: lowStockFilter,
+        categoryId: categoryFilter === 'ALL' ? undefined : categoryFilter,
         search,
+      }),
+      api.getPartCategories(),
+    ])
+      .then(([partsRes, categoriesRes]) => {
+        setParts(partsRes);
+        setCategories(categoriesRes);
+        if (categoriesRes.length > 0 && !newPartForm.categoryId) {
+          setNewPartForm((prev) => ({ ...prev, categoryId: categoriesRes[0].id }));
+        }
       })
-      .then((data) => setParts(data))
       .catch((err) => toast.error('Ошибка загрузки запчастей: ' + err.message))
       .finally(() => setIsLoading(false));
   };
 
   useEffect(() => {
     loadData();
-  }, [lowStockFilter]);
+  }, [lowStockFilter, categoryFilter]);
 
   const handleCreatePart = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await api.createPart({
         ...newPartForm,
+        categoryId: newPartForm.categoryId || undefined,
         quantity: Number(newPartForm.quantity),
         minQuantity: Number(newPartForm.minQuantity),
         purchasePrice: Number(newPartForm.purchasePrice),
@@ -100,6 +124,7 @@ export const InventoryPage: React.FC = () => {
       setNewPartForm({
         name: '',
         sku: nextNum,
+        categoryId: categories[0]?.id || '',
         quantity: 10,
         minQuantity: 3,
         purchasePrice: 500,
@@ -108,6 +133,51 @@ export const InventoryPage: React.FC = () => {
       loadData();
     } catch (err: any) {
       toast.error(err.message || 'Ошибка добавления детали');
+    }
+  };
+
+  const handleCreateQuickCategory = async () => {
+    if (!quickCategoryName.trim()) return;
+    try {
+      const created = await api.createPartCategory({ name: quickCategoryName.trim() });
+      toast.success(`Категория "${created.name}" создана!`);
+      setCategories((prev) => [...prev, created]);
+      setNewPartForm((prev) => ({ ...prev, categoryId: created.id }));
+      setQuickCategoryName('');
+      setIsQuickCategoryCreating(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка создания категории');
+    }
+  };
+
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    try {
+      const created = await api.createPartCategory({ name: newCategoryName.trim() });
+      toast.success(`Категория "${created.name}" добавлена в справочник!`);
+      setCategories((prev) => [...prev, created]);
+      setNewCategoryName('');
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка создания категории');
+    }
+  };
+
+  const handleDeleteCategory = async (cat: PartCategoryItem) => {
+    if ((cat.partCount ?? 0) > 0) {
+      toast.error(`Нельзя удалить категорию "${cat.name}": в ней числится ${cat.partCount} поз. запчастей`);
+      return;
+    }
+    if (window.confirm(`Вы уверены, что хотите удалить категорию "${cat.name}"?`)) {
+      try {
+        await api.deletePartCategory(cat.id);
+        toast.success(`Категория "${cat.name}" удалена`);
+        if (categoryFilter === cat.id) setCategoryFilter('ALL');
+        loadData();
+      } catch (err: any) {
+        toast.error(err.message || 'Ошибка удаления категории');
+      }
     }
   };
 
@@ -153,51 +223,93 @@ export const InventoryPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Новая номенклатура
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setIsManageCategoriesOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700"
+          >
+            <FolderPlus className="w-4 h-4 text-emerald-500" />
+            Категории запчастей
+          </button>
+          <button
+            onClick={handleOpenAddModal}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Новая номенклатура
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 contour-card">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setLowStockFilter(false)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-              !lowStockFilter
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm shadow-emerald-500/20'
-                : 'bg-slate-100 dark:bg-[#101d17] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#162720] border border-transparent dark:border-emerald-500/10'
-            }`}
-          >
-            Все позиции
-          </button>
-          <button
-            onClick={() => setLowStockFilter(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-              lowStockFilter
-                ? 'bg-amber-500 text-slate-950 font-bold shadow-sm shadow-amber-500/20'
-                : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-300/40 dark:border-amber-500/20 hover:border-amber-400'
-            }`}
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />
-            Только дефицит (ниже порога)
-          </button>
+      <div className="space-y-3 p-4 contour-card">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setLowStockFilter(false)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                !lowStockFilter
+                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm shadow-emerald-500/20'
+                  : 'bg-slate-100 dark:bg-[#101d17] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#162720] border border-transparent dark:border-emerald-500/10'
+              }`}
+            >
+              Все позиции
+            </button>
+            <button
+              onClick={() => setLowStockFilter(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                lowStockFilter
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-sm shadow-amber-500/20'
+                  : 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-300/40 dark:border-amber-500/20 hover:border-amber-400'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Только дефицит (ниже порога)
+            </button>
+          </div>
+
+          <form onSubmit={(e) => { e.preventDefault(); loadData(); }} className="relative w-full sm:w-72 shrink-0">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Поиск по названию или SKU..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
+            />
+          </form>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); loadData(); }} className="relative w-full sm:w-72 shrink-0">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Поиск по названию или SKU..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
-          />
-        </form>
+        {/* Dynamic Category Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-3 border-t border-slate-200/60 dark:border-emerald-500/10 custom-scrollbar w-full">
+          <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider whitespace-nowrap mr-1 flex items-center gap-1">
+            <Tag className="w-3 h-3 text-emerald-500" />
+            Категория:
+          </span>
+          <button
+            onClick={() => setCategoryFilter('ALL')}
+            className={`px-2.5 py-1 rounded-lg text-xs whitespace-nowrap transition-all ${
+              categoryFilter === 'ALL'
+                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/40'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            Все категории ({parts.length})
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setCategoryFilter(cat.id)}
+              className={`px-2.5 py-1 rounded-lg text-xs whitespace-nowrap transition-all ${
+                categoryFilter === cat.id
+                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/40'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              {cat.name} {cat.partCount !== undefined ? `(${cat.partCount})` : ''}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Parts Table */}
@@ -208,6 +320,7 @@ export const InventoryPage: React.FC = () => {
               <tr>
                 <th className="p-3.5 font-semibold">Артикул (SKU)</th>
                 <th className="p-3.5 font-semibold">Наименование запчасти</th>
+                <th className="p-3.5 font-semibold">Категория</th>
                 <th className="p-3.5 font-semibold text-center">Остаток на складе</th>
                 <th className="p-3.5 font-semibold text-center">Порог предупреждения</th>
                 <th className="p-3.5 font-semibold">Закупочная цена (себестоимость)</th>
@@ -231,6 +344,11 @@ export const InventoryPage: React.FC = () => {
                     </td>
                     <td className="p-3.5 font-semibold text-slate-900 dark:text-white">
                       {p.name}
+                    </td>
+                    <td className="p-3.5">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 text-slate-700 dark:text-emerald-300 font-medium whitespace-nowrap">
+                        {p.categoryName || 'Без категории'}
+                      </span>
                     </td>
                     <td className="p-3.5 text-center">
                       <span
@@ -341,6 +459,53 @@ export const InventoryPage: React.FC = () => {
               onChange={(e) => setNewPartForm({ ...newPartForm, name: e.target.value })}
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
             />
+          </div>
+
+          {/* Category Selector */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-slate-500 font-medium">Категория запчасти *</label>
+              <button
+                type="button"
+                onClick={() => setIsQuickCategoryCreating(!isQuickCategoryCreating)}
+                className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
+              >
+                <FolderPlus className="w-3 h-3" />
+                {isQuickCategoryCreating ? 'Выбрать из списка' : '+ Новая категория'}
+              </button>
+            </div>
+
+            {isQuickCategoryCreating ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Например: Оптика и свет"
+                  value={quickCategoryName}
+                  onChange={(e) => setQuickCategoryName(e.target.value)}
+                  className="grow px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateQuickCategory}
+                  className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-bold shrink-0 text-xs"
+                >
+                  Сохранить
+                </button>
+              </div>
+            ) : (
+              <select
+                required
+                value={newPartForm.categoryId}
+                onChange={(e) => setNewPartForm({ ...newPartForm, categoryId: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>
@@ -472,6 +637,85 @@ export const InventoryPage: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal: Manage Categories */}
+      <Modal
+        isOpen={isManageCategoriesOpen}
+        onClose={() => setIsManageCategoriesOpen(false)}
+        title="Категории запчастей и расходников"
+        subtitle="Справочник разделов номенклатуры склада"
+        maxWidth="md"
+      >
+        <div className="space-y-4 text-xs">
+          <form onSubmit={handleCreateCategory} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+            <label className="block font-bold text-slate-800 dark:text-slate-200">
+              Добавить новую категорию:
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                required
+                placeholder="Например: Трансмиссия и педали"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className="grow px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shrink-0 flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                Добавить
+              </button>
+            </div>
+          </form>
+
+          <div>
+            <p className="font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              Существующие категории ({categories.length}):
+            </p>
+            <div className="divide-y divide-slate-200 dark:divide-slate-800 max-h-80 overflow-y-auto custom-scrollbar">
+              {categories.map((cat) => (
+                <div key={cat.id} className="py-2.5 flex items-center justify-between">
+                  <div>
+                    <span className="font-semibold text-slate-900 dark:text-white block">
+                      {cat.name}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Позиций на складе: {cat.partCount ?? 0} шт.
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCategory(cat)}
+                      disabled={(cat.partCount ?? 0) > 0}
+                      title={(cat.partCount ?? 0) > 0 ? 'Нельзя удалить: в категории есть запчасти' : 'Удалить категорию'}
+                      className={`p-1.5 rounded-lg transition ${
+                        (cat.partCount ?? 0) > 0
+                          ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                          : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                      }`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setIsManageCategoriesOpen(false)}
+              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl"
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -9,6 +9,7 @@ import {
   INITIAL_OUTFITS,
   INITIAL_OUTFIT_CATEGORIES,
   INITIAL_OUTFIT_TEMPLATES,
+  INITIAL_PART_CATEGORIES,
   INITIAL_CLIENTS,
   INITIAL_TARIFFS,
   INITIAL_PARTS,
@@ -180,10 +181,18 @@ export interface TariffRecord {
   isActive: boolean;
 }
 
+export interface PartCategoryRecord {
+  id: string;
+  name: string;
+  isSystem?: boolean;
+}
+
 export interface PartRecord {
   id: string;
   name: string;
   sku: string;
+  categoryId?: string;
+  categoryName?: string;
   quantity: number;
   minQuantity: number;
   purchasePrice: number;
@@ -314,6 +323,7 @@ export interface DBStore {
   clients: ClientRecord[];
   tariffs: TariffRecord[];
   parts: PartRecord[];
+  partCategories: PartCategoryRecord[];
   rentals: RentalRecord[];
   repairs: RepairOrderRecord[];
   payments: PaymentRecord[];
@@ -345,6 +355,7 @@ export const createDefaultEmptyDb = (): DBStore => ({
   clients: [],
   tariffs: [],
   parts: [],
+  partCategories: JSON.parse(JSON.stringify(INITIAL_PART_CATEGORIES)),
   rentals: [],
   repairs: [],
   payments: [],
@@ -376,6 +387,9 @@ function loadFromDisk(): DBStore {
           clients: parsed.clients || [],
           tariffs: parsed.tariffs || [],
           parts: parsed.parts || [],
+          partCategories: Array.isArray(parsed.partCategories) && parsed.partCategories.length > 0
+            ? parsed.partCategories
+            : defaultDb.partCategories,
           rentals: parsed.rentals || [],
           repairs: parsed.repairs || [],
           payments: parsed.payments || [],
