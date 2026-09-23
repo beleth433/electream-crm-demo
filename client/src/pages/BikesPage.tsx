@@ -25,9 +25,11 @@ import {
   AlertTriangle,
   CheckCircle2,
   Sparkles,
+  Wrench,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
+import { QuickSendToRepairModal } from '../components/QuickSendToRepairModal';
 
 export const BikesPage: React.FC = () => {
   const [bikes, setBikes] = useState<Bike[]>([]);
@@ -67,6 +69,8 @@ export const BikesPage: React.FC = () => {
     purchasePrice: 0,
     salePrice: 0,
   });
+
+  const [sendToRepairBike, setSendToRepairBike] = useState<Bike | null>(null);
 
   const handleOpenEditBikeModal = (bike: Bike) => {
     setEditingBike(bike);
@@ -586,6 +590,23 @@ export const BikesPage: React.FC = () => {
               )}
 
               <div className="flex items-center gap-1">
+                {bike.status === 'AVAILABLE' && (
+                  <button
+                    onClick={() => setSendToRepairBike(bike)}
+                    className="p-1 px-2 rounded-lg flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 transition-all border border-amber-500/20 shadow-sm"
+                    title="Отправить электровелосипед на ТО в мастерскую СТО"
+                  >
+                    <Wrench className="w-3.5 h-3.5" />
+                    <span>На ТО</span>
+                  </button>
+                )}
+                {bike.status === 'IN_MAINTENANCE' && (
+                  <span className="p-1 px-2 rounded-lg text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 flex items-center gap-1">
+                    <Wrench className="w-3 h-3" />
+                    В СТО
+                  </span>
+                )}
+
                 <button
                   onClick={() => handleOpenEditBikeModal(bike)}
                   className="p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all"
@@ -1461,6 +1482,14 @@ export const BikesPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Modal: Quick Send Bike to Maintenance / СТО */}
+      <QuickSendToRepairModal
+        isOpen={Boolean(sendToRepairBike)}
+        onClose={() => setSendToRepairBike(null)}
+        onSuccess={loadData}
+        target={sendToRepairBike ? { type: 'BIKE', item: sendToRepairBike } : null}
+      />
     </div>
   );
 };

@@ -214,7 +214,9 @@ export interface RentalRecord {
 export interface RepairOrderRecord {
   id: string;
   orderNumber: string;
-  bikeId: string;
+  itemType?: "BIKE" | "BATTERY";
+  bikeId?: string | null;
+  batteryId?: string | null;
   mechanicId: string;
   status: RepairStatus;
   faultType: RepairFaultType;

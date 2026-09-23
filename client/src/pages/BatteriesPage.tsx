@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
+import { QuickSendToRepairModal } from '../components/QuickSendToRepairModal';
 
 export const BatteriesPage: React.FC = () => {
   const [batteries, setBatteries] = useState<Battery[]>([]);
@@ -62,6 +63,7 @@ export const BatteriesPage: React.FC = () => {
   });
 
   // Modal: Create Battery & Prefix state
+  const [sendToRepairBattery, setSendToRepairBattery] = useState<Battery | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [batteryPrefix, setBatteryPrefix] = useState<string>(() => getStoredPrefix('battery', 'BAT-'));
   const [createForm, setCreateForm] = useState({
@@ -382,33 +384,19 @@ export const BatteriesPage: React.FC = () => {
     }
   };
 
-  // Send to maintenance or return
-  const handleToggleMaintenance = async (bat: Battery) => {
+  // Send to maintenance or show info
+  const handleToggleMaintenance = (bat: Battery) => {
     if (bat.status === 'IN_MAINTENANCE') {
-      try {
-        await api.updateBattery(bat.id, {
-          status: 'AVAILABLE',
-        });
-        toast.success(`АКБ ${bat.serialNumber} возвращен с ТО на склад`);
-        loadData();
-      } catch (err: any) {
-        toast.error(err.message);
-      }
-    } else {
-      if (bat.installedBikeId) {
-        toast.error('Сначала снимите аккумулятор с байка!');
-        return;
-      }
-      try {
-        await api.updateBattery(bat.id, {
-          status: 'IN_MAINTENANCE',
-        });
-        toast.success(`АКБ ${bat.serialNumber} отправлен на ТО СТО`);
-        loadData();
-      } catch (err: any) {
-        toast.error(err.message);
-      }
+      toast.info(
+        `АКБ ${bat.serialNumber} находится в мастерской СТО. Завершение обслуживания производится в разделе «Мастерская СТО».`
+      );
+      return;
     }
+    if (bat.installedBikeId) {
+      toast.error('Сначала снимите аккумулятор с байка!');
+      return;
+    }
+    setSendToRepairBattery(bat);
   };
 
   // Available unique voltages
@@ -917,10 +905,15 @@ export const BatteriesPage: React.FC = () => {
                     {!bat.installedBikeId && bat.status !== 'DECOMMISSIONED' && (
                       <button
                         onClick={() => handleToggleMaintenance(bat)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                        title={bat.status === 'IN_MAINTENANCE' ? 'Вернуть с ТО' : 'Отправить на ТО'}
+                        className={`p-1.5 px-2 rounded-lg flex items-center gap-1 text-[11px] font-bold transition-all ${
+                          bat.status === 'IN_MAINTENANCE'
+                            ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25'
+                            : 'text-amber-600 dark:text-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 border border-amber-500/20 shadow-sm'
+                        }`}
+                        title={bat.status === 'IN_MAINTENANCE' ? 'В мастерской СТО' : 'Отправить на ТО в мастерскую СТО'}
                       >
                         <Wrench className="w-3.5 h-3.5" />
+                        <span>{bat.status === 'IN_MAINTENANCE' ? 'В СТО' : 'На ТО'}</span>
                       </button>
                     )}
                     {!bat.installedBikeId && (
@@ -1030,12 +1023,28 @@ export const BatteriesPage: React.FC = () => {
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {bat.status === 'AVAILABLE' && (
-                          <button
-                            onClick={() => handleOpenAttach(bat)}
-                            className="px-2 py-1 bg-emerald-50 dark:bg-emerald-600/20 hover:bg-emerald-100 dark:hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 rounded text-xs transition font-semibold"
-                          >
-                            Установить
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleOpenAttach(bat)}
+                              className="px-2 py-1 bg-emerald-50 dark:bg-emerald-600/20 hover:bg-emerald-100 dark:hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 rounded text-xs transition font-semibold"
+                            >
+                              Установить
+                            </button>
+                            <button
+                              onClick={() => setSendToRepairBattery(bat)}
+                              className="px-2 py-1 bg-amber-50 dark:bg-amber-600/20 hover:bg-amber-100 dark:hover:bg-amber-600/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 rounded text-xs transition font-semibold flex items-center gap-1"
+                              title="Отправить на ТО в мастерскую СТО"
+                            >
+                              <Wrench className="w-3 h-3" />
+                              На ТО
+                            </button>
+                          </>
+                        )}
+                        {bat.status === 'IN_MAINTENANCE' && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <Wrench className="w-3 h-3" />
+                            В СТО
+                          </span>
                         )}
                         {bat.status === 'INSTALLED' && bat.installedBikeId && (
                           <button
@@ -1846,6 +1855,14 @@ export const BatteriesPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Modal: Quick Send Battery to Maintenance / СТО */}
+      <QuickSendToRepairModal
+        isOpen={Boolean(sendToRepairBattery)}
+        onClose={() => setSendToRepairBattery(null)}
+        onSuccess={loadData}
+        target={sendToRepairBattery ? { type: 'BATTERY', item: sendToRepairBattery } : null}
+      />
     </div>
   );
 };

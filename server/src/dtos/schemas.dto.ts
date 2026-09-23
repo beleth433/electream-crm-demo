@@ -132,11 +132,13 @@ export const OutfitCreateDto = z.object({
 });
 
 export const RepairCreateDto = z.object({
-  bikeId: z.string().min(1, "Байк обязателен"),
+  itemType: z.enum(["BIKE", "BATTERY"]).optional().default("BIKE"),
+  bikeId: z.string().optional().nullable(),
+  batteryId: z.string().optional().nullable(),
   mechanicId: z.string().optional(),
   orderNumber: z.string().optional(),
   faultType: z.enum(["COMPANY_EXPENSE", "CLIENT_FAULT"]).default("COMPANY_EXPENSE"),
-  description: z.string().min(5, "Описание дефекта обязательно"),
+  description: z.string().min(2, "Описание дефекта обязательно"),
   laborCost: z.number().min(0).optional().default(0),
   parts: z
     .array(

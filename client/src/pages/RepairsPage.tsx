@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RepairOrder, Bike, Part, RepairStatus, RepairFaultType } from '../types';
+import { RepairOrder, Bike, Battery, Part, RepairStatus, RepairFaultType } from '../types';
 import { api } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
@@ -16,6 +16,8 @@ import {
   FileText,
   DollarSign,
   Sparkles,
+  Zap,
+  Bike as BikeIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
@@ -23,6 +25,7 @@ import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../ut
 export const RepairsPage: React.FC = () => {
   const [repairs, setRepairs] = useState<RepairOrder[]>([]);
   const [bikes, setBikes] = useState<Bike[]>([]);
+  const [batteries, setBatteries] = useState<Battery[]>([]);
   const [parts, setParts] = useState<Part[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -31,7 +34,9 @@ export const RepairsPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [repairPrefix, setRepairPrefix] = useState<string>(() => getStoredPrefix('repair', 'ЗН-'));
   const [createForm, setCreateForm] = useState({
+    itemType: 'BIKE' as 'BIKE' | 'BATTERY',
     bikeId: '',
+    batteryId: '',
     orderNumber: '',
     faultType: 'COMPANY_EXPENSE' as RepairFaultType,
     description: '',
@@ -53,7 +58,9 @@ export const RepairsPage: React.FC = () => {
   const handleOpenCreateModal = () => {
     const nextNum = calculateNextRepairNumber(repairPrefix);
     setCreateForm({
+      itemType: 'BIKE',
       bikeId: bikes[0]?.id || '',
+      batteryId: batteries[0]?.id || '',
       orderNumber: nextNum,
       faultType: 'COMPANY_EXPENSE',
       description: '',
@@ -78,14 +85,19 @@ export const RepairsPage: React.FC = () => {
         status: statusFilter === 'ALL' ? undefined : statusFilter,
       }),
       api.getBikes(),
+      api.getBatteries(),
       api.getParts(),
     ])
-      .then(([repairsRes, bikesRes, partsRes]) => {
+      .then(([repairsRes, bikesRes, batteriesRes, partsRes]) => {
         setRepairs(repairsRes);
         setBikes(bikesRes);
+        setBatteries(batteriesRes);
         setParts(partsRes);
         if (bikesRes.length > 0 && !createForm.bikeId) {
           setCreateForm((prev) => ({ ...prev, bikeId: bikesRes[0].id }));
+        }
+        if (batteriesRes.length > 0 && !createForm.batteryId) {
+          setCreateForm((prev) => ({ ...prev, batteryId: batteriesRes[0].id }));
         }
       })
       .catch((err) => toast.error('Ошибка загрузки СТО: ' + err.message))
@@ -99,8 +111,20 @@ export const RepairsPage: React.FC = () => {
   const handleCreateRepair = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.createRepair(createForm);
-      toast.success('Заказ-наряд СТО успешно создан! Байк переведен в статус IN_MAINTENANCE.');
+      await api.createRepair({
+        itemType: createForm.itemType,
+        bikeId: createForm.itemType === 'BIKE' ? createForm.bikeId : undefined,
+        batteryId: createForm.itemType === 'BATTERY' ? createForm.batteryId : undefined,
+        orderNumber: createForm.orderNumber,
+        faultType: createForm.faultType,
+        description: createForm.description,
+        laborCost: createForm.laborCost,
+      });
+      toast.success(
+        createForm.itemType === 'BATTERY'
+          ? 'Заказ-наряд СТО успешно создан! Аккумулятор переведен в статус ТО.'
+          : 'Заказ-наряд СТО успешно создан! Байк переведен в статус IN_MAINTENANCE.'
+      );
       const nextNum = getNextSequentialNumber(
         [...repairs.map((r) => r.orderNumber), createForm.orderNumber],
         repairPrefix,
@@ -108,7 +132,9 @@ export const RepairsPage: React.FC = () => {
       );
       setIsCreateModalOpen(false);
       setCreateForm({
+        itemType: 'BIKE',
         bikeId: bikes[0]?.id || '',
+        batteryId: batteries[0]?.id || '',
         orderNumber: nextNum,
         faultType: 'COMPANY_EXPENSE',
         description: '',
@@ -152,7 +178,7 @@ export const RepairsPage: React.FC = () => {
         mechanicNotes,
       });
       toast.success(
-        `Заказ-наряд ${completingRepair.orderNumber} завершен! Запчасти списаны, байк возвращен в статус AVAILABLE.`
+        `Заказ-наряд ${completingRepair.orderNumber} завершен! Запчасти списаны, объект возвращен в статус AVAILABLE.`
       );
       setCompletingRepair(null);
       loadData();
@@ -255,17 +281,50 @@ export const RepairsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Bike info */}
+                {/* Item info (Bike or Battery) */}
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-extrabold text-sky-600 dark:text-sky-400">
-                      {order.bike?.inventoryNumber}
-                    </span>
-                    <span className="text-slate-600 dark:text-slate-300 ml-1.5 font-medium">
-                      {order.bike?.model?.name}
-                    </span>
+                  <div className="flex items-center gap-2.5">
+                    {order.itemType === 'BATTERY' || (!order.bike && order.battery) ? (
+                      <>
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                          <Zap className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-amber-600 dark:text-amber-400">
+                              {order.battery?.serialNumber || 'АКБ'}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-bold rounded">
+                              АКБ
+                            </span>
+                          </div>
+                          <p className="text-slate-600 dark:text-slate-300 text-[11px] font-medium">
+                            {order.battery?.model?.name || 'Аккумулятор'}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                          <BikeIcon className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-sky-600 dark:text-sky-400">
+                              {order.bike?.inventoryNumber || 'Байк'}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.5 bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 font-bold rounded">
+                              Байк
+                            </span>
+                          </div>
+                          <p className="text-slate-600 dark:text-slate-300 text-[11px] font-medium">
+                            {order.bike?.model?.name || 'Электровелосипед'}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <span className="text-slate-400 text-[11px]">
+                  <span className="text-slate-400 text-[11px] shrink-0">
                     Мастер: {order.mechanic?.fullName || 'Алексей Смирнов'}
                   </span>
                 </div>
@@ -404,21 +463,70 @@ export const RepairsPage: React.FC = () => {
             </p>
           </div>
 
+          {/* Object Type: Bike vs Battery */}
           <div>
-            <label className="block text-slate-500 mb-1">Электровелосипед *</label>
-            <select
-              required
-              value={createForm.bikeId}
-              onChange={(e) => setCreateForm({ ...createForm, bikeId: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
-            >
-              {bikes.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.inventoryNumber} — {b.model?.name} (Текущий статус: {b.status})
-                </option>
-              ))}
-            </select>
+            <label className="block text-slate-500 mb-1 font-semibold">Объект обслуживания *</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setCreateForm((prev) => ({ ...prev, itemType: 'BIKE' }))}
+                className={`flex items-center justify-center gap-2 py-2 rounded-xl border text-xs font-bold transition-all ${
+                  createForm.itemType === 'BIKE'
+                    ? 'border-sky-500 bg-sky-500/10 text-sky-600 dark:text-sky-400 shadow-sm'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <BikeIcon className="w-4 h-4" />
+                Электровелосипед
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateForm((prev) => ({ ...prev, itemType: 'BATTERY' }))}
+                className={`flex items-center justify-center gap-2 py-2 rounded-xl border text-xs font-bold transition-all ${
+                  createForm.itemType === 'BATTERY'
+                    ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-sm'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Zap className="w-4 h-4" />
+                Аккумулятор (АКБ)
+              </button>
+            </div>
           </div>
+
+          {createForm.itemType === 'BIKE' ? (
+            <div>
+              <label className="block text-slate-500 mb-1">Электровелосипед *</label>
+              <select
+                required
+                value={createForm.bikeId}
+                onChange={(e) => setCreateForm({ ...createForm, bikeId: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+              >
+                {bikes.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.inventoryNumber} — {b.model?.name} (Текущий статус: {b.status})
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-slate-500 mb-1">Аккумулятор *</label>
+              <select
+                required
+                value={createForm.batteryId}
+                onChange={(e) => setCreateForm({ ...createForm, batteryId: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+              >
+                {batteries.map((bat) => (
+                  <option key={bat.id} value={bat.id}>
+                    {bat.serialNumber} — {bat.model?.name || 'АКБ'} (Текущий статус: {bat.status})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-slate-500 mb-1">Разделение ответственности *</label>
@@ -482,7 +590,11 @@ export const RepairsPage: React.FC = () => {
         isOpen={!!completingRepair}
         onClose={() => setCompletingRepair(null)}
         title="Завершение ремонта и списание запчастей"
-        subtitle={`Заказ-наряд ${completingRepair?.orderNumber} • Байк ${completingRepair?.bike?.inventoryNumber}`}
+        subtitle={`Заказ-наряд ${completingRepair?.orderNumber} • ${
+          completingRepair?.itemType === 'BATTERY' || completingRepair?.battery
+            ? `АКБ ${completingRepair?.battery?.serialNumber || ''}`
+            : `Байк ${completingRepair?.bike?.inventoryNumber || ''}`
+        }`}
         maxWidth="lg"
       >
         <div className="space-y-4 text-xs">

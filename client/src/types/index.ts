@@ -113,6 +113,7 @@ export interface Battery {
   serialNumber: string;
   modelId?: string | null;
   modelName?: string | null;
+  model?: BatteryModel | null;
   voltage: number;
   capacityAh: number;
   chemistry?: BatteryChemistry;
@@ -313,8 +314,11 @@ export interface Part {
 export interface RepairOrder {
   id: string;
   orderNumber: string;
-  bikeId: string;
-  bike?: Bike;
+  itemType?: 'BIKE' | 'BATTERY';
+  bikeId?: string | null;
+  batteryId?: string | null;
+  bike?: Bike | null;
+  battery?: Battery | null;
   mechanicId: string;
   mechanic?: User;
   status: RepairStatus;

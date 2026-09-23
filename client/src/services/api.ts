@@ -255,7 +255,9 @@ export const api = {
   },
   getRepair: (id: string) => fetchJson<RepairOrder>(`/repairs/${id}`),
   createRepair: (data: {
-    bikeId: string;
+    itemType?: 'BIKE' | 'BATTERY';
+    bikeId?: string | null;
+    batteryId?: string | null;
     orderNumber?: string;
     faultType: string;
     description: string;
