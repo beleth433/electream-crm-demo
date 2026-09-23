@@ -97,6 +97,7 @@ router.post("/repairs/:id/complete", RepairController.complete);
 // 8. Parts
 router.get("/parts/categories", PartController.getCategories);
 router.post("/parts/categories", PartController.createCategory);
+router.patch("/parts/categories/:id", PartController.updateCategory);
 router.delete("/parts/categories/:id", PartController.deleteCategory);
 router.get("/parts", PartController.getAll);
 router.get("/parts/:id", PartController.getById);

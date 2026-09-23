@@ -389,7 +389,9 @@
       "quantity": 5,
       "minQuantity": 3,
       "purchasePrice": 500,
-      "clientPrice": 1000
+      "clientPrice": 1000,
+      "categoryId": "cat-part-brakes",
+      "categoryName": "Колодки и тормоза"
     }
   ],
   "rentals": [],
@@ -472,6 +474,48 @@
       "discountRepairsPercent": 15,
       "description": "От 90 дней аренды или 100 000 ₽ трат. VIP-статус и максимальная скидка 15%",
       "isDefault": false
+    }
+  ],
+  "partCategories": [
+    {
+      "id": "cat-part-brakes",
+      "name": "Колодки и тормоза",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-steering",
+      "name": "Рули и управление",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-displays",
+      "name": "Экраны и дисплеи",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-controllers",
+      "name": "Контроллеры",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-wheels",
+      "name": "Колеса и обода",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-tires",
+      "name": "Шины и камеры",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-consumables",
+      "name": "Расходники",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-other",
+      "name": "Прочее",
+      "isSystem": false
     }
   ]
 }

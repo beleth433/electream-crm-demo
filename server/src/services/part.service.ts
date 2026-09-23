@@ -9,6 +9,10 @@ export class PartService {
     return PartRepository.createCategory(data);
   }
 
+  static updateCategory(id: string, name: string) {
+    return PartRepository.updateCategory(id, name);
+  }
+
   static deleteCategory(id: string) {
     return PartRepository.deleteCategory(id);
   }

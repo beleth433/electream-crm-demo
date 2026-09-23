@@ -22,6 +22,16 @@ export class PartController {
     }
   }
 
+  static updateCategory(req: Request, res: Response) {
+    try {
+      const parsed = PartCategoryCreateDto.parse(req.body);
+      const updated = PartService.updateCategory(req.params.id, parsed.name);
+      return res.json(updated);
+    } catch (err: any) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+
   static deleteCategory(req: Request, res: Response) {
     try {
       const removed = PartService.deleteCategory(req.params.id);

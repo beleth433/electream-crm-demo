@@ -284,6 +284,8 @@ export const api = {
   getPartCategories: () => fetchJson<PartCategoryItem[]>('/parts/categories'),
   createPartCategory: (data: { name: string }) =>
     fetchJson<PartCategoryItem>('/parts/categories', { method: 'POST', body: JSON.stringify(data) }),
+  updatePartCategory: (id: string, data: { name: string }) =>
+    fetchJson<PartCategoryItem>(`/parts/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deletePartCategory: (id: string) =>
     fetchJson<{ success: boolean; message: string }>(`/parts/categories/${id}`, { method: 'DELETE' }),
   getParts: (params?: { search?: string; lowStockOnly?: boolean; categoryId?: string }) => {

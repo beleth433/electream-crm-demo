@@ -35,6 +35,36 @@ export class PartRepository {
     };
   }
 
+  static updateCategory(id: string, name: string) {
+    const db = getDb();
+    if (!db.partCategories) {
+      db.partCategories = [];
+    }
+    const index = db.partCategories.findIndex((c) => c.id === id);
+    if (index === -1) {
+      throw new Error("Категория запчастей не найдена");
+    }
+
+    const trimmed = name.trim();
+    if (!trimmed) {
+      throw new Error("Название категории не может быть пустым");
+    }
+
+    db.partCategories[index].name = trimmed;
+
+    // Synchronize categoryName on all parts assigned to this category
+    for (const part of db.parts) {
+      if (part.categoryId === id) {
+        part.categoryName = trimmed;
+      }
+    }
+
+    return {
+      ...db.partCategories[index],
+      partCount: db.parts.filter((p) => p.categoryId === id).length,
+    };
+  }
+
   static deleteCategory(id: string) {
     const db = getDb();
     if (!db.partCategories) {
