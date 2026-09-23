@@ -299,14 +299,17 @@
       "inventoryNumber": "ЭК-001",
       "depositValue": 0,
       "status": "IN_STOCK"
+    },
+    {
+      "id": "outfit-1790148467894",
+      "name": "Шлем Guardian",
+      "category": "cat-1790148343452",
+      "inventoryNumber": "ЭК-002",
+      "depositValue": 0,
+      "status": "IN_STOCK"
     }
   ],
   "outfitCategories": [
-    {
-      "id": "HELMET",
-      "name": "Шлемы и защита",
-      "isSystem": true
-    },
     {
       "id": "LOCK",
       "name": "Замки и безопасность",
@@ -326,6 +329,11 @@
       "id": "cat-1790119454641",
       "name": "Держатель смартфона",
       "isSystem": false
+    },
+    {
+      "id": "cat-1790148343452",
+      "name": "Шлемы",
+      "isSystem": false
     }
   ],
   "outfitTemplates": [
@@ -333,6 +341,13 @@
       "id": "tmpl-1790119717906",
       "name": "Держатель смартфона hoco",
       "categoryId": "cat-1790119454641",
+      "defaultDeposit": 0,
+      "description": null
+    },
+    {
+      "id": "tmpl-1790148415722",
+      "name": "Шлем Guardian",
+      "categoryId": "cat-1790148343452",
       "defaultDeposit": 0,
       "description": null
     }
@@ -352,7 +367,8 @@
       "documentPhotoUrls": [],
       "status": "NORMAL",
       "blackListReason": null,
-      "createdAt": "2026-09-22T18:10:40.539Z"
+      "createdAt": "2026-09-22T18:10:40.539Z",
+      "manualLoyaltyTierId": null
     },
     {
       "id": "cli-1790100658244",
@@ -382,7 +398,17 @@
       "isActive": true
     }
   ],
-  "parts": [],
+  "parts": [
+    {
+      "id": "prt-1790148535420",
+      "name": "Задний суппорт U2",
+      "sku": "СУП001",
+      "quantity": 9,
+      "minQuantity": 3,
+      "purchasePrice": 500,
+      "clientPrice": 1200
+    }
+  ],
   "rentals": [
     {
       "id": "rnt-1790102303961",
@@ -430,6 +456,15 @@
   "repairs": [],
   "payments": [
     {
+      "id": "pay-1790148551198",
+      "orderId": "ord-1790148551191",
+      "type": "RETAIL_SALE",
+      "amount": 1200,
+      "method": "SBP",
+      "description": "Розничная продажа (Чек ORD-551191): Розничный покупатель (Гость)",
+      "createdAt": "2026-09-23T07:29:11.198Z"
+    },
+    {
       "id": "pay-1790102303961-1",
       "rentalId": "rnt-1790102303961",
       "type": "RENTAL",
@@ -476,5 +511,80 @@
       "notes": null
     }
   ],
-  "retailOrders": []
+  "retailOrders": [
+    {
+      "id": "ord-1790148551191",
+      "orderNumber": "ORD-551191",
+      "customerType": "GUEST",
+      "customerName": "Розничный покупатель (Гость)",
+      "customerPhone": null,
+      "clientId": null,
+      "items": [
+        {
+          "itemType": "PART",
+          "itemId": "prt-1790148535420",
+          "name": "Задний суппорт U2 [СУП001]",
+          "quantity": 1,
+          "price": 1200,
+          "costPrice": 500
+        }
+      ],
+      "totalAmount": 1200,
+      "totalCost": 500,
+      "profit": 700,
+      "paymentMethod": "SBP",
+      "notes": null,
+      "createdAt": "2026-09-23T07:29:11.191Z"
+    }
+  ],
+  "loyaltyTiers": [
+    {
+      "id": "tier-bronze",
+      "name": "Бронза",
+      "color": "amber",
+      "minRentalDays": 0,
+      "minTotalSpent": 0,
+      "discountRentalPercent": 0,
+      "discountPartsPercent": 0,
+      "discountRepairsPercent": 0,
+      "description": "Начальный базовый ранг для всех новых клиентов и курьеров",
+      "isDefault": true
+    },
+    {
+      "id": "tier-silver",
+      "name": "Серебро",
+      "color": "slate",
+      "minRentalDays": 14,
+      "minTotalSpent": 15000,
+      "discountRentalPercent": 5,
+      "discountPartsPercent": 5,
+      "discountRepairsPercent": 5,
+      "description": "От 14 дней аренды или 15 000 ₽ трат. Скидка 5% на аренду, запчасти и СТО",
+      "isDefault": false
+    },
+    {
+      "id": "tier-gold",
+      "name": "Золото",
+      "color": "emerald",
+      "minRentalDays": 45,
+      "minTotalSpent": 45000,
+      "discountRentalPercent": 10,
+      "discountPartsPercent": 10,
+      "discountRepairsPercent": 10,
+      "description": "От 45 дней аренды или 45 000 ₽ трат. Скидка 10% на все услуги и товары",
+      "isDefault": false
+    },
+    {
+      "id": "tier-platinum",
+      "name": "Платина",
+      "color": "purple",
+      "minRentalDays": 90,
+      "minTotalSpent": 100000,
+      "discountRentalPercent": 15,
+      "discountPartsPercent": 15,
+      "discountRepairsPercent": 15,
+      "description": "От 90 дней аренды или 100 000 ₽ трат. VIP-статус и максимальная скидка 15%",
+      "isDefault": false
+    }
+  ]
 }

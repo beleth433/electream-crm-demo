@@ -19,6 +19,7 @@ import {
   INITIAL_ARTICLES,
   INITIAL_EMPLOYEES,
   INITIAL_RETAIL_ORDERS,
+  INITIAL_LOYALTY_TIERS,
 } from "../data/initialData.js";
 
 export type UserRole = "ADMIN" | "MANAGER" | "MECHANIC";
@@ -33,6 +34,20 @@ export type BatteryStatus =
 export type RentalStatus = "DRAFT" | "RESERVED" | "ACTIVE" | "OVERDUE" | "CLOSED" | "PROBLEM" | "BOUGHT_OUT";
 export type RentalType = "STANDARD" | "RENT_TO_OWN";
 export type ClientStatus = "NORMAL" | "VIP" | "PROBLEM" | "BLACKLIST";
+export type ClientType = "COURIER" | "RETAIL";
+
+export interface LoyaltyTierRecord {
+  id: string;
+  name: string;
+  color: string;
+  minRentalDays: number;
+  minTotalSpent: number;
+  discountRentalPercent: number;
+  discountPartsPercent: number;
+  discountRepairsPercent: number;
+  description?: string;
+  isDefault?: boolean;
+}
 export type OutfitCategory = "HELMET" | "LOCK" | "BAG" | "BATTERY" | "CHARGER" | "PHONE_HOLDER" | "WINTER_GLOVES";
 export type OutfitStatus = "IN_STOCK" | "ISSUED" | "DAMAGED" | "LOST" | "SOLD";
 export type RepairStatus = "DIAGNOSTICS" | "WAITING_PARTS" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
@@ -136,6 +151,8 @@ export interface ClientRecord {
   courierService?: string | null;
   documentPhotoUrls: string[];
   status: ClientStatus;
+  clientType?: ClientType;
+  manualLoyaltyTierId?: string | null;
   blackListReason?: string | null;
   createdAt?: string;
 }
@@ -289,6 +306,7 @@ export interface DBStore {
   articles: ArticleRecord[];
   employees: EmployeeRecord[];
   retailOrders: RetailOrderRecord[];
+  loyaltyTiers: LoyaltyTierRecord[];
 }
 
 const DATA_DIR = typeof __dirname !== "undefined"
@@ -319,6 +337,7 @@ export const createDefaultEmptyDb = (): DBStore => ({
   articles: [],
   employees: JSON.parse(JSON.stringify(INITIAL_EMPLOYEES)),
   retailOrders: [],
+  loyaltyTiers: JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),
 });
 
 let rawDb: DBStore;
@@ -349,6 +368,9 @@ function loadFromDisk(): DBStore {
           articles: parsed.articles || [],
           employees: parsed.employees && parsed.employees.length > 0 ? parsed.employees : defaultDb.employees,
           retailOrders: parsed.retailOrders || [],
+          loyaltyTiers: Array.isArray(parsed.loyaltyTiers) && parsed.loyaltyTiers.length > 0
+            ? parsed.loyaltyTiers
+            : JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),
         };
         return merged;
       }
@@ -471,6 +493,7 @@ export const clearDb = () => {
   rawDb.batteryModels = [];
   rawDb.outfitTemplates = [];
   rawDb.tariffs = [];
+  rawDb.loyaltyTiers = JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS));
   saveDb(true);
 };
 

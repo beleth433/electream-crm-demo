@@ -16,6 +16,7 @@ import {
   CheckCircle,
   Trash2,
   Edit2,
+  Award,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,6 +25,7 @@ export const ClientsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [serviceFilter, setServiceFilter] = useState<string>('ALL');
+  const [clientTypeFilter, setClientTypeFilter] = useState<'ALL' | 'COURIER' | 'RETAIL'>('ALL');
   const [search, setSearch] = useState('');
 
   // Status Change / Blacklist Modal
@@ -43,6 +45,7 @@ export const ClientsPage: React.FC = () => {
     migrationCard: '',
     patentNumber: '',
     courierService: 'Яндекс Еда',
+    clientType: 'COURIER' as 'COURIER' | 'RETAIL',
   });
 
   // Edit Courier Modal
@@ -58,6 +61,7 @@ export const ClientsPage: React.FC = () => {
     migrationCard: '',
     patentNumber: '',
     courierService: 'Яндекс Еда',
+    clientType: 'COURIER' as 'COURIER' | 'RETAIL',
   });
 
   const handleOpenEditModal = (client: Client) => {
@@ -72,6 +76,7 @@ export const ClientsPage: React.FC = () => {
       migrationCard: client.migrationCard || '',
       patentNumber: client.patentNumber || '',
       courierService: client.courierService || 'Яндекс Еда',
+      clientType: client.clientType || 'COURIER',
     });
     setIsEditModalOpen(true);
   };
@@ -81,12 +86,12 @@ export const ClientsPage: React.FC = () => {
     if (!editingClient) return;
     try {
       await api.updateClient(editingClient.id, editClientForm as any);
-      toast.success(`Данные курьера ${editClientForm.fullName} успешно обновлены`);
+      toast.success(`Данные клиента ${editClientForm.fullName} успешно обновлены`);
       setIsEditModalOpen(false);
       setEditingClient(null);
       loadData();
     } catch (err: any) {
-      toast.error(err.message || 'Ошибка обновления данных курьера');
+      toast.error(err.message || 'Ошибка обновления данных клиента');
     }
   };
 
@@ -96,16 +101,17 @@ export const ClientsPage: React.FC = () => {
       .getClients({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
         courierService: serviceFilter === 'ALL' ? undefined : serviceFilter,
+        clientType: clientTypeFilter === 'ALL' ? undefined : clientTypeFilter,
         search,
       })
       .then((data) => setClients(data))
-      .catch((err) => toast.error('Ошибка загрузки курьеров: ' + err.message))
+      .catch((err) => toast.error('Ошибка загрузки клиентов: ' + err.message))
       .finally(() => setIsLoading(false));
   };
 
   useEffect(() => {
     loadData();
-  }, [statusFilter, serviceFilter]);
+  }, [statusFilter, serviceFilter, clientTypeFilter]);
 
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,6 +129,7 @@ export const ClientsPage: React.FC = () => {
         migrationCard: '',
         patentNumber: '',
         courierService: 'Яндекс Еда',
+        clientType: 'COURIER',
       });
       loadData();
     } catch (err: any) {
@@ -194,8 +201,29 @@ export const ClientsPage: React.FC = () => {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 contour-card">
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar">
+          {/* Client Type Filter */}
+          <div className="flex items-center gap-1 mr-2 pr-2 border-r border-slate-200 dark:border-emerald-500/20">
+            {[
+              { id: 'ALL', label: 'Все клиенты' },
+              { id: 'COURIER', label: 'Курьеры' },
+              { id: 'RETAIL', label: 'Розничные / СТО' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setClientTypeFilter(tab.id as any)}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  clientTypeFilter === tab.id
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold shadow-sm'
+                    : 'bg-slate-100 dark:bg-[#101d17] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#162720]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           {[
-            { id: 'ALL', label: 'Все курьеры' },
+            { id: 'ALL', label: 'Все статусы' },
             { id: 'NORMAL', label: 'Надежные' },
             { id: 'VIP', label: 'VIP' },
             { id: 'PROBLEM', label: 'Проблемные' },
@@ -233,10 +261,11 @@ export const ClientsPage: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50/80 dark:bg-[#08100c] text-slate-500 dark:text-emerald-400/80 border-b border-slate-200 dark:border-emerald-500/15">
               <tr>
-                <th className="p-3.5 font-semibold">ФИО Курьера</th>
+                <th className="p-3.5 font-semibold">ФИО Клиента</th>
                 <th className="p-3.5 font-semibold">Контакты</th>
-                <th className="p-3.5 font-semibold">Служба доставки</th>
-                <th className="p-3.5 font-semibold">Гражданство и документы</th>
+                <th className="p-3.5 font-semibold">Тип / Служба</th>
+                <th className="p-3.5 font-semibold">Лояльность</th>
+                <th className="p-3.5 font-semibold">Документы</th>
                 <th className="p-3.5 font-semibold">Текущая аренда</th>
                 <th className="p-3.5 font-semibold text-center">Статус</th>
                 <th className="p-3.5 font-semibold text-right">Управление</th>
@@ -245,6 +274,7 @@ export const ClientsPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10">
               {clients.map((c) => {
                 const isBlacklisted = c.status === 'BLACKLIST';
+                const isRetail = c.clientType === 'RETAIL';
                 return (
                   <tr
                     key={c.id}
@@ -258,9 +288,16 @@ export const ClientsPage: React.FC = () => {
                           {c.fullName.slice(0, 1)}
                         </div>
                         <div>
-                          <span className="font-bold text-slate-900 dark:text-white">
-                            {c.fullName}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {c.fullName}
+                            </span>
+                            {isRetail && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 border border-sky-500/20">
+                                Физлицо
+                              </span>
+                            )}
+                          </div>
                           {c.blackListReason && (
                             <p className="text-[10px] text-rose-600 font-semibold max-w-xs truncate">
                               Причина ЧС: {c.blackListReason}
@@ -285,18 +322,47 @@ export const ClientsPage: React.FC = () => {
                     </td>
 
                     <td className="p-3.5">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
-                        {c.courierService || 'Яндекс Еда'}
-                      </span>
+                      {isRetail ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 font-semibold">
+                          Розничный / СТО
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold">
+                          {c.courierService || 'Яндекс Еда'}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="p-3.5">
+                      {c.loyaltyTier ? (
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30">
+                              {c.loyaltyTier.name}
+                            </span>
+                            {c.loyaltyMode === 'MANUAL' && (
+                              <span className="text-[9px] text-purple-400" title="Назначено вручную">★</span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5 flex gap-1.5">
+                            <span title="Скидка на аренду">🚲 {c.loyaltyTier.discountRentalPercent}%</span>
+                            <span title="Скидка в магазине">⚙️ {c.loyaltyTier.discountPartsPercent}%</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 text-[11px]">—</span>
+                      )}
                     </td>
 
                     <td className="p-3.5 space-y-0.5">
                       <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 text-[10px] font-semibold">
                         {c.citizenship}
                       </span>
-                      <p className="text-[10px] text-slate-500">
-                        Паспорт: {c.passportSerial || ''} {c.passportNumber || ''}
-                      </p>
+                      {c.passportNumber && (
+                        <p className="text-[10px] text-slate-500">
+                          Паспорт: {c.passportSerial || ''} {c.passportNumber}
+                        </p>
+                      )}
                       {c.patentNumber && (
                         <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
                           Патент: {c.patentNumber}
@@ -410,17 +476,45 @@ export const ClientsPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Modal: Add Courier */}
+      {/* Modal: Add Client */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Онбординг нового курьера"
+        title={newClientForm.clientType === 'COURIER' ? 'Онбординг нового курьера' : 'Регистрация клиента (Магазин / СТО)'}
         subtitle="Проверка документов и регистрация в CRM"
         maxWidth="lg"
       >
         <form onSubmit={handleCreateClient} className="space-y-3 text-xs">
+          {/* Client Type Selector */}
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setNewClientForm({ ...newClientForm, clientType: 'COURIER' })}
+              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                newClientForm.clientType === 'COURIER'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              🚴 Курьер доставки
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewClientForm({ ...newClientForm, clientType: 'RETAIL' })}
+              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                newClientForm.clientType === 'RETAIL'
+                  ? 'bg-sky-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              👤 Розничный покупатель / СТО
+            </button>
+          </div>
+
           <div>
-            <label className="block text-slate-500 mb-1">ФИО курьера полностью *</label>
+            <label className="block text-slate-500 mb-1">
+              {newClientForm.clientType === 'COURIER' ? 'ФИО курьера полностью *' : 'ФИО покупателя / заказчика *'}
+            </label>
             <input
               required
               type="text"
@@ -447,7 +541,7 @@ export const ClientsPage: React.FC = () => {
               <label className="block text-slate-500 mb-1">Telegram (@username)</label>
               <input
                 type="text"
-                placeholder="@courier_tg"
+                placeholder="@client_tg"
                 value={newClientForm.telegram}
                 onChange={(e) => setNewClientForm({ ...newClientForm, telegram: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
@@ -455,35 +549,37 @@ export const ClientsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Гражданство *</label>
-              <select
-                value={newClientForm.citizenship}
-                onChange={(e) => setNewClientForm({ ...newClientForm, citizenship: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
-              >
-                <option value="РФ">Российская Федерация (РФ)</option>
-                <option value="Узбекистан">Узбекистан</option>
-                <option value="Кыргызстан">Кыргызстан (ЕАЭС)</option>
-                <option value="Таджикистан">Таджикистан</option>
-                <option value="Беларусь">Беларусь (ЕАЭС)</option>
-              </select>
+          {newClientForm.clientType === 'COURIER' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-500 mb-1">Гражданство *</label>
+                <select
+                  value={newClientForm.citizenship}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, citizenship: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
+                >
+                  <option value="РФ">Российская Федерация (РФ)</option>
+                  <option value="Узбекистан">Узбекистан</option>
+                  <option value="Кыргызстан">Кыргызстан (ЕАЭС)</option>
+                  <option value="Таджикистан">Таджикистан</option>
+                  <option value="Беларусь">Беларусь (ЕАЭС)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-slate-500 mb-1">Служба доставки</label>
+                <select
+                  value={newClientForm.courierService}
+                  onChange={(e) => setNewClientForm({ ...newClientForm, courierService: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                >
+                  <option value="Яндекс Еда">Яндекс Еда / Маркет</option>
+                  <option value="Самокат">Самокат</option>
+                  <option value="Купер">Купер</option>
+                  <option value="Частный курьер">Частный курьер</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Служба доставки</label>
-              <select
-                value={newClientForm.courierService}
-                onChange={(e) => setNewClientForm({ ...newClientForm, courierService: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
-              >
-                <option value="Яндекс Еда">Яндекс Еда / Маркет</option>
-                <option value="Самокат">Самокат</option>
-                <option value="Купер">Купер</option>
-                <option value="Частный курьер">Частный курьер</option>
-              </select>
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -558,20 +654,48 @@ export const ClientsPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Modal: Edit Courier */}
+      {/* Modal: Edit Client */}
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
           setEditingClient(null);
         }}
-        title="Редактирование данных курьера"
-        subtitle={editingClient ? `Курьер ID: ${editingClient.id}` : ''}
+        title="Редактирование данных клиента"
+        subtitle={editingClient ? `Клиент: ${editingClient.fullName}` : ''}
         maxWidth="lg"
       >
         <form onSubmit={handleUpdateClient} className="space-y-3 text-xs">
+          {/* Client Type Selector */}
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setEditClientForm({ ...editClientForm, clientType: 'COURIER' })}
+              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                editClientForm.clientType === 'COURIER'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              🚴 Курьер доставки
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditClientForm({ ...editClientForm, clientType: 'RETAIL' })}
+              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                editClientForm.clientType === 'RETAIL'
+                  ? 'bg-sky-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              👤 Розничный покупатель / СТО
+            </button>
+          </div>
+
           <div>
-            <label className="block text-slate-500 mb-1">ФИО курьера полностью *</label>
+            <label className="block text-slate-500 mb-1">
+              {editClientForm.clientType === 'COURIER' ? 'ФИО курьера полностью *' : 'ФИО покупателя / заказчика *'}
+            </label>
             <input
               required
               type="text"
@@ -598,7 +722,7 @@ export const ClientsPage: React.FC = () => {
               <label className="block text-slate-500 mb-1">Telegram (@username)</label>
               <input
                 type="text"
-                placeholder="@courier_tg"
+                placeholder="@client_tg"
                 value={editClientForm.telegram}
                 onChange={(e) => setEditClientForm({ ...editClientForm, telegram: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
@@ -606,35 +730,37 @@ export const ClientsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Гражданство *</label>
-              <select
-                value={editClientForm.citizenship}
-                onChange={(e) => setEditClientForm({ ...editClientForm, citizenship: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
-              >
-                <option value="РФ">Российская Федерация (РФ)</option>
-                <option value="Узбекистан">Узбекистан</option>
-                <option value="Кыргызстан">Кыргызстан (ЕАЭС)</option>
-                <option value="Таджикистан">Таджикистан</option>
-                <option value="Беларусь">Беларусь (ЕАЭС)</option>
-              </select>
+          {editClientForm.clientType === 'COURIER' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-500 mb-1">Гражданство *</label>
+                <select
+                  value={editClientForm.citizenship}
+                  onChange={(e) => setEditClientForm({ ...editClientForm, citizenship: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
+                >
+                  <option value="РФ">Российская Федерация (РФ)</option>
+                  <option value="Узбекистан">Узбекистан</option>
+                  <option value="Кыргызстан">Кыргызстан (ЕАЭС)</option>
+                  <option value="Таджикистан">Таджикистан</option>
+                  <option value="Беларусь">Беларусь (ЕАЭС)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-slate-500 mb-1">Служба доставки</label>
+                <select
+                  value={editClientForm.courierService}
+                  onChange={(e) => setEditClientForm({ ...editClientForm, courierService: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                >
+                  <option value="Яндекс Еда">Яндекс Еда / Маркет</option>
+                  <option value="Самокат">Самокат</option>
+                  <option value="Купер">Купер</option>
+                  <option value="Частный курьер">Частный курьер</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Служба доставки</label>
-              <select
-                value={editClientForm.courierService}
-                onChange={(e) => setEditClientForm({ ...editClientForm, courierService: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
-              >
-                <option value="Яндекс Еда">Яндекс Еда / Маркет</option>
-                <option value="Самокат">Самокат</option>
-                <option value="Купер">Купер</option>
-                <option value="Частный курьер">Частный курьер</option>
-              </select>
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

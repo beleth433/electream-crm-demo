@@ -181,7 +181,18 @@ export const ShopPage: React.FC = () => {
   };
 
   // Calculations
-  const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const selectedClient = customerType === 'CLIENT' ? clients.find((c) => c.id === selectedClientId) : null;
+  const loyaltyDiscountPercent = selectedClient?.loyaltyTier?.discountPartsPercent || 0;
+
+  const rawTotalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const loyaltyDiscountAmount = cart.reduce((sum, item) => {
+    if ((item.itemType === 'PART' || item.itemType === 'OUTFIT') && loyaltyDiscountPercent > 0) {
+      return sum + Math.round(item.price * item.quantity * (loyaltyDiscountPercent / 100));
+    }
+    return sum;
+  }, 0);
+
+  const totalAmount = Math.max(0, rawTotalAmount - loyaltyDiscountAmount);
   const totalCost = cart.reduce((sum, item) => sum + item.costPrice * item.quantity, 0);
   const profitMargin = totalAmount - totalCost;
 
@@ -204,12 +215,18 @@ export const ShopPage: React.FC = () => {
         customerName: finalCustomerName,
         customerPhone: customerPhone.trim() || undefined,
         clientId: customerType === 'CLIENT' ? selectedClientId : undefined,
-        items: cart.map((i) => ({
-          itemType: i.itemType,
-          itemId: i.itemId,
-          quantity: i.quantity,
-          price: i.price,
-        })),
+        items: cart.map((i) => {
+          const discountPerItem =
+            (i.itemType === 'PART' || i.itemType === 'OUTFIT') && loyaltyDiscountPercent > 0
+              ? Math.round(i.price * (loyaltyDiscountPercent / 100))
+              : 0;
+          return {
+            itemType: i.itemType,
+            itemId: i.itemId,
+            quantity: i.quantity,
+            price: Math.max(0, i.price - discountPerItem),
+          };
+        }),
         paymentMethod,
         orderNumber: shopOrderNumber.trim() ? shopOrderNumber.trim() : undefined,
         notes: orderNotes.trim() || undefined,
@@ -668,22 +685,34 @@ export const ShopPage: React.FC = () => {
                 </div>
 
                 {customerType === 'CLIENT' ? (
-                  <div>
-                    <label className="block text-[11px] text-slate-400 mb-1">
-                      Выберите курьера из базы CRM *
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] text-slate-400">
+                      Выберите клиента из базы CRM *
                     </label>
                     <select
                       value={selectedClientId}
                       onChange={(e) => handleSelectClient(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white text-xs"
                     >
-                      <option value="">-- Выберите курьера --</option>
+                      <option value="">-- Выберите клиента / курьера --</option>
                       {clients.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.fullName} ({c.courierService || 'Курьер'}, {c.phone})
+                          {c.fullName} ({c.clientType === 'RETAIL' ? 'Розничный' : c.courierService || 'Курьер'}, {c.phone})
+                          {c.loyaltyTier ? ` • ${c.loyaltyTier.name} (-${c.loyaltyTier.discountPartsPercent}%)` : ''}
                         </option>
                       ))}
                     </select>
+
+                    {selectedClient && selectedClient.loyaltyTier && (
+                      <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-[11px]">
+                        <span className="font-bold text-amber-500 flex items-center gap-1">
+                          ★ Программа лояльности: {selectedClient.loyaltyTier.name}
+                        </span>
+                        <span className="font-extrabold text-amber-500">
+                          Скидка {loyaltyDiscountPercent}%
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
@@ -814,6 +843,18 @@ export const ShopPage: React.FC = () => {
 
               {/* Financial Totals & Margins */}
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 space-y-1.5 text-xs">
+                {loyaltyDiscountAmount > 0 && (
+                  <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                    <span>Сумма без скидки:</span>
+                    <span className="line-through">{rawTotalAmount.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                )}
+                {loyaltyDiscountAmount > 0 && (
+                  <div className="flex justify-between font-bold text-amber-500">
+                    <span>Скидка лояльности ({loyaltyDiscountPercent}%):</span>
+                    <span>-{loyaltyDiscountAmount.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-slate-500 dark:text-slate-400">
                   <span>Себестоимость товаров (COGS):</span>
                   <span>{totalCost.toLocaleString('ru-RU')} ₽</span>

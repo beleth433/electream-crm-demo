@@ -15,6 +15,7 @@ import { SystemController } from "../controllers/system.controller.js";
 import { EmployeeController } from "../controllers/employee.controller.js";
 import { ShopController } from "../controllers/shop.controller.js";
 import { BatteryController } from "../controllers/battery.controller.js";
+import { LoyaltyController } from "../controllers/loyalty.controller.js";
 
 const router = Router();
 
@@ -109,6 +110,15 @@ router.post("/payments", FinanceController.create);
 // 10. Reviews
 router.get("/reviews", ReviewController.getAll);
 router.post("/reviews", ReviewController.create);
+
+// 10.1. Loyalty System (Система лояльности)
+router.get("/loyalty/tiers", LoyaltyController.getTiers);
+router.get("/loyalty/tiers/:id", LoyaltyController.getTierById);
+router.post("/loyalty/tiers", LoyaltyController.createTier);
+router.patch("/loyalty/tiers/:id", LoyaltyController.updateTier);
+router.delete("/loyalty/tiers/:id", LoyaltyController.deleteTier);
+router.patch("/loyalty/clients/:id/tier", LoyaltyController.setClientTier);
+router.post("/loyalty/clients/:id/tier", LoyaltyController.setClientTier);
 
 // 11. Articles (Knowledge Base / FAQ)
 router.get("/articles", ArticleController.getAll);

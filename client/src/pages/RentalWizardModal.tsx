@@ -228,7 +228,12 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   const selectedBatteries = allBatteries.filter((b) => selectedBatteryIds.includes(b.id));
 
   const selectedTariff = tariffs.find((t) => t.id === selectedTariffId);
-  const totalDue = (selectedTariff?.price || 0) + Number(customDeposit || 0);
+  const baseTariffPrice = selectedTariff?.price || 0;
+  const loyaltyTier = selectedClient?.loyaltyTier;
+  const rentalDiscountPercent = loyaltyTier?.discountRentalPercent || 0;
+  const rentalDiscountAmount = Math.round(baseTariffPrice * (rentalDiscountPercent / 100));
+  const discountedTariffPrice = Math.max(0, baseTariffPrice - rentalDiscountAmount);
+  const totalDue = discountedTariffPrice + Number(customDeposit || 0);
 
   const handleSubmitCheckout = async () => {
     if (!selectedClient) {
@@ -398,11 +403,16 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                               VIP
                             </span>
                           )}
+                          {client.loyaltyTier && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 text-[9px] font-extrabold uppercase">
+                              {client.loyaltyTier.name} {client.loyaltyTier.discountRentalPercent > 0 && `(-${client.loyaltyTier.discountRentalPercent}%)`}
+                            </span>
+                          )}
                         </div>
                         <p className="text-slate-500 dark:text-slate-400 text-[11px]">
                           {client.phone} {client.telegram ? `• ${client.telegram}` : ''} •{' '}
                           <span className="text-slate-700 dark:text-slate-300 font-medium">
-                            {client.courierService || 'Служба не указана'}
+                            {client.courierService || (client.clientType === 'RETAIL' ? 'Розничный клиент' : 'Служба не указана')}
                           </span>
                         </p>
                         <p className="text-[10px] text-slate-400">
@@ -430,11 +440,18 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               {selectedClient && (
                 <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between">
                   <div className="text-xs">
-                    <span className="text-emerald-800 dark:text-emerald-200 font-semibold">
-                      Выбран курьер: {selectedClient.fullName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-800 dark:text-emerald-200 font-semibold">
+                        Выбран клиент: {selectedClient.fullName}
+                      </span>
+                      {selectedClient.loyaltyTier && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                          {selectedClient.loyaltyTier.name} (-{rentalDiscountPercent}%)
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                      {selectedClient.phone} ({selectedClient.courierService})
+                      {selectedClient.phone} ({selectedClient.courierService || 'Клиент базы'})
                     </p>
                   </div>
                   <button
@@ -1111,8 +1128,24 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
             </div>
             <div className="flex justify-between items-center text-slate-300">
               <span>Стоимость тарифа:</span>
-              <span>{selectedTariff?.price.toLocaleString('ru-RU')} ₽</span>
+              <span className={rentalDiscountAmount > 0 ? 'line-through text-slate-400' : ''}>
+                {baseTariffPrice.toLocaleString('ru-RU')} ₽
+              </span>
             </div>
+            {rentalDiscountAmount > 0 && (
+              <div className="flex justify-between items-center text-emerald-400 font-semibold">
+                <span className="flex items-center gap-1">
+                  Скидка лояльности ({loyaltyTier?.name} {rentalDiscountPercent}%):
+                </span>
+                <span>-{rentalDiscountAmount.toLocaleString('ru-RU')} ₽</span>
+              </div>
+            )}
+            {rentalDiscountAmount > 0 && (
+              <div className="flex justify-between items-center text-slate-200 font-bold">
+                <span>Тариф с учетом скидки:</span>
+                <span>{discountedTariffPrice.toLocaleString('ru-RU')} ₽</span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-slate-300">
               <span>Залог (возвратный):</span>
               <span>{Number(customDeposit || 0).toLocaleString('ru-RU')} ₽</span>

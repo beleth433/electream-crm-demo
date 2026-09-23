@@ -5,11 +5,12 @@ import { ClientCreateDto, ClientUpdateDto } from "../dtos/schemas.dto.js";
 export class ClientController {
   static getAll(req: Request, res: Response) {
     try {
-      const { status, search, courierService } = req.query;
+      const { status, search, courierService, clientType } = req.query;
       const clients = ClientService.getAllClients({
         status: status as any,
         search: search as string,
         courierService: courierService as string,
+        clientType: clientType as string,
       });
       return res.json(clients);
     } catch (err: any) {

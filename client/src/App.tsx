@@ -12,7 +12,7 @@ import { ClientsPage } from './pages/ClientsPage';
 import { RepairsPage } from './pages/RepairsPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { FinancePage } from './pages/FinancePage';
-import { ReviewsPage } from './pages/ReviewsPage';
+import { LoyaltyPage } from './pages/LoyaltyPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
 import { EmployeesPage } from './pages/EmployeesPage';
 import { ShopPage } from './pages/ShopPage';
@@ -81,8 +81,8 @@ const MainLayout: React.FC = () => {
         return 'Склад запчастей и расходных материалов';
       case 'finance':
         return 'Кассовые операции и финансовый учет';
-      case 'reviews':
-        return 'Отзывы и оценка качества курьерами';
+      case 'loyalty':
+        return 'Система лояльности и скидок';
       case 'knowledge-base':
         return 'База знаний, регламенты и инструкции';
       default:
@@ -154,7 +154,7 @@ const MainLayout: React.FC = () => {
           {currentTab === 'repairs' && <RepairsPage />}
           {currentTab === 'inventory' && <InventoryPage />}
           {currentTab === 'finance' && <FinancePage />}
-          {currentTab === 'reviews' && <ReviewsPage />}
+          {currentTab === 'loyalty' && <LoyaltyPage />}
           {currentTab === 'knowledge-base' && <KnowledgeBasePage />}
         </main>
       </div>

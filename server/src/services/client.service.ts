@@ -1,15 +1,20 @@
 import { ClientRepository } from "../repositories/client.repository.js";
-import { ClientStatus } from "../repositories/db.js";
+import { ClientStatus, ClientType } from "../repositories/db.js";
 
 export class ClientService {
-  static getAllClients(filters?: { status?: ClientStatus; search?: string; courierService?: string }) {
+  static getAllClients(filters?: {
+    status?: ClientStatus;
+    search?: string;
+    courierService?: string;
+    clientType?: string;
+  }) {
     return ClientRepository.getAll(filters);
   }
 
   static getClientById(id: string) {
     const client = ClientRepository.getById(id);
     if (!client) {
-      throw new Error(`Курьер с ID ${id} не найден`);
+      throw new Error(`Клиент с ID ${id} не найден`);
     }
     return client;
   }
@@ -30,10 +35,14 @@ export class ClientService {
     courierService?: string;
     documentPhotoUrls?: string[];
     status?: ClientStatus;
+    clientType?: ClientType;
+    manualLoyaltyTierId?: string | null;
   }) {
-    // CIS onboarding rule validation
+    // CIS onboarding rule validation (only for couriers)
+    const clientType = data.clientType || "COURIER";
     const citizenship = data.citizenship?.trim() || "РФ";
-    if (citizenship !== "РФ") {
+
+    if (clientType === "COURIER" && citizenship !== "РФ") {
       if (!data.migrationCard) {
         throw new Error("Для иностранных граждан обязательно указание номера миграционной карты");
       }
@@ -45,6 +54,8 @@ export class ClientService {
     return ClientRepository.create({
       ...data,
       citizenship,
+      clientType,
+      manualLoyaltyTierId: data.manualLoyaltyTierId || null,
     });
   }
 

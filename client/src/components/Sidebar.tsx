@@ -9,7 +9,7 @@ import {
   Wrench,
   Boxes,
   Banknote,
-  Star,
+  Award,
   BookOpen,
   ShoppingBag,
   UserCheck,
@@ -107,9 +107,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: null,
     },
     {
-      id: 'reviews',
-      label: 'Отзывы курьеров',
-      icon: Star,
+      id: 'loyalty',
+      label: 'Система лояльности',
+      icon: Award,
       badge: null,
     },
     {

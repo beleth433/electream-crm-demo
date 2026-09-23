@@ -1,16 +1,76 @@
-import { getDb, ClientStatus, ClientRecord } from "./db.js";
+import { getDb, ClientStatus, ClientRecord, ClientType } from "./db.js";
+import { LoyaltyRepository } from "./loyalty.repository.js";
 
 export class ClientRepository {
-  static getAll(filters?: { status?: ClientStatus; search?: string; courierService?: string }) {
+  static computeClientLoyalty(client: ClientRecord) {
+    const db = getDb();
+    const clientRentals = db.rentals.filter((r) => r.clientId === client.id);
+
+    // 1. Calculate total rental days
+    let totalRentalDays = 0;
+    for (const r of clientRentals) {
+      if (r.startedAt && r.expiresAt) {
+        const start = new Date(r.startedAt).getTime();
+        const end = new Date(r.expiresAt).getTime();
+        if (!isNaN(start) && !isNaN(end) && end > start) {
+          totalRentalDays += Math.max(1, Math.round((end - start) / (1000 * 3600 * 24)));
+          continue;
+        }
+      }
+      const trf = db.tariffs.find((t) => t.id === r.tariffId);
+      totalRentalDays += trf?.durationDays || 1;
+    }
+
+    // 2. Calculate total spent
+    const retailSpent = (db.retailOrders || [])
+      .filter((ro) => ro.clientId === client.id)
+      .reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
+
+    const rentalIds = new Set(clientRentals.map((r) => r.id));
+    const rentalPayments = (db.payments || [])
+      .filter((p) => p.rentalId && rentalIds.has(p.rentalId) && (p.type === "RENTAL" || p.type === "FINE"))
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+    const calculatedRentalSpent = clientRentals.reduce((sum, r) => {
+      const trf = db.tariffs.find((t) => t.id === r.tariffId);
+      return sum + (trf?.price || 0);
+    }, 0);
+    const effectiveRentalSpent = Math.max(rentalPayments, calculatedRentalSpent);
+
+    const totalSpent = retailSpent + effectiveRentalSpent;
+
+    // 3. Determine tier
+    const loyaltyResult = LoyaltyRepository.determineTier(
+      totalRentalDays,
+      totalSpent,
+      client.manualLoyaltyTierId
+    );
+
+    return {
+      totalRentalDays,
+      totalSpent,
+      loyaltyTier: loyaltyResult.tier,
+      loyaltyMode: loyaltyResult.mode,
+    };
+  }
+
+  static getAll(filters?: {
+    status?: ClientStatus;
+    search?: string;
+    courierService?: string;
+    clientType?: string;
+  }) {
     const db = getDb();
     let list = db.clients.map((c) => {
       const activeRental = db.rentals.find(
         (r) => r.clientId === c.id && (r.status === "ACTIVE" || r.status === "OVERDUE")
       );
       const totalRentals = db.rentals.filter((r) => r.clientId === c.id).length;
+      const loyalty = this.computeClientLoyalty(c);
 
       return {
         ...c,
+        clientType: c.clientType || "COURIER",
         activeRental: activeRental
           ? {
               id: activeRental.id,
@@ -20,6 +80,7 @@ export class ClientRepository {
             }
           : null,
         totalRentals,
+        ...loyalty,
       };
     });
 
@@ -28,6 +89,9 @@ export class ClientRepository {
     }
     if (filters?.courierService) {
       list = list.filter((c) => c.courierService === filters.courierService);
+    }
+    if (filters?.clientType && filters.clientType !== "ALL") {
+      list = list.filter((c) => c.clientType === filters.clientType);
     }
     if (filters?.search) {
       const q = filters.search.toLowerCase();
@@ -64,10 +128,14 @@ export class ClientRepository {
         return { ...rv, bike };
       });
 
+    const loyalty = this.computeClientLoyalty(client);
+
     return {
       ...client,
+      clientType: client.clientType || "COURIER",
       rentals,
       reviews,
+      ...loyalty,
     };
   }
 
@@ -89,16 +157,18 @@ export class ClientRepository {
     courierService?: string;
     documentPhotoUrls?: string[];
     status?: ClientStatus;
+    clientType?: ClientType;
+    manualLoyaltyTierId?: string | null;
   }) {
     const db = getDb();
 
     // Check unique phone
     const cleanPhone = data.phone.replace(/\D/g, "");
     if (db.clients.some((c) => c.phone.replace(/\D/g, "") === cleanPhone)) {
-      throw new Error(`Курьер с телефоном ${data.phone} уже зарегистрирован`);
+      throw new Error(`Клиент с телефоном ${data.phone} уже зарегистрирован`);
     }
 
-    const newClient = {
+    const newClient: ClientRecord = {
       id: `cli-${Date.now()}`,
       fullName: data.fullName,
       phone: data.phone,
@@ -111,12 +181,14 @@ export class ClientRepository {
       courierService: data.courierService || null,
       documentPhotoUrls: data.documentPhotoUrls || [],
       status: data.status || ("NORMAL" as ClientStatus),
+      clientType: data.clientType || "COURIER",
+      manualLoyaltyTierId: data.manualLoyaltyTierId || null,
       blackListReason: null,
       createdAt: new Date().toISOString(),
     };
 
     db.clients.push(newClient);
-    return newClient;
+    return this.getById(newClient.id);
   }
 
   static update(id: string, data: Partial<ClientRecord>) {
@@ -129,7 +201,18 @@ export class ClientRepository {
       ...data,
     };
 
-    return db.clients[index];
+    return this.getById(id);
+  }
+
+  static setLoyaltyTier(id: string, manualLoyaltyTierId: string | null) {
+    const db = getDb();
+    const client = db.clients.find((c) => c.id === id);
+    if (!client) {
+      throw new Error("Клиент не найден");
+    }
+
+    client.manualLoyaltyTierId = manualLoyaltyTierId && manualLoyaltyTierId.trim() ? manualLoyaltyTierId.trim() : null;
+    return this.getById(id);
   }
 
   static updateStatus(id: string, status: ClientStatus, blackListReason?: string) {
@@ -139,7 +222,7 @@ export class ClientRepository {
 
     client.status = status;
     client.blackListReason = blackListReason || null;
-    return client;
+    return this.getById(id);
   }
 
   static delete(id: string) {

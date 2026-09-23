@@ -20,6 +20,20 @@ export type RentalStatus =
 export type RentalType = "STANDARD" | "RENT_TO_OWN";
 
 export type ClientStatus = "NORMAL" | "VIP" | "PROBLEM" | "BLACKLIST";
+export type ClientType = "COURIER" | "RETAIL";
+
+export interface LoyaltyTier {
+  id: string;
+  name: string;
+  color: string;
+  minRentalDays: number;
+  minTotalSpent: number;
+  discountRentalPercent: number;
+  discountPartsPercent: number;
+  discountRepairsPercent: number;
+  description?: string;
+  isDefault?: boolean;
+}
 
 export type OutfitCategory =
   | "HELMET"
@@ -195,6 +209,12 @@ export interface Client {
   courierService?: string | null;
   documentPhotoUrls?: string[];
   status: ClientStatus;
+  clientType?: ClientType;
+  manualLoyaltyTierId?: string | null;
+  loyaltyTier?: LoyaltyTier;
+  loyaltyMode?: 'AUTO' | 'MANUAL';
+  totalRentalDays?: number;
+  totalSpent?: number;
   blackListReason?: string | null;
   createdAt?: string;
   activeRental?: {

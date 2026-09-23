@@ -41,6 +41,8 @@ export const ClientCreateDto = z.object({
   courierService: z.string().optional(),
   documentPhotoUrls: z.array(z.string()).optional(),
   status: z.enum(["NORMAL", "VIP", "PROBLEM", "BLACKLIST"]).optional(),
+  clientType: z.enum(["COURIER", "RETAIL"]).optional(),
+  manualLoyaltyTierId: z.string().optional().nullable(),
 });
 
 export const ClientUpdateDto = z.object({
@@ -55,6 +57,8 @@ export const ClientUpdateDto = z.object({
   courierService: z.string().optional(),
   documentPhotoUrls: z.array(z.string()).optional(),
   status: z.enum(["NORMAL", "VIP", "PROBLEM", "BLACKLIST"]).optional(),
+  clientType: z.enum(["COURIER", "RETAIL"]).optional(),
+  manualLoyaltyTierId: z.string().optional().nullable(),
   blackListReason: z.string().optional().nullable(),
 });
 

@@ -20,6 +20,7 @@ import {
   Employee,
   RetailOrder,
   ShopCatalog,
+  LoyaltyTier,
 } from '../types';
 
 const API_BASE = '/api';
@@ -118,11 +119,12 @@ export const api = {
     fetchJson<{ success: boolean; message: string }>(`/bikes/${id}`, { method: 'DELETE' }),
 
   // Clients
-  getClients: (params?: { status?: string; search?: string; courierService?: string }) => {
+  getClients: (params?: { status?: string; search?: string; courierService?: string; clientType?: string }) => {
     const q = new URLSearchParams();
     if (params?.status) q.append('status', params.status);
     if (params?.search) q.append('search', params.search);
     if (params?.courierService) q.append('courierService', params.courierService);
+    if (params?.clientType) q.append('clientType', params.clientType);
     return fetchJson<Client[]>(`/clients?${q.toString()}`);
   },
   getClient: (id: string) => fetchJson<Client>(`/clients/${id}`),
@@ -139,6 +141,21 @@ export const api = {
     }),
   deleteClient: (id: string) =>
     fetchJson<{ success: boolean; message: string }>(`/clients/${id}`, { method: 'DELETE' }),
+
+  // Loyalty System (Система лояльности)
+  getLoyaltyTiers: () => fetchJson<LoyaltyTier[]>('/loyalty/tiers'),
+  getLoyaltyTier: (id: string) => fetchJson<LoyaltyTier>(`/loyalty/tiers/${id}`),
+  createLoyaltyTier: (data: Partial<LoyaltyTier>) =>
+    fetchJson<LoyaltyTier>('/loyalty/tiers', { method: 'POST', body: JSON.stringify(data) }),
+  updateLoyaltyTier: (id: string, data: Partial<LoyaltyTier>) =>
+    fetchJson<LoyaltyTier>(`/loyalty/tiers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteLoyaltyTier: (id: string) =>
+    fetchJson<{ message: string }>(`/loyalty/tiers/${id}`, { method: 'DELETE' }),
+  setClientLoyaltyTier: (clientId: string, manualLoyaltyTierId: string | null) =>
+    fetchJson<Client>(`/loyalty/clients/${clientId}/tier`, {
+      method: 'PATCH',
+      body: JSON.stringify({ manualLoyaltyTierId }),
+    }),
 
   // Rentals
   getRentals: (params?: { status?: string; search?: string; clientId?: string }) => {
