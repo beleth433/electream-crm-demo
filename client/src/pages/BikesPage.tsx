@@ -148,6 +148,7 @@ export const BikesPage: React.FC = () => {
 
   // Model Templates Management Modal
   const [isManageModelsOpen, setIsManageModelsOpen] = useState(false);
+  const [editingModelId, setEditingModelId] = useState<string | null>(null);
   const [newModelForm, setNewModelForm] = useState({
     name: '',
     powerWatts: 800,
@@ -254,17 +255,62 @@ export const BikesPage: React.FC = () => {
     }
   };
 
+  const handleStartEditModel = (model: BikeModel) => {
+    setEditingModelId(model.id);
+    setNewModelForm({
+      name: model.name || '',
+      powerWatts: model.powerWatts ?? 800,
+      wheelSizeInch: model.wheelSizeInch ?? 16.0,
+      description: model.description || '',
+      purchasePrice: model.purchasePrice ?? 40000,
+      salePrice: model.salePrice ?? 65000,
+    });
+  };
+
+  const handleCancelEditModel = () => {
+    setEditingModelId(null);
+    setNewModelForm({
+      name: '',
+      powerWatts: 800,
+      wheelSizeInch: 16.0,
+      description: '',
+      purchasePrice: 40000,
+      salePrice: 65000,
+    });
+  };
+
   const handleCreateModel = async (e: React.FormEvent, isQuick = false) => {
     e.preventDefault();
     try {
-      const created = await api.createBikeModel(newModelForm);
-      toast.success(`Шаблон модели "${created.name}" успешно создан!`);
+      if (editingModelId && !isQuick) {
+        const updated = await api.updateBikeModel(editingModelId, {
+          name: newModelForm.name.trim(),
+          powerWatts: Number(newModelForm.powerWatts) || 0,
+          wheelSizeInch: newModelForm.wheelSizeInch ? Number(newModelForm.wheelSizeInch) : null,
+          description: newModelForm.description || '',
+          purchasePrice: Number(newModelForm.purchasePrice) || 0,
+          salePrice: Number(newModelForm.salePrice) || 0,
+        });
+        toast.success(`Шаблон модели "${updated.name}" успешно обновлен!`);
+        setEditingModelId(null);
+      } else {
+        const created = await api.createBikeModel({
+          name: newModelForm.name.trim(),
+          powerWatts: Number(newModelForm.powerWatts) || 0,
+          wheelSizeInch: newModelForm.wheelSizeInch ? Number(newModelForm.wheelSizeInch) : null,
+          description: newModelForm.description || '',
+          purchasePrice: Number(newModelForm.purchasePrice) || 0,
+          salePrice: Number(newModelForm.salePrice) || 0,
+        });
+        toast.success(`Шаблон модели "${created.name}" успешно создан!`);
+        if (isQuick) {
+          setNewBikeForm((prev) => ({ ...prev, modelId: created.id }));
+          setIsQuickCreateModelOpen(false);
+        }
+      }
       const updatedModels = await api.getBikeModels();
       setModels(updatedModels);
-      if (isQuick) {
-        setNewBikeForm((prev) => ({ ...prev, modelId: created.id }));
-        setIsQuickCreateModelOpen(false);
-      }
+      loadData();
       setNewModelForm({
         name: '',
         powerWatts: 800,
@@ -274,7 +320,7 @@ export const BikesPage: React.FC = () => {
         salePrice: 65000,
       });
     } catch (err: any) {
-      toast.error(err.message || 'Ошибка создания шаблона модели');
+      toast.error(err.message || 'Ошибка сохранения шаблона модели');
     }
   };
 
@@ -889,23 +935,51 @@ export const BikesPage: React.FC = () => {
       {/* Modal: Manage Bike Model Templates */}
       <Modal
         isOpen={isManageModelsOpen}
-        onClose={() => setIsManageModelsOpen(false)}
+        onClose={() => {
+          setIsManageModelsOpen(false);
+          handleCancelEditModel();
+        }}
         title="Шаблоны моделей электровелосипедов"
         subtitle="Управление спецификациями моделей, мощностью и емкостью АКБ"
         maxWidth="2xl"
       >
         <div className="space-y-6 text-xs">
-          {/* Create New Model Form */}
+          {/* Create or Edit Model Form */}
           <form
             onSubmit={(e) => handleCreateModel(e, false)}
-            className="p-4 contour-card space-y-3 bg-slate-50/50 dark:bg-[#08100c]"
+            className={`p-4 contour-card space-y-3 transition-all ${
+              editingModelId
+                ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-500/40 dark:border-amber-500/40 shadow-sm'
+                : 'bg-slate-50/50 dark:bg-[#08100c]'
+            }`}
           >
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-emerald-500/15 pb-2">
-              <span className="font-bold text-xs text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5 text-emerald-500" />
-                Новый шаблон модели
+              <span className={`font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 ${
+                editingModelId ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'
+              }`}>
+                {editingModelId ? (
+                  <>
+                    <Edit className="w-3.5 h-3.5 text-amber-500" />
+                    Редактирование шаблона модели
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5 text-emerald-500" />
+                    Новый шаблон модели
+                  </>
+                )}
               </span>
-              <span className="text-[10px] text-slate-400">Шаблон можно повторно использовать для добавления байков</span>
+              {editingModelId ? (
+                <button
+                  type="button"
+                  onClick={handleCancelEditModel}
+                  className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors"
+                >
+                  ✕ Отмена (создать новый)
+                </button>
+              ) : (
+                <span className="text-[10px] text-slate-400">Шаблон можно повторно использовать для добавления байков</span>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1002,12 +1076,31 @@ export const BikesPage: React.FC = () => {
             </div>
 
             <div className="flex justify-end pt-2">
-              <button
-                type="submit"
-                className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all"
-              >
-                Создать шаблон модели
-              </button>
+              {editingModelId ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelEditModel}
+                    className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    Сохранить изменения
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all"
+                >
+                  Создать шаблон модели
+                </button>
+              )}
             </div>
           </form>
 
@@ -1018,67 +1111,97 @@ export const BikesPage: React.FC = () => {
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
-              {models.map((m) => (
-                <div
-                  key={m.id}
-                  className="p-3.5 contour-card flex flex-col justify-between space-y-2.5"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className="font-bold text-slate-900 dark:text-white text-sm">
-                          {m.name}
+              {models.map((m) => {
+                const isCurrent = editingModelId === m.id;
+                return (
+                  <div
+                    key={m.id}
+                    className={`p-3.5 contour-card flex flex-col justify-between space-y-2.5 transition-all ${
+                      isCurrent
+                        ? 'ring-2 ring-amber-500 border-amber-500/50 bg-amber-50/20 dark:bg-amber-950/30'
+                        : ''
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 dark:text-white text-sm">
+                              {m.name}
+                            </span>
+                            {isCurrent && (
+                              <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-amber-500 text-slate-950 uppercase">
+                                Редактируется
+                              </span>
+                            )}
+                          </div>
+                          {m.description && (
+                            <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{m.description}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[11px]">
+                        <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 font-semibold">
+                          ⚡ {m.powerWatts}W
                         </span>
-                        {m.description && (
-                          <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{m.description}</p>
+                        {m.wheelSizeInch && (
+                          <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-[#162720] text-slate-600 dark:text-slate-300 font-medium">
+                            ⚙ {m.wheelSizeInch}"
+                          </span>
+                        )}
+                        {m.purchasePrice !== undefined && (
+                          <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400">
+                            Закупка: {m.purchasePrice.toLocaleString('ru-RU')} ₽
+                          </span>
+                        )}
+                        {m.salePrice !== undefined && (
+                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold">
+                            Продажа: {m.salePrice.toLocaleString('ru-RU')} ₽
+                          </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[11px]">
-                      <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 font-semibold">
-                        ⚡ {m.powerWatts}W
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-emerald-500/15 text-[11px]">
+                      <span className="text-slate-500 dark:text-slate-400">
+                        В парке: <strong className="text-slate-800 dark:text-white">{m.bikesCount ?? 0} шт.</strong>
                       </span>
-                      {m.wheelSizeInch && (
-                        <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-[#162720] text-slate-600 dark:text-slate-300 font-medium">
-                          ⚙ {m.wheelSizeInch}"
-                        </span>
-                      )}
-                      {m.purchasePrice !== undefined && (
-                        <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400">
-                          Закупка: {m.purchasePrice.toLocaleString('ru-RU')} ₽
-                        </span>
-                      )}
-                      {m.salePrice !== undefined && (
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold">
-                          Продажа: {m.salePrice.toLocaleString('ru-RU')} ₽
-                        </span>
-                      )}
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditModel(m)}
+                          className={`p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold transition-all ${
+                            isCurrent
+                              ? 'bg-amber-500 text-slate-950 font-bold'
+                              : 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                          }`}
+                          title="Редактировать параметры шаблона"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Изменить</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteModel(m)}
+                          disabled={(m.bikesCount ?? 0) > 0}
+                          title={(m.bikesCount ?? 0) > 0 ? 'Нельзя удалить: модель используется в парке' : 'Удалить шаблон модели'}
+                          className={`p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold transition-all ${
+                            (m.bikesCount ?? 0) > 0
+                              ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                              : 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                          }`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Удалить</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-emerald-500/15 text-[11px]">
-                    <span className="text-slate-500 dark:text-slate-400">
-                      В парке: <strong className="text-slate-800 dark:text-white">{m.bikesCount ?? 0} шт.</strong>
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteModel(m)}
-                      disabled={(m.bikesCount ?? 0) > 0}
-                      title={(m.bikesCount ?? 0) > 0 ? 'Нельзя удалить: модель используется в парке' : 'Удалить шаблон модели'}
-                      className={`p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold transition-all ${
-                        (m.bikesCount ?? 0) > 0
-                          ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
-                          : 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                      }`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Удалить</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

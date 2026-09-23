@@ -28,7 +28,26 @@
       "isActive": true
     }
   ],
-  "models": [],
+  "models": [
+    {
+      "id": "mdl-1790203139794",
+      "name": "Monster truck",
+      "powerWatts": 1200,
+      "wheelSizeInch": 16,
+      "description": null,
+      "purchasePrice": 40000,
+      "salePrice": 65000
+    },
+    {
+      "id": "mdl-1790203208214",
+      "name": "U2",
+      "powerWatts": 2000,
+      "wheelSizeInch": 16,
+      "description": null,
+      "purchasePrice": 60000,
+      "salePrice": 75000
+    }
+  ],
   "batteryModels": [],
   "bikes": [],
   "batteries": [],
