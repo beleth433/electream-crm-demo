@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Sparkles,
   Package,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
@@ -41,6 +42,7 @@ export const BatteriesPage: React.FC = () => {
 
   // Modal: Manage Battery Models (Templates)
   const [isManageModelsOpen, setIsManageModelsOpen] = useState(false);
+  const [editingModelId, setEditingModelId] = useState<string | null>(null);
   const [newModelForm, setNewModelForm] = useState<{
     name: string;
     voltage: number;
@@ -154,7 +156,33 @@ export const BatteriesPage: React.FC = () => {
     loadData();
   }, []);
 
-  // Create battery model submit
+  const handleStartEditModel = (model: BatteryModel) => {
+    setEditingModelId(model.id);
+    setNewModelForm({
+      name: model.name || '',
+      voltage: model.voltage ?? 60,
+      capacityAh: model.capacityAh ?? 21,
+      chemistry: model.chemistry || 'Li-ion',
+      description: model.description || '',
+      purchasePrice: model.purchasePrice ?? 15000,
+      salePrice: model.salePrice ?? 25000,
+    });
+  };
+
+  const handleCancelEditModel = () => {
+    setEditingModelId(null);
+    setNewModelForm({
+      name: '',
+      voltage: 60,
+      capacityAh: 21,
+      chemistry: 'Li-ion',
+      description: '',
+      purchasePrice: 15000,
+      salePrice: 25000,
+    });
+  };
+
+  // Create or Update battery model submit
   const handleCreateModel = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newModelForm.name.trim()) {
@@ -162,11 +190,34 @@ export const BatteriesPage: React.FC = () => {
       return;
     }
     try {
-      const created = await api.createBatteryModel(newModelForm);
-      toast.success(`Шаблон модели АКБ "${created.name}" создан!`);
-      const updated = await api.getBatteryModels();
-      setBatteryModels(updated);
-      setCreateForm((prev) => ({ ...prev, modelId: created.id }));
+      if (editingModelId) {
+        const updated = await api.updateBatteryModel(editingModelId, {
+          name: newModelForm.name.trim(),
+          voltage: Number(newModelForm.voltage) || 0,
+          capacityAh: Number(newModelForm.capacityAh) || 0,
+          chemistry: newModelForm.chemistry,
+          description: newModelForm.description || '',
+          purchasePrice: Number(newModelForm.purchasePrice) || 0,
+          salePrice: Number(newModelForm.salePrice) || 0,
+        });
+        toast.success(`Шаблон модели АКБ "${updated.name}" успешно обновлен!`);
+        setEditingModelId(null);
+      } else {
+        const created = await api.createBatteryModel({
+          name: newModelForm.name.trim(),
+          voltage: Number(newModelForm.voltage) || 0,
+          capacityAh: Number(newModelForm.capacityAh) || 0,
+          chemistry: newModelForm.chemistry,
+          description: newModelForm.description || '',
+          purchasePrice: Number(newModelForm.purchasePrice) || 0,
+          salePrice: Number(newModelForm.salePrice) || 0,
+        });
+        toast.success(`Шаблон модели АКБ "${created.name}" создан!`);
+        setCreateForm((prev) => ({ ...prev, modelId: created.id }));
+      }
+      const updatedModels = await api.getBatteryModels();
+      setBatteryModels(updatedModels);
+      loadData();
       setNewModelForm({
         name: '',
         voltage: 60,
@@ -177,7 +228,7 @@ export const BatteriesPage: React.FC = () => {
         salePrice: 25000,
       });
     } catch (err: any) {
-      toast.error(err.message || 'Ошибка создания шаблона АКБ');
+      toast.error(err.message || 'Ошибка сохранения шаблона АКБ');
     }
   };
 
@@ -1483,19 +1534,48 @@ export const BatteriesPage: React.FC = () => {
       {/* MODAL 5: Управление шаблонами моделей АКБ */}
       <Modal
         isOpen={isManageModelsOpen}
-        onClose={() => setIsManageModelsOpen(false)}
+        onClose={() => {
+          setIsManageModelsOpen(false);
+          handleCancelEditModel();
+        }}
         title="Шаблоны моделей аккумуляторов (АКБ)"
         subtitle="Создание и настройка справочника моделей батарей парка"
       >
         <div className="space-y-6 text-xs">
-          {/* Create Model Form */}
+          {/* Create or Edit Model Form */}
           <form
             onSubmit={handleCreateModel}
-            className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3"
+            className={`p-4 rounded-xl border space-y-3 transition-all ${
+              editingModelId
+                ? 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-500/40 shadow-sm'
+                : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800'
+            }`}
           >
-            <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 text-sm">
-              <Plus className="w-4 h-4 text-emerald-500" />
-              Добавить новый шаблон модели АКБ
+            <div className="font-semibold flex items-center justify-between text-sm">
+              <span className={`flex items-center gap-1.5 ${
+                editingModelId ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-800 dark:text-slate-200'
+              }`}>
+                {editingModelId ? (
+                  <>
+                    <Edit2 className="w-4 h-4 text-amber-500" />
+                    Редактирование шаблона модели АКБ
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 text-emerald-500" />
+                    Добавить новый шаблон модели АКБ
+                  </>
+                )}
+              </span>
+              {editingModelId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEditModel}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-colors"
+                >
+                  ✕ Отмена (создать новый)
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1549,10 +1629,17 @@ export const BatteriesPage: React.FC = () => {
                 </label>
                 <input
                   type="number"
+                  min="1"
+                  step="any"
                   required
                   placeholder="60"
-                  value={newModelForm.voltage}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, voltage: Number(e.target.value) })}
+                  value={newModelForm.voltage || ''}
+                  onChange={(e) =>
+                    setNewModelForm({
+                      ...newModelForm,
+                      voltage: e.target.value === '' ? ('' as any) : Number(e.target.value),
+                    })
+                  }
                   className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                 />
               </div>
@@ -1563,11 +1650,17 @@ export const BatteriesPage: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  step="0.1"
+                  min="0.1"
+                  step="any"
                   required
                   placeholder="21"
-                  value={newModelForm.capacityAh}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, capacityAh: Number(e.target.value) })}
+                  value={newModelForm.capacityAh || ''}
+                  onChange={(e) =>
+                    setNewModelForm({
+                      ...newModelForm,
+                      capacityAh: e.target.value === '' ? ('' as any) : Number(e.target.value),
+                    })
+                  }
                   className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                 />
               </div>
@@ -1579,9 +1672,15 @@ export const BatteriesPage: React.FC = () => {
                 <input
                   type="number"
                   min="0"
+                  step="any"
                   placeholder="15000"
-                  value={newModelForm.purchasePrice}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
+                  value={newModelForm.purchasePrice || ''}
+                  onChange={(e) =>
+                    setNewModelForm({
+                      ...newModelForm,
+                      purchasePrice: e.target.value === '' ? ('' as any) : Number(e.target.value),
+                    })
+                  }
                   className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
                 />
               </div>
@@ -1593,9 +1692,15 @@ export const BatteriesPage: React.FC = () => {
                 <input
                   type="number"
                   min="0"
+                  step="any"
                   placeholder="25000"
-                  value={newModelForm.salePrice}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, salePrice: Number(e.target.value) })}
+                  value={newModelForm.salePrice || ''}
+                  onChange={(e) =>
+                    setNewModelForm({
+                      ...newModelForm,
+                      salePrice: e.target.value === '' ? ('' as any) : Number(e.target.value),
+                    })
+                  }
                   className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
                 />
               </div>
@@ -1615,12 +1720,31 @@ export const BatteriesPage: React.FC = () => {
             </div>
 
             <div className="flex justify-end pt-1">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition shadow-sm"
-              >
-                Создать шаблон
-              </button>
+              {editingModelId ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelEditModel}
+                    className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium transition"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg font-bold transition shadow-sm flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    Сохранить изменения
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold transition shadow-sm"
+                >
+                  Создать шаблон
+                </button>
+              )}
             </div>
           </form>
 
@@ -1636,57 +1760,87 @@ export const BatteriesPage: React.FC = () => {
               </div>
             ) : (
               <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
-                {batteryModels.map((model) => (
-                  <div
-                    key={model.id}
-                    className="p-3 bg-white dark:bg-slate-900/40 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-slate-900 dark:text-white">{model.name}</span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${getVoltageBadgeColor(
-                            model.voltage
-                          )}`}
+                {batteryModels.map((model) => {
+                  const isCurrent = editingModelId === model.id;
+                  return (
+                    <div
+                      key={model.id}
+                      className={`p-3 flex items-center justify-between gap-3 transition ${
+                        isCurrent
+                          ? 'bg-amber-50/40 dark:bg-amber-950/30 border-l-4 border-l-amber-500'
+                          : 'bg-white dark:bg-slate-900/40 hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-slate-900 dark:text-white">{model.name}</span>
+                          {isCurrent && (
+                            <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-amber-500 text-slate-950 uppercase">
+                              Редактируется
+                            </span>
+                          )}
+                          <span
+                            className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold border ${getVoltageBadgeColor(
+                              model.voltage
+                            )}`}
+                          >
+                            {model.voltage}V
+                          </span>
+                          <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            {model.capacityAh} Ah
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
+                              model.chemistry === 'LiFePO4'
+                                ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                                : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                            }`}
+                          >
+                            {model.chemistry || 'Li-ion'}
+                          </span>
+                          <span className="text-[11px] font-mono text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                            Себест: {model.purchasePrice?.toLocaleString() || '—'} ₽ • Продажа: {model.salePrice?.toLocaleString() || '—'} ₽
+                          </span>
+                        </div>
+                        {model.description && (
+                          <p className="text-[11px] text-slate-500 mt-0.5">{model.description}</p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] text-slate-500 mr-1">
+                          {model.batteriesCount ?? 0} АКБ в парке
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditModel(model)}
+                          className={`p-1.5 rounded-lg flex items-center gap-1 text-xs font-semibold transition ${
+                            isCurrent
+                              ? 'bg-amber-500 text-slate-950 font-bold'
+                              : 'text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
+                          }`}
+                          title="Редактировать параметры шаблона АКБ"
                         >
-                          {model.voltage}V
-                        </span>
-                        <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {model.capacityAh} Ah
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[11px] font-bold border ${
-                            model.chemistry === 'LiFePO4'
-                              ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
-                              : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Изменить</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteModel(model)}
+                          disabled={(model.batteriesCount ?? 0) > 0}
+                          title={(model.batteriesCount ?? 0) > 0 ? 'Нельзя удалить: модель используется АКБ в парке' : 'Удалить шаблон'}
+                          className={`p-1.5 rounded-lg transition ${
+                            (model.batteriesCount ?? 0) > 0
+                              ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed'
+                              : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30'
                           }`}
                         >
-                          {model.chemistry || 'Li-ion'}
-                        </span>
-                        <span className="text-[11px] font-mono text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                          Себест: {model.purchasePrice?.toLocaleString() || '—'} ₽ • Продажа: {model.salePrice?.toLocaleString() || '—'} ₽
-                        </span>
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      {model.description && (
-                        <p className="text-[11px] text-slate-500 mt-0.5">{model.description}</p>
-                      )}
                     </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-[11px] text-slate-500">
-                        {model.batteriesCount ?? 0} АКБ в парке
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteModel(model)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition"
-                        title="Удалить шаблон"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
