@@ -100,6 +100,8 @@ export class BikeRepository {
       const bikesCount = db.bikes.filter((b) => b.modelId === m.id).length;
       return {
         ...m,
+        baseRentalPrice: m.baseRentalPrice !== undefined && m.baseRentalPrice > 0 ? m.baseRentalPrice : 6000,
+        baseBuyoutPrice: m.baseBuyoutPrice !== undefined && m.baseBuyoutPrice > 0 ? m.baseBuyoutPrice : (m.salePrice || 60000),
         bikesCount,
       };
     });

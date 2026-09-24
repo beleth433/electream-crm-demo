@@ -145,7 +145,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
     overrides?: { durationDays?: number; paymentIntervalDays?: number; type?: 'STANDARD' | 'RENT_TO_OWN' }
   ) => {
     const selectedBikeModel = models.find((m) => m.id === bikeModelId);
-    const bikePrice = selectedBikeModel?.baseBuyoutPrice || 0;
+    const bikePrice = selectedBikeModel ? (selectedBikeModel.baseBuyoutPrice || selectedBikeModel.salePrice || 60000) : 0;
     const batteriesTotal = (batteries || []).reduce(
       (sum, b) => sum + (Number(b.quantity) || 0) * (Number(b.price) || 0),
       0
@@ -798,9 +798,10 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                       const selectedModelId = e.target.value;
                       const selectedModel = models.find((m) => m.id === selectedModelId);
                       if (tariffForm.type === 'RENT_TO_OWN') {
-                        recalculateBuyoutFromItems(selectedModelId, tariffForm.includedBatteries);
+                        recalculateBuyoutFromItems(selectedModelId, tariffForm.includedBatteries || []);
                         if (selectedModel) {
-                          toast.info(`Выбрана модель "${selectedModel.name}". Выкупная стоимость пересчитана.`);
+                          const p = selectedModel.baseBuyoutPrice || selectedModel.salePrice || 60000;
+                          toast.info(`Выбрана модель "${selectedModel.name}". Базовая стоимость: ${p.toLocaleString('ru-RU')} ₽`);
                         }
                       } else {
                         setTariffForm((prev) => ({
@@ -808,16 +809,24 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                           bikeModelId: selectedModelId,
                           price: selectedModel?.baseRentalPrice || prev.price,
                         }));
+                        if (selectedModel?.baseRentalPrice) {
+                          toast.info(`Выбрана модель "${selectedModel.name}". Базовая аренда: ${selectedModel.baseRentalPrice.toLocaleString('ru-RU')} ₽`);
+                        }
                       }
                     }}
                     className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
                   >
                     <option value="">Все модели (универсальный тариф)</option>
-                    {models.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} {m.baseRentalPrice ? `(${m.baseRentalPrice.toLocaleString('ru-RU')} ₽)` : ''}
-                      </option>
-                    ))}
+                    {models.map((m) => {
+                      const buyoutDisplay = m.baseBuyoutPrice || m.salePrice || 60000;
+                      return (
+                        <option key={m.id} value={m.id}>
+                          {m.name} {tariffForm.type === 'RENT_TO_OWN'
+                            ? `(Выкуп: ${buyoutDisplay.toLocaleString('ru-RU')} ₽)`
+                            : m.baseRentalPrice ? `(${m.baseRentalPrice.toLocaleString('ru-RU')} ₽)` : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>
@@ -1001,8 +1010,8 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     {/* Breakdown bar */}
                     {(() => {
                       const curModel = models.find((m) => m.id === tariffForm.bikeModelId);
-                      const bPrice = curModel?.baseBuyoutPrice || 0;
-                      const batsTotal = tariffForm.includedBatteries.reduce(
+                      const bPrice = curModel ? (curModel.baseBuyoutPrice || curModel.salePrice || 60000) : 0;
+                      const batsTotal = (tariffForm.includedBatteries || []).reduce(
                         (sum, b) => sum + (Number(b.quantity) || 0) * (Number(b.price) || 0),
                         0
                       );

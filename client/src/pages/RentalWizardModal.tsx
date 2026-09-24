@@ -231,7 +231,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     if (curTariff?.type !== 'RENT_TO_OWN') return;
 
     const curBike = bike || availableBikes.find((b) => b.id === selectedBikeId);
-    const bikePrice = curBike?.model?.baseBuyoutPrice || 0;
+    const bikePrice = curBike?.model?.baseBuyoutPrice || curBike?.model?.salePrice || curBike?.salePrice || 0;
     const targetBatteryIds = batteryIdsToUse || selectedBatteryIds;
     const bats = allBatteries.filter((b) => targetBatteryIds.includes(b.id));
     const batsTotal = bats.reduce((sum, b) => sum + (b.salePrice || 25000), 0);
@@ -256,7 +256,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     if (trf) {
       setCustomDeposit(trf.depositRequired);
       if (trf.type === 'RENT_TO_OWN') {
-        const bikePrice = activeBike?.model?.baseBuyoutPrice || 0;
+        const bikePrice = activeBike?.model?.baseBuyoutPrice || activeBike?.model?.salePrice || activeBike?.salePrice || 0;
         const bats = allBatteries.filter((b) => activeBatteryIds.includes(b.id));
         const batsTotal = bats.reduce((sum, b) => sum + (b.salePrice || 25000), 0);
         const calculatedTotal = bikePrice + batsTotal;
@@ -364,7 +364,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   );
   const selectedBatteries = allBatteries.filter((b) => selectedBatteryIds.includes(b.id));
 
-  const bikeBuyoutPrice = selectedBike?.model?.baseBuyoutPrice || 0;
+  const bikeBuyoutPrice = selectedBike?.model?.baseBuyoutPrice || selectedBike?.model?.salePrice || selectedBike?.salePrice || 0;
   const batteriesBuyoutPrice = selectedBatteries.reduce((sum, b) => sum + (b.salePrice || 25000), 0);
   const packageBuyoutPrice = bikeBuyoutPrice + batteriesBuyoutPrice;
 
@@ -1375,9 +1375,9 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px] flex items-center justify-between">
                     <span>Полная стоимость выкупа (₽) *</span>
-                    {selectedBike?.model?.baseBuyoutPrice && (
+                    {(selectedBike?.model?.baseBuyoutPrice || selectedBike?.model?.salePrice) && (
                       <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
-                        Базовая по модели: {selectedBike.model.baseBuyoutPrice.toLocaleString('ru-RU')} ₽
+                        Базовая по модели: {(selectedBike.model.baseBuyoutPrice || selectedBike.model.salePrice || 0).toLocaleString('ru-RU')} ₽
                       </span>
                     )}
                   </label>

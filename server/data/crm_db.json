@@ -36,7 +36,9 @@
       "wheelSizeInch": 16,
       "description": "",
       "purchasePrice": 40000,
-      "salePrice": 65000
+      "salePrice": 65000,
+      "baseRentalPrice": 6000,
+      "baseBuyoutPrice": 65000
     },
     {
       "id": "mdl-1790203208214",
@@ -45,7 +47,9 @@
       "wheelSizeInch": 16,
       "description": "",
       "purchasePrice": 50000,
-      "salePrice": 75000
+      "salePrice": 75000,
+      "baseRentalPrice": 7000,
+      "baseBuyoutPrice": 75000
     },
     {
       "id": "mdl-1790203452418",
@@ -54,7 +58,9 @@
       "wheelSizeInch": 16,
       "description": "",
       "purchasePrice": 50000,
-      "salePrice": 75000
+      "salePrice": 75000,
+      "baseRentalPrice": 7000,
+      "baseBuyoutPrice": 75000
     }
   ],
   "batteryModels": [

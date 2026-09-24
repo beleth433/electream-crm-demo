@@ -393,7 +393,11 @@ function loadFromDisk(): DBStore {
         const defaultDb = createDefaultEmptyDb();
         const merged: DBStore = {
           users: parsed.users && parsed.users.length > 0 ? parsed.users : defaultDb.users,
-          models: parsed.models || [],
+          models: (parsed.models || []).map((m: any) => ({
+            ...m,
+            baseRentalPrice: m.baseRentalPrice !== undefined && m.baseRentalPrice > 0 ? m.baseRentalPrice : 6000,
+            baseBuyoutPrice: m.baseBuyoutPrice !== undefined && m.baseBuyoutPrice > 0 ? m.baseBuyoutPrice : (m.salePrice || 60000),
+          })),
           batteryModels: parsed.batteryModels || [],
           bikes: parsed.bikes || [],
           batteries: parsed.batteries || [],
