@@ -92,9 +92,9 @@ export const INITIAL_EMPLOYEES = [
   },
   {
     id: "emp-3",
-    fullName: "Рустам Алиев",
+    fullName: "Сергей Морозов",
     phone: "+7 (999) 444-55-66",
-    email: "rustam.tech@ebike-crm.ru",
+    email: "sergey.mech@ebike-crm.ru",
     role: "Помощник механика",
     salaryType: "MONTHLY" as const,
     salaryAmount: 55000,

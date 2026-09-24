@@ -565,7 +565,7 @@ export const ClientsPage: React.FC = () => {
             <input
               required
               type="text"
-              placeholder="Азизов Бахром Искандерович"
+              placeholder="Иванов Алексей Сергеевич"
               value={newClientForm.fullName}
               onChange={(e) => setNewClientForm({ ...newClientForm, fullName: e.target.value })}
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
@@ -746,7 +746,7 @@ export const ClientsPage: React.FC = () => {
             <input
               required
               type="text"
-              placeholder="Азизов Бахром Искандерович"
+              placeholder="Иванов Алексей Сергеевич"
               value={editClientForm.fullName}
               onChange={(e) => setEditClientForm({ ...editClientForm, fullName: e.target.value })}
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"

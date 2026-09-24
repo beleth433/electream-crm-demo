@@ -139,7 +139,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
         itemType: 'EXTERNAL_DEVICE',
         bikeId: '',
         batteryId: '',
-        customItemName: initialData.customItemName || 'Электровелосипед клиента (с улицы)',
+        customItemName: initialData.customItemName || 'Сторонняя техника клиента',
         clientType: 'EXTERNAL',
         clientId: '',
         clientName: initialData.clientName || '',
@@ -352,7 +352,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
                               {order.customItemName || 'Техника клиента'}
                             </span>
                             <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 font-bold rounded">
-                              С улицы
+                              Сторонняя техника
                             </span>
                           </div>
                           <p className="text-slate-600 dark:text-slate-300 text-[11px] font-medium">
@@ -579,7 +579,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
                 }`}
               >
                 <User className="w-4 h-4" />
-                Клиент с улицы
+                Сторонняя техника
               </button>
             </div>
           </div>
@@ -640,24 +640,6 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
                   onChange={(e) => setCreateForm({ ...createForm, customItemName: e.target.value })}
                   className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-lg font-bold text-xs"
                 />
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {[
-                    'Электровелосипед Minako',
-                    'Электровелосипед Колхозник',
-                    'Электросамокат',
-                    'Сторонний АКБ 60V',
-                    'Сторонний АКБ 48V',
-                  ].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setCreateForm((prev) => ({ ...prev, customItemName: preset }))}
-                      className="px-2 py-0.5 text-[10px] rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400"
-                    >
-                      + {preset}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               {/* Customer Selector */}
@@ -676,7 +658,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
                       }`}
                     >
-                      Новый / С улицы
+                      Новый клиент
                     </button>
                     <button
                       type="button"
@@ -723,7 +705,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
                       </label>
                       <input
                         type="text"
-                        placeholder="Азизов Бахром"
+                        placeholder="Иван Иванов"
                         value={createForm.clientName}
                         onChange={(e) => setCreateForm({ ...createForm, clientName: e.target.value })}
                         className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-lg text-xs"

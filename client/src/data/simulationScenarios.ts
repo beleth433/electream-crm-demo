@@ -33,7 +33,7 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
     },
   },
   {
-    name: 'Марат Хабибуллин',
+    name: 'Дмитрий Кузнецов',
     avatar: '📦',
     company: 'Яндекс Еда',
     phone: '+7 (926) 881-34-55',
@@ -47,13 +47,13 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
     },
   },
   {
-    name: 'Нурлан Жумабаев',
+    name: 'Александр Волков',
     avatar: '🛵',
     company: 'Купер',
     phone: '+7 (999) 312-90-44',
     requestType: 'RENTAL',
     title: 'Аренда с правом выкупа (Rent-to-own)',
-    dialogue: 'Здравствуйте, начальник! Хочу взять байк на длительный срок, желательно с выкупом в собственность на 3-4 месяца. Какие у вас условия по выкупу?',
+    dialogue: 'Здравствуйте! Хочу взять байк на длительный срок, желательно с выкупом в собственность на 3-4 месяца. Какие у вас условия по выкупу?',
     requestedDetails: {
       item: 'Электровелосипед (Аренда с выкупом)',
       duration: 'Длительно (с выкупом)',
@@ -90,7 +90,7 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
     },
   },
   {
-    name: 'Ильдар Сафин',
+    name: 'Николай Федоров',
     avatar: '🛠️',
     company: 'Яндекс Еда',
     phone: '+7 (915) 344-99-10',
@@ -116,13 +116,13 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
     },
   },
   {
-    name: 'Фарход Каримов',
+    name: 'Владимир Морозов',
     avatar: '💡',
     company: 'Купер',
     phone: '+7 (925) 880-14-11',
     requestType: 'BUY',
     title: 'Покупка яркой фары и звонка',
-    dialogue: 'Салам алейкум! Вечером в темноте во дворах ничего не видно, штатная фара еле светит. Есть мощная диодная фара "Арктик" или аналог с гудком?',
+    dialogue: 'Добрый день! Вечером в темноте во дворах ничего не видно, штатная фара еле светит. Есть мощная диодная фара "Арктик" или аналог с гудком?',
     requestedDetails: {
       item: 'Фара диодная / Свет + звонок',
       budget: 'Наличные',
@@ -131,7 +131,7 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
 
   // --- РЕМОНТ И СТО (REPAIR) ---
   {
-    name: 'Тимур Алиев',
+    name: 'Константин Попов',
     avatar: '🔧',
     company: 'Самокат',
     phone: '+7 (968) 555-43-21',
@@ -157,7 +157,7 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
     },
   },
   {
-    name: 'Бахром Юсупов',
+    name: 'Максим Новиков',
     avatar: '🔌',
     company: 'Купер',
     phone: '+7 (995) 700-11-33',
@@ -185,7 +185,7 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
 
   // --- СВАП / ЗАМЕНА АККУМУЛЯТОРА (BATTERY_SWAP) ---
   {
-    name: 'Алишер Мирзоев',
+    name: 'Роман Васильев',
     avatar: '🔋',
     company: 'Самокат',
     phone: '+7 (926) 303-91-82',

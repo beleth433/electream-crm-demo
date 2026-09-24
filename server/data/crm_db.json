@@ -412,7 +412,7 @@
   "clients": [
     {
       "id": "cli-1790207788520",
-      "fullName": "Фарход Каримов",
+      "fullName": "Владимир Морозов",
       "phone": "+7 (925) 880-14-11",
       "telegram": null,
       "passportSerial": null,
@@ -522,7 +522,7 @@
       "type": "RETAIL_SALE",
       "amount": 1200,
       "method": "SBP",
-      "description": "Розничная продажа (Чек ORD-788520): Фарход Каримов",
+      "description": "Розничная продажа (Чек ORD-788520): Владимир Морозов",
       "createdAt": "2026-09-23T23:56:28.520Z"
     }
   ],
@@ -559,7 +559,7 @@
       "id": "ord-1790207788520",
       "orderNumber": "ORD-788520",
       "customerType": "EXTERNAL",
-      "customerName": "Фарход Каримов",
+      "customerName": "Владимир Морозов",
       "customerPhone": "+7 (925) 880-14-11",
       "clientId": "cli-1790207788520",
       "items": [

@@ -169,7 +169,7 @@ export class RepairRepository {
       itemType: isExternal ? "EXTERNAL_DEVICE" : isBattery ? "BATTERY" : "BIKE",
       bikeId: resolvedBikeId,
       batteryId: resolvedBatteryId,
-      customItemName: isExternal ? (data.customItemName?.trim() || "Техника клиента (с улицы)") : null,
+      customItemName: isExternal ? (data.customItemName?.trim() || "Сторонняя техника клиента") : null,
       clientName: data.clientName?.trim() || null,
       clientPhone: data.clientPhone?.trim() || null,
       clientId: data.clientId || null,
