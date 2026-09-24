@@ -25,6 +25,11 @@ export class RentalRepository {
       const payments = db.payments.filter((p) => p.rentalId === r.id);
       const batteries = db.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
 
+      const buyoutPayments = payments.filter((p) => p.type === 'RENTAL' || p.type === 'BUYOUT');
+      const totalPaidForBuyout = buyoutPayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalBuyoutPrice = r.totalBuyoutPrice || (r.type === 'RENT_TO_OWN' ? (tariff?.totalBuyoutPrice || tariff?.price || 0) : undefined);
+      const remainingBuyoutAmount = totalBuyoutPrice !== undefined ? Math.max(0, totalBuyoutPrice - totalPaidForBuyout) : undefined;
+
       return {
         ...r,
         client,
@@ -33,6 +38,9 @@ export class RentalRepository {
         tariff,
         outfits,
         payments,
+        totalPaidForBuyout,
+        totalBuyoutPrice,
+        remainingBuyoutAmount,
       };
     });
 
@@ -72,6 +80,11 @@ export class RentalRepository {
     const batteries = db.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
     const manager = db.users.find((u) => u.id === r.managerId);
 
+    const buyoutPayments = payments.filter((p) => p.type === 'RENTAL' || p.type === 'BUYOUT');
+    const totalPaidForBuyout = buyoutPayments.reduce((sum, p) => sum + p.amount, 0);
+    const totalBuyoutPrice = r.totalBuyoutPrice || (r.type === 'RENT_TO_OWN' ? (tariff?.totalBuyoutPrice || tariff?.price || 0) : undefined);
+    const remainingBuyoutAmount = totalBuyoutPrice !== undefined ? Math.max(0, totalBuyoutPrice - totalPaidForBuyout) : undefined;
+
     return {
       ...r,
       client,
@@ -81,6 +94,9 @@ export class RentalRepository {
       outfits,
       payments,
       manager,
+      totalPaidForBuyout,
+      totalBuyoutPrice,
+      remainingBuyoutAmount,
     };
   }
 
@@ -95,6 +111,9 @@ export class RentalRepository {
     price: number;
     depositRequired?: number;
     isActive?: boolean;
+    totalBuyoutPrice?: number;
+    paymentIntervalDays?: number;
+    installmentPayment?: number;
   }) {
     const db = getDb();
     const newTariff = {
@@ -105,6 +124,9 @@ export class RentalRepository {
       price: data.price,
       depositRequired: data.depositRequired ?? 0,
       isActive: data.isActive ?? true,
+      totalBuyoutPrice: data.totalBuyoutPrice !== undefined ? Number(data.totalBuyoutPrice) : undefined,
+      paymentIntervalDays: data.paymentIntervalDays !== undefined ? Number(data.paymentIntervalDays) : undefined,
+      installmentPayment: data.installmentPayment !== undefined ? Number(data.installmentPayment) : undefined,
     };
     db.tariffs.push(newTariff);
     return newTariff;
@@ -117,6 +139,9 @@ export class RentalRepository {
     price: number;
     depositRequired: number;
     isActive: boolean;
+    totalBuyoutPrice: number;
+    paymentIntervalDays: number;
+    installmentPayment: number;
   }>) {
     const db = getDb();
     const tariff = db.tariffs.find((t) => t.id === id);
@@ -151,6 +176,10 @@ export class RentalRepository {
     paymentMethod: PaymentMethod;
     rentalNumber?: string;
     customDeposit?: number;
+    totalBuyoutPrice?: number;
+    paymentIntervalDays?: number;
+    installmentPayment?: number;
+    firstPaymentAmount?: number;
     notes?: string;
     courierService?: string;
     passportSerial?: string;
@@ -204,7 +233,16 @@ export class RentalRepository {
       }
     }
 
-    const now = new Date();
+    const isRentToOwn = tariff.type === "RENT_TO_OWN";
+    const paymentIntervalDays = data.paymentIntervalDays ?? tariff.paymentIntervalDays ?? (isRentToOwn ? 7 : tariff.durationDays);
+    const totalBuyoutPrice = data.totalBuyoutPrice ?? tariff.totalBuyoutPrice ?? (isRentToOwn ? tariff.price : undefined);
+    const installmentPayment = data.installmentPayment ?? tariff.installmentPayment ?? (isRentToOwn ? tariff.price : undefined);
+    const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? (installmentPayment ?? tariff.price) : tariff.price);
+
+    const now = getSystemTime();
+    const nextPaymentDue = isRentToOwn
+      ? new Date(now.getTime() + paymentIntervalDays * 86400000)
+      : new Date(now.getTime() + tariff.durationDays * 86400000);
     const expiresAt = new Date(now.getTime() + tariff.durationDays * 86400000);
     const rentalNumber = data.rentalNumber && data.rentalNumber.trim()
       ? data.rentalNumber.trim()
@@ -223,12 +261,15 @@ export class RentalRepository {
       type: tariff.type,
       startedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
-      nextPaymentDue: expiresAt.toISOString(),
+      nextPaymentDue: nextPaymentDue.toISOString(),
       depositAmount,
       depositRefunded: false,
       notes: data.notes || null,
       outfitIds: data.outfitIds,
       batteryIds: requestedBatteryIds,
+      totalBuyoutPrice: totalBuyoutPrice !== undefined ? Number(totalBuyoutPrice) : undefined,
+      paymentIntervalDays: paymentIntervalDays !== undefined ? Number(paymentIntervalDays) : undefined,
+      installmentPayment: installmentPayment !== undefined ? Number(installmentPayment) : undefined,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
     };
@@ -265,15 +306,17 @@ export class RentalRepository {
       o.status = "ISSUED";
     });
 
-    // 8. Record Payments
-    // Payment 1: Rental fee
+    // 10. Record Payments
+    // Payment 1: Rental fee or initial buyout installment
     db.payments.push({
       id: `pay-${Date.now()}-1`,
       rentalId: rental.id,
-      type: "RENTAL",
-      amount: tariff.price,
+      type: isRentToOwn ? "BUYOUT" : "RENTAL",
+      amount: firstPaymentAmount,
       method: data.paymentMethod,
-      description: `Оплата тарифа "${tariff.name}" по договору ${rental.rentalNumber}`,
+      description: isRentToOwn
+        ? `Первоначальный взнос по выкупу тарифа "${tariff.name}" по договору ${rental.rentalNumber}`
+        : `Оплата тарифа "${tariff.name}" по договору ${rental.rentalNumber}`,
       createdAt: now.toISOString(),
     });
 
@@ -293,40 +336,73 @@ export class RentalRepository {
     return this.getById(rental.id);
   }
 
-  static renew(id: string, data: { durationDays?: number; amount?: number; method: PaymentMethod; notes?: string }) {
+  static renew(id: string, data: { durationDays?: number; amount?: number; method: PaymentMethod; notes?: string; isBuyoutFinal?: boolean }) {
     const db = getDb();
     const rental = db.rentals.find((r) => r.id === id);
     if (!rental) throw new Error("Аренда не найдена");
     if (rental.status === "CLOSED" || rental.status === "BOUGHT_OUT") {
-      throw new Error("Нельзя продлить завершенный договор");
+      throw new Error("Нельзя продлить завершенный или выкупленный договор");
     }
 
     const tariff = db.tariffs.find((t) => t.id === rental.tariffId);
-    const durationDays = data.durationDays || tariff?.durationDays || 7;
-    const amount = data.amount || tariff?.price || 6000;
+    const isRentToOwn = rental.type === "RENT_TO_OWN";
+    const durationDays = data.durationDays || rental.paymentIntervalDays || tariff?.paymentIntervalDays || tariff?.durationDays || 7;
+    const amount = data.amount ?? (isRentToOwn ? (rental.installmentPayment ?? tariff?.installmentPayment ?? tariff?.price ?? 6000) : (tariff?.price ?? 6000));
 
-    const currentExpiry = new Date(rental.expiresAt);
-    const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
-    const newExpiry = new Date(baseDate.getTime() + durationDays * 86400000);
+    const now = getSystemTime();
+    const currentDue = new Date(rental.nextPaymentDue || rental.expiresAt);
+    const baseDate = currentDue > now ? currentDue : now;
+    const newNextDue = new Date(baseDate.getTime() + durationDays * 86400000);
 
-    rental.expiresAt = newExpiry.toISOString();
-    rental.nextPaymentDue = newExpiry.toISOString();
-    rental.status = "ACTIVE";
-    rental.updatedAt = new Date().toISOString();
-    if (data.notes) {
-      rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[Продление ${new Date().toLocaleDateString("ru-RU")}]: ${data.notes}`;
-    }
-
-    // Record renewal payment
+    // Record renewal / buyout payment
+    const paymentType = isRentToOwn ? "BUYOUT" : "RENTAL";
     db.payments.push({
       id: `pay-${Date.now()}`,
       rentalId: rental.id,
-      type: "RENTAL",
+      type: paymentType as any,
       amount,
       method: data.method,
-      description: `Продление аренды на ${durationDays} дн. по договору ${rental.rentalNumber}`,
-      createdAt: new Date().toISOString(),
+      description: isRentToOwn
+        ? (data.isBuyoutFinal ? `Финальный выкупной платёж по договору ${rental.rentalNumber}` : `Очередной платёж по выкупу (${durationDays} дн.) по договору ${rental.rentalNumber}`)
+        : `Продление аренды на ${durationDays} дн. по договору ${rental.rentalNumber}`,
+      createdAt: now.toISOString(),
     });
+
+    // Check if fully bought out
+    const allBuyoutPayments = db.payments.filter((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT"));
+    const totalPaid = allBuyoutPayments.reduce((sum, p) => sum + p.amount, 0);
+    const targetPrice = rental.totalBuyoutPrice || tariff?.totalBuyoutPrice || tariff?.price || 0;
+    const isFullyPaid = isRentToOwn && targetPrice > 0 && totalPaid >= targetPrice;
+
+    if (data.isBuyoutFinal || isFullyPaid) {
+      rental.status = "BOUGHT_OUT";
+      rental.updatedAt = now.toISOString();
+      if (data.notes) {
+        rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[Выкуп ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
+      } else {
+        rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[Выкуп завершён ${now.toLocaleDateString("ru-RU")}]: Оплачено ${totalPaid} из ${targetPrice} ₽`;
+      }
+
+      // Transition bike to SOLD
+      const bike = db.bikes.find((b) => b.id === rental.bikeId);
+      const client = db.clients.find((c) => c.id === rental.clientId);
+      if (bike) {
+        bike.status = "SOLD";
+        bike.currentLocation = `Выкуплен клиентом ${client?.fullName || ""} (договор ${rental.rentalNumber})`;
+        bike.updatedAt = now.toISOString();
+      }
+      return this.getById(rental.id);
+    }
+
+    rental.nextPaymentDue = newNextDue.toISOString();
+    if (!isRentToOwn) {
+      rental.expiresAt = newNextDue.toISOString();
+    }
+    rental.status = "ACTIVE";
+    rental.updatedAt = now.toISOString();
+    if (data.notes) {
+      rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[Продление ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
+    }
 
     return this.getById(rental.id);
   }

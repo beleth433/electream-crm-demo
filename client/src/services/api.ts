@@ -184,6 +184,10 @@ export const api = {
     paymentMethod: string;
     rentalNumber?: string;
     customDeposit?: number;
+    totalBuyoutPrice?: number;
+    paymentIntervalDays?: number;
+    installmentPayment?: number;
+    firstPaymentAmount?: number;
     notes?: string;
     courierService?: string;
     passportSerial?: string;
@@ -192,7 +196,7 @@ export const api = {
     patentNumber?: string;
     telegram?: string;
   }) => fetchJson<Rental>('/rentals', { method: 'POST', body: JSON.stringify(data) }),
-  renewRental: (id: string, data: { durationDays?: number; amount?: number; method: string; notes?: string }) =>
+  renewRental: (id: string, data: { durationDays?: number; amount?: number; method: string; notes?: string; isBuyoutFinal?: boolean }) =>
     fetchJson<Rental>(`/rentals/${id}/renew`, { method: 'POST', body: JSON.stringify(data) }),
   closeRental: (
     id: string,

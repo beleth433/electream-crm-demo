@@ -104,7 +104,16 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     durationDays: 7,
     price: 6000,
     depositRequired: 5000,
+    totalBuyoutPrice: 60000,
+    paymentIntervalDays: 7,
+    installmentPayment: 6000,
   });
+
+  // Rent-to-own customization fields for this specific contract
+  const [buyoutTotalPrice, setBuyoutTotalPrice] = useState<number>(60000);
+  const [buyoutPaymentIntervalDays, setBuyoutPaymentIntervalDays] = useState<number>(7);
+  const [buyoutInstallmentPayment, setBuyoutInstallmentPayment] = useState<number>(6000);
+  const [buyoutFirstPayment, setBuyoutFirstPayment] = useState<number>(6000);
 
   const calculateNextRentalNumber = (prefixToUse: string, rentalList: Rental[] = allRentals) => {
     const existing = rentalList.map((r) => r.rentalNumber);
@@ -171,6 +180,15 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
           if (tariffsRes.length > 0) {
             setSelectedTariffId(tariffsRes[0].id);
             setCustomDeposit(tariffsRes[0].depositRequired);
+            if (tariffsRes[0].type === 'RENT_TO_OWN') {
+              const total = tariffsRes[0].totalBuyoutPrice || tariffsRes[0].price || 60000;
+              const interval = tariffsRes[0].paymentIntervalDays || 7;
+              const inst = tariffsRes[0].installmentPayment || tariffsRes[0].price || 6000;
+              setBuyoutTotalPrice(total);
+              setBuyoutPaymentIntervalDays(interval);
+              setBuyoutInstallmentPayment(inst);
+              setBuyoutFirstPayment(inst);
+            }
           }
         })
         .catch((err) => toast.error('Ошибка загрузки данных: ' + err.message));
@@ -208,7 +226,26 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     const trf = tariffs.find((t) => t.id === tariffId);
     if (trf) {
       setCustomDeposit(trf.depositRequired);
+      if (trf.type === 'RENT_TO_OWN') {
+        const total = trf.totalBuyoutPrice || trf.price || 60000;
+        const interval = trf.paymentIntervalDays || 7;
+        const inst = trf.installmentPayment || trf.price || 6000;
+        setBuyoutTotalPrice(total);
+        setBuyoutPaymentIntervalDays(interval);
+        setBuyoutInstallmentPayment(inst);
+        setBuyoutFirstPayment(inst);
+      }
     }
+  };
+
+  const handleCalculateContractInstallment = () => {
+    const dur = selectedTariff?.durationDays || 180;
+    const interval = buyoutPaymentIntervalDays || 7;
+    const periods = Math.max(1, Math.round(dur / interval));
+    const inst = Math.ceil(buyoutTotalPrice / periods);
+    setBuyoutInstallmentPayment(inst);
+    setBuyoutFirstPayment(inst);
+    toast.success(`Рассчитано: ${periods} платежей по ${inst.toLocaleString('ru-RU')} ₽`);
   };
 
   const handleCreateTariffInline = async (e: React.FormEvent) => {
@@ -219,6 +256,15 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       setTariffs((prev) => [...prev, created]);
       setSelectedTariffId(created.id);
       setCustomDeposit(created.depositRequired);
+      if (created.type === 'RENT_TO_OWN') {
+        const total = created.totalBuyoutPrice || created.price || 60000;
+        const interval = created.paymentIntervalDays || 7;
+        const inst = created.installmentPayment || created.price || 6000;
+        setBuyoutTotalPrice(total);
+        setBuyoutPaymentIntervalDays(interval);
+        setBuyoutInstallmentPayment(inst);
+        setBuyoutFirstPayment(inst);
+      }
       setIsCreatingTariff(false);
       setNewTariffForm({
         name: '',
@@ -226,6 +272,9 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         durationDays: 7,
         price: 6000,
         depositRequired: 5000,
+        totalBuyoutPrice: 60000,
+        paymentIntervalDays: 7,
+        installmentPayment: 6000,
       });
       toast.success(`Шаблон тарифа "${created.name}" создан и выбран!`);
     } catch (err: any) {
@@ -265,7 +314,8 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   const selectedBatteries = allBatteries.filter((b) => selectedBatteryIds.includes(b.id));
 
   const selectedTariff = tariffs.find((t) => t.id === selectedTariffId);
-  const baseTariffPrice = selectedTariff?.price || 0;
+  const isRentToOwn = selectedTariff?.type === 'RENT_TO_OWN';
+  const baseTariffPrice = isRentToOwn ? buyoutFirstPayment : (selectedTariff?.price || 0);
   const loyaltyTier = selectedClient?.loyaltyTier;
   const rentalDiscountPercent = loyaltyTier?.discountRentalPercent || 0;
   const rentalDiscountAmount = Math.round(baseTariffPrice * (rentalDiscountPercent / 100));
@@ -300,6 +350,10 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         paymentMethod,
         rentalNumber: rentalNumber.trim() ? rentalNumber.trim() : undefined,
         customDeposit: Number(customDeposit),
+        totalBuyoutPrice: isRentToOwn ? Number(buyoutTotalPrice) : undefined,
+        paymentIntervalDays: isRentToOwn ? Number(buyoutPaymentIntervalDays) : undefined,
+        installmentPayment: isRentToOwn ? Number(buyoutInstallmentPayment) : undefined,
+        firstPaymentAmount: isRentToOwn ? Number(discountedTariffPrice) : undefined,
         notes,
         courierService: clientExtraDetails.courierService || selectedClient.courierService || undefined,
         passportSerial: clientExtraDetails.passportSerial || selectedClient.passportSerial || undefined,
@@ -1009,16 +1063,23 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <label className="block text-slate-500 mb-1 text-[11px]">Стоимость аренды (₽) *</label>
+                    <label className="block text-slate-500 mb-1 text-[11px]">
+                      {newTariffForm.type === 'RENT_TO_OWN' ? 'Регулярный взнос (₽) *' : 'Стоимость аренды (₽) *'}
+                    </label>
                     <input
                       required
                       type="number"
                       min="0"
                       step="100"
                       value={newTariffForm.price}
-                      onChange={(e) =>
-                        setNewTariffForm({ ...newTariffForm, price: Number(e.target.value) })
-                      }
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setNewTariffForm({
+                          ...newTariffForm,
+                          price: val,
+                          installmentPayment: val,
+                        });
+                      }}
                       className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-emerald-600"
                     />
                   </div>
@@ -1038,6 +1099,38 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                     />
                   </div>
                 </div>
+
+                {newTariffForm.type === 'RENT_TO_OWN' && (
+                  <div className="grid grid-cols-2 gap-3 text-xs pt-1 border-t border-amber-200 dark:border-amber-800/40">
+                    <div>
+                      <label className="block text-slate-500 mb-1 text-[11px]">Полная выкупная цена (₽) *</label>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={newTariffForm.totalBuyoutPrice}
+                        onChange={(e) =>
+                          setNewTariffForm({ ...newTariffForm, totalBuyoutPrice: Number(e.target.value) })
+                        }
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg text-xs font-bold text-purple-600 dark:text-purple-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 mb-1 text-[11px]">Интервал платежей (дней) *</label>
+                      <input
+                        required
+                        type="number"
+                        min="1"
+                        value={newTariffForm.paymentIntervalDays}
+                        onChange={(e) =>
+                          setNewTariffForm({ ...newTariffForm, paymentIntervalDays: Number(e.target.value) })
+                        }
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-end pt-1">
                   <button
@@ -1092,6 +1185,110 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Rent-To-Own Contract Settings Block */}
+          {selectedTariff?.type === 'RENT_TO_OWN' && (
+            <div className="p-3.5 rounded-xl border border-purple-300 dark:border-purple-800 bg-purple-50/60 dark:bg-purple-950/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-xs text-purple-900 dark:text-purple-200">
+                    Параметры договора выкупа (рассрочки)
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-200 font-extrabold">
+                    {selectedTariff.name}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCalculateContractInstallment}
+                  className="flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition shadow-sm"
+                  title="Рассчитать размер взноса исходя из суммы выкупа и срока"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Рассчитать взнос
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
+                    Полная стоимость выкупа (₽) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={buyoutTotalPrice}
+                    onChange={(e) => setBuyoutTotalPrice(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-purple-700 dark:text-purple-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
+                    Периодичность выплат (дней) *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={buyoutPaymentIntervalDays}
+                    onChange={(e) => setBuyoutPaymentIntervalDays(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold"
+                  />
+                  <div className="flex gap-1 mt-1 text-[10px]">
+                    {[
+                      { d: 7, l: 'Раз в неделю (7д)' },
+                      { d: 14, l: 'Раз в 2 недели (14д)' },
+                      { d: 30, l: 'Раз в месяц (30д)' },
+                    ].map((item) => (
+                      <button
+                        key={item.d}
+                        type="button"
+                        onClick={() => setBuyoutPaymentIntervalDays(item.d)}
+                        className={`px-1.5 py-0.5 rounded border text-[9px] ${
+                          buyoutPaymentIntervalDays === item.d
+                            ? 'bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-bold border-purple-400'
+                            : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {item.l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
+                    Регулярный платёж за период (₽) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={buyoutInstallmentPayment}
+                    onChange={(e) => setBuyoutInstallmentPayment(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
+                    Первый взнос при выдаче (₽) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="100"
+                    value={buyoutFirstPayment}
+                    onChange={(e) => setBuyoutFirstPayment(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-emerald-600 dark:text-emerald-400"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -1233,25 +1430,64 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                 )}
               </div>
             </div>
-            <div className="flex justify-between items-center text-slate-300">
-              <span>Стоимость тарифа:</span>
-              <span className={rentalDiscountAmount > 0 ? 'line-through text-slate-400' : ''}>
-                {baseTariffPrice.toLocaleString('ru-RU')} ₽
-              </span>
-            </div>
-            {rentalDiscountAmount > 0 && (
-              <div className="flex justify-between items-center text-emerald-400 font-semibold">
-                <span className="flex items-center gap-1">
-                  Скидка лояльности ({loyaltyTier?.name} {rentalDiscountPercent}%):
-                </span>
-                <span>-{rentalDiscountAmount.toLocaleString('ru-RU')} ₽</span>
-              </div>
-            )}
-            {rentalDiscountAmount > 0 && (
-              <div className="flex justify-between items-center text-slate-200 font-bold">
-                <span>Тариф с учетом скидки:</span>
-                <span>{discountedTariffPrice.toLocaleString('ru-RU')} ₽</span>
-              </div>
+            {isRentToOwn ? (
+              <>
+                <div className="flex justify-between items-center text-slate-300">
+                  <span>Тип договора:</span>
+                  <span className="font-bold text-purple-400">Аренда с выкупом</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-300">
+                  <span>Полная выкупная цена:</span>
+                  <span className="font-bold text-purple-300">{buyoutTotalPrice.toLocaleString('ru-RU')} ₽</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-300">
+                  <span>График платежей:</span>
+                  <span>каждые {buyoutPaymentIntervalDays} дн. по {buyoutInstallmentPayment.toLocaleString('ru-RU')} ₽</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-300">
+                  <span>Первый взнос при выдаче:</span>
+                  <span className={rentalDiscountAmount > 0 ? 'line-through text-slate-400' : 'font-bold'}>
+                    {baseTariffPrice.toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+                {rentalDiscountAmount > 0 && (
+                  <div className="flex justify-between items-center text-emerald-400 font-semibold">
+                    <span className="flex items-center gap-1">
+                      Скидка лояльности ({loyaltyTier?.name} {rentalDiscountPercent}%):
+                    </span>
+                    <span>-{rentalDiscountAmount.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                )}
+                {rentalDiscountAmount > 0 && (
+                  <div className="flex justify-between items-center text-slate-200 font-bold">
+                    <span>Первый взнос со скидкой:</span>
+                    <span>{discountedTariffPrice.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between items-center text-slate-300">
+                  <span>Стоимость тарифа:</span>
+                  <span className={rentalDiscountAmount > 0 ? 'line-through text-slate-400' : ''}>
+                    {baseTariffPrice.toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+                {rentalDiscountAmount > 0 && (
+                  <div className="flex justify-between items-center text-emerald-400 font-semibold">
+                    <span className="flex items-center gap-1">
+                      Скидка лояльности ({loyaltyTier?.name} {rentalDiscountPercent}%):
+                    </span>
+                    <span>-{rentalDiscountAmount.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                )}
+                {rentalDiscountAmount > 0 && (
+                  <div className="flex justify-between items-center text-slate-200 font-bold">
+                    <span>Тариф с учетом скидки:</span>
+                    <span>{discountedTariffPrice.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                )}
+              </>
             )}
             <div className="flex justify-between items-center text-slate-300">
               <span>Залог (возвратный):</span>

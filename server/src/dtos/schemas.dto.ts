@@ -73,6 +73,9 @@ export const TariffCreateDto = z.object({
   price: z.number().min(0, "Стоимость аренды должна быть >= 0"),
   depositRequired: z.number().min(0, "Сумма залога должна быть >= 0").default(0),
   isActive: z.boolean().optional().default(true),
+  totalBuyoutPrice: z.number().min(0).optional(),
+  paymentIntervalDays: z.number().int().positive().optional(),
+  installmentPayment: z.number().min(0).optional(),
 });
 
 export const TariffUpdateDto = TariffCreateDto.partial();
@@ -87,6 +90,10 @@ export const RentalCreateDto = z.object({
   paymentMethod: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),
   rentalNumber: z.string().optional(),
   customDeposit: z.number().optional(),
+  totalBuyoutPrice: z.number().min(0).optional(),
+  paymentIntervalDays: z.number().int().positive().optional(),
+  installmentPayment: z.number().min(0).optional(),
+  firstPaymentAmount: z.number().min(0).optional(),
   notes: z.string().optional(),
   courierService: z.string().optional(),
   passportSerial: z.string().optional(),
@@ -101,6 +108,7 @@ export const RentalRenewDto = z.object({
   amount: z.number().positive().optional(),
   method: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),
   notes: z.string().optional(),
+  isBuyoutFinal: z.boolean().optional(),
 });
 
 export const RentalCloseDto = z.object({

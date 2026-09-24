@@ -57,6 +57,7 @@ export type RepairFaultType = "COMPANY_EXPENSE" | "CLIENT_FAULT";
 
 export type PaymentType =
   | "RENTAL"
+  | "BUYOUT"
   | "DEPOSIT"
   | "DEPOSIT_REFUND"
   | "REPAIR"
@@ -270,6 +271,9 @@ export interface Tariff {
   price: number;
   depositRequired: number;
   isActive: boolean;
+  totalBuyoutPrice?: number;
+  paymentIntervalDays?: number;
+  installmentPayment?: number;
 }
 
 export interface Rental {
@@ -296,6 +300,11 @@ export interface Rental {
   batteryIds?: string[];
   batteries?: Battery[];
   payments?: Payment[];
+  totalBuyoutPrice?: number;
+  paymentIntervalDays?: number;
+  installmentPayment?: number;
+  totalPaidForBuyout?: number;
+  remainingBuyoutAmount?: number;
   createdAt: string;
   updatedAt: string;
 }

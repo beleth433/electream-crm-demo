@@ -40,6 +40,10 @@ export class RentalService {
     paymentMethod: PaymentMethod;
     rentalNumber?: string;
     customDeposit?: number;
+    totalBuyoutPrice?: number;
+    paymentIntervalDays?: number;
+    installmentPayment?: number;
+    firstPaymentAmount?: number;
     notes?: string;
     courierService?: string;
     passportSerial?: string;
@@ -58,6 +62,7 @@ export class RentalService {
       amount?: number;
       method: PaymentMethod;
       notes?: string;
+      isBuyoutFinal?: boolean;
     }
   ) {
     return RentalRepository.renew(id, data);

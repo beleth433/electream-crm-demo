@@ -423,7 +423,17 @@
       "createdAt": "2026-09-23T23:56:28.520Z"
     }
   ],
-  "tariffs": [],
+  "tariffs": [
+    {
+      "id": "trf-1790207865706",
+      "name": "Недельный",
+      "type": "STANDARD",
+      "durationDays": 7,
+      "price": 3500,
+      "depositRequired": 0,
+      "isActive": true
+    }
+  ],
   "parts": [
     {
       "id": "prt-1790205322887",

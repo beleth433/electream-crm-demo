@@ -53,7 +53,7 @@ export type OutfitCategory = "HELMET" | "LOCK" | "BAG" | "BATTERY" | "CHARGER" |
 export type OutfitStatus = "IN_STOCK" | "ISSUED" | "DAMAGED" | "LOST" | "SOLD";
 export type RepairStatus = "DIAGNOSTICS" | "WAITING_PARTS" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type RepairFaultType = "COMPANY_EXPENSE" | "CLIENT_FAULT";
-export type PaymentType = "RENTAL" | "DEPOSIT" | "DEPOSIT_REFUND" | "REPAIR" | "OUTFIT_SALE" | "FINE" | "SALARY_PAYMENT" | "RETAIL_SALE";
+export type PaymentType = "RENTAL" | "DEPOSIT" | "DEPOSIT_REFUND" | "REPAIR" | "OUTFIT_SALE" | "FINE" | "SALARY_PAYMENT" | "RETAIL_SALE" | "BUYOUT";
 export type PaymentMethod = "CASH" | "CARD" | "SBP" | "BANK_TRANSFER";
 export type BatteryChemistry = "Li-ion" | "LiFePO4";
 
@@ -179,6 +179,9 @@ export interface TariffRecord {
   price: number;
   depositRequired: number;
   isActive: boolean;
+  totalBuyoutPrice?: number;
+  paymentIntervalDays?: number;
+  installmentPayment?: number;
 }
 
 export interface PartCategoryRecord {
@@ -216,6 +219,9 @@ export interface RentalRecord {
   notes?: string | null;
   outfitIds: string[];
   batteryIds?: string[];
+  totalBuyoutPrice?: number;
+  paymentIntervalDays?: number;
+  installmentPayment?: number;
   createdAt?: string;
   updatedAt?: string;
 }

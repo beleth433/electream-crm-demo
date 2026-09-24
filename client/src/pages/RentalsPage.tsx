@@ -20,6 +20,10 @@ import {
   Trash2,
   CheckCircle2,
   XCircle,
+  Sparkles,
+  Coins,
+  Percent,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -51,6 +55,9 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
     price: 6000,
     depositRequired: 5000,
     isActive: true,
+    totalBuyoutPrice: 60000,
+    paymentIntervalDays: 7,
+    installmentPayment: 6000,
   });
 
   // Renewal modal state
@@ -58,6 +65,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
   const [renewalDays, setRenewalDays] = useState<number>(7);
   const [renewalAmount, setRenewalAmount] = useState<number>(6000);
   const [renewalMethod, setRenewalMethod] = useState<'CASH' | 'CARD' | 'SBP' | 'BANK_TRANSFER'>('CASH');
+  const [isBuyoutFinal, setIsBuyoutFinal] = useState<boolean>(false);
 
   const loadTariffs = () => {
     api
@@ -90,8 +98,12 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
 
   const handleOpenRenewModal = (rental: Rental) => {
     setRenewingRental(rental);
-    setRenewalDays(rental.tariff?.durationDays || 7);
-    setRenewalAmount(rental.tariff?.price || 6000);
+    const isRentToOwn = rental.type === 'RENT_TO_OWN';
+    const intervalDays = rental.paymentIntervalDays || rental.tariff?.paymentIntervalDays || 7;
+    const instPayment = rental.installmentPayment || rental.tariff?.installmentPayment || rental.tariff?.price || 6000;
+    setRenewalDays(isRentToOwn ? intervalDays : (rental.tariff?.durationDays || 7));
+    setRenewalAmount(isRentToOwn ? instPayment : (rental.tariff?.price || 6000));
+    setIsBuyoutFinal(false);
   };
 
   const handleConfirmRenewal = async () => {
@@ -101,8 +113,13 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
         durationDays: Number(renewalDays),
         amount: Number(renewalAmount),
         method: renewalMethod,
+        isBuyoutFinal,
       });
-      toast.success(`Договор ${renewingRental.rentalNumber} успешно продлен на ${renewalDays} дн.!`);
+      if (isBuyoutFinal || (renewingRental.type === 'RENT_TO_OWN' && renewingRental.remainingBuyoutAmount !== undefined && renewalAmount >= renewingRental.remainingBuyoutAmount)) {
+        toast.success(`🎉 Договор ${renewingRental.rentalNumber} полностью выкуплен! Байк переведен в статус "Продан".`);
+      } else {
+        toast.success(`Договор ${renewingRental.rentalNumber} успешно ${renewingRental.type === 'RENT_TO_OWN' ? 'пополнен платежом по выкупу' : `продлен на ${renewalDays} дн.`}!`);
+      }
       setRenewingRental(null);
       loadRentals();
     } catch (err: any) {
@@ -119,6 +136,9 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
       price: 6000,
       depositRequired: 5000,
       isActive: true,
+      totalBuyoutPrice: 60000,
+      paymentIntervalDays: 7,
+      installmentPayment: 6000,
     });
     setIsTariffFormOpen(true);
   };
@@ -132,8 +152,25 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
       price: tariff.price,
       depositRequired: tariff.depositRequired,
       isActive: tariff.isActive,
+      totalBuyoutPrice: tariff.totalBuyoutPrice || (tariff.type === 'RENT_TO_OWN' ? tariff.price : 60000),
+      paymentIntervalDays: tariff.paymentIntervalDays || 7,
+      installmentPayment: tariff.installmentPayment || tariff.price || 6000,
     });
     setIsTariffFormOpen(true);
+  };
+
+  const handleCalculateInstallment = () => {
+    const total = Number(tariffForm.totalBuyoutPrice) || 0;
+    const dur = Number(tariffForm.durationDays) || 1;
+    const interval = Number(tariffForm.paymentIntervalDays) || 7;
+    const periods = Math.max(1, Math.round(dur / interval));
+    const inst = Math.ceil(total / periods);
+    setTariffForm((prev) => ({
+      ...prev,
+      installmentPayment: inst,
+      price: inst,
+    }));
+    toast.success(`Рассчитано: ${periods} платежей по ${inst.toLocaleString('ru-RU')} ₽`);
   };
 
   const handleSaveTariff = async (e: React.FormEvent) => {
@@ -326,29 +363,81 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                       </td>
 
                       <td className="p-3.5">
-                        <p className="font-semibold text-slate-800 dark:text-slate-200">
-                          {r.tariff?.name}
-                        </p>
-                        <p className="text-[11px] text-slate-500">
-                          {r.tariff?.price.toLocaleString('ru-RU')} ₽ / {r.tariff?.durationDays} дн.
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-semibold text-slate-800 dark:text-slate-200">
+                            {r.tariff?.name}
+                          </p>
+                          {r.type === 'RENT_TO_OWN' && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800">
+                              Выкуп
+                            </span>
+                          )}
+                        </div>
+                        {r.type === 'RENT_TO_OWN' ? (
+                          <div className="mt-1 space-y-1">
+                            <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                              <span>Выплачено: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{(r.totalPaidForBuyout || 0).toLocaleString('ru-RU')} ₽</strong></span>
+                              <span>из {(r.totalBuyoutPrice || 0).toLocaleString('ru-RU')} ₽</span>
+                            </div>
+                            <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                              <div
+                                className="bg-purple-500 h-full rounded-full transition-all duration-300"
+                                style={{
+                                  width: `${Math.min(100, Math.round(((r.totalPaidForBuyout || 0) / Math.max(1, r.totalBuyoutPrice || 1)) * 100))}%`,
+                                }}
+                              />
+                            </div>
+                            <p className="text-[10px] text-slate-500 font-medium">
+                              Остаток: <strong className="text-slate-900 dark:text-white font-bold">{(r.remainingBuyoutAmount ?? 0).toLocaleString('ru-RU')} ₽</strong>
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-slate-500">
+                            {r.tariff?.price.toLocaleString('ru-RU')} ₽ / {r.tariff?.durationDays} дн.
+                          </p>
+                        )}
                       </td>
 
                       <td className="p-3.5">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          <span
-                            className={`font-semibold ${
-                              isOverdue ? 'text-rose-600 font-bold' : 'text-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            до {new Date(r.expiresAt).toLocaleDateString('ru-RU')}
-                          </span>
-                        </div>
-                        {isOverdue && (
-                          <span className="text-[10px] text-rose-600 font-bold">
-                            Просрочен платеж!
-                          </span>
+                        {r.type === 'RENT_TO_OWN' ? (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              <span
+                                className={`font-semibold ${
+                                  isOverdue ? 'text-rose-600 font-bold' : 'text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                След. взнос: {new Date(r.nextPaymentDue).toLocaleDateString('ru-RU')}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 pl-5">
+                              (срок договора: до {new Date(r.expiresAt).toLocaleDateString('ru-RU')})
+                            </p>
+                            {isOverdue && (
+                              <span className="text-[10px] text-rose-600 font-bold pl-5 block">
+                                Просрочен очередной взнос!
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              <span
+                                className={`font-semibold ${
+                                  isOverdue ? 'text-rose-600 font-bold' : 'text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                до {new Date(r.expiresAt).toLocaleDateString('ru-RU')}
+                              </span>
+                            </div>
+                            {isOverdue && (
+                              <span className="text-[10px] text-rose-600 font-bold">
+                                Просрочен платеж!
+                              </span>
+                            )}
+                          </>
                         )}
                       </td>
 
@@ -377,13 +466,17 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
 
                         {!isClosed && (
                           <>
-                            {/* Renew Button */}
+                            {/* Renew / Buyout Button */}
                             <button
                               onClick={() => handleOpenRenewModal(r)}
-                              className="px-2.5 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 hover:bg-sky-100 text-xs font-bold transition-colors"
-                              title="Продлить аренду"
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                                r.type === 'RENT_TO_OWN'
+                                  ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100'
+                                  : 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 hover:bg-sky-100'
+                              }`}
+                              title={r.type === 'RENT_TO_OWN' ? 'Внести взнос по выкупу' : 'Продлить аренду'}
                             >
-                              Продлить
+                              {r.type === 'RENT_TO_OWN' ? 'Взнос' : 'Продлить'}
                             </button>
 
                             {/* Return / Close Button */}
@@ -406,18 +499,88 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
         </div>
       </div>
 
-      {/* Modal: Renew Rental */}
+      {/* Modal: Renew / Buyout Payment */}
       <Modal
         isOpen={!!renewingRental}
         onClose={() => setRenewingRental(null)}
-        title="Продление срока аренды"
-        subtitle={`Договор ${renewingRental?.rentalNumber} • Курьер: ${renewingRental?.client?.fullName}`}
+        title={renewingRental?.type === 'RENT_TO_OWN' ? 'Внесение платежа по выкупу' : 'Продление срока аренды'}
+        subtitle={`Договор ${renewingRental?.rentalNumber} • Курьер: ${renewingRental?.client?.fullName} • Байк: ${renewingRental?.bike?.inventoryNumber}`}
         maxWidth="md"
       >
         <div className="space-y-4 text-xs">
+          {renewingRental?.type === 'RENT_TO_OWN' && (
+            <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/40 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-purple-900 dark:text-purple-200 text-xs">
+                  Прогресс выкупа электровелосипеда
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                  {Math.min(100, Math.round(((renewingRental.totalPaidForBuyout || 0) / Math.max(1, renewingRental.totalBuyoutPrice || 1)) * 100))}%
+                </span>
+              </div>
+
+              <div className="w-full bg-purple-200 dark:bg-purple-900/50 h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-purple-600 dark:bg-purple-400 h-full rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, Math.round(((renewingRental.totalPaidForBuyout || 0) / Math.max(1, renewingRental.totalBuyoutPrice || 1)) * 100))}%`,
+                  }}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Полный выкуп:</span>
+                  <strong className="text-slate-800 dark:text-slate-200 font-bold">
+                    {(renewingRental.totalBuyoutPrice || 0).toLocaleString('ru-RU')} ₽
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Оплачено:</span>
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {(renewingRental.totalPaidForBuyout || 0).toLocaleString('ru-RU')} ₽
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Остаток долга:</span>
+                  <strong className="text-purple-700 dark:text-purple-300 font-bold">
+                    {(renewingRental.remainingBuyoutAmount ?? 0).toLocaleString('ru-RU')} ₽
+                  </strong>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const inst = renewingRental.installmentPayment || renewingRental.tariff?.installmentPayment || renewingRental.tariff?.price || 6000;
+                    setRenewalAmount(inst);
+                    setIsBuyoutFinal(false);
+                  }}
+                  className="flex-1 py-1.5 px-2 bg-white dark:bg-slate-800 border border-purple-300 dark:border-purple-700 rounded-lg text-[10px] font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition text-center"
+                >
+                  Регулярный платёж ({(renewingRental.installmentPayment || renewingRental.tariff?.installmentPayment || 6000).toLocaleString('ru-RU')} ₽)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rem = renewingRental.remainingBuyoutAmount ?? 0;
+                    setRenewalAmount(rem);
+                    setIsBuyoutFinal(true);
+                  }}
+                  className="flex-1 py-1.5 px-2 bg-purple-600 text-white rounded-lg text-[10px] font-bold hover:bg-purple-500 transition shadow-sm text-center"
+                >
+                  Досрочный выкуп ({(renewingRental.remainingBuyoutAmount ?? 0).toLocaleString('ru-RU')} ₽)
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-slate-500 mb-1">Срок продления (дней) *</label>
+              <label className="block text-slate-500 mb-1">
+                {renewingRental?.type === 'RENT_TO_OWN' ? 'Срок до след. платежа (дней) *' : 'Срок продления (дней) *'}
+              </label>
               <input
                 type="number"
                 min="1"
@@ -432,7 +595,13 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                 type="number"
                 min="0"
                 value={renewalAmount}
-                onChange={(e) => setRenewalAmount(Number(e.target.value))}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setRenewalAmount(val);
+                  if (renewingRental?.type === 'RENT_TO_OWN' && renewingRental.remainingBuyoutAmount && val >= renewingRental.remainingBuyoutAmount) {
+                    setIsBuyoutFinal(true);
+                  }
+                }}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-center text-emerald-600"
               />
             </div>
@@ -452,6 +621,21 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
             </select>
           </div>
 
+          {renewingRental?.type === 'RENT_TO_OWN' && (
+            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+              <input
+                type="checkbox"
+                id="buyoutFinalCheck"
+                checked={isBuyoutFinal}
+                onChange={(e) => setIsBuyoutFinal(e.target.checked)}
+                className="rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-4 h-4"
+              />
+              <label htmlFor="buyoutFinalCheck" className="text-[11px] text-slate-700 dark:text-slate-300 font-semibold cursor-pointer">
+                Финальный выкупной платёж (перевести электровелосипед в статус "Продан")
+              </label>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
             <button
               onClick={() => setRenewingRental(null)}
@@ -461,9 +645,13 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
             </button>
             <button
               onClick={handleConfirmRenewal}
-              className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-sm"
+              className={`px-5 py-2 font-bold rounded-xl shadow-sm text-white ${
+                renewingRental?.type === 'RENT_TO_OWN'
+                  ? 'bg-purple-600 hover:bg-purple-500'
+                  : 'bg-sky-600 hover:bg-sky-700'
+              }`}
             >
-              Подтвердить оплату и продлить
+              {renewingRental?.type === 'RENT_TO_OWN' ? 'Провести платёж по выкупу' : 'Подтвердить оплату и продлить'}
             </button>
           </div>
         </div>
@@ -507,7 +695,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                 <input
                   required
                   type="text"
-                  placeholder="Например: Недельный рабочий, Месячный, Выкуп 9 мес..."
+                  placeholder="Например: Недельный рабочий, Месячный, Выкуп 6 месяцев..."
                   value={tariffForm.name}
                   onChange={(e) => setTariffForm({ ...tariffForm, name: e.target.value })}
                   className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
@@ -521,12 +709,14 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                   </label>
                   <select
                     value={tariffForm.type}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const newType = e.target.value as 'STANDARD' | 'RENT_TO_OWN';
                       setTariffForm({
                         ...tariffForm,
-                        type: e.target.value as 'STANDARD' | 'RENT_TO_OWN',
-                      })
-                    }
+                        type: newType,
+                        durationDays: newType === 'RENT_TO_OWN' ? 180 : 7,
+                      });
+                    }}
                     className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
                   >
                     <option value="STANDARD">Обычная аренда (STANDARD)</option>
@@ -536,7 +726,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
 
                 <div>
                   <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
-                    Срок аренды (дней) *
+                    {tariffForm.type === 'RENT_TO_OWN' ? 'Общий срок выкупа (дней) *' : 'Срок аренды (дней) *'}
                   </label>
                   <input
                     required
@@ -548,44 +738,177 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     }
                     className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
                   />
+                  {tariffForm.type === 'RENT_TO_OWN' && (
+                    <div className="flex gap-1 mt-1 text-[10px] text-slate-400">
+                      {[90, 180, 270, 365].map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => setTariffForm({ ...tariffForm, durationDays: d })}
+                          className={`px-1.5 py-0.5 rounded border ${
+                            tariffForm.durationDays === d
+                              ? 'bg-purple-100 dark:bg-purple-950 border-purple-400 text-purple-700 dark:text-purple-300 font-bold'
+                              : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {d === 365 ? '1 год' : `${Math.round(d / 30)} мес`}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
-                    Стоимость аренды (₽) *
-                  </label>
-                  <input
-                    required
-                    type="number"
-                    min="0"
-                    step="100"
-                    value={tariffForm.price}
-                    onChange={(e) =>
-                      setTariffForm({ ...tariffForm, price: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-black text-emerald-600 dark:text-emerald-400"
-                  />
-                </div>
+              {tariffForm.type === 'RENT_TO_OWN' ? (
+                <div className="p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-purple-900 dark:text-purple-200 text-xs">
+                      Параметры выкупа (рассрочки)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCalculateInstallment}
+                      className="flex items-center gap-1 px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition shadow-sm"
+                      title="Автоматически рассчитать платеж исходя из общей суммы и интервала"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Рассчитать платёж
+                    </button>
+                  </div>
 
-                <div>
-                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
-                    Обязательный залог (₽) *
-                  </label>
-                  <input
-                    required
-                    type="number"
-                    min="0"
-                    step="500"
-                    value={tariffForm.depositRequired}
-                    onChange={(e) =>
-                      setTariffForm({ ...tariffForm, depositRequired: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
-                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                        Полная выкупная цена (₽) *
+                      </label>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={tariffForm.totalBuyoutPrice}
+                        onChange={(e) =>
+                          setTariffForm({ ...tariffForm, totalBuyoutPrice: Number(e.target.value) })
+                        }
+                        className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-purple-700 dark:text-purple-300"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                        Интервал платежей (дней) *
+                      </label>
+                      <input
+                        required
+                        type="number"
+                        min="1"
+                        value={tariffForm.paymentIntervalDays}
+                        onChange={(e) =>
+                          setTariffForm({ ...tariffForm, paymentIntervalDays: Number(e.target.value) })
+                        }
+                        className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
+                      />
+                      <div className="flex gap-1 mt-1 text-[10px]">
+                        {[
+                          { d: 7, l: 'Раз в неделю (7д)' },
+                          { d: 14, l: 'Раз в 2 недели (14д)' },
+                          { d: 30, l: 'Раз в месяц (30д)' },
+                        ].map((item) => (
+                          <button
+                            key={item.d}
+                            type="button"
+                            onClick={() => setTariffForm({ ...tariffForm, paymentIntervalDays: item.d })}
+                            className={`px-1.5 py-0.5 rounded border text-[9px] ${
+                              tariffForm.paymentIntervalDays === item.d
+                                ? 'bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-bold border-purple-400'
+                                : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {item.l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                        Регулярный платёж за интервал (₽) *
+                      </label>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        step="100"
+                        value={tariffForm.installmentPayment}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setTariffForm({
+                            ...tariffForm,
+                            installmentPayment: val,
+                            price: val,
+                          });
+                        }}
+                        className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-emerald-600 dark:text-emerald-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                        Обязательный залог (₽) *
+                      </label>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        step="500"
+                        value={tariffForm.depositRequired}
+                        onChange={(e) =>
+                          setTariffForm({ ...tariffForm, depositRequired: Number(e.target.value) })
+                        }
+                        className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                      Стоимость аренды (₽) *
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={tariffForm.price}
+                      onChange={(e) =>
+                        setTariffForm({ ...tariffForm, price: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-black text-emerald-600 dark:text-emerald-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                      Обязательный залог (₽) *
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      step="500"
+                      value={tariffForm.depositRequired}
+                      onChange={(e) =>
+                        setTariffForm({ ...tariffForm, depositRequired: Number(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-2 pt-1">
                 <input
@@ -680,17 +1003,39 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 text-slate-500 dark:text-slate-400 text-[11px]">
-                          <span>
-                            Срок: <strong className="text-slate-800 dark:text-slate-200">{t.durationDays} дн.</strong>
-                          </span>
-                          <span>•</span>
-                          <span>
-                            Стоимость: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{t.price.toLocaleString('ru-RU')} ₽</strong>
-                          </span>
-                          <span>•</span>
-                          <span>
-                            Залог: <strong className="text-slate-800 dark:text-slate-200">{t.depositRequired.toLocaleString('ru-RU')} ₽</strong>
-                          </span>
+                          {t.type === 'RENT_TO_OWN' ? (
+                            <>
+                              <span>
+                                Полный выкуп: <strong className="text-purple-700 dark:text-purple-300 font-bold">{(t.totalBuyoutPrice || t.price).toLocaleString('ru-RU')} ₽</strong>
+                              </span>
+                              <span>•</span>
+                              <span>
+                                Взнос: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{(t.installmentPayment || t.price).toLocaleString('ru-RU')} ₽ / {t.paymentIntervalDays || 7} дн.</strong>
+                              </span>
+                              <span>•</span>
+                              <span>
+                                Срок: <strong className="text-slate-800 dark:text-slate-200">{t.durationDays} дн.</strong>
+                              </span>
+                              <span>•</span>
+                              <span>
+                                Залог: <strong className="text-slate-800 dark:text-slate-200">{t.depositRequired.toLocaleString('ru-RU')} ₽</strong>
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span>
+                                Срок: <strong className="text-slate-800 dark:text-slate-200">{t.durationDays} дн.</strong>
+                              </span>
+                              <span>•</span>
+                              <span>
+                                Стоимость: <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{t.price.toLocaleString('ru-RU')} ₽</strong>
+                              </span>
+                              <span>•</span>
+                              <span>
+                                Залог: <strong className="text-slate-800 dark:text-slate-200">{t.depositRequired.toLocaleString('ru-RU')} ₽</strong>
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
 
