@@ -1317,26 +1317,6 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                     onChange={(e) => setBuyoutPaymentIntervalDays(Number(e.target.value))}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold"
                   />
-                  <div className="flex gap-1 mt-1 text-[10px]">
-                    {[
-                      { d: 7, l: 'Раз в неделю (7д)' },
-                      { d: 14, l: 'Раз в 2 недели (14д)' },
-                      { d: 30, l: 'Раз в месяц (30д)' },
-                    ].map((item) => (
-                      <button
-                        key={item.d}
-                        type="button"
-                        onClick={() => setBuyoutPaymentIntervalDays(item.d)}
-                        className={`px-1.5 py-0.5 rounded border text-[9px] ${
-                          buyoutPaymentIntervalDays === item.d
-                            ? 'bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-bold border-purple-400'
-                            : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        {item.l}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
 

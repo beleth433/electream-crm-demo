@@ -815,24 +815,6 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     }
                     className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
                   />
-                  {tariffForm.type === 'RENT_TO_OWN' && (
-                    <div className="flex gap-1 mt-1 text-[10px] text-slate-400">
-                      {[90, 180, 270, 365].map((d) => (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => setTariffForm({ ...tariffForm, durationDays: d })}
-                          className={`px-1.5 py-0.5 rounded border ${
-                            tariffForm.durationDays === d
-                              ? 'bg-purple-100 dark:bg-purple-950 border-purple-400 text-purple-700 dark:text-purple-300 font-bold'
-                              : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
-                          }`}
-                        >
-                          {d === 365 ? '1 год' : `${Math.round(d / 30)} мес`}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -885,26 +867,6 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         }
                         className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
                       />
-                      <div className="flex gap-1 mt-1 text-[10px]">
-                        {[
-                          { d: 7, l: 'Раз в неделю (7д)' },
-                          { d: 14, l: 'Раз в 2 недели (14д)' },
-                          { d: 30, l: 'Раз в месяц (30д)' },
-                        ].map((item) => (
-                          <button
-                            key={item.d}
-                            type="button"
-                            onClick={() => setTariffForm({ ...tariffForm, paymentIntervalDays: item.d })}
-                            className={`px-1.5 py-0.5 rounded border text-[9px] ${
-                              tariffForm.paymentIntervalDays === item.d
-                                ? 'bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-bold border-purple-400'
-                                : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                            }`}
-                          >
-                            {item.l}
-                          </button>
-                        ))}
-                      </div>
                     </div>
                   </div>
 

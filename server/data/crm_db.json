@@ -425,13 +425,17 @@
   ],
   "tariffs": [
     {
-      "id": "trf-1790207865706",
-      "name": "Недельный",
+      "id": "trf-1790210807562",
+      "name": "Monster недельный",
       "type": "STANDARD",
       "durationDays": 7,
       "price": 3500,
       "depositRequired": 0,
-      "isActive": true
+      "isActive": true,
+      "totalBuyoutPrice": 60000,
+      "paymentIntervalDays": 7,
+      "installmentPayment": 6000,
+      "bikeModelId": "mdl-1790203139794"
     }
   ],
   "parts": [
