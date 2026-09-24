@@ -222,14 +222,46 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     }
   };
 
-  const handleTariffChange = (tariffId: string, currentBike?: Bike) => {
+  const syncBuyoutWithBikeAndBatteries = (
+    bike?: Bike,
+    batteryIdsToUse?: string[],
+    tariffToUse?: Tariff
+  ) => {
+    const curTariff = tariffToUse || tariffs.find((t) => t.id === selectedTariffId);
+    if (curTariff?.type !== 'RENT_TO_OWN') return;
+
+    const curBike = bike || availableBikes.find((b) => b.id === selectedBikeId);
+    const bikePrice = curBike?.model?.baseBuyoutPrice || 0;
+    const targetBatteryIds = batteryIdsToUse || selectedBatteryIds;
+    const bats = allBatteries.filter((b) => targetBatteryIds.includes(b.id));
+    const batsTotal = bats.reduce((sum, b) => sum + (b.salePrice || 25000), 0);
+    const total = bikePrice + batsTotal;
+
+    if (total > 0) {
+      setBuyoutTotalPrice(total);
+      const dur = curTariff.durationDays || 180;
+      const interval = curTariff.paymentIntervalDays || buyoutPaymentIntervalDays || 7;
+      const periods = Math.max(1, Math.round(dur / interval));
+      const inst = Math.ceil(total / periods);
+      setBuyoutInstallmentPayment(inst);
+      setBuyoutFirstPayment(inst);
+    }
+  };
+
+  const handleTariffChange = (tariffId: string, currentBike?: Bike, batteryIdsToUse?: string[]) => {
     setSelectedTariffId(tariffId);
     const trf = tariffs.find((t) => t.id === tariffId);
     const activeBike = currentBike || availableBikes.find((b) => b.id === selectedBikeId);
+    const activeBatteryIds = batteryIdsToUse || selectedBatteryIds;
     if (trf) {
       setCustomDeposit(trf.depositRequired);
       if (trf.type === 'RENT_TO_OWN') {
-        const total = trf.totalBuyoutPrice || activeBike?.model?.baseBuyoutPrice || trf.price || 60000;
+        const bikePrice = activeBike?.model?.baseBuyoutPrice || 0;
+        const bats = allBatteries.filter((b) => activeBatteryIds.includes(b.id));
+        const batsTotal = bats.reduce((sum, b) => sum + (b.salePrice || 25000), 0);
+        const calculatedTotal = bikePrice + batsTotal;
+
+        const total = calculatedTotal > 0 ? calculatedTotal : (trf.totalBuyoutPrice || trf.price || 60000);
         const interval = trf.paymentIntervalDays || 7;
         const dur = trf.durationDays || 180;
         const periods = Math.max(1, Math.round(dur / interval));
@@ -297,35 +329,25 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
 
   const handleSelectBike = (bike: Bike) => {
     setSelectedBikeId(bike.id);
-    if (bike.batteryId) {
-      setSelectedBatteryIds([bike.batteryId]);
-    } else {
-      setSelectedBatteryIds([]);
-    }
+    const newBatteryIds = bike.batteryId ? [bike.batteryId] : [];
+    setSelectedBatteryIds(newBatteryIds);
 
     // Auto-select or suggest matching tariff for this bike's model
     const modelTariff = tariffs.find((t) => t.isActive && t.bikeModelId === bike.modelId);
     if (modelTariff) {
-      handleTariffChange(modelTariff.id, bike);
+      handleTariffChange(modelTariff.id, bike, newBatteryIds);
       toast.info(`Выбран тариф "${modelTariff.name}" для модели ${bike.model?.name || ''}`);
-    } else if (bike.model?.baseBuyoutPrice) {
-      setBuyoutTotalPrice(bike.model.baseBuyoutPrice);
-      const activeTariff = tariffs.find((t) => t.id === selectedTariffId);
-      if (activeTariff?.type === 'RENT_TO_OWN') {
-        const dur = activeTariff.durationDays || 180;
-        const interval = activeTariff.paymentIntervalDays || buyoutPaymentIntervalDays || 7;
-        const periods = Math.max(1, Math.round(dur / interval));
-        const inst = Math.ceil(bike.model.baseBuyoutPrice / periods);
-        setBuyoutInstallmentPayment(inst);
-        setBuyoutFirstPayment(inst);
-      }
+    } else {
+      syncBuyoutWithBikeAndBatteries(bike, newBatteryIds);
     }
   };
 
   const toggleBatterySelection = (batteryId: string) => {
-    setSelectedBatteryIds((prev) =>
-      prev.includes(batteryId) ? prev.filter((id) => id !== batteryId) : [...prev, batteryId]
-    );
+    setSelectedBatteryIds((prev) => {
+      const next = prev.includes(batteryId) ? prev.filter((id) => id !== batteryId) : [...prev, batteryId];
+      syncBuyoutWithBikeAndBatteries(undefined, next);
+      return next;
+    });
   };
 
   const toggleOutfit = (outfitId: string) => {
@@ -341,6 +363,10 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       (selectedBike && (b.installedBikeId === selectedBike.id || b.id === selectedBike.batteryId))
   );
   const selectedBatteries = allBatteries.filter((b) => selectedBatteryIds.includes(b.id));
+
+  const bikeBuyoutPrice = selectedBike?.model?.baseBuyoutPrice || 0;
+  const batteriesBuyoutPrice = selectedBatteries.reduce((sum, b) => sum + (b.salePrice || 25000), 0);
+  const packageBuyoutPrice = bikeBuyoutPrice + batteriesBuyoutPrice;
 
   const selectedTariff = tariffs.find((t) => t.id === selectedTariffId);
   const isRentToOwn = selectedTariff?.type === 'RENT_TO_OWN';
@@ -1284,6 +1310,65 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   <Sparkles className="w-3 h-3" />
                   Рассчитать взнос
                 </button>
+              </div>
+
+              {/* Breakdown of buyout package (Bike + Batteries) */}
+              <div className="p-2.5 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-purple-200 dark:border-purple-800/60 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  <span>Состав выкупа (техника и батареи):</span>
+                  {packageBuyoutPrice > 0 && buyoutTotalPrice !== packageBuyoutPrice && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBuyoutTotalPrice(packageBuyoutPrice);
+                        const dur = selectedTariff?.durationDays || 180;
+                        const interval = buyoutPaymentIntervalDays || 7;
+                        const periods = Math.max(1, Math.round(dur / interval));
+                        const inst = Math.ceil(packageBuyoutPrice / periods);
+                        setBuyoutInstallmentPayment(inst);
+                        setBuyoutFirstPayment(inst);
+                        toast.success(`Установлена расчётная сумма выкупа: ${packageBuyoutPrice.toLocaleString('ru-RU')} ₽`);
+                      }}
+                      className="text-[10px] text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 font-bold"
+                      title="Сбросить стоимость к сумме комплекта"
+                    >
+                      ↻ Применить расчёт ({packageBuyoutPrice.toLocaleString('ru-RU')} ₽)
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-1 text-[11px]">
+                  <div className="flex items-center justify-between py-0.5 border-b border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                      🚲 {selectedBike?.model?.name || selectedBike?.inventoryNumber || 'Велосипед'}:
+                    </span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {bikeBuyoutPrice > 0 ? `${bikeBuyoutPrice.toLocaleString('ru-RU')} ₽` : '0 ₽ (не указана)'}
+                    </span>
+                  </div>
+
+                  {selectedBatteries.length > 0 ? (
+                    selectedBatteries.map((b, idx) => (
+                      <div key={b.id || idx} className="flex items-center justify-between py-0.5 border-b border-slate-100 dark:border-slate-800 text-[11px]">
+                        <span className="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                          🔋 {b.modelName || b.serialNumber || `АКБ #${idx + 1}`}:
+                        </span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                          {(b.salePrice || 25000).toLocaleString('ru-RU')} ₽
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-[10px] text-slate-400 italic py-0.5">
+                      Без аккумуляторов (чистый велосипед)
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-1 font-bold text-purple-700 dark:text-purple-300">
+                    <span>Сумма по комплекту:</span>
+                    <span>{packageBuyoutPrice.toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">

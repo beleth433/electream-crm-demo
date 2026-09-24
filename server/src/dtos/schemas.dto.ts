@@ -66,6 +66,12 @@ export const ClientUpdateDto = z.object({
   blackListReason: z.string().optional().nullable(),
 });
 
+export const TariffBuyoutBatterySchema = z.object({
+  batteryModelId: z.string().min(1),
+  quantity: z.number().int().min(1).default(1),
+  price: z.number().min(0).default(0),
+});
+
 export const TariffCreateDto = z.object({
   name: z.string().min(2, "Название тарифа обязательно"),
   type: z.enum(["STANDARD", "RENT_TO_OWN"]).default("STANDARD"),
@@ -77,6 +83,7 @@ export const TariffCreateDto = z.object({
   paymentIntervalDays: z.number().int().positive().optional(),
   installmentPayment: z.number().min(0).optional(),
   bikeModelId: z.string().nullable().optional(),
+  includedBatteries: z.array(TariffBuyoutBatterySchema).optional(),
 });
 
 export const TariffUpdateDto = TariffCreateDto.partial();

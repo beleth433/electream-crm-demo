@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Rental, RentalStatus, Tariff, BikeModel } from '../types';
+import { Rental, RentalStatus, Tariff, BikeModel, BatteryModel, TariffBuyoutBatteryItem } from '../types';
 import { api } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
@@ -46,6 +46,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
   // Tariffs (Rental Templates) state
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
   const [models, setModels] = useState<BikeModel[]>([]);
+  const [batteryModels, setBatteryModels] = useState<BatteryModel[]>([]);
   const [isTariffsModalOpen, setIsTariffsModalOpen] = useState(false);
   const [isTariffFormOpen, setIsTariffFormOpen] = useState(false);
   const [editingTariff, setEditingTariff] = useState<Tariff | null>(null);
@@ -60,6 +61,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
     totalBuyoutPrice: 60000,
     paymentIntervalDays: 7,
     installmentPayment: 6000,
+    includedBatteries: [] as TariffBuyoutBatteryItem[],
   });
 
   // Renewal modal state
@@ -78,6 +80,10 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
       .getBikeModels()
       .then(setModels)
       .catch((err) => console.error('Ошибка загрузки моделей:', err));
+    api
+      .getBatteryModels()
+      .then(setBatteryModels)
+      .catch((err) => console.error('Ошибка загрузки моделей АКБ:', err));
   };
 
   const loadRentals = () => {
@@ -133,6 +139,67 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
     }
   };
 
+  const recalculateBuyoutFromItems = (
+    bikeModelId: string,
+    batteries: TariffBuyoutBatteryItem[],
+    overrides?: { durationDays?: number; paymentIntervalDays?: number }
+  ) => {
+    const selectedBikeModel = models.find((m) => m.id === bikeModelId);
+    const bikePrice = selectedBikeModel?.baseBuyoutPrice || 0;
+    const batteriesTotal = batteries.reduce(
+      (sum, b) => sum + (Number(b.quantity) || 0) * (Number(b.price) || 0),
+      0
+    );
+    const total = bikePrice + batteriesTotal;
+    const dur = overrides?.durationDays ?? tariffForm.durationDays ?? 180;
+    const interval = overrides?.paymentIntervalDays ?? tariffForm.paymentIntervalDays ?? 7;
+    const periods = Math.max(1, Math.round(dur / interval));
+    const inst = Math.ceil(total / periods);
+
+    setTariffForm((prev) => ({
+      ...prev,
+      bikeModelId,
+      includedBatteries: batteries,
+      totalBuyoutPrice: total > 0 ? total : prev.totalBuyoutPrice,
+      installmentPayment: total > 0 ? inst : prev.installmentPayment,
+      price: total > 0 ? inst : prev.price,
+    }));
+  };
+
+  const handleAddBuyoutBattery = () => {
+    const firstModel = batteryModels[0];
+    const newBat: TariffBuyoutBatteryItem = {
+      batteryModelId: firstModel ? firstModel.id : '',
+      quantity: 1,
+      price: firstModel ? (firstModel.salePrice || 25000) : 25000,
+    };
+    const updated = [...tariffForm.includedBatteries, newBat];
+    recalculateBuyoutFromItems(tariffForm.bikeModelId, updated);
+  };
+
+  const handleUpdateBuyoutBattery = (
+    index: number,
+    updates: Partial<TariffBuyoutBatteryItem>
+  ) => {
+    const updated = tariffForm.includedBatteries.map((item, idx) => {
+      if (idx !== index) return item;
+      const newItem = { ...item, ...updates };
+      if (updates.batteryModelId && updates.batteryModelId !== item.batteryModelId) {
+        const found = batteryModels.find((m) => m.id === updates.batteryModelId);
+        if (found) {
+          newItem.price = found.salePrice || 25000;
+        }
+      }
+      return newItem;
+    });
+    recalculateBuyoutFromItems(tariffForm.bikeModelId, updated);
+  };
+
+  const handleRemoveBuyoutBattery = (index: number) => {
+    const updated = tariffForm.includedBatteries.filter((_, idx) => idx !== index);
+    recalculateBuyoutFromItems(tariffForm.bikeModelId, updated);
+  };
+
   const handleOpenCreateTariff = () => {
     setEditingTariff(null);
     setTariffForm({
@@ -146,6 +213,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
       totalBuyoutPrice: 60000,
       paymentIntervalDays: 7,
       installmentPayment: 6000,
+      includedBatteries: [],
     });
     setIsTariffFormOpen(true);
   };
@@ -163,6 +231,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
       totalBuyoutPrice: tariff.totalBuyoutPrice || (tariff.type === 'RENT_TO_OWN' ? tariff.price : 60000),
       paymentIntervalDays: tariff.paymentIntervalDays || 7,
       installmentPayment: tariff.installmentPayment || tariff.price || 6000,
+      includedBatteries: tariff.includedBatteries ? [...tariff.includedBatteries] : [],
     });
     setIsTariffFormOpen(true);
   };
@@ -725,24 +794,17 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     onChange={(e) => {
                       const selectedModelId = e.target.value;
                       const selectedModel = models.find((m) => m.id === selectedModelId);
-                      setTariffForm((prev) => {
-                        const next = { ...prev, bikeModelId: selectedModelId };
+                      if (tariffForm.type === 'RENT_TO_OWN') {
+                        recalculateBuyoutFromItems(selectedModelId, tariffForm.includedBatteries);
                         if (selectedModel) {
-                          if (selectedModel.baseRentalPrice && prev.type === 'STANDARD') {
-                            next.price = selectedModel.baseRentalPrice;
-                          }
-                          if (selectedModel.baseBuyoutPrice && prev.type === 'RENT_TO_OWN') {
-                            next.totalBuyoutPrice = selectedModel.baseBuyoutPrice;
-                            const periods = Math.max(1, Math.round(next.durationDays / (next.paymentIntervalDays || 7)));
-                            const inst = Math.ceil(selectedModel.baseBuyoutPrice / periods);
-                            next.installmentPayment = inst;
-                            next.price = inst;
-                          }
+                          toast.info(`Выбрана модель "${selectedModel.name}". Выкупная стоимость пересчитана.`);
                         }
-                        return next;
-                      });
-                      if (selectedModel) {
-                        toast.info(`Подставлены базовые цены модели "${selectedModel.name}"`);
+                      } else {
+                        setTariffForm((prev) => ({
+                          ...prev,
+                          bikeModelId: selectedModelId,
+                          price: selectedModel?.baseRentalPrice || prev.price,
+                        }));
                       }
                     }}
                     className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
@@ -766,33 +828,17 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     value={tariffForm.type}
                     onChange={(e) => {
                       const newType = e.target.value as 'STANDARD' | 'RENT_TO_OWN';
-                      const selectedModel = models.find((m) => m.id === tariffForm.bikeModelId);
-                      setTariffForm((prev) => {
-                        const dur = newType === 'RENT_TO_OWN' ? 180 : 7;
-                        let nextTotalBuyout = prev.totalBuyoutPrice;
-                        let nextPrice = prev.price;
-                        let nextInstallment = prev.installmentPayment;
-
-                        if (selectedModel) {
-                          if (newType === 'RENT_TO_OWN' && selectedModel.baseBuyoutPrice) {
-                            nextTotalBuyout = selectedModel.baseBuyoutPrice;
-                            const periods = Math.max(1, Math.round(dur / (prev.paymentIntervalDays || 7)));
-                            nextInstallment = Math.ceil(selectedModel.baseBuyoutPrice / periods);
-                            nextPrice = nextInstallment;
-                          } else if (newType === 'STANDARD' && selectedModel.baseRentalPrice) {
-                            nextPrice = selectedModel.baseRentalPrice;
-                          }
-                        }
-
-                        return {
+                      if (newType === 'RENT_TO_OWN') {
+                        recalculateBuyoutFromItems(tariffForm.bikeModelId, tariffForm.includedBatteries, { durationDays: 180 });
+                      } else {
+                        const selectedModel = models.find((m) => m.id === tariffForm.bikeModelId);
+                        setTariffForm((prev) => ({
                           ...prev,
-                          type: newType,
-                          durationDays: dur,
-                          totalBuyoutPrice: nextTotalBuyout,
-                          price: nextPrice,
-                          installmentPayment: nextInstallment,
-                        };
-                      });
+                          type: 'STANDARD',
+                          durationDays: 7,
+                          price: selectedModel?.baseRentalPrice || 6000,
+                        }));
+                      }
                     }}
                     className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
                   >
@@ -810,16 +856,27 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     type="number"
                     min="1"
                     value={tariffForm.durationDays}
-                    onChange={(e) =>
-                      setTariffForm({ ...tariffForm, durationDays: Number(e.target.value) })
-                    }
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setTariffForm((prev) => {
+                        const interval = prev.paymentIntervalDays || 7;
+                        const periods = Math.max(1, Math.round(val / interval));
+                        const inst = Math.ceil((prev.totalBuyoutPrice || 0) / periods);
+                        return {
+                          ...prev,
+                          durationDays: val,
+                          installmentPayment: prev.type === 'RENT_TO_OWN' ? inst : prev.installmentPayment,
+                          price: prev.type === 'RENT_TO_OWN' ? inst : prev.price,
+                        };
+                      });
+                    }}
                     className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
               {tariffForm.type === 'RENT_TO_OWN' ? (
-                <div className="p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/30 space-y-3">
+                <div className="p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/30 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-purple-900 dark:text-purple-200 text-xs">
                       Параметры выкупа (рассрочки)
@@ -827,7 +884,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     <button
                       type="button"
                       onClick={handleCalculateInstallment}
-                      className="flex items-center gap-1 px-2 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition shadow-sm"
+                      className="flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition shadow-sm"
                       title="Автоматически рассчитать платеж исходя из общей суммы и интервала"
                     >
                       <Sparkles className="w-3 h-3" />
@@ -835,10 +892,144 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     </button>
                   </div>
 
+                  {/* Batteries in buyout section */}
+                  <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1611] border border-purple-200 dark:border-purple-800/40 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-slate-800 dark:text-purple-300 text-xs flex items-center gap-1">
+                          🔋 Аккумуляторы в выкупе
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          ({tariffForm.includedBatteries.length} поз.)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddBuyoutBattery}
+                        className="flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition shadow-sm"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Добавить АКБ
+                      </button>
+                    </div>
+
+                    {tariffForm.includedBatteries.length === 0 ? (
+                      <p className="text-[11px] text-slate-400 italic py-2 px-3 text-center bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-dashed border-purple-200 dark:border-purple-800/30">
+                        Велосипед идет в выкуп без аккумуляторов. Нажмите <strong>«+ Добавить АКБ»</strong>, если в выкуп входят батареи.
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <div className="grid grid-cols-12 gap-2 text-[10px] font-semibold text-slate-400 px-1">
+                          <span className="col-span-6">Модель аккумулятора</span>
+                          <span className="col-span-2 text-center">Кол-во</span>
+                          <span className="col-span-2 text-right">Цена за шт.</span>
+                          <span className="col-span-2 text-right">Итого</span>
+                        </div>
+                        {tariffForm.includedBatteries.map((item, idx) => {
+                          const rowTotal = (Number(item.quantity) || 0) * (Number(item.price) || 0);
+                          return (
+                            <div
+                              key={idx}
+                              className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg bg-slate-50 dark:bg-[#101d17] border border-purple-100 dark:border-purple-900/40 text-xs"
+                            >
+                              <div className="col-span-6">
+                                <select
+                                  value={item.batteryModelId}
+                                  onChange={(e) =>
+                                    handleUpdateBuyoutBattery(idx, { batteryModelId: e.target.value })
+                                  }
+                                  className="w-full px-2 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-purple-800/40 rounded-lg text-[11px] font-semibold"
+                                >
+                                  <option value="">-- Выберите модель АКБ --</option>
+                                  {batteryModels.map((bm) => (
+                                    <option key={bm.id} value={bm.id}>
+                                      {bm.name} ({bm.voltage}V {bm.capacityAh}Ah) — {(bm.salePrice || 25000).toLocaleString('ru-RU')} ₽
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="col-span-2">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  title="Количество"
+                                  value={item.quantity}
+                                  onChange={(e) =>
+                                    handleUpdateBuyoutBattery(idx, { quantity: Math.max(1, Number(e.target.value)) })
+                                  }
+                                  className="w-full px-2 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-purple-800/40 rounded-lg text-[11px] font-bold text-center"
+                                />
+                              </div>
+                              <div className="col-span-2">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="500"
+                                  title="Цена за шт. (₽)"
+                                  value={item.price}
+                                  onChange={(e) =>
+                                    handleUpdateBuyoutBattery(idx, { price: Number(e.target.value) })
+                                  }
+                                  className="w-full px-2 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-purple-800/40 rounded-lg text-[11px] font-bold text-emerald-600 dark:text-emerald-400 text-right"
+                                />
+                              </div>
+                              <div className="col-span-2 flex items-center justify-end gap-1.5">
+                                <span className="font-extrabold text-[11px] text-purple-700 dark:text-purple-300">
+                                  {rowTotal.toLocaleString('ru-RU')} ₽
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveBuyoutBattery(idx)}
+                                  className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
+                                  title="Удалить АКБ"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Breakdown bar */}
+                    {(() => {
+                      const curModel = models.find((m) => m.id === tariffForm.bikeModelId);
+                      const bPrice = curModel?.baseBuyoutPrice || 0;
+                      const batsTotal = tariffForm.includedBatteries.reduce(
+                        (sum, b) => sum + (Number(b.quantity) || 0) * (Number(b.price) || 0),
+                        0
+                      );
+                      const totalCalculated = bPrice + batsTotal;
+                      return (
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px] pt-1.5 border-t border-purple-100 dark:border-purple-800/30">
+                          <span className="text-slate-600 dark:text-slate-400">
+                            Авто-расчёт: {curModel ? curModel.name : 'Байк'} ({bPrice.toLocaleString('ru-RU')} ₽)
+                            {batsTotal > 0 && ` + АКБ (${batsTotal.toLocaleString('ru-RU')} ₽)`}
+                            {' = '}
+                            <strong className="font-black text-purple-700 dark:text-purple-300">
+                              {totalCalculated.toLocaleString('ru-RU')} ₽
+                            </strong>
+                          </span>
+                          {tariffForm.totalBuyoutPrice !== totalCalculated && totalCalculated > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => recalculateBuyoutFromItems(tariffForm.bikeModelId, tariffForm.includedBatteries)}
+                              className="text-[10px] text-purple-600 dark:text-purple-400 hover:underline font-bold"
+                            >
+                              ↻ Применить расчет ({totalCalculated.toLocaleString('ru-RU')} ₽)
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold">
-                        Полная выкупная цена (₽) *
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                        <span>Полная выкупная цена (₽) *</span>
+                        <span className="text-[10px] text-slate-400 font-normal">можно изменить</span>
                       </label>
                       <input
                         required
@@ -846,9 +1037,19 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         min="0"
                         step="1000"
                         value={tariffForm.totalBuyoutPrice}
-                        onChange={(e) =>
-                          setTariffForm({ ...tariffForm, totalBuyoutPrice: Number(e.target.value) })
-                        }
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          const dur = tariffForm.durationDays || 180;
+                          const interval = tariffForm.paymentIntervalDays || 7;
+                          const periods = Math.max(1, Math.round(dur / interval));
+                          const inst = Math.ceil(val / periods);
+                          setTariffForm({
+                            ...tariffForm,
+                            totalBuyoutPrice: val,
+                            installmentPayment: inst,
+                            price: inst,
+                          });
+                        }}
                         className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-purple-700 dark:text-purple-300"
                       />
                     </div>

@@ -265,6 +265,12 @@ export interface Client {
   isRetailBuyer?: boolean;
 }
 
+export interface TariffBuyoutBatteryItem {
+  batteryModelId: string;
+  quantity: number;
+  price: number;
+}
+
 export interface Tariff {
   id: string;
   name: string;
@@ -278,6 +284,7 @@ export interface Tariff {
   installmentPayment?: number;
   bikeModelId?: string | null;
   bikeModel?: BikeModel | null;
+  includedBatteries?: TariffBuyoutBatteryItem[];
 }
 
 export interface Rental {

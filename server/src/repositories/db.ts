@@ -173,6 +173,12 @@ export interface ClientRecord {
   createdAt?: string;
 }
 
+export interface TariffBuyoutBatteryItem {
+  batteryModelId: string;
+  quantity: number;
+  price: number;
+}
+
 export interface TariffRecord {
   id: string;
   name: string;
@@ -185,6 +191,7 @@ export interface TariffRecord {
   paymentIntervalDays?: number;
   installmentPayment?: number;
   bikeModelId?: string | null;
+  includedBatteries?: TariffBuyoutBatteryItem[];
 }
 
 export interface PartCategoryRecord {

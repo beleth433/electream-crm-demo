@@ -1,4 +1,4 @@
-import { getDb, getSystemTime, RentalStatus, RentalType, PaymentMethod, OutfitStatus, BikeStatus } from "./db.js";
+import { getDb, getSystemTime, RentalStatus, RentalType, PaymentMethod, OutfitStatus, BikeStatus, TariffBuyoutBatteryItem } from "./db.js";
 
 export class RentalRepository {
   private static refreshOverdueStatuses() {
@@ -126,6 +126,7 @@ export class RentalRepository {
     paymentIntervalDays?: number;
     installmentPayment?: number;
     bikeModelId?: string | null;
+    includedBatteries?: TariffBuyoutBatteryItem[];
   }) {
     const db = getDb();
     const newTariff = {
@@ -140,6 +141,7 @@ export class RentalRepository {
       paymentIntervalDays: data.paymentIntervalDays !== undefined ? Number(data.paymentIntervalDays) : undefined,
       installmentPayment: data.installmentPayment !== undefined ? Number(data.installmentPayment) : undefined,
       bikeModelId: data.bikeModelId || null,
+      includedBatteries: data.includedBatteries || [],
     };
     db.tariffs.push(newTariff);
     const bikeModel = newTariff.bikeModelId ? db.models.find((m) => m.id === newTariff.bikeModelId) : null;
@@ -157,6 +159,7 @@ export class RentalRepository {
     paymentIntervalDays: number;
     installmentPayment: number;
     bikeModelId: string | null;
+    includedBatteries: TariffBuyoutBatteryItem[];
   }>) {
     const db = getDb();
     const tariff = db.tariffs.find((t) => t.id === id);
