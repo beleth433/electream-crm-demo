@@ -1108,11 +1108,37 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         value={tariffForm.installmentPayment}
                         onChange={(e) => {
                           const val = Number(e.target.value);
-                          setTariffForm({
-                            ...tariffForm,
-                            installmentPayment: val,
-                            price: val,
-                          });
+                          const total = Number(tariffForm.totalBuyoutPrice) || 0;
+                          const interval = Number(tariffForm.paymentIntervalDays) || 7;
+                          if (val >= 500 && total > 0) {
+                            const periods = Math.max(1, Math.ceil(total / val));
+                            const newDur = Math.min(3650, periods * interval);
+                            setTariffForm({
+                              ...tariffForm,
+                              installmentPayment: val,
+                              price: val,
+                              durationDays: newDur,
+                            });
+                          } else {
+                            setTariffForm({
+                              ...tariffForm,
+                              installmentPayment: val,
+                              price: val,
+                            });
+                          }
+                        }}
+                        onBlur={() => {
+                          const val = Number(tariffForm.installmentPayment) || 0;
+                          const total = Number(tariffForm.totalBuyoutPrice) || 0;
+                          const interval = Number(tariffForm.paymentIntervalDays) || 7;
+                          if (val > 0 && total > 0) {
+                            const periods = Math.max(1, Math.ceil(total / val));
+                            const newDur = Math.min(3650, periods * interval);
+                            setTariffForm((prev) => ({
+                              ...prev,
+                              durationDays: newDur,
+                            }));
+                          }
                         }}
                         className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-emerald-600 dark:text-emerald-400"
                       />
@@ -1139,42 +1165,41 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                   {/* Dynamic Buyout Schedule Summary */}
                   {(() => {
                     const total = Number(tariffForm.totalBuyoutPrice) || 0;
-                    const dur = Number(tariffForm.durationDays) || 180;
                     const interval = Number(tariffForm.paymentIntervalDays) || 7;
-                    const periods = Math.max(1, Math.round(dur / interval));
+                    const inst = Number(tariffForm.installmentPayment) || 0;
+                    const dur = Number(tariffForm.durationDays) || 180;
+
+                    // How many periods are needed to fully pay off total with this installment
+                    const periods = inst > 0 && total > 0
+                      ? Math.max(1, Math.ceil(total / inst))
+                      : Math.max(1, Math.round(dur / interval));
+
                     const alignedDays = periods * interval;
-                    const inst = Number(tariffForm.installmentPayment) || (Math.ceil((total / periods) / 10) * 10);
                     const regularCount = Math.max(0, periods - 1);
                     const regularTotal = regularCount * inst;
                     const finalPayment = Math.max(0, total - regularTotal);
-                    const isUneven = dur % interval !== 0;
+                    const isDurationMismatched = dur !== alignedDays;
 
                     return (
                       <div className="p-3 rounded-xl bg-purple-100/60 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 space-y-2 text-xs">
                         <div className="flex flex-wrap items-center justify-between gap-1.5">
                           <span className="font-bold text-purple-950 dark:text-purple-200 flex items-center gap-1.5 text-[11px]">
-                            📊 График выплат: {periods} {periods === 1 ? 'платёж' : periods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн.
+                            📊 График выплат: {periods} {periods === 1 ? 'платёж' : periods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн. (срок {alignedDays} дн.)
                           </span>
-                          {isUneven && (
+                          {isDurationMismatched && (
                             <button
                               type="button"
                               onClick={() => {
-                                setTariffForm((prev) => {
-                                  const newPeriods = Math.max(1, Math.round(alignedDays / interval));
-                                  const newInst = Math.ceil(((prev.totalBuyoutPrice || 0) / newPeriods) / 10) * 10;
-                                  return {
-                                    ...prev,
-                                    durationDays: alignedDays,
-                                    installmentPayment: newInst,
-                                    price: newInst,
-                                  };
-                                });
-                                toast.success(`Срок выровнен под недели: ${alignedDays} дн. (${periods} нед.)`);
+                                setTariffForm((prev) => ({
+                                  ...prev,
+                                  durationDays: alignedDays,
+                                }));
+                                toast.success(`Срок синхронизирован: ${alignedDays} дн. (${periods} нед.)`);
                               }}
                               className="px-2 py-0.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-bold transition shadow-sm"
-                              title="Округлить срок до целых недель/периодов"
+                              title="Установить срок тарифа равным рассчитанному сроку погашения"
                             >
-                              ↻ Выровнять срок под {periods} нед. ({alignedDays} дн.)
+                              ↻ Установить срок {alignedDays} дн.
                             </button>
                           )}
                         </div>

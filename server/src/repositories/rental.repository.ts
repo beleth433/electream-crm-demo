@@ -195,6 +195,7 @@ export class RentalRepository {
     paymentMethod: PaymentMethod;
     rentalNumber?: string;
     customDeposit?: number;
+    durationDays?: number;
     totalBuyoutPrice?: number;
     paymentIntervalDays?: number;
     installmentPayment?: number;
@@ -262,7 +263,8 @@ export class RentalRepository {
     const nextPaymentDue = isRentToOwn
       ? new Date(now.getTime() + paymentIntervalDays * 86400000)
       : new Date(now.getTime() + tariff.durationDays * 86400000);
-    const expiresAt = new Date(now.getTime() + tariff.durationDays * 86400000);
+    const effectiveDurationDays = data.durationDays && data.durationDays > 0 ? data.durationDays : tariff.durationDays;
+    const expiresAt = new Date(now.getTime() + effectiveDurationDays * 86400000);
     const rentalNumber = data.rentalNumber && data.rentalNumber.trim()
       ? data.rentalNumber.trim()
       : `RNT-${now.getFullYear()}-${(db.rentals.length + 1).toString().padStart(3, "0")}`;

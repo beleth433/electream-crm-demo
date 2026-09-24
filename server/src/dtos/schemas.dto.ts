@@ -98,6 +98,7 @@ export const RentalCreateDto = z.object({
   paymentMethod: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),
   rentalNumber: z.string().optional(),
   customDeposit: z.number().optional(),
+  durationDays: z.number().int().positive().optional(),
   totalBuyoutPrice: z.number().min(0).optional(),
   paymentIntervalDays: z.number().int().positive().optional(),
   installmentPayment: z.number().min(0).optional(),

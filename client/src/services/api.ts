@@ -184,6 +184,7 @@ export const api = {
     paymentMethod: string;
     rentalNumber?: string;
     customDeposit?: number;
+    durationDays?: number;
     totalBuyoutPrice?: number;
     paymentIntervalDays?: number;
     installmentPayment?: number;

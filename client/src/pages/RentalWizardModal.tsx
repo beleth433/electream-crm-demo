@@ -112,6 +112,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
 
   // Rent-to-own customization fields for this specific contract
   const [buyoutTotalPrice, setBuyoutTotalPrice] = useState<number>(60000);
+  const [buyoutDurationDays, setBuyoutDurationDays] = useState<number>(180);
   const [buyoutPaymentIntervalDays, setBuyoutPaymentIntervalDays] = useState<number>(7);
   const [buyoutInstallmentPayment, setBuyoutInstallmentPayment] = useState<number>(6000);
   const [buyoutFirstPayment, setBuyoutFirstPayment] = useState<number>(6000);
@@ -184,9 +185,12 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
             if (tariffsRes[0].type === 'RENT_TO_OWN') {
               const total = tariffsRes[0].totalBuyoutPrice || tariffsRes[0].price || 60000;
               const interval = tariffsRes[0].paymentIntervalDays || 7;
-              const inst = tariffsRes[0].installmentPayment || tariffsRes[0].price || 6000;
+              const dur = tariffsRes[0].durationDays || 180;
+              const periods = Math.max(1, Math.round(dur / interval));
+              const inst = tariffsRes[0].installmentPayment || Math.ceil((total / periods) / 10) * 10 || tariffsRes[0].price || 6000;
               setBuyoutTotalPrice(total);
               setBuyoutPaymentIntervalDays(interval);
+              setBuyoutDurationDays(dur);
               setBuyoutInstallmentPayment(inst);
               setBuyoutFirstPayment(inst);
             }
@@ -239,10 +243,11 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
 
     if (total > 0) {
       setBuyoutTotalPrice(total);
-      const dur = curTariff.durationDays || 180;
+      const dur = curTariff.durationDays || buyoutDurationDays || 180;
       const interval = curTariff.paymentIntervalDays || buyoutPaymentIntervalDays || 7;
       const periods = Math.max(1, Math.round(dur / interval));
       const inst = Math.ceil((total / periods) / 10) * 10;
+      setBuyoutDurationDays(dur);
       setBuyoutInstallmentPayment(inst);
       setBuyoutFirstPayment(inst);
     }
@@ -268,6 +273,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         const inst = trf.installmentPayment || Math.ceil((total / periods) / 10) * 10 || trf.price || 6000;
         setBuyoutTotalPrice(total);
         setBuyoutPaymentIntervalDays(interval);
+        setBuyoutDurationDays(dur);
         setBuyoutInstallmentPayment(inst);
         setBuyoutFirstPayment(inst);
       }
@@ -275,7 +281,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   };
 
   const handleCalculateContractInstallment = () => {
-    const dur = selectedTariff?.durationDays || 180;
+    const dur = buyoutDurationDays || selectedTariff?.durationDays || 180;
     const interval = buyoutPaymentIntervalDays || 7;
     const periods = Math.max(1, Math.round(dur / interval));
     const inst = Math.ceil((buyoutTotalPrice / periods) / 10) * 10;
@@ -301,9 +307,10 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         const interval = created.paymentIntervalDays || 7;
         const dur = created.durationDays || 180;
         const periods = Math.max(1, Math.round(dur / interval));
-        const inst = created.installmentPayment || Math.ceil(total / periods) || created.price || 6000;
+        const inst = created.installmentPayment || Math.ceil((total / periods) / 10) * 10 || created.price || 6000;
         setBuyoutTotalPrice(total);
         setBuyoutPaymentIntervalDays(interval);
+        setBuyoutDurationDays(dur);
         setBuyoutInstallmentPayment(inst);
         setBuyoutFirstPayment(inst);
       }
@@ -405,6 +412,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         paymentMethod,
         rentalNumber: rentalNumber.trim() ? rentalNumber.trim() : undefined,
         customDeposit: Number(customDeposit),
+        durationDays: isRentToOwn ? Number(buyoutDurationDays) : undefined,
         totalBuyoutPrice: isRentToOwn ? Number(buyoutTotalPrice) : undefined,
         paymentIntervalDays: isRentToOwn ? Number(buyoutPaymentIntervalDays) : undefined,
         installmentPayment: isRentToOwn ? Number(buyoutInstallmentPayment) : undefined,
@@ -1386,11 +1394,43 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                     min="0"
                     step="1000"
                     value={buyoutTotalPrice}
-                    onChange={(e) => setBuyoutTotalPrice(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      const dur = buyoutDurationDays || 180;
+                      const interval = buyoutPaymentIntervalDays || 7;
+                      const periods = Math.max(1, Math.round(dur / interval));
+                      const inst = Math.ceil((val / periods) / 10) * 10;
+                      setBuyoutTotalPrice(val);
+                      setBuyoutInstallmentPayment(inst);
+                      setBuyoutFirstPayment(inst);
+                    }}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-purple-700 dark:text-purple-300"
                   />
                 </div>
 
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
+                    Общий срок договора (дней) *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={buyoutDurationDays}
+                    onChange={(e) => {
+                      const val = Math.max(1, Number(e.target.value));
+                      const interval = buyoutPaymentIntervalDays || 7;
+                      const periods = Math.max(1, Math.round(val / interval));
+                      const inst = Math.ceil((buyoutTotalPrice / periods) / 10) * 10;
+                      setBuyoutDurationDays(val);
+                      setBuyoutInstallmentPayment(inst);
+                      setBuyoutFirstPayment(inst);
+                    }}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
                     Периодичность выплат (дней) *
@@ -1399,13 +1439,19 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                     type="number"
                     min="1"
                     value={buyoutPaymentIntervalDays}
-                    onChange={(e) => setBuyoutPaymentIntervalDays(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Math.max(1, Number(e.target.value));
+                      const dur = buyoutDurationDays || 180;
+                      const periods = Math.max(1, Math.round(dur / val));
+                      const inst = Math.ceil((buyoutTotalPrice / periods) / 10) * 10;
+                      setBuyoutPaymentIntervalDays(val);
+                      setBuyoutInstallmentPayment(inst);
+                      setBuyoutFirstPayment(inst);
+                    }}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
                     Регулярный платёж за период (₽) *
@@ -1413,51 +1459,88 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   <input
                     type="number"
                     min="0"
-                    step="100"
+                    step="50"
                     value={buyoutInstallmentPayment}
-                    onChange={(e) => setBuyoutInstallmentPayment(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
-                    Первый взнос при выдаче (₽) *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="100"
-                    value={buyoutFirstPayment}
-                    onChange={(e) => setBuyoutFirstPayment(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      const total = Number(buyoutTotalPrice) || 0;
+                      const interval = Number(buyoutPaymentIntervalDays) || 7;
+                      if (val >= 500 && total > 0) {
+                        const periods = Math.max(1, Math.ceil(total / val));
+                        const newDur = Math.min(3650, periods * interval);
+                        setBuyoutInstallmentPayment(val);
+                        setBuyoutFirstPayment(val);
+                        setBuyoutDurationDays(newDur);
+                      } else {
+                        setBuyoutInstallmentPayment(val);
+                        setBuyoutFirstPayment(val);
+                      }
+                    }}
+                    onBlur={() => {
+                      const val = Number(buyoutInstallmentPayment) || 0;
+                      const total = Number(buyoutTotalPrice) || 0;
+                      const interval = Number(buyoutPaymentIntervalDays) || 7;
+                      if (val > 0 && total > 0) {
+                        const periods = Math.max(1, Math.ceil(total / val));
+                        const newDur = Math.min(3650, periods * interval);
+                        setBuyoutDurationDays(newDur);
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-emerald-600 dark:text-emerald-400"
                   />
                 </div>
               </div>
 
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px] flex items-center justify-between">
+                  <span>Первый взнос при выдаче (₽) *</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    по умолчанию равен регулярному платежу
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={buyoutFirstPayment}
+                  onChange={(e) => setBuyoutFirstPayment(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-emerald-600 dark:text-emerald-400 text-xs"
+                />
+              </div>
+
               {/* Dynamic Buyout Schedule Summary in Wizard */}
               {(() => {
                 const total = Number(buyoutTotalPrice) || 0;
-                const dur = selectedTariff?.durationDays || 180;
+                const dur = Number(buyoutDurationDays) || 180;
                 const interval = Number(buyoutPaymentIntervalDays) || 7;
-                const periods = Math.max(1, Math.round(dur / interval));
+                const inst = Number(buyoutInstallmentPayment) || 0;
+                const periods = inst > 0 && total > 0
+                  ? Math.max(1, Math.ceil(total / inst))
+                  : Math.max(1, Math.round(dur / interval));
                 const alignedDays = periods * interval;
-                const inst = Number(buyoutInstallmentPayment) || (Math.ceil((total / periods) / 10) * 10);
                 const regularCount = Math.max(0, periods - 1);
                 const regularTotal = regularCount * inst;
                 const finalPayment = Math.max(0, total - regularTotal);
-                const isUneven = dur % interval !== 0;
+                const isDurationMismatched = dur !== alignedDays;
 
                 return (
                   <div className="p-3 rounded-xl bg-purple-100/60 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 space-y-2 text-xs">
                     <div className="flex flex-wrap items-center justify-between gap-1.5">
                       <span className="font-bold text-purple-950 dark:text-purple-200 flex items-center gap-1.5 text-[11px]">
-                        📊 График выплат: {periods} {periods === 1 ? 'платёж' : periods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн.
+                        📊 График выплат: {periods} {periods === 1 ? 'платёж' : periods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн. (срок {alignedDays} дн.)
                       </span>
-                      {isUneven && (
-                        <span className="text-[10px] text-purple-700 dark:text-purple-300 font-semibold bg-purple-200/60 dark:bg-purple-800/40 px-2 py-0.5 rounded">
-                          Срок {dur} дн. ({periods} нед. = {alignedDays} дн.)
-                        </span>
+                      {isDurationMismatched && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBuyoutDurationDays(alignedDays);
+                            toast.success(`Срок синхронизирован: ${alignedDays} дн. (${periods} нед./плат.)`);
+                          }}
+                          className="px-2 py-0.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-bold transition shadow-sm"
+                          title="Установить срок договора равным рассчитанному сроку погашения"
+                        >
+                          ↻ Синхронизировать срок ({alignedDays} дн.)
+                        </button>
                       )}
                     </div>
 
