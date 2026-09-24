@@ -242,7 +242,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       const dur = curTariff.durationDays || 180;
       const interval = curTariff.paymentIntervalDays || buyoutPaymentIntervalDays || 7;
       const periods = Math.max(1, Math.round(dur / interval));
-      const inst = Math.ceil(total / periods);
+      const inst = Math.ceil((total / periods) / 10) * 10;
       setBuyoutInstallmentPayment(inst);
       setBuyoutFirstPayment(inst);
     }
@@ -265,7 +265,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         const interval = trf.paymentIntervalDays || 7;
         const dur = trf.durationDays || 180;
         const periods = Math.max(1, Math.round(dur / interval));
-        const inst = trf.installmentPayment || Math.ceil(total / periods) || trf.price || 6000;
+        const inst = trf.installmentPayment || Math.ceil((total / periods) / 10) * 10 || trf.price || 6000;
         setBuyoutTotalPrice(total);
         setBuyoutPaymentIntervalDays(interval);
         setBuyoutInstallmentPayment(inst);
@@ -278,7 +278,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     const dur = selectedTariff?.durationDays || 180;
     const interval = buyoutPaymentIntervalDays || 7;
     const periods = Math.max(1, Math.round(dur / interval));
-    const inst = Math.ceil(buyoutTotalPrice / periods);
+    const inst = Math.ceil((buyoutTotalPrice / periods) / 10) * 10;
     setBuyoutInstallmentPayment(inst);
     setBuyoutFirstPayment(inst);
     toast.success(`Рассчитано: ${periods} платежей по ${inst.toLocaleString('ru-RU')} ₽`);
@@ -1434,6 +1434,58 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   />
                 </div>
               </div>
+
+              {/* Dynamic Buyout Schedule Summary in Wizard */}
+              {(() => {
+                const total = Number(buyoutTotalPrice) || 0;
+                const dur = selectedTariff?.durationDays || 180;
+                const interval = Number(buyoutPaymentIntervalDays) || 7;
+                const periods = Math.max(1, Math.round(dur / interval));
+                const alignedDays = periods * interval;
+                const inst = Number(buyoutInstallmentPayment) || (Math.ceil((total / periods) / 10) * 10);
+                const regularCount = Math.max(0, periods - 1);
+                const regularTotal = regularCount * inst;
+                const finalPayment = Math.max(0, total - regularTotal);
+                const isUneven = dur % interval !== 0;
+
+                return (
+                  <div className="p-3 rounded-xl bg-purple-100/60 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 space-y-2 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5">
+                      <span className="font-bold text-purple-950 dark:text-purple-200 flex items-center gap-1.5 text-[11px]">
+                        📊 График выплат: {periods} {periods === 1 ? 'платёж' : periods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн.
+                      </span>
+                      {isUneven && (
+                        <span className="text-[10px] text-purple-700 dark:text-purple-300 font-semibold bg-purple-200/60 dark:bg-purple-800/40 px-2 py-0.5 rounded">
+                          Срок {dur} дн. ({periods} нед. = {alignedDays} дн.)
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-1.5 border-t border-purple-200/70 dark:border-purple-800/40">
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px]">
+                          {regularCount > 0 ? `Платежи 1–${regularCount}:` : 'Платёж:'}
+                        </span>
+                        <strong className="text-slate-800 dark:text-slate-100 font-bold">
+                          {inst.toLocaleString('ru-RU')} ₽ / {interval} дн.
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Финальный платёж:</span>
+                        <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          {finalPayment.toLocaleString('ru-RU')} ₽ (закрывает долг)
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Итоговая сумма:</span>
+                        <strong className="text-purple-700 dark:text-purple-300 font-black">
+                          {total.toLocaleString('ru-RU')} ₽ ровно
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

@@ -154,7 +154,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
     const dur = overrides?.durationDays ?? tariffForm.durationDays ?? 180;
     const interval = overrides?.paymentIntervalDays ?? tariffForm.paymentIntervalDays ?? 7;
     const periods = Math.max(1, Math.round(dur / interval));
-    const inst = Math.ceil(total / periods);
+    const inst = Math.ceil((total / periods) / 10) * 10;
 
     setTariffForm((prev) => ({
       ...prev,
@@ -241,10 +241,10 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
 
   const handleCalculateInstallment = () => {
     const total = Number(tariffForm.totalBuyoutPrice) || 0;
-    const dur = Number(tariffForm.durationDays) || 1;
+    const dur = Number(tariffForm.durationDays) || 180;
     const interval = Number(tariffForm.paymentIntervalDays) || 7;
     const periods = Math.max(1, Math.round(dur / interval));
-    const inst = Math.ceil(total / periods);
+    const inst = Math.ceil((total / periods) / 10) * 10;
     setTariffForm((prev) => ({
       ...prev,
       installmentPayment: inst,
@@ -876,7 +876,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                       setTariffForm((prev) => {
                         const interval = prev.paymentIntervalDays || 7;
                         const periods = Math.max(1, Math.round(val / interval));
-                        const inst = Math.ceil((prev.totalBuyoutPrice || 0) / periods);
+                        const inst = Math.ceil(((prev.totalBuyoutPrice || 0) / periods) / 10) * 10;
                         return {
                           ...prev,
                           durationDays: val,
@@ -1057,7 +1057,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                           const dur = tariffForm.durationDays || 180;
                           const interval = tariffForm.paymentIntervalDays || 7;
                           const periods = Math.max(1, Math.round(dur / interval));
-                          const inst = Math.ceil(val / periods);
+                          const inst = Math.ceil((val / periods) / 10) * 10;
                           setTariffForm({
                             ...tariffForm,
                             totalBuyoutPrice: val,
@@ -1078,9 +1078,18 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         type="number"
                         min="1"
                         value={tariffForm.paymentIntervalDays}
-                        onChange={(e) =>
-                          setTariffForm({ ...tariffForm, paymentIntervalDays: Number(e.target.value) })
-                        }
+                        onChange={(e) => {
+                          const val = Math.max(1, Number(e.target.value));
+                          const dur = tariffForm.durationDays || 180;
+                          const periods = Math.max(1, Math.round(dur / val));
+                          const inst = Math.ceil(((tariffForm.totalBuyoutPrice || 0) / periods) / 10) * 10;
+                          setTariffForm({
+                            ...tariffForm,
+                            paymentIntervalDays: val,
+                            installmentPayment: inst,
+                            price: inst,
+                          });
+                        }}
                         className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
                       />
                     </div>
@@ -1095,7 +1104,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         required
                         type="number"
                         min="0"
-                        step="100"
+                        step="50"
                         value={tariffForm.installmentPayment}
                         onChange={(e) => {
                           const val = Number(e.target.value);
@@ -1126,6 +1135,75 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                       />
                     </div>
                   </div>
+
+                  {/* Dynamic Buyout Schedule Summary */}
+                  {(() => {
+                    const total = Number(tariffForm.totalBuyoutPrice) || 0;
+                    const dur = Number(tariffForm.durationDays) || 180;
+                    const interval = Number(tariffForm.paymentIntervalDays) || 7;
+                    const periods = Math.max(1, Math.round(dur / interval));
+                    const alignedDays = periods * interval;
+                    const inst = Number(tariffForm.installmentPayment) || (Math.ceil((total / periods) / 10) * 10);
+                    const regularCount = Math.max(0, periods - 1);
+                    const regularTotal = regularCount * inst;
+                    const finalPayment = Math.max(0, total - regularTotal);
+                    const isUneven = dur % interval !== 0;
+
+                    return (
+                      <div className="p-3 rounded-xl bg-purple-100/60 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 space-y-2 text-xs">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5">
+                          <span className="font-bold text-purple-950 dark:text-purple-200 flex items-center gap-1.5 text-[11px]">
+                            📊 График выплат: {periods} {periods === 1 ? 'платёж' : periods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн.
+                          </span>
+                          {isUneven && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTariffForm((prev) => {
+                                  const newPeriods = Math.max(1, Math.round(alignedDays / interval));
+                                  const newInst = Math.ceil(((prev.totalBuyoutPrice || 0) / newPeriods) / 10) * 10;
+                                  return {
+                                    ...prev,
+                                    durationDays: alignedDays,
+                                    installmentPayment: newInst,
+                                    price: newInst,
+                                  };
+                                });
+                                toast.success(`Срок выровнен под недели: ${alignedDays} дн. (${periods} нед.)`);
+                              }}
+                              className="px-2 py-0.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-bold transition shadow-sm"
+                              title="Округлить срок до целых недель/периодов"
+                            >
+                              ↻ Выровнять срок под {periods} нед. ({alignedDays} дн.)
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-1.5 border-t border-purple-200/70 dark:border-purple-800/40">
+                          <div>
+                            <span className="text-slate-500 dark:text-slate-400 block text-[10px]">
+                              {regularCount > 0 ? `Платежи 1–${regularCount}:` : 'Платёж:'}
+                            </span>
+                            <strong className="text-slate-800 dark:text-slate-100 font-bold">
+                              {inst.toLocaleString('ru-RU')} ₽ / {interval} дн.
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Финальный платёж:</span>
+                            <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                              {finalPayment.toLocaleString('ru-RU')} ₽ (закрывает долг)
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Итоговая сумма:</span>
+                            <strong className="text-purple-700 dark:text-purple-300 font-black">
+                              {total.toLocaleString('ru-RU')} ₽ ровно
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
