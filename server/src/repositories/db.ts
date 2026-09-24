@@ -239,9 +239,13 @@ export interface RentalRecord {
 export interface RepairOrderRecord {
   id: string;
   orderNumber: string;
-  itemType?: "BIKE" | "BATTERY";
+  itemType?: "BIKE" | "BATTERY" | "EXTERNAL_DEVICE";
   bikeId?: string | null;
   batteryId?: string | null;
+  customItemName?: string | null;
+  clientName?: string | null;
+  clientPhone?: string | null;
+  clientId?: string | null;
   mechanicId: string;
   status: RepairStatus;
   faultType: RepairFaultType;

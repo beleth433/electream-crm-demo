@@ -1,7 +1,7 @@
 import { getDb, RepairStatus, RepairFaultType, PaymentMethod, RepairOrderRecord } from "./db.js";
 
 export class RepairRepository {
-  static getAll(filters?: { status?: RepairStatus; faultType?: RepairFaultType; bikeId?: string; batteryId?: string; itemType?: "BIKE" | "BATTERY" }) {
+  static getAll(filters?: { status?: RepairStatus; faultType?: RepairFaultType; bikeId?: string; batteryId?: string; itemType?: "BIKE" | "BATTERY" | "EXTERNAL_DEVICE" }) {
     const db = getDb();
     let list = db.repairs.map((r) => {
       const bike = r.bikeId ? db.bikes.find((b) => b.id === r.bikeId) : null;
@@ -9,6 +9,7 @@ export class RepairRepository {
       const battery = r.batteryId ? db.batteries.find((bt) => bt.id === r.batteryId) : null;
       const batteryModel = battery?.modelId ? db.batteryModels.find((m) => m.id === battery.modelId) : null;
       const mechanic = db.users.find((u) => u.id === r.mechanicId);
+      const client = r.clientId ? db.clients.find((c) => c.id === r.clientId) : null;
       const partsDetailed = r.parts.map((p) => {
         const partInfo = db.parts.find((part) => part.id === p.partId);
         return {
@@ -19,9 +20,10 @@ export class RepairRepository {
 
       return {
         ...r,
-        itemType: r.itemType || (r.batteryId ? "BATTERY" : "BIKE"),
+        itemType: r.itemType || (r.batteryId ? "BATTERY" : r.bikeId ? "BIKE" : "EXTERNAL_DEVICE"),
         bike: bike ? { ...bike, model: bikeModel } : null,
         battery: battery ? { ...battery, model: batteryModel } : null,
+        client: client || (r.clientName ? { id: r.clientId || 'ext', fullName: r.clientName, phone: r.clientPhone } : null),
         mechanic,
         parts: partsDetailed,
       };
@@ -40,7 +42,7 @@ export class RepairRepository {
       list = list.filter((r) => r.batteryId === filters.batteryId);
     }
     if (filters?.itemType) {
-      list = list.filter((r) => (r.itemType || (r.batteryId ? "BATTERY" : "BIKE")) === filters.itemType);
+      list = list.filter((r) => (r.itemType || (r.batteryId ? "BATTERY" : r.bikeId ? "BIKE" : "EXTERNAL_DEVICE")) === filters.itemType);
     }
 
     return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
@@ -56,6 +58,7 @@ export class RepairRepository {
     const battery = r.batteryId ? db.batteries.find((bt) => bt.id === r.batteryId) : null;
     const batteryModel = battery?.modelId ? db.batteryModels.find((m) => m.id === battery.modelId) : null;
     const mechanic = db.users.find((u) => u.id === r.mechanicId);
+    const client = r.clientId ? db.clients.find((c) => c.id === r.clientId) : null;
     const partsDetailed = r.parts.map((p) => {
       const partInfo = db.parts.find((part) => part.id === p.partId);
       return {
@@ -66,18 +69,23 @@ export class RepairRepository {
 
     return {
       ...r,
-      itemType: r.itemType || (r.batteryId ? "BATTERY" : "BIKE"),
+      itemType: r.itemType || (r.batteryId ? "BATTERY" : r.bikeId ? "BIKE" : "EXTERNAL_DEVICE"),
       bike: bike ? { ...bike, model: bikeModel } : null,
       battery: battery ? { ...battery, model: batteryModel } : null,
+      client: client || (r.clientName ? { id: r.clientId || 'ext', fullName: r.clientName, phone: r.clientPhone } : null),
       mechanic,
       parts: partsDetailed,
     };
   }
 
   static create(data: {
-    itemType?: "BIKE" | "BATTERY";
+    itemType?: "BIKE" | "BATTERY" | "EXTERNAL_DEVICE";
     bikeId?: string | null;
     batteryId?: string | null;
+    customItemName?: string | null;
+    clientName?: string | null;
+    clientPhone?: string | null;
+    clientId?: string | null;
     mechanicId?: string;
     orderNumber?: string;
     faultType: RepairFaultType;
@@ -91,11 +99,16 @@ export class RepairRepository {
       ? data.orderNumber.trim()
       : `ЗН-${now.getFullYear()}-${(db.repairs.length + 1).toString().padStart(3, "0")}`;
 
-    const isBattery = data.itemType === "BATTERY" || Boolean(data.batteryId);
+    const isExternal = data.itemType === "EXTERNAL_DEVICE" || (!data.bikeId && !data.batteryId);
+    const isBattery = !isExternal && (data.itemType === "BATTERY" || Boolean(data.batteryId));
     let resolvedBikeId: string | null = null;
     let resolvedBatteryId: string | null = null;
 
-    if (isBattery) {
+    if (isExternal) {
+      // External client equipment: does not touch fleet bikes/batteries
+      resolvedBikeId = null;
+      resolvedBatteryId = null;
+    } else if (isBattery) {
       if (!data.batteryId) {
         throw new Error("Не указан аккумулятор для отправки на ТО");
       }
@@ -153,9 +166,13 @@ export class RepairRepository {
     const newRepair: RepairOrderRecord = {
       id: `rep-${Date.now()}`,
       orderNumber,
-      itemType: isBattery ? "BATTERY" : "BIKE",
+      itemType: isExternal ? "EXTERNAL_DEVICE" : isBattery ? "BATTERY" : "BIKE",
       bikeId: resolvedBikeId,
       batteryId: resolvedBatteryId,
+      customItemName: isExternal ? (data.customItemName?.trim() || "Техника клиента (с улицы)") : null,
+      clientName: data.clientName?.trim() || null,
+      clientPhone: data.clientPhone?.trim() || null,
+      clientId: data.clientId || null,
       mechanicId: data.mechanicId || db.users[2]?.id || "usr-mech-1",
       status: "DIAGNOSTICS" as RepairStatus,
       faultType: data.faultType,
@@ -258,13 +275,17 @@ export class RepairRepository {
 
     // 4. If CLIENT_FAULT and payment method provided, record payment
     if (repair.faultType === "CLIENT_FAULT" && totalCost > 0 && data.paymentMethod) {
+      const paymentDesc = repair.itemType === "EXTERNAL_DEVICE"
+        ? `Оплата ремонта сторонней техники "${repair.customItemName || 'клиента'}" (Заказ-наряд ${repair.orderNumber})`
+        : `Оплата ремонта по вине курьера (Заказ-наряд ${repair.orderNumber})`;
+
       db.payments.push({
         id: `pay-${Date.now()}`,
         rentalId: null,
         type: "REPAIR",
         amount: totalCost,
         method: data.paymentMethod,
-        description: `Оплата ремонта по вине курьера (Заказ-наряд ${repair.orderNumber})`,
+        description: paymentDesc,
         createdAt: now.toISOString(),
       });
     }

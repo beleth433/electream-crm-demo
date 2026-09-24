@@ -49,6 +49,12 @@ const MainLayout: React.FC = () => {
   } | null>(null);
   const [printableRental, setPrintableRental] = useState<Rental | null>(null);
   const [closingRental, setClosingRental] = useState<Rental | null>(null);
+  const [repairInitialData, setRepairInitialData] = useState<{
+    clientName?: string;
+    clientPhone?: string;
+    description?: string;
+    customItemName?: string;
+  } | null>(null);
 
   // Fetch Dashboard Stats query
   const { data: stats, refetch: refetchStats } = useQuery({
@@ -67,6 +73,16 @@ const MainLayout: React.FC = () => {
   const handleOpenWizardWithClient = (prefill?: { name: string; phone: string; company: string }) => {
     setWizardInitialClient(prefill || null);
     setIsWizardOpen(true);
+  };
+
+  const handleOpenRepairWithClient = (client: { name: string; phone: string; company?: string; issue?: string }) => {
+    setRepairInitialData({
+      clientName: client.name,
+      clientPhone: client.phone,
+      description: client.issue || '',
+      customItemName: `Электровелосипед (${client.company || 'Курьер'})`,
+    });
+    setCurrentTab('repairs');
   };
 
   const handleCloseSuccess = () => {
@@ -169,7 +185,12 @@ const MainLayout: React.FC = () => {
           {currentTab === 'outfits' && <OutfitsPage />}
           {currentTab === 'clients' && <ClientsPage />}
           {currentTab === 'employees' && <EmployeesPage />}
-          {currentTab === 'repairs' && <RepairsPage />}
+          {currentTab === 'repairs' && (
+            <RepairsPage
+              initialData={repairInitialData}
+              onClearInitialData={() => setRepairInitialData(null)}
+            />
+          )}
           {currentTab === 'inventory' && <InventoryPage />}
           {currentTab === 'finance' && <FinancePage />}
           {currentTab === 'loyalty' && <LoyaltyPage />}
@@ -204,6 +225,7 @@ const MainLayout: React.FC = () => {
       {/* Simulation Queue Slide-Over Drawer */}
       <SimulationQueueDrawer
         onOpenRentalWizard={handleOpenWizardWithClient}
+        onOpenRepairWithClient={handleOpenRepairWithClient}
         onNavigateToTab={(tab) => setCurrentTab(tab)}
       />
 

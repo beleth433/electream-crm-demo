@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RepairOrder, Bike, Battery, Part, RepairStatus, RepairFaultType } from '../types';
+import { RepairOrder, Bike, Battery, Client, Part, RepairStatus, RepairFaultType } from '../types';
 import { api } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
@@ -22,10 +22,21 @@ import {
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
-export const RepairsPage: React.FC = () => {
+interface RepairsPageProps {
+  initialData?: {
+    clientName?: string;
+    clientPhone?: string;
+    description?: string;
+    customItemName?: string;
+  } | null;
+  onClearInitialData?: () => void;
+}
+
+export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearInitialData }) => {
   const [repairs, setRepairs] = useState<RepairOrder[]>([]);
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [batteries, setBatteries] = useState<Battery[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [parts, setParts] = useState<Part[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -34,9 +45,14 @@ export const RepairsPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [repairPrefix, setRepairPrefix] = useState<string>(() => getStoredPrefix('repair', 'ЗН-'));
   const [createForm, setCreateForm] = useState({
-    itemType: 'BIKE' as 'BIKE' | 'BATTERY',
+    itemType: 'BIKE' as 'BIKE' | 'BATTERY' | 'EXTERNAL_DEVICE',
     bikeId: '',
     batteryId: '',
+    customItemName: '',
+    clientType: 'EXTERNAL' as 'EXISTING' | 'EXTERNAL',
+    clientId: '',
+    clientName: '',
+    clientPhone: '',
     orderNumber: '',
     faultType: 'COMPANY_EXPENSE' as RepairFaultType,
     description: '',
@@ -61,6 +77,11 @@ export const RepairsPage: React.FC = () => {
       itemType: 'BIKE',
       bikeId: bikes[0]?.id || '',
       batteryId: batteries[0]?.id || '',
+      customItemName: '',
+      clientType: 'EXTERNAL',
+      clientId: '',
+      clientName: '',
+      clientPhone: '',
       orderNumber: nextNum,
       faultType: 'COMPANY_EXPENSE',
       description: '',
@@ -86,12 +107,14 @@ export const RepairsPage: React.FC = () => {
       }),
       api.getBikes(),
       api.getBatteries(),
+      api.getClients(),
       api.getParts(),
     ])
-      .then(([repairsRes, bikesRes, batteriesRes, partsRes]) => {
+      .then(([repairsRes, bikesRes, batteriesRes, clientsRes, partsRes]) => {
         setRepairs(repairsRes);
         setBikes(bikesRes);
         setBatteries(batteriesRes);
+        setClients(clientsRes);
         setParts(partsRes);
         if (bikesRes.length > 0 && !createForm.bikeId) {
           setCreateForm((prev) => ({ ...prev, bikeId: bikesRes[0].id }));
@@ -108,6 +131,29 @@ export const RepairsPage: React.FC = () => {
     loadData();
   }, [statusFilter]);
 
+  // Handle incoming simulation or walk-in client
+  useEffect(() => {
+    if (initialData) {
+      const nextNum = calculateNextRepairNumber(repairPrefix);
+      setCreateForm({
+        itemType: 'EXTERNAL_DEVICE',
+        bikeId: '',
+        batteryId: '',
+        customItemName: initialData.customItemName || 'Электровелосипед клиента (с улицы)',
+        clientType: 'EXTERNAL',
+        clientId: '',
+        clientName: initialData.clientName || '',
+        clientPhone: initialData.clientPhone || '',
+        orderNumber: nextNum,
+        faultType: 'CLIENT_FAULT',
+        description: initialData.description || '',
+        laborCost: 1000,
+      });
+      setIsCreateModalOpen(true);
+      onClearInitialData?.();
+    }
+  }, [initialData]);
+
   const handleCreateRepair = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -115,13 +161,19 @@ export const RepairsPage: React.FC = () => {
         itemType: createForm.itemType,
         bikeId: createForm.itemType === 'BIKE' ? createForm.bikeId : undefined,
         batteryId: createForm.itemType === 'BATTERY' ? createForm.batteryId : undefined,
+        customItemName: createForm.itemType === 'EXTERNAL_DEVICE' ? createForm.customItemName : undefined,
+        clientName: createForm.itemType === 'EXTERNAL_DEVICE' ? createForm.clientName : undefined,
+        clientPhone: createForm.itemType === 'EXTERNAL_DEVICE' ? createForm.clientPhone : undefined,
+        clientId: createForm.itemType === 'EXTERNAL_DEVICE' && createForm.clientId ? createForm.clientId : undefined,
         orderNumber: createForm.orderNumber,
         faultType: createForm.faultType,
         description: createForm.description,
         laborCost: createForm.laborCost,
       });
       toast.success(
-        createForm.itemType === 'BATTERY'
+        createForm.itemType === 'EXTERNAL_DEVICE'
+          ? `Заказ-наряд СТО на технику клиента "${createForm.customItemName || 'клиентский байк'}" успешно создан!`
+          : createForm.itemType === 'BATTERY'
           ? 'Заказ-наряд СТО успешно создан! Аккумулятор переведен в статус ТО.'
           : 'Заказ-наряд СТО успешно создан! Байк переведен в статус IN_MAINTENANCE.'
       );
@@ -135,6 +187,11 @@ export const RepairsPage: React.FC = () => {
         itemType: 'BIKE',
         bikeId: bikes[0]?.id || '',
         batteryId: batteries[0]?.id || '',
+        customItemName: '',
+        clientType: 'EXTERNAL',
+        clientId: '',
+        clientName: '',
+        clientPhone: '',
         orderNumber: nextNum,
         faultType: 'COMPANY_EXPENSE',
         description: '',
@@ -281,10 +338,29 @@ export const RepairsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Item info (Bike or Battery) */}
+                {/* Item info (Bike, Battery or External Client Device) */}
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2.5">
-                    {order.itemType === 'BATTERY' || (!order.bike && order.battery) ? (
+                    {order.itemType === 'EXTERNAL_DEVICE' || (!order.bike && !order.battery) ? (
+                      <>
+                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-purple-600 dark:text-purple-400">
+                              {order.customItemName || 'Техника клиента'}
+                            </span>
+                            <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 font-bold rounded">
+                              С улицы
+                            </span>
+                          </div>
+                          <p className="text-slate-600 dark:text-slate-300 text-[11px] font-medium">
+                            {order.clientName || 'Посетитель СТО'} {order.clientPhone ? `• ${order.clientPhone}` : ''}
+                          </p>
+                        </div>
+                      </>
+                    ) : order.itemType === 'BATTERY' || (!order.bike && order.battery) ? (
                       <>
                         <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
                           <Zap className="w-4 h-4" />
@@ -463,45 +539,59 @@ export const RepairsPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Object Type: Bike vs Battery */}
+          {/* Object Type: Fleet Bike vs Fleet Battery vs External Client Device */}
           <div>
-            <label className="block text-slate-500 mb-1 font-semibold">Объект обслуживания *</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label className="block text-slate-500 mb-1 font-semibold text-xs min-h-[1.25rem]">
+              Объект обслуживания *
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => setCreateForm((prev) => ({ ...prev, itemType: 'BIKE' }))}
+                onClick={() => setCreateForm((prev) => ({ ...prev, itemType: 'BIKE', faultType: 'COMPANY_EXPENSE' }))}
                 className={`flex items-center justify-center gap-2 py-2 rounded-xl border text-xs font-bold transition-all ${
                   createForm.itemType === 'BIKE'
-                    ? 'border-sky-500 bg-sky-500/10 text-sky-600 dark:text-sky-400 shadow-sm'
+                    ? 'border-sky-500 bg-sky-500/10 text-sky-600 dark:text-sky-400 shadow-sm ring-1 ring-sky-500'
                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
                 <BikeIcon className="w-4 h-4" />
-                Электровелосипед
+                Байк из парка
               </button>
               <button
                 type="button"
-                onClick={() => setCreateForm((prev) => ({ ...prev, itemType: 'BATTERY' }))}
+                onClick={() => setCreateForm((prev) => ({ ...prev, itemType: 'BATTERY', faultType: 'COMPANY_EXPENSE' }))}
                 className={`flex items-center justify-center gap-2 py-2 rounded-xl border text-xs font-bold transition-all ${
                   createForm.itemType === 'BATTERY'
-                    ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-sm'
+                    ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 shadow-sm ring-1 ring-amber-500'
                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
                 <Zap className="w-4 h-4" />
-                Аккумулятор (АКБ)
+                АКБ из парка
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreateForm((prev) => ({ ...prev, itemType: 'EXTERNAL_DEVICE', faultType: 'CLIENT_FAULT' }))}
+                className={`flex items-center justify-center gap-2 py-2 rounded-xl border text-xs font-bold transition-all ${
+                  createForm.itemType === 'EXTERNAL_DEVICE'
+                    ? 'border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400 shadow-sm ring-1 ring-purple-500'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                Клиент с улицы
               </button>
             </div>
           </div>
 
           {createForm.itemType === 'BIKE' ? (
             <div>
-              <label className="block text-slate-500 mb-1">Электровелосипед *</label>
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Электровелосипед парка *</label>
               <select
                 required
                 value={createForm.bikeId}
                 onChange={(e) => setCreateForm({ ...createForm, bikeId: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-xs"
               >
                 {bikes.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -510,14 +600,14 @@ export const RepairsPage: React.FC = () => {
                 ))}
               </select>
             </div>
-          ) : (
+          ) : createForm.itemType === 'BATTERY' ? (
             <div>
-              <label className="block text-slate-500 mb-1">Аккумулятор *</label>
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Аккумулятор парка *</label>
               <select
                 required
                 value={createForm.batteryId}
                 onChange={(e) => setCreateForm({ ...createForm, batteryId: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-xs"
               >
                 {batteries.map((bat) => (
                   <option key={bat.id} value={bat.id}>
@@ -525,6 +615,135 @@ export const RepairsPage: React.FC = () => {
                   </option>
                 ))}
               </select>
+            </div>
+          ) : (
+            <div className="space-y-3 p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/60">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5" />
+                  Сторонняя техника курьера / посетителя СТО:
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-semibold">
+                  Не из баланса парка
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">
+                  Модель / Описание техники клиента *
+                </label>
+                <input
+                  required
+                  type="text"
+                  placeholder="Например: Minako V8, Kugoo Kirin V1, Сторонний АКБ 60V 21Ah..."
+                  value={createForm.customItemName}
+                  onChange={(e) => setCreateForm({ ...createForm, customItemName: e.target.value })}
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-lg font-bold text-xs"
+                />
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {[
+                    'Электровелосипед Minako',
+                    'Электровелосипед Колхозник',
+                    'Электросамокат',
+                    'Сторонний АКБ 60V',
+                    'Сторонний АКБ 48V',
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setCreateForm((prev) => ({ ...prev, customItemName: preset }))}
+                      className="px-2 py-0.5 text-[10px] rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-purple-400"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Customer Selector */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-500 text-xs min-h-[1.25rem]">
+                    Данные клиента / заказчика
+                  </label>
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm((prev) => ({ ...prev, clientType: 'EXTERNAL' }))}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        createForm.clientType === 'EXTERNAL'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                      }`}
+                    >
+                      Новый / С улицы
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm((prev) => ({ ...prev, clientType: 'EXISTING' }))}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        createForm.clientType === 'EXISTING'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                      }`}
+                    >
+                      Из базы CRM
+                    </button>
+                  </div>
+                </div>
+
+                {createForm.clientType === 'EXISTING' ? (
+                  <div>
+                    <select
+                      value={createForm.clientId}
+                      onChange={(e) => {
+                        const sel = clients.find((c) => c.id === e.target.value);
+                        setCreateForm((prev) => ({
+                          ...prev,
+                          clientId: e.target.value,
+                          clientName: sel ? sel.fullName : '',
+                          clientPhone: sel ? sel.phone : '',
+                        }));
+                      }}
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-lg text-xs"
+                    >
+                      <option value="">-- Выберите клиента из базы --</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.fullName} ({c.phone} • {c.courierService || 'Клиент'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col justify-between">
+                      <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">
+                        ФИО владельца / курьера
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Азизов Бахром"
+                        value={createForm.clientName}
+                        onChange={(e) => setCreateForm({ ...createForm, clientName: e.target.value })}
+                        className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div className="flex flex-col justify-between">
+                      <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">
+                        Телефон для связи
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="+7 (999) 000-00-00"
+                        value={createForm.clientPhone}
+                        onChange={(e) => setCreateForm({ ...createForm, clientPhone: e.target.value })}
+                        className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -591,7 +810,9 @@ export const RepairsPage: React.FC = () => {
         onClose={() => setCompletingRepair(null)}
         title="Завершение ремонта и списание запчастей"
         subtitle={`Заказ-наряд ${completingRepair?.orderNumber} • ${
-          completingRepair?.itemType === 'BATTERY' || completingRepair?.battery
+          completingRepair?.itemType === 'EXTERNAL_DEVICE'
+            ? `${completingRepair?.customItemName || 'Техника клиента'} (${completingRepair?.clientName || 'Посетитель СТО'})`
+            : completingRepair?.itemType === 'BATTERY' || completingRepair?.battery
             ? `АКБ ${completingRepair?.battery?.serialNumber || ''}`
             : `Байк ${completingRepair?.bike?.inventoryNumber || ''}`
         }`}

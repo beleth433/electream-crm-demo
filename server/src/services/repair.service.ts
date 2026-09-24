@@ -15,7 +15,13 @@ export class RepairService {
   }
 
   static createRepair(data: {
-    bikeId: string;
+    itemType?: "BIKE" | "BATTERY" | "EXTERNAL_DEVICE";
+    bikeId?: string | null;
+    batteryId?: string | null;
+    customItemName?: string | null;
+    clientName?: string | null;
+    clientPhone?: string | null;
+    clientId?: string | null;
     mechanicId?: string;
     orderNumber?: string;
     faultType: RepairFaultType;

@@ -343,9 +343,14 @@ export interface Part {
 export interface RepairOrder {
   id: string;
   orderNumber: string;
-  itemType?: 'BIKE' | 'BATTERY';
+  itemType?: 'BIKE' | 'BATTERY' | 'EXTERNAL_DEVICE';
   bikeId?: string | null;
   batteryId?: string | null;
+  customItemName?: string | null;
+  clientName?: string | null;
+  clientPhone?: string | null;
+  clientId?: string | null;
+  client?: Client | { id: string; fullName: string; phone?: string | null } | null;
   bike?: Bike | null;
   battery?: Battery | null;
   mechanicId: string;

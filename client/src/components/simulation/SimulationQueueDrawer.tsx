@@ -21,11 +21,13 @@ import {
 
 interface SimulationQueueDrawerProps {
   onOpenRentalWizard: (prefillClient?: { name: string; phone: string; company: string }) => void;
+  onOpenRepairWithClient?: (client: { name: string; phone: string; company?: string; issue?: string }) => void;
   onNavigateToTab: (tab: string) => void;
 }
 
 export const SimulationQueueDrawer: React.FC<SimulationQueueDrawerProps> = ({
   onOpenRentalWizard,
+  onOpenRepairWithClient,
   onNavigateToTab,
 }) => {
   const {
@@ -95,7 +97,17 @@ export const SimulationQueueDrawer: React.FC<SimulationQueueDrawerProps> = ({
         onNavigateToTab('shop');
         break;
       case 'REPAIR':
-        onNavigateToTab('repairs');
+        if (onOpenRepairWithClient) {
+          onOpenRepairWithClient({
+            name: client.name,
+            phone: client.phone,
+            company: client.company,
+            issue: client.requestedDetails?.issue || client.title,
+          });
+        } else {
+          onNavigateToTab('repairs');
+        }
+        setIsQueueOpen(false);
         break;
       case 'BATTERY_SWAP':
         onNavigateToTab('batteries');

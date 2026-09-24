@@ -149,9 +149,13 @@ export const OutfitCreateDto = z.object({
 });
 
 export const RepairCreateDto = z.object({
-  itemType: z.enum(["BIKE", "BATTERY"]).optional().default("BIKE"),
+  itemType: z.enum(["BIKE", "BATTERY", "EXTERNAL_DEVICE"]).optional().default("BIKE"),
   bikeId: z.string().optional().nullable(),
   batteryId: z.string().optional().nullable(),
+  customItemName: z.string().optional().nullable(),
+  clientName: z.string().optional().nullable(),
+  clientPhone: z.string().optional().nullable(),
+  clientId: z.string().optional().nullable(),
   mechanicId: z.string().optional(),
   orderNumber: z.string().optional(),
   faultType: z.enum(["COMPANY_EXPENSE", "CLIENT_FAULT"]).default("COMPANY_EXPENSE"),
