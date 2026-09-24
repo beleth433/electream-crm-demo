@@ -188,6 +188,8 @@ export const BikesPage: React.FC = () => {
     description: '',
     purchasePrice: 40000,
     salePrice: 65000,
+    baseRentalPrice: 6000,
+    baseBuyoutPrice: 75000,
   });
 
   const loadData = () => {
@@ -298,6 +300,8 @@ export const BikesPage: React.FC = () => {
       description: model.description || '',
       purchasePrice: model.purchasePrice ?? 40000,
       salePrice: model.salePrice ?? 65000,
+      baseRentalPrice: model.baseRentalPrice ?? 6000,
+      baseBuyoutPrice: model.baseBuyoutPrice ?? 75000,
     });
   };
 
@@ -310,6 +314,8 @@ export const BikesPage: React.FC = () => {
       description: '',
       purchasePrice: 40000,
       salePrice: 65000,
+      baseRentalPrice: 6000,
+      baseBuyoutPrice: 75000,
     });
   };
 
@@ -324,6 +330,8 @@ export const BikesPage: React.FC = () => {
           description: newModelForm.description || '',
           purchasePrice: Number(newModelForm.purchasePrice) || 0,
           salePrice: Number(newModelForm.salePrice) || 0,
+          baseRentalPrice: Number(newModelForm.baseRentalPrice) || 0,
+          baseBuyoutPrice: Number(newModelForm.baseBuyoutPrice) || 0,
         });
         toast.success(`Шаблон модели "${updated.name}" успешно обновлен!`);
         setEditingModelId(null);
@@ -335,6 +343,8 @@ export const BikesPage: React.FC = () => {
           description: newModelForm.description || '',
           purchasePrice: Number(newModelForm.purchasePrice) || 0,
           salePrice: Number(newModelForm.salePrice) || 0,
+          baseRentalPrice: Number(newModelForm.baseRentalPrice) || 0,
+          baseBuyoutPrice: Number(newModelForm.baseBuyoutPrice) || 0,
         });
         toast.success(`Шаблон модели "${created.name}" успешно создан!`);
         if (isQuick) {
@@ -352,6 +362,8 @@ export const BikesPage: React.FC = () => {
         description: '',
         purchasePrice: 40000,
         salePrice: 65000,
+        baseRentalPrice: 6000,
+        baseBuyoutPrice: 75000,
       });
     } catch (err: any) {
       toast.error(err.message || 'Ошибка сохранения шаблона модели');
@@ -819,6 +831,28 @@ export const BikesPage: React.FC = () => {
                     />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-0.5">Базовая аренда (₽/период)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newModelForm.baseRentalPrice}
+                      onChange={(e) => setNewModelForm({ ...newModelForm, baseRentalPrice: Number(e.target.value) })}
+                      className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-400 mb-0.5">Базовый выкуп (₽)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newModelForm.baseBuyoutPrice}
+                      onChange={(e) => setNewModelForm({ ...newModelForm, baseBuyoutPrice: Number(e.target.value) })}
+                      className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs text-amber-600 dark:text-amber-400 font-semibold"
+                    />
+                  </div>
+                </div>
                 <div className="flex items-center justify-end pt-1">
                   <button
                     type="button"
@@ -1094,10 +1128,10 @@ export const BikesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-100/50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-2.5 rounded-xl bg-slate-100/50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20">
               <div>
                 <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                  Себестоимость закупки (₽)
+                  Закупка (₽)
                 </label>
                 <input
                   type="number"
@@ -1106,11 +1140,11 @@ export const BikesPage: React.FC = () => {
                   onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
                   className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
                 />
-                <span className="text-[10px] text-slate-400">Базовая закупка для модели</span>
+                <span className="text-[10px] text-slate-400">Себестоимость</span>
               </div>
               <div>
                 <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                  Рекомендуемая цена продажи (₽)
+                  Продажа (₽)
                 </label>
                 <input
                   type="number"
@@ -1119,7 +1153,33 @@ export const BikesPage: React.FC = () => {
                   onChange={(e) => setNewModelForm({ ...newModelForm, salePrice: Number(e.target.value) })}
                   className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
                 />
-                <span className="text-[10px] text-slate-400">Розничная цена для магазина</span>
+                <span className="text-[10px] text-slate-400">В магазине</span>
+              </div>
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                  Аренда (₽/пер.)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newModelForm.baseRentalPrice}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, baseRentalPrice: Number(e.target.value) })}
+                  className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                />
+                <span className="text-[10px] text-slate-400">Базовая аренда</span>
+              </div>
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                  Выкуп (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newModelForm.baseBuyoutPrice}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, baseBuyoutPrice: Number(e.target.value) })}
+                  className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-amber-600 dark:text-amber-400"
+                />
+                <span className="text-[10px] text-slate-400">Базовый выкуп</span>
               </div>
             </div>
 
@@ -1204,8 +1264,18 @@ export const BikesPage: React.FC = () => {
                           </span>
                         )}
                         {m.salePrice !== undefined && (
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold">
+                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 font-semibold">
                             Продажа: {m.salePrice.toLocaleString('ru-RU')} ₽
+                          </span>
+                        )}
+                        {m.baseRentalPrice !== undefined && (
+                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 font-medium">
+                            Аренда: {m.baseRentalPrice.toLocaleString('ru-RU')} ₽
+                          </span>
+                        )}
+                        {m.baseBuyoutPrice !== undefined && (
+                          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-300 font-medium">
+                            Выкуп: {m.baseBuyoutPrice.toLocaleString('ru-RU')} ₽
                           </span>
                         )}
                       </div>

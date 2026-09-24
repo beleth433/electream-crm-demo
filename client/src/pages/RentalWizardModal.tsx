@@ -101,6 +101,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   const [newTariffForm, setNewTariffForm] = useState({
     name: '',
     type: 'STANDARD' as 'STANDARD' | 'RENT_TO_OWN',
+    bikeModelId: '',
     durationDays: 7,
     price: 6000,
     depositRequired: 5000,
@@ -221,15 +222,18 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     }
   };
 
-  const handleTariffChange = (tariffId: string) => {
+  const handleTariffChange = (tariffId: string, currentBike?: Bike) => {
     setSelectedTariffId(tariffId);
     const trf = tariffs.find((t) => t.id === tariffId);
+    const activeBike = currentBike || availableBikes.find((b) => b.id === selectedBikeId);
     if (trf) {
       setCustomDeposit(trf.depositRequired);
       if (trf.type === 'RENT_TO_OWN') {
-        const total = trf.totalBuyoutPrice || trf.price || 60000;
+        const total = trf.totalBuyoutPrice || activeBike?.model?.baseBuyoutPrice || trf.price || 60000;
         const interval = trf.paymentIntervalDays || 7;
-        const inst = trf.installmentPayment || trf.price || 6000;
+        const dur = trf.durationDays || 180;
+        const periods = Math.max(1, Math.round(dur / interval));
+        const inst = trf.installmentPayment || Math.ceil(total / periods) || trf.price || 6000;
         setBuyoutTotalPrice(total);
         setBuyoutPaymentIntervalDays(interval);
         setBuyoutInstallmentPayment(inst);
@@ -252,14 +256,20 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     e.preventDefault();
     try {
       setIsLoading(true);
-      const created = await api.createRentalTariff(newTariffForm);
+      const payload = {
+        ...newTariffForm,
+        bikeModelId: newTariffForm.bikeModelId ? newTariffForm.bikeModelId : (selectedBike?.modelId || null),
+      };
+      const created = await api.createRentalTariff(payload);
       setTariffs((prev) => [...prev, created]);
       setSelectedTariffId(created.id);
       setCustomDeposit(created.depositRequired);
       if (created.type === 'RENT_TO_OWN') {
-        const total = created.totalBuyoutPrice || created.price || 60000;
+        const total = created.totalBuyoutPrice || selectedBike?.model?.baseBuyoutPrice || created.price || 60000;
         const interval = created.paymentIntervalDays || 7;
-        const inst = created.installmentPayment || created.price || 6000;
+        const dur = created.durationDays || 180;
+        const periods = Math.max(1, Math.round(dur / interval));
+        const inst = created.installmentPayment || Math.ceil(total / periods) || created.price || 6000;
         setBuyoutTotalPrice(total);
         setBuyoutPaymentIntervalDays(interval);
         setBuyoutInstallmentPayment(inst);
@@ -269,6 +279,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       setNewTariffForm({
         name: '',
         type: 'STANDARD',
+        bikeModelId: '',
         durationDays: 7,
         price: 6000,
         depositRequired: 5000,
@@ -290,6 +301,24 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       setSelectedBatteryIds([bike.batteryId]);
     } else {
       setSelectedBatteryIds([]);
+    }
+
+    // Auto-select or suggest matching tariff for this bike's model
+    const modelTariff = tariffs.find((t) => t.isActive && t.bikeModelId === bike.modelId);
+    if (modelTariff) {
+      handleTariffChange(modelTariff.id, bike);
+      toast.info(`Выбран тариф "${modelTariff.name}" для модели ${bike.model?.name || ''}`);
+    } else if (bike.model?.baseBuyoutPrice) {
+      setBuyoutTotalPrice(bike.model.baseBuyoutPrice);
+      const activeTariff = tariffs.find((t) => t.id === selectedTariffId);
+      if (activeTariff?.type === 'RENT_TO_OWN') {
+        const dur = activeTariff.durationDays || 180;
+        const interval = activeTariff.paymentIntervalDays || buyoutPaymentIntervalDays || 7;
+        const periods = Math.max(1, Math.round(dur / interval));
+        const inst = Math.ceil(bike.model.baseBuyoutPrice / periods);
+        setBuyoutInstallmentPayment(inst);
+        setBuyoutFirstPayment(inst);
+      }
     }
   };
 
@@ -1016,16 +1045,24 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               </div>
 
               <form onSubmit={handleCreateTariffInline} className="space-y-3 pt-1">
-                <div>
-                  <label className="block text-slate-500 mb-1 text-[11px]">Название тарифа *</label>
-                  <input
-                    required
-                    type="text"
-                    placeholder="Например: Недельный рабочий, Месячный..."
-                    value={newTariffForm.name}
-                    onChange={(e) => setNewTariffForm({ ...newTariffForm, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-500 mb-1 text-[11px]">Название тарифа *</label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="Например: Недельный рабочий, Месячный..."
+                      value={newTariffForm.name}
+                      onChange={(e) => setNewTariffForm({ ...newTariffForm, name: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 mb-1 text-[11px]">Привязка к модели байка</label>
+                    <div className="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300">
+                      {selectedBike?.model?.name ? `🚲 Модель: ${selectedBike.model.name}` : 'Универсальный (для всех моделей)'}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
@@ -1148,7 +1185,18 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                 <label className="text-slate-500 font-semibold">Выберите шаблон тарифа:</label>
                 <button
                   type="button"
-                  onClick={() => setIsCreatingTariff(true)}
+                  onClick={() => {
+                    setIsCreatingTariff(true);
+                    const currentModel = selectedBike?.model;
+                    if (selectedBike && currentModel) {
+                      setNewTariffForm((prev) => ({
+                        ...prev,
+                        bikeModelId: selectedBike.modelId,
+                        price: currentModel.baseRentalPrice || prev.price,
+                        totalBuyoutPrice: currentModel.baseBuyoutPrice || prev.totalBuyoutPrice,
+                      }));
+                    }
+                  }}
                   className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
                 >
                   <Plus className="w-3 h-3" /> Новый шаблон
@@ -1156,35 +1204,61 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {tariffs.map((tariff) => {
-                  const isSelected = selectedTariffId === tariff.id;
-                  return (
-                    <div
-                      key={tariff.id}
-                      onClick={() => handleTariffChange(tariff.id)}
-                      className={`p-3 rounded-xl border text-center cursor-pointer transition-all ${
-                        isSelected
-                          ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 ring-2 ring-sky-400/20'
-                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 hover:border-slate-300'
-                      }`}
-                    >
-                      <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate">
-                        {tariff.name}
-                      </p>
-                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">
-                        {tariff.price.toLocaleString('ru-RU')} ₽
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        {tariff.durationDays} {tariff.durationDays === 1 ? 'день' : 'дней'}
-                      </p>
-                      {tariff.type === 'RENT_TO_OWN' && (
-                        <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold">
-                          Выкуп
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+                {[...tariffs]
+                  .sort((a, b) => {
+                    const aMatches = selectedBike && a.bikeModelId === selectedBike.modelId ? 2 : (!a.bikeModelId ? 1 : 0);
+                    const bMatches = selectedBike && b.bikeModelId === selectedBike.modelId ? 2 : (!b.bikeModelId ? 1 : 0);
+                    return bMatches - aMatches;
+                  })
+                  .map((tariff) => {
+                    const isSelected = selectedTariffId === tariff.id;
+                    const isModelMatch = Boolean(selectedBike && tariff.bikeModelId === selectedBike.modelId);
+                    return (
+                      <div
+                        key={tariff.id}
+                        onClick={() => handleTariffChange(tariff.id)}
+                        className={`p-3 rounded-xl border text-center cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 ring-2 ring-sky-400/20'
+                            : isModelMatch
+                            ? 'border-emerald-500/40 bg-emerald-50/20 dark:bg-emerald-950/20 hover:border-emerald-500'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 hover:border-slate-300'
+                        }`}
+                      >
+                        <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate">
+                          {tariff.name}
+                        </p>
+                        <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">
+                          {tariff.price.toLocaleString('ru-RU')} ₽
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {tariff.durationDays} {tariff.durationDays === 1 ? 'день' : 'дней'}
+                        </p>
+                        <div className="flex flex-wrap items-center justify-center gap-1 mt-1">
+                          {tariff.type === 'RENT_TO_OWN' && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold">
+                              Выкуп
+                            </span>
+                          )}
+                          {tariff.bikeModelId ? (
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                                isModelMatch
+                                  ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
+                              }`}
+                            >
+                              🚲 {tariff.bikeModel?.name || 'Модель'}
+                            </span>
+                          ) : (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                              Все модели
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -1214,8 +1288,13 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
-                    Полная стоимость выкупа (₽) *
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px] flex items-center justify-between">
+                    <span>Полная стоимость выкупа (₽) *</span>
+                    {selectedBike?.model?.baseBuyoutPrice && (
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
+                        Базовая по модели: {selectedBike.model.baseBuyoutPrice.toLocaleString('ru-RU')} ₽
+                      </span>
+                    )}
                   </label>
                   <input
                     type="number"

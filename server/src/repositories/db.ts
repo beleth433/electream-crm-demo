@@ -106,6 +106,8 @@ export interface BikeModelRecord {
   description?: string | null;
   purchasePrice?: number;
   salePrice?: number;
+  baseRentalPrice?: number;
+  baseBuyoutPrice?: number;
 }
 
 export interface BikeRecord {
@@ -182,6 +184,7 @@ export interface TariffRecord {
   totalBuyoutPrice?: number;
   paymentIntervalDays?: number;
   installmentPayment?: number;
+  bikeModelId?: string | null;
 }
 
 export interface PartCategoryRecord {

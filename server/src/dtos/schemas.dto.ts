@@ -76,6 +76,7 @@ export const TariffCreateDto = z.object({
   totalBuyoutPrice: z.number().min(0).optional(),
   paymentIntervalDays: z.number().int().positive().optional(),
   installmentPayment: z.number().min(0).optional(),
+  bikeModelId: z.string().nullable().optional(),
 });
 
 export const TariffUpdateDto = TariffCreateDto.partial();

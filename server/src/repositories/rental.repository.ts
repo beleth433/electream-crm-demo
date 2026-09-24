@@ -21,6 +21,8 @@ export class RentalRepository {
       const bikeModel = bike ? db.models.find((m) => m.id === bike.modelId) : null;
       const battery = bike?.batteryId ? db.batteries.find((bt) => bt.id === bike.batteryId) : null;
       const tariff = db.tariffs.find((t) => t.id === r.tariffId);
+      const tariffBikeModel = tariff?.bikeModelId ? db.models.find((m) => m.id === tariff.bikeModelId) : null;
+      const fullTariff = tariff ? { ...tariff, bikeModel: tariffBikeModel } : null;
       const outfits = db.outfits.filter((o) => r.outfitIds.includes(o.id));
       const payments = db.payments.filter((p) => p.rentalId === r.id);
       const batteries = db.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
@@ -35,7 +37,7 @@ export class RentalRepository {
         client,
         bike: bike ? { ...bike, model: bikeModel, battery } : null,
         batteries,
-        tariff,
+        tariff: fullTariff,
         outfits,
         payments,
         totalPaidForBuyout,
@@ -75,6 +77,8 @@ export class RentalRepository {
     const bikeModel = bike ? db.models.find((m) => m.id === bike.modelId) : null;
     const battery = bike?.batteryId ? db.batteries.find((bt) => bt.id === bike.batteryId) : null;
     const tariff = db.tariffs.find((t) => t.id === r.tariffId);
+    const tariffBikeModel = tariff?.bikeModelId ? db.models.find((m) => m.id === tariff.bikeModelId) : null;
+    const fullTariff = tariff ? { ...tariff, bikeModel: tariffBikeModel } : null;
     const outfits = db.outfits.filter((o) => r.outfitIds.includes(o.id));
     const payments = db.payments.filter((p) => p.rentalId === r.id);
     const batteries = db.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
@@ -90,7 +94,7 @@ export class RentalRepository {
       client,
       bike: bike ? { ...bike, model: bikeModel, battery } : null,
       batteries,
-      tariff,
+      tariff: fullTariff,
       outfits,
       payments,
       manager,
@@ -101,7 +105,14 @@ export class RentalRepository {
   }
 
   static getTariffs() {
-    return getDb().tariffs;
+    const db = getDb();
+    return db.tariffs.map((t) => {
+      const bikeModel = t.bikeModelId ? db.models.find((m) => m.id === t.bikeModelId) : null;
+      return {
+        ...t,
+        bikeModel,
+      };
+    });
   }
 
   static createTariff(data: {
@@ -114,6 +125,7 @@ export class RentalRepository {
     totalBuyoutPrice?: number;
     paymentIntervalDays?: number;
     installmentPayment?: number;
+    bikeModelId?: string | null;
   }) {
     const db = getDb();
     const newTariff = {
@@ -127,9 +139,11 @@ export class RentalRepository {
       totalBuyoutPrice: data.totalBuyoutPrice !== undefined ? Number(data.totalBuyoutPrice) : undefined,
       paymentIntervalDays: data.paymentIntervalDays !== undefined ? Number(data.paymentIntervalDays) : undefined,
       installmentPayment: data.installmentPayment !== undefined ? Number(data.installmentPayment) : undefined,
+      bikeModelId: data.bikeModelId || null,
     };
     db.tariffs.push(newTariff);
-    return newTariff;
+    const bikeModel = newTariff.bikeModelId ? db.models.find((m) => m.id === newTariff.bikeModelId) : null;
+    return { ...newTariff, bikeModel };
   }
 
   static updateTariff(id: string, data: Partial<{
@@ -142,12 +156,14 @@ export class RentalRepository {
     totalBuyoutPrice: number;
     paymentIntervalDays: number;
     installmentPayment: number;
+    bikeModelId: string | null;
   }>) {
     const db = getDb();
     const tariff = db.tariffs.find((t) => t.id === id);
     if (!tariff) throw new Error("Тариф не найден");
     Object.assign(tariff, data);
-    return tariff;
+    const bikeModel = tariff.bikeModelId ? db.models.find((m) => m.id === tariff.bikeModelId) : null;
+    return { ...tariff, bikeModel };
   }
 
   static deleteTariff(id: string) {

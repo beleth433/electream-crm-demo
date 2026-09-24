@@ -112,6 +112,8 @@ export class BikeRepository {
     description?: string | null;
     purchasePrice?: number;
     salePrice?: number;
+    baseRentalPrice?: number;
+    baseBuyoutPrice?: number;
   }) {
     const db = getDb();
     if (!data.name || !data.name.trim()) {
@@ -125,6 +127,8 @@ export class BikeRepository {
       description: data.description || null,
       purchasePrice: data.purchasePrice !== undefined ? Number(data.purchasePrice) : undefined,
       salePrice: data.salePrice !== undefined ? Number(data.salePrice) : undefined,
+      baseRentalPrice: data.baseRentalPrice !== undefined ? Number(data.baseRentalPrice) : undefined,
+      baseBuyoutPrice: data.baseBuyoutPrice !== undefined ? Number(data.baseBuyoutPrice) : undefined,
     };
     db.models.push(newModel);
     return {
@@ -142,6 +146,8 @@ export class BikeRepository {
       description?: string | null;
       purchasePrice?: number;
       salePrice?: number;
+      baseRentalPrice?: number;
+      baseBuyoutPrice?: number;
     }
   ) {
     const db = getDb();
@@ -155,6 +161,8 @@ export class BikeRepository {
     if (data.description !== undefined) model.description = data.description;
     if (data.purchasePrice !== undefined) model.purchasePrice = Number(data.purchasePrice);
     if (data.salePrice !== undefined) model.salePrice = Number(data.salePrice);
+    if (data.baseRentalPrice !== undefined) model.baseRentalPrice = Number(data.baseRentalPrice);
+    if (data.baseBuyoutPrice !== undefined) model.baseBuyoutPrice = Number(data.baseBuyoutPrice);
 
     const bikesCount = db.bikes.filter((b) => b.modelId === model.id).length;
     return {

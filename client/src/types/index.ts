@@ -84,6 +84,8 @@ export interface BikeModel {
   description?: string | null;
   purchasePrice?: number;
   salePrice?: number;
+  baseRentalPrice?: number;
+  baseBuyoutPrice?: number;
   bikesCount?: number;
 }
 
@@ -274,6 +276,8 @@ export interface Tariff {
   totalBuyoutPrice?: number;
   paymentIntervalDays?: number;
   installmentPayment?: number;
+  bikeModelId?: string | null;
+  bikeModel?: BikeModel | null;
 }
 
 export interface Rental {
