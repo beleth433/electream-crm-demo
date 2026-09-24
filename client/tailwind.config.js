@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Kreadon', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Rubik', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
         brand: {
