@@ -7,6 +7,9 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Kreadon', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+      },
       colors: {
         brand: {
           50: '#f0fdf4',
