@@ -773,8 +773,8 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                     Название тарифа *
                   </label>
                   <input
@@ -783,12 +783,12 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     placeholder="Например: Недельный рабочий, Месячный, Выкуп Minako..."
                     value={tariffForm.name}
                     onChange={(e) => setTariffForm({ ...tariffForm, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold flex items-center justify-between">
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem] flex items-center justify-between">
                     <span>Привязка к модели байка</span>
                     <span className="text-[10px] text-slate-400 font-normal">Опционально</span>
                   </label>
@@ -814,7 +814,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         }
                       }
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
                   >
                     <option value="">Все модели (универсальный тариф)</option>
                     {models.map((m) => {
@@ -831,9 +831,9 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                     Тип аренды *
                   </label>
                   <select
@@ -855,15 +855,15 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         }));
                       }
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
                   >
                     <option value="STANDARD">Обычная аренда (STANDARD)</option>
                     <option value="RENT_TO_OWN">Аренда с выкупом (RENT_TO_OWN)</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                     {tariffForm.type === 'RENT_TO_OWN' ? 'Общий срок выкупа (дней) *' : 'Срок аренды (дней) *'}
                   </label>
                   <input
@@ -885,7 +885,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         };
                       });
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -1040,9 +1040,9 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     })()}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold flex items-center justify-between">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col justify-between">
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem] flex items-center justify-between">
                         <span>Полная выкупная цена (₽) *</span>
                         <span className="text-[10px] text-slate-400 font-normal">можно изменить</span>
                       </label>
@@ -1065,12 +1065,12 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                             price: inst,
                           });
                         }}
-                        className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-purple-700 dark:text-purple-300"
+                        className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-purple-700 dark:text-purple-300"
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                    <div className="flex flex-col justify-between">
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
                         Интервал платежей (дней) *
                       </label>
                       <input
@@ -1090,14 +1090,14 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                             price: inst,
                           });
                         }}
-                        className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
+                        className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col justify-between">
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
                         Регулярный платёж за интервал (₽) *
                       </label>
                       <input
@@ -1140,12 +1140,12 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                             }));
                           }
                         }}
-                        className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-emerald-600 dark:text-emerald-400"
+                        className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-emerald-600 dark:text-emerald-400"
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                    <div className="flex flex-col justify-between">
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
                         Обязательный залог (₽) *
                       </label>
                       <input
@@ -1157,7 +1157,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         onChange={(e) =>
                           setTariffForm({ ...tariffForm, depositRequired: Number(e.target.value) })
                         }
-                        className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
+                        className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
@@ -1231,9 +1231,9 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                   })()}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                       Стоимость аренды (₽) *
                     </label>
                     <input
@@ -1245,12 +1245,12 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                       onChange={(e) =>
                         setTariffForm({ ...tariffForm, price: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-black text-emerald-600 dark:text-emerald-400"
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-black text-emerald-600 dark:text-emerald-400"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                       Обязательный залог (₽) *
                     </label>
                     <input
@@ -1262,7 +1262,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                       onChange={(e) =>
                         setTariffForm({ ...tariffForm, depositRequired: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>

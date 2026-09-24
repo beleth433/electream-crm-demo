@@ -640,34 +640,34 @@ export const OutfitsPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Залог (₽) *</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">Залог (₽) *</label>
               <input
                 type="number"
                 min="0"
                 value={newOutfitForm.depositValue}
                 onChange={(e) => setNewOutfitForm({ ...newOutfitForm, depositValue: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-slate-100"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-slate-100"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Себестоимость (₽)</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">Себестоимость (₽)</label>
               <input
                 type="number"
                 min="0"
                 value={newOutfitForm.purchasePrice}
                 onChange={(e) => setNewOutfitForm({ ...newOutfitForm, purchasePrice: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-slate-100"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-slate-100"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">Цена продажи (₽)</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">Цена продажи (₽)</label>
               <input
                 type="number"
                 min="0"
                 value={newOutfitForm.salePrice}
                 onChange={(e) => setNewOutfitForm({ ...newOutfitForm, salePrice: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-slate-100 font-bold"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-slate-100 font-bold"
               />
             </div>
           </div>
@@ -822,8 +822,8 @@ export const OutfitsPage: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                       Наименование шаблона *
                     </label>
                     <input
@@ -832,17 +832,17 @@ export const OutfitsPage: React.FC = () => {
                       placeholder="Шлем защитный Minako (Размер L)"
                       value={newTemplateForm.name}
                       onChange={(e) => setNewTemplateForm({ ...newTemplateForm, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
                     />
                   </div>
-                  <div>
-                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                       Категория *
                     </label>
                     <select
                       value={newTemplateForm.categoryId}
                       onChange={(e) => setNewTemplateForm({ ...newTemplateForm, categoryId: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
                     >
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -854,8 +854,8 @@ export const OutfitsPage: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                       Залог по умолчанию (₽) *
                     </label>
                     <input
@@ -866,11 +866,11 @@ export const OutfitsPage: React.FC = () => {
                       onChange={(e) =>
                         setNewTemplateForm({ ...newTemplateForm, defaultDeposit: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
                     />
                   </div>
-                  <div>
-                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                       Себестоимость закупки (₽)
                     </label>
                     <input
@@ -881,11 +881,11 @@ export const OutfitsPage: React.FC = () => {
                       onChange={(e) =>
                         setNewTemplateForm({ ...newTemplateForm, purchasePrice: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-white"
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-white"
                     />
                   </div>
-                  <div>
-                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                       Цена продажи (₽)
                     </label>
                     <input
@@ -896,7 +896,7 @@ export const OutfitsPage: React.FC = () => {
                       onChange={(e) =>
                         setNewTemplateForm({ ...newTemplateForm, salePrice: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-white font-bold"
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-mono text-slate-900 dark:text-white font-bold"
                     />
                   </div>
                 </div>

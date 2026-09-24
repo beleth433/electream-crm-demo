@@ -573,37 +573,37 @@ export const ClientsPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Номер телефона *</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Номер телефона *</label>
               <input
                 required
                 type="text"
                 placeholder="+7 (999) 000-00-00"
                 value={newClientForm.phone}
                 onChange={(e) => setNewClientForm({ ...newClientForm, phone: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Telegram (@username)</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Telegram (@username)</label>
               <input
                 type="text"
                 placeholder="@client_tg"
                 value={newClientForm.telegram}
                 onChange={(e) => setNewClientForm({ ...newClientForm, telegram: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               />
             </div>
           </div>
 
           {newClientForm.clientType === 'COURIER' && (
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-500 mb-1">Гражданство *</label>
+              <div className="flex flex-col justify-between">
+                <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Гражданство *</label>
                 <select
                   value={newClientForm.citizenship}
                   onChange={(e) => setNewClientForm({ ...newClientForm, citizenship: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
+                  className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
                 >
                   <option value="РФ">Российская Федерация (РФ)</option>
                   <option value="Узбекистан">Узбекистан</option>
@@ -612,12 +612,12 @@ export const ClientsPage: React.FC = () => {
                   <option value="Беларусь">Беларусь (ЕАЭС)</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-slate-500 mb-1">Служба доставки</label>
+              <div className="flex flex-col justify-between">
+                <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Служба доставки</label>
                 <select
                   value={newClientForm.courierService}
                   onChange={(e) => setNewClientForm({ ...newClientForm, courierService: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                  className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
                 >
                   <option value="Яндекс Еда">Яндекс Еда / Маркет</option>
                   <option value="Самокат">Самокат</option>
@@ -629,24 +629,24 @@ export const ClientsPage: React.FC = () => {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Серия паспорта</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Серия паспорта</label>
               <input
                 type="text"
                 placeholder="4518 / FA"
                 value={newClientForm.passportSerial}
                 onChange={(e) => setNewClientForm({ ...newClientForm, passportSerial: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Номер паспорта</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Номер паспорта</label>
               <input
                 type="text"
                 placeholder="123456"
                 value={newClientForm.passportNumber}
                 onChange={(e) => setNewClientForm({ ...newClientForm, passportNumber: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               />
             </div>
           </div>
@@ -657,26 +657,26 @@ export const ClientsPage: React.FC = () => {
                 Обязательные поля для иностранных граждан (СНГ / ЕАЭС):
               </span>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-500 mb-1">Миграционная карта *</label>
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Миграционная карта *</label>
                   <input
                     required
                     type="text"
                     placeholder="МК 77-00-123456"
                     value={newClientForm.migrationCard}
                     onChange={(e) => setNewClientForm({ ...newClientForm, migrationCard: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
                   />
                 </div>
-                <div>
-                  <label className="block text-slate-500 mb-1">Патент / ЕАЭС *</label>
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Патент / ЕАЭС *</label>
                   <input
                     required
                     type="text"
                     placeholder="ПАТ-77-991204"
                     value={newClientForm.patentNumber}
                     onChange={(e) => setNewClientForm({ ...newClientForm, patentNumber: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
                   />
                 </div>
               </div>
@@ -754,37 +754,37 @@ export const ClientsPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Номер телефона *</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Номер телефона *</label>
               <input
                 required
                 type="text"
                 placeholder="+7 (999) 000-00-00"
                 value={editClientForm.phone}
                 onChange={(e) => setEditClientForm({ ...editClientForm, phone: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Telegram (@username)</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Telegram (@username)</label>
               <input
                 type="text"
                 placeholder="@client_tg"
                 value={editClientForm.telegram}
                 onChange={(e) => setEditClientForm({ ...editClientForm, telegram: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               />
             </div>
           </div>
 
           {editClientForm.clientType === 'COURIER' && (
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-500 mb-1">Гражданство *</label>
+              <div className="flex flex-col justify-between">
+                <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Гражданство *</label>
                 <select
                   value={editClientForm.citizenship}
                   onChange={(e) => setEditClientForm({ ...editClientForm, citizenship: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
+                  className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
                 >
                   <option value="РФ">Российская Федерация (РФ)</option>
                   <option value="Узбекистан">Узбекистан</option>
@@ -793,12 +793,12 @@ export const ClientsPage: React.FC = () => {
                   <option value="Беларусь">Беларусь (ЕАЭС)</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-slate-500 mb-1">Служба доставки</label>
+              <div className="flex flex-col justify-between">
+                <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Служба доставки</label>
                 <select
                   value={editClientForm.courierService}
                   onChange={(e) => setEditClientForm({ ...editClientForm, courierService: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                  className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
                 >
                   <option value="Яндекс Еда">Яндекс Еда / Маркет</option>
                   <option value="Самокат">Самокат</option>
@@ -810,24 +810,24 @@ export const ClientsPage: React.FC = () => {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Серия паспорта</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Серия паспорта</label>
               <input
                 type="text"
                 placeholder="4518 / FA"
                 value={editClientForm.passportSerial}
                 onChange={(e) => setEditClientForm({ ...editClientForm, passportSerial: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Номер паспорта</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Номер паспорта</label>
               <input
                 type="text"
                 placeholder="123456"
                 value={editClientForm.passportNumber}
                 onChange={(e) => setEditClientForm({ ...editClientForm, passportNumber: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               />
             </div>
           </div>
@@ -838,26 +838,26 @@ export const ClientsPage: React.FC = () => {
                 Обязательные поля для иностранных граждан (СНГ / ЕАЭС):
               </span>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-500 mb-1">Миграционная карта *</label>
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Миграционная карта *</label>
                   <input
                     required
                     type="text"
                     placeholder="МК 77-00-123456"
                     value={editClientForm.migrationCard}
                     onChange={(e) => setEditClientForm({ ...editClientForm, migrationCard: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
                   />
                 </div>
-                <div>
-                  <label className="block text-slate-500 mb-1">Патент / ЕАЭС *</label>
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Патент / ЕАЭС *</label>
                   <input
                     required
                     type="text"
                     placeholder="ПАТ-77-991204"
                     value={editClientForm.patentNumber}
                     onChange={(e) => setEditClientForm({ ...editClientForm, patentNumber: e.target.value })}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg"
                   />
                 </div>
               </div>

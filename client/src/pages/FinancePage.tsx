@@ -270,23 +270,23 @@ export const FinancePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Сумма (₽) *</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Сумма (₽) *</label>
               <input
                 required
                 type="number"
                 min="1"
                 value={paymentForm.amount}
                 onChange={(e) => setPaymentForm({ ...paymentForm, amount: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-black text-sm"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-black text-sm"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Способ оплаты *</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Способ оплаты *</label>
               <select
                 value={paymentForm.method}
                 onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value as any })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold"
               >
                 <option value="CASH">Наличные</option>
                 <option value="SBP">СБП / QR-код</option>

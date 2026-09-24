@@ -1080,28 +1080,28 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
 
               <form onSubmit={handleCreateTariffInline} className="space-y-3 pt-1">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-500 mb-1 text-[11px]">Название тарифа *</label>
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Название тарифа *</label>
                     <input
                       required
                       type="text"
                       placeholder="Например: Недельный рабочий, Месячный..."
                       value={newTariffForm.name}
                       onChange={(e) => setNewTariffForm({ ...newTariffForm, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
                     />
                   </div>
-                  <div>
-                    <label className="block text-slate-500 mb-1 text-[11px]">Привязка к модели байка</label>
-                    <div className="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Привязка к модели байка</label>
+                    <div className="h-9 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center">
                       {selectedBike?.model?.name ? `🚲 Модель: ${selectedBike.model.name}` : 'Универсальный (для всех моделей)'}
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <label className="block text-slate-500 mb-1 text-[11px]">Тип аренды *</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Тип аренды *</label>
                     <select
                       value={newTariffForm.type}
                       onChange={(e) =>
@@ -1110,15 +1110,15 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                           type: e.target.value as 'STANDARD' | 'RENT_TO_OWN',
                         })
                       }
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                     >
                       <option value="STANDARD">Обычная аренда</option>
                       <option value="RENT_TO_OWN">Аренда с правом выкупа</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-slate-500 mb-1 text-[11px]">Срок аренды (дней) *</label>
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Срок аренды (дней) *</label>
                     <input
                       required
                       type="number"
@@ -1127,14 +1127,14 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                       onChange={(e) =>
                         setNewTariffForm({ ...newTariffForm, durationDays: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <label className="block text-slate-500 mb-1 text-[11px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">
                       {newTariffForm.type === 'RENT_TO_OWN' ? 'Регулярный взнос (₽) *' : 'Стоимость аренды (₽) *'}
                     </label>
                     <input
@@ -1151,12 +1151,12 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                           installmentPayment: val,
                         });
                       }}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-emerald-600"
+                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-emerald-600"
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-slate-500 mb-1 text-[11px]">Залог (₽) *</label>
+                  <div className="flex flex-col justify-between">
+                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Залог (₽) *</label>
                     <input
                       required
                       type="number"
@@ -1166,15 +1166,15 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                       onChange={(e) =>
                         setNewTariffForm({ ...newTariffForm, depositRequired: Number(e.target.value) })
                       }
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
                     />
                   </div>
                 </div>
 
                 {newTariffForm.type === 'RENT_TO_OWN' && (
-                  <div className="grid grid-cols-2 gap-3 text-xs pt-1 border-t border-amber-200 dark:border-amber-800/40">
-                    <div>
-                      <label className="block text-slate-500 mb-1 text-[11px]">Полная выкупная цена (₽) *</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1 border-t border-amber-200 dark:border-amber-800/40">
+                    <div className="flex flex-col justify-between">
+                      <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Полная выкупная цена (₽) *</label>
                       <input
                         required
                         type="number"
@@ -1184,11 +1184,11 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                         onChange={(e) =>
                           setNewTariffForm({ ...newTariffForm, totalBuyoutPrice: Number(e.target.value) })
                         }
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg text-xs font-bold text-purple-600 dark:text-purple-400"
+                        className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg text-xs font-bold text-purple-600 dark:text-purple-400"
                       />
                     </div>
-                    <div>
-                      <label className="block text-slate-500 mb-1 text-[11px]">Интервал платежей (дней) *</label>
+                    <div className="flex flex-col justify-between">
+                      <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Интервал платежей (дней) *</label>
                       <input
                         required
                         type="number"
@@ -1197,7 +1197,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                         onChange={(e) =>
                           setNewTariffForm({ ...newTariffForm, paymentIntervalDays: Number(e.target.value) })
                         }
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                        className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
                       />
                     </div>
                   </div>
@@ -1380,8 +1380,8 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px] flex items-center justify-between">
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px] min-h-[1.25rem] flex items-center justify-between">
                     <span>Полная стоимость выкупа (₽) *</span>
                     {(selectedBike?.model?.baseBuyoutPrice || selectedBike?.model?.salePrice) && (
                       <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal">
@@ -1404,12 +1404,12 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                       setBuyoutInstallmentPayment(inst);
                       setBuyoutFirstPayment(inst);
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-purple-700 dark:text-purple-300"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-purple-700 dark:text-purple-300"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px] min-h-[1.25rem]">
                     Общий срок договора (дней) *
                   </label>
                   <input
@@ -1425,14 +1425,14 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                       setBuyoutInstallmentPayment(inst);
                       setBuyoutFirstPayment(inst);
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold text-slate-900 dark:text-white"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px] min-h-[1.25rem]">
                     Периодичность выплат (дней) *
                   </label>
                   <input
@@ -1448,12 +1448,12 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                       setBuyoutInstallmentPayment(inst);
                       setBuyoutFirstPayment(inst);
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-bold"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px]">
+                <div className="flex flex-col justify-between">
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 font-semibold text-[11px] min-h-[1.25rem]">
                     Регулярный платёж за период (₽) *
                   </label>
                   <input
@@ -1486,7 +1486,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                         setBuyoutDurationDays(newDur);
                       }
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-emerald-600 dark:text-emerald-400"
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-emerald-600 dark:text-emerald-400"
                   />
                 </div>
               </div>
@@ -1504,7 +1504,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   step="100"
                   value={buyoutFirstPayment}
                   onChange={(e) => setBuyoutFirstPayment(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-emerald-600 dark:text-emerald-400 text-xs"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-emerald-600 dark:text-emerald-400 text-xs"
                 />
               </div>
 

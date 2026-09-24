@@ -688,52 +688,52 @@ export const InventoryPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Начальное количество (шт.) *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Начальное количество (шт.) *</label>
               <input
                 required
                 type="number"
                 min="0"
                 value={newPartForm.quantity}
                 onChange={(e) => setNewPartForm({ ...newPartForm, quantity: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Порог предупреждения *</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Порог предупреждения *</label>
               <input
                 required
                 type="number"
                 min="1"
                 value={newPartForm.minQuantity}
                 onChange={(e) => setNewPartForm({ ...newPartForm, minQuantity: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Закупочная цена (₽) *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Закупочная цена (₽) *</label>
               <input
                 required
                 type="number"
                 min="0"
                 value={newPartForm.purchasePrice}
                 onChange={(e) => setNewPartForm({ ...newPartForm, purchasePrice: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Клиентская цена СТО (₽) *</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Клиентская цена СТО (₽) *</label>
               <input
                 required
                 type="number"
                 min="0"
                 value={newPartForm.clientPrice}
                 onChange={(e) => setNewPartForm({ ...newPartForm, clientPrice: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-xs"
               />
             </div>
           </div>
@@ -808,52 +808,52 @@ export const InventoryPage: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Количество на складе (шт.) *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Количество на складе (шт.) *</label>
               <input
                 required
                 type="number"
                 min="0"
                 value={editPartForm.quantity}
                 onChange={(e) => setEditPartForm({ ...editPartForm, quantity: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-xs"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Порог предупреждения *</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Порог предупреждения *</label>
               <input
                 required
                 type="number"
                 min="1"
                 value={editPartForm.minQuantity}
                 onChange={(e) => setEditPartForm({ ...editPartForm, minQuantity: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Себестоимость / закупка (₽) *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Себестоимость / закупка (₽) *</label>
               <input
                 required
                 type="number"
                 min="0"
                 value={editPartForm.purchasePrice}
                 onChange={(e) => setEditPartForm({ ...editPartForm, purchasePrice: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Клиентская цена СТО (₽) *</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Клиентская цена СТО (₽) *</label>
               <input
                 required
                 type="number"
                 min="0"
                 value={editPartForm.clientPrice}
                 onChange={(e) => setEditPartForm({ ...editPartForm, clientPrice: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-emerald-600 dark:text-emerald-400"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-emerald-600 dark:text-emerald-400 text-xs"
               />
             </div>
           </div>

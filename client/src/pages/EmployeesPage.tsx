@@ -410,8 +410,8 @@ export const EmployeesPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                 Телефон *
               </label>
               <input
@@ -420,11 +420,11 @@ export const EmployeesPage: React.FC = () => {
                 placeholder="+7 (999) 000-00-00"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-slate-900 dark:text-white"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-slate-900 dark:text-white"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                 Email / Telegram
               </label>
               <input
@@ -432,14 +432,14 @@ export const EmployeesPage: React.FC = () => {
                 placeholder="tech@ebike-crm.ru"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-slate-900 dark:text-white"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-slate-900 dark:text-white"
               />
             </div>
           </div>
 
           {/* Role (free-form text input) */}
           <div>
-            <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+            <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
               Должность / Роль в сервисе *
             </label>
             <input
@@ -448,14 +448,14 @@ export const EmployeesPage: React.FC = () => {
               placeholder="Например: Механик, Мастер СТО, Администратор..."
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
+              className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
             />
           </div>
 
           {/* Salary Type & Amount */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                 Схема оплаты *
               </label>
               <select
@@ -466,15 +466,15 @@ export const EmployeesPage: React.FC = () => {
                     salaryType: e.target.value as 'MONTHLY' | 'PER_SHIFT' | 'PIECEWORK',
                   })
                 }
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
               >
                 <option value="MONTHLY">Фиксированный оклад (в месяц)</option>
                 <option value="PER_SHIFT">Ставка за смену (выход)</option>
                 <option value="PIECEWORK">Сдельная (за объем / выполненную работу)</option>
               </select>
             </div>
-            <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-semibold text-xs min-h-[1.25rem]">
                 {formData.salaryType === 'MONTHLY'
                   ? 'Сумма оклада (₽) *'
                   : formData.salaryType === 'PER_SHIFT'
@@ -490,7 +490,7 @@ export const EmployeesPage: React.FC = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, salaryAmount: Number(e.target.value) })
                 }
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
               />
             </div>
           </div>

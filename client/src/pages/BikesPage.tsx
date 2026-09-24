@@ -911,76 +911,80 @@ export const BikesPage: React.FC = () => {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Серийный № рамы</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Серийный № рамы</label>
               <input
                 type="text"
                 placeholder="FRM-..."
                 value={newBikeForm.frameNumber}
                 onChange={(e) => setNewBikeForm({ ...newBikeForm, frameNumber: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Серийный № мотора</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Серийный № мотора</label>
               <input
                 type="text"
                 placeholder="MTR-..."
                 value={newBikeForm.motorNumber}
                 onChange={(e) => setNewBikeForm({ ...newBikeForm, motorNumber: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                Себестоимость закупки (₽)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={newBikeForm.purchasePrice}
-                onChange={(e) => setNewBikeForm({ ...newBikeForm, purchasePrice: Number(e.target.value) })}
-                className="w-full px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
-              />
-              <span className="text-[10px] text-slate-400">Себестоимость для учета COGS</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
+            <div className="flex flex-col justify-between">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
+                  Себестоимость закупки (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newBikeForm.purchasePrice}
+                  onChange={(e) => setNewBikeForm({ ...newBikeForm, purchasePrice: Number(e.target.value) })}
+                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 mt-1">Себестоимость для учета COGS</span>
             </div>
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                Цена продажи в магазине (₽)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={newBikeForm.salePrice}
-                onChange={(e) => setNewBikeForm({ ...newBikeForm, salePrice: Number(e.target.value) })}
-                className="w-full px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
-              />
-              <span className="text-[10px] text-slate-400">Розничная цена в POS-терминале</span>
+            <div className="flex flex-col justify-between">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
+                  Цена продажи в магазине (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newBikeForm.salePrice}
+                  onChange={(e) => setNewBikeForm({ ...newBikeForm, salePrice: Number(e.target.value) })}
+                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 mt-1">Розничная цена в POS-терминале</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Начальный пробег (км)</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Начальный пробег (км)</label>
               <input
                 type="number"
                 min="0"
                 value={newBikeForm.mileageKm}
                 onChange={(e) => setNewBikeForm({ ...newBikeForm, mileageKm: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
               />
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Текущая локация</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Текущая локация</label>
               <input
                 type="text"
                 value={newBikeForm.currentLocation}
                 onChange={(e) => setNewBikeForm({ ...newBikeForm, currentLocation: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
               />
             </div>
           </div>
@@ -1065,33 +1069,33 @@ export const BikesPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Марка и название модели *</label>
+              <div className="flex flex-col justify-between">
+                <label className="block text-slate-500 dark:text-slate-400 mb-1 text-xs min-h-[1.25rem]">Марка и название модели *</label>
                 <input
                   required
                   type="text"
                   placeholder="Minako Monster 2026 Pro"
                   value={newModelForm.name}
                   onChange={(e) => setNewModelForm({ ...newModelForm, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold"
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Описание / Особенности</label>
+              <div className="flex flex-col justify-between">
+                <label className="block text-slate-500 dark:text-slate-400 mb-1 text-xs min-h-[1.25rem]">Описание / Особенности</label>
                 <input
                   type="text"
                   placeholder="Усиленный багажник, гидравлические тормоза"
                   value={newModelForm.description}
                   onChange={(e) => setNewModelForm({ ...newModelForm, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Мощность мотора (W) *</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col justify-between">
+                <label className="block text-slate-500 dark:text-slate-400 mb-1 text-xs min-h-[1.25rem]">Мощность мотора (W) *</label>
                 <input
                   required
                   type="number"
@@ -1105,12 +1109,12 @@ export const BikesPage: React.FC = () => {
                       powerWatts: e.target.value === '' ? ('' as any) : Number(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold"
                 />
               </div>
 
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1">Диаметр колес (дюймы)</label>
+              <div className="flex flex-col justify-between">
+                <label className="block text-slate-500 dark:text-slate-400 mb-1 text-xs min-h-[1.25rem]">Диаметр колес (дюймы)</label>
                 <input
                   type="number"
                   min="1"
@@ -1123,63 +1127,71 @@ export const BikesPage: React.FC = () => {
                       wheelSizeInch: e.target.value === '' ? ('' as any) : Number(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-semibold"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-2.5 rounded-xl bg-slate-100/50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20">
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                  Закупка (₽)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={newModelForm.purchasePrice}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
-                />
-                <span className="text-[10px] text-slate-400">Себестоимость</span>
+              <div className="flex flex-col justify-between">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
+                    Закупка (₽)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newModelForm.purchasePrice}
+                    onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
+                    className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1">Себестоимость</span>
               </div>
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                  Продажа (₽)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={newModelForm.salePrice}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, salePrice: Number(e.target.value) })}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
-                />
-                <span className="text-[10px] text-slate-400">В магазине</span>
+              <div className="flex flex-col justify-between">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
+                    Продажа (₽)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newModelForm.salePrice}
+                    onChange={(e) => setNewModelForm({ ...newModelForm, salePrice: Number(e.target.value) })}
+                    className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1">В магазине</span>
               </div>
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                  Аренда (₽/пер.)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={newModelForm.baseRentalPrice}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, baseRentalPrice: Number(e.target.value) })}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
-                />
-                <span className="text-[10px] text-slate-400">Базовая аренда</span>
+              <div className="flex flex-col justify-between">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
+                    Аренда (₽/пер.)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newModelForm.baseRentalPrice}
+                    onChange={(e) => setNewModelForm({ ...newModelForm, baseRentalPrice: Number(e.target.value) })}
+                    className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1">Базовая аренда</span>
               </div>
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                  Выкуп (₽)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={newModelForm.baseBuyoutPrice}
-                  onChange={(e) => setNewModelForm({ ...newModelForm, baseBuyoutPrice: Number(e.target.value) })}
-                  className="w-full px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-amber-600 dark:text-amber-400"
-                />
-                <span className="text-[10px] text-slate-400">Базовый выкуп</span>
+              <div className="flex flex-col justify-between">
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
+                    Выкуп (₽)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newModelForm.baseBuyoutPrice}
+                    onChange={(e) => setNewModelForm({ ...newModelForm, baseBuyoutPrice: Number(e.target.value) })}
+                    className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-amber-600 dark:text-amber-400"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1">Базовый выкуп</span>
               </div>
             </div>
 
@@ -1350,13 +1362,13 @@ export const BikesPage: React.FC = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-500 mb-1">Статус байка</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Статус байка</label>
               <select
                 value={editBikeForm.status}
                 onChange={(e) => setEditBikeForm({ ...editBikeForm, status: e.target.value as BikeStatus })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
               >
                 <option value="AVAILABLE">AVAILABLE (Свободен)</option>
                 <option value="RENTED" disabled>RENTED (В аренде)</option>
@@ -1365,44 +1377,48 @@ export const BikesPage: React.FC = () => {
                 <option value="DECOMMISSIONED">DECOMMISSIONED (Списан)</option>
               </select>
             </div>
-            <div>
-              <label className="block text-slate-500 mb-1">Пробег (км)</label>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Пробег (км)</label>
               <input
                 type="number"
                 min="0"
                 value={editBikeForm.mileageKm}
                 onChange={(e) => setEditBikeForm({ ...editBikeForm, mileageKm: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                Себестоимость закупки (₽)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={editBikeForm.purchasePrice}
-                onChange={(e) => setEditBikeForm({ ...editBikeForm, purchasePrice: Number(e.target.value) })}
-                className="w-full px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
-              />
-              <span className="text-[10px] text-slate-400">Себестоимость для учета COGS</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
+            <div className="flex flex-col justify-between">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
+                  Себестоимость закупки (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editBikeForm.purchasePrice}
+                  onChange={(e) => setEditBikeForm({ ...editBikeForm, purchasePrice: Number(e.target.value) })}
+                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 mt-1">Себестоимость для учета COGS</span>
             </div>
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
-                Цена продажи в магазине (₽)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={editBikeForm.salePrice}
-                onChange={(e) => setEditBikeForm({ ...editBikeForm, salePrice: Number(e.target.value) })}
-                className="w-full px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
-              />
-              <span className="text-[10px] text-slate-400">Розничная цена в POS-терминале</span>
+            <div className="flex flex-col justify-between">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
+                  Цена продажи в магазине (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editBikeForm.salePrice}
+                  onChange={(e) => setEditBikeForm({ ...editBikeForm, salePrice: Number(e.target.value) })}
+                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 mt-1">Розничная цена в POS-терминале</span>
             </div>
           </div>
 

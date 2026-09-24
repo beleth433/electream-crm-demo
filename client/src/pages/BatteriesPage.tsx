@@ -1256,33 +1256,37 @@ export const BatteriesPage: React.FC = () => {
 
             {/* Prices */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Себестоимость закупки (₽)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={createForm.purchasePrice}
-                  onChange={(e) => setCreateForm({ ...createForm, purchasePrice: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
-                  placeholder="15000"
-                />
-                <span className="text-[10px] text-slate-400">Себестоимость для финучета и магазина</span>
+              <div className="flex flex-col justify-between">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
+                    Себестоимость закупки (₽)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={createForm.purchasePrice}
+                    onChange={(e) => setCreateForm({ ...createForm, purchasePrice: Number(e.target.value) })}
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                    placeholder="15000"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1">Себестоимость для финучета и магазина</span>
               </div>
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Цена продажи в магазине (₽)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={createForm.salePrice}
-                  onChange={(e) => setCreateForm({ ...createForm, salePrice: Number(e.target.value) })}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
-                  placeholder="25000"
-                />
-                <span className="text-[10px] text-slate-400">Розничная цена при продаже в POS Магазине</span>
+              <div className="flex flex-col justify-between">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
+                    Цена продажи в магазине (₽)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={createForm.salePrice}
+                    onChange={(e) => setCreateForm({ ...createForm, salePrice: Number(e.target.value) })}
+                    className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                    placeholder="25000"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1">Розничная цена при продаже в POS Магазине</span>
               </div>
             </div>
 
@@ -1418,9 +1422,9 @@ export const BatteriesPage: React.FC = () => {
         subtitle="Изменение параметров и статуса батареи"
       >
         <form onSubmit={handleEditSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="flex flex-col justify-between">
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                 Серийный номер *
               </label>
               <input
@@ -1428,18 +1432,18 @@ export const BatteriesPage: React.FC = () => {
                 required
                 value={editForm.serialNumber}
                 onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none font-bold"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none font-bold"
               />
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <div className="flex flex-col justify-between">
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                 Статус
               </label>
               <select
                 value={editForm.status}
                 onChange={(e) => setEditForm({ ...editForm, status: e.target.value as BatteryStatus })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
               >
                 <option value="AVAILABLE">Свободен на складе</option>
                 <option value="INSTALLED">Установлен на байк</option>
@@ -1450,11 +1454,11 @@ export const BatteriesPage: React.FC = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <div className="flex flex-col justify-between">
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                 Тип химии (АКБ)
               </label>
-              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-[38px] items-center">
+              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-10 items-center">
                 <button
                   type="button"
                   onClick={() => setEditForm({ ...editForm, chemistry: 'Li-ion' })}
@@ -1480,20 +1484,20 @@ export const BatteriesPage: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <div className="flex flex-col justify-between">
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                 Вольтаж (V)
               </label>
               <input
                 type="number"
                 value={editForm.voltage}
                 onChange={(e) => setEditForm({ ...editForm, voltage: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <div className="flex flex-col justify-between">
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                 Емкость (Ah)
               </label>
               <input
@@ -1501,12 +1505,12 @@ export const BatteriesPage: React.FC = () => {
                 step="0.1"
                 value={editForm.capacityAh}
                 onChange={(e) => setEditForm({ ...editForm, capacityAh: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <div className="flex flex-col justify-between">
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                 Себестоимость закупки (₽)
               </label>
               <input
@@ -1514,12 +1518,12 @@ export const BatteriesPage: React.FC = () => {
                 min="0"
                 value={editForm.purchasePrice}
                 onChange={(e) => setEditForm({ ...editForm, purchasePrice: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <div className="flex flex-col justify-between sm:col-span-2">
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                 Цена продажи в магазине (₽)
               </label>
               <input
@@ -1527,7 +1531,7 @@ export const BatteriesPage: React.FC = () => {
                 min="0"
                 value={editForm.salePrice}
                 onChange={(e) => setEditForm({ ...editForm, salePrice: Number(e.target.value) })}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
               />
             </div>
           </div>
@@ -1612,9 +1616,9 @@ export const BatteriesPage: React.FC = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="flex flex-col justify-between">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                   Название модели *
                 </label>
                 <input
@@ -1623,15 +1627,15 @@ export const BatteriesPage: React.FC = () => {
                   placeholder="Monster 60V 21Ah"
                   value={newModelForm.name}
                   onChange={(e) => setNewModelForm({ ...newModelForm, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <div className="flex flex-col justify-between">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                   Тип химии (АКБ) *
                 </label>
-                <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-[38px] items-center">
+                <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-10 items-center">
                   <button
                     type="button"
                     onClick={() => setNewModelForm({ ...newModelForm, chemistry: 'Li-ion' })}
@@ -1657,8 +1661,8 @@ export const BatteriesPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <div className="flex flex-col justify-between">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                   Вольтаж (V) *
                 </label>
                 <input
@@ -1674,12 +1678,12 @@ export const BatteriesPage: React.FC = () => {
                       voltage: e.target.value === '' ? ('' as any) : Number(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <div className="flex flex-col justify-between">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                   Емкость (Ah) *
                 </label>
                 <input
@@ -1695,13 +1699,13 @@ export const BatteriesPage: React.FC = () => {
                       capacityAh: e.target.value === '' ? ('' as any) : Number(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Себестоимость (₽)
+              <div className="flex flex-col justify-between">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
+                  Себестоимость закупки (₽)
                 </label>
                 <input
                   type="number"
@@ -1715,13 +1719,13 @@ export const BatteriesPage: React.FC = () => {
                       purchasePrice: e.target.value === '' ? ('' as any) : Number(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Цена продажи (₽)
+              <div className="flex flex-col justify-between">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
+                  Цена продажи в магазине (₽)
                 </label>
                 <input
                   type="number"
@@ -1735,13 +1739,13 @@ export const BatteriesPage: React.FC = () => {
                       salePrice: e.target.value === '' ? ('' as any) : Number(e.target.value),
                     })
                   }
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
+                  className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs min-h-[1.25rem]">
                 Описание / особенности (необязательно)
               </label>
               <input
@@ -1749,7 +1753,7 @@ export const BatteriesPage: React.FC = () => {
                 placeholder="Тяговый Li-ion, для курьерских байков"
                 value={newModelForm.description}
                 onChange={(e) => setNewModelForm({ ...newModelForm, description: e.target.value })}
-                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
