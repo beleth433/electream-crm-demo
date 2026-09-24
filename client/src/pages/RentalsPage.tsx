@@ -142,11 +142,11 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
   const recalculateBuyoutFromItems = (
     bikeModelId: string,
     batteries: TariffBuyoutBatteryItem[],
-    overrides?: { durationDays?: number; paymentIntervalDays?: number }
+    overrides?: { durationDays?: number; paymentIntervalDays?: number; type?: 'STANDARD' | 'RENT_TO_OWN' }
   ) => {
     const selectedBikeModel = models.find((m) => m.id === bikeModelId);
     const bikePrice = selectedBikeModel?.baseBuyoutPrice || 0;
-    const batteriesTotal = batteries.reduce(
+    const batteriesTotal = (batteries || []).reduce(
       (sum, b) => sum + (Number(b.quantity) || 0) * (Number(b.price) || 0),
       0
     );
@@ -158,11 +158,14 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
 
     setTariffForm((prev) => ({
       ...prev,
+      type: overrides?.type ?? prev.type,
       bikeModelId,
       includedBatteries: batteries,
-      totalBuyoutPrice: total > 0 ? total : prev.totalBuyoutPrice,
-      installmentPayment: total > 0 ? inst : prev.installmentPayment,
-      price: total > 0 ? inst : prev.price,
+      durationDays: dur,
+      paymentIntervalDays: interval,
+      totalBuyoutPrice: total > 0 ? total : (prev.totalBuyoutPrice || 60000),
+      installmentPayment: total > 0 ? inst : (prev.installmentPayment || 6000),
+      price: total > 0 ? inst : (prev.price || 6000),
     }));
   };
 
@@ -829,13 +832,16 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     onChange={(e) => {
                       const newType = e.target.value as 'STANDARD' | 'RENT_TO_OWN';
                       if (newType === 'RENT_TO_OWN') {
-                        recalculateBuyoutFromItems(tariffForm.bikeModelId, tariffForm.includedBatteries, { durationDays: 180 });
+                        recalculateBuyoutFromItems(tariffForm.bikeModelId, tariffForm.includedBatteries || [], {
+                          type: 'RENT_TO_OWN',
+                          durationDays: tariffForm.durationDays && tariffForm.durationDays > 30 ? tariffForm.durationDays : 180,
+                        });
                       } else {
                         const selectedModel = models.find((m) => m.id === tariffForm.bikeModelId);
                         setTariffForm((prev) => ({
                           ...prev,
                           type: 'STANDARD',
-                          durationDays: 7,
+                          durationDays: prev.durationDays === 180 ? 7 : (prev.durationDays || 7),
                           price: selectedModel?.baseRentalPrice || 6000,
                         }));
                       }
