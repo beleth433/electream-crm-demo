@@ -412,7 +412,7 @@
   "clients": [
     {
       "id": "cli-1790207788520",
-      "fullName": "Владимир Морозов",
+      "fullName": "Фарход Каримов",
       "phone": "+7 (925) 880-14-11",
       "telegram": null,
       "passportSerial": null,
@@ -514,7 +514,29 @@
     }
   ],
   "rentals": [],
-  "repairs": [],
+  "repairs": [
+    {
+      "id": "rep-1790236642060",
+      "orderNumber": "ЗН-001",
+      "itemType": "EXTERNAL_DEVICE",
+      "bikeId": null,
+      "batteryId": null,
+      "customItemName": "Kugoo v1",
+      "clientName": "Константин Юрьев",
+      "clientPhone": null,
+      "clientId": null,
+      "mechanicId": "usr-mech-1",
+      "status": "DIAGNOSTICS",
+      "faultType": "CLIENT_FAULT",
+      "description": "Прокол колеса",
+      "laborCost": 500,
+      "partsCost": 0,
+      "totalCost": 500,
+      "createdAt": "2026-09-24T07:57:22.060Z",
+      "completedAt": null,
+      "parts": []
+    }
+  ],
   "payments": [
     {
       "id": "pay-1790207788520",
@@ -522,7 +544,7 @@
       "type": "RETAIL_SALE",
       "amount": 1200,
       "method": "SBP",
-      "description": "Розничная продажа (Чек ORD-788520): Владимир Морозов",
+      "description": "Розничная продажа (Чек ORD-788520): Фарход Каримов",
       "createdAt": "2026-09-23T23:56:28.520Z"
     }
   ],
@@ -559,7 +581,7 @@
       "id": "ord-1790207788520",
       "orderNumber": "ORD-788520",
       "customerType": "EXTERNAL",
-      "customerName": "Владимир Морозов",
+      "customerName": "Фарход Каримов",
       "customerPhone": "+7 (925) 880-14-11",
       "clientId": "cli-1790207788520",
       "items": [
