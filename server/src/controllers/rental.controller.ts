@@ -93,4 +93,17 @@ export class RentalController {
       return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
     }
   }
+
+  static delete(req: Request, res: Response) {
+    try {
+      const removed = RentalService.deleteRental(req.params.id);
+      return res.json({
+        success: true,
+        message: `Договор аренды ${removed.rentalNumber} успешно удален`,
+        data: removed,
+      });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
 }

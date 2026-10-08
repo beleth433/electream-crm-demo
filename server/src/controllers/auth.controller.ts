@@ -15,10 +15,11 @@ export class AuthController {
 
   static getMe(req: Request, res: Response) {
     try {
-      const user = AuthService.getMe();
+      const userId = (req.query.userId as string) || (req.headers["x-user-id"] as string);
+      const user = AuthService.getMe(userId);
       return res.json(user);
     } catch (err: any) {
-      return res.status(400).json({ error: err.message });
+      return res.status(404).json({ error: err.message || "Пользователь не найден" });
     }
   }
 }

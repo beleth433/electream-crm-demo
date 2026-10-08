@@ -26,10 +26,18 @@ import {
   CheckCircle2,
   Sparkles,
   Wrench,
+  Package,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 import { QuickSendToRepairModal } from '../components/QuickSendToRepairModal';
+
+const getVoltageBadgeColor = (v: number) => {
+  if (v === 48) return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800';
+  if (v === 60) return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
+  if (v === 72) return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800';
+  return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
+};
 
 export const BikesPage: React.FC = () => {
   const [bikes, setBikes] = useState<Bike[]>([]);
@@ -63,6 +71,8 @@ export const BikesPage: React.FC = () => {
   const [editBikeForm, setEditBikeForm] = useState({
     inventoryNumber: '',
     modelId: '',
+    frameNumber: '',
+    motorNumber: '',
     status: 'AVAILABLE' as BikeStatus,
     currentLocation: '',
     mileageKm: 0,
@@ -78,12 +88,14 @@ export const BikesPage: React.FC = () => {
     setEditBikeForm({
       inventoryNumber: bike.inventoryNumber,
       modelId: bike.modelId,
+      frameNumber: bike.frameNumber || '',
+      motorNumber: bike.motorNumber || '',
       status: bike.status,
       currentLocation: bike.currentLocation,
       mileageKm: bike.mileageKm,
       note: bike.note || '',
       purchasePrice: bike.purchasePrice ?? bike.model?.purchasePrice ?? 0,
-      salePrice: bike.salePrice ?? bike.model?.salePrice ?? 0,
+      salePrice: 0,
     });
     setIsEditBikeModalOpen(true);
   };
@@ -95,8 +107,10 @@ export const BikesPage: React.FC = () => {
       await api.updateBike(editingBike.id, {
         ...editBikeForm,
         purchasePrice: Number(editBikeForm.purchasePrice),
-        salePrice: Number(editBikeForm.salePrice),
+        salePrice: 0,
         mileageKm: Number(editBikeForm.mileageKm),
+        frameNumber: editBikeForm.frameNumber.trim() || null,
+        motorNumber: editBikeForm.motorNumber.trim() || null,
       });
       toast.success(`Данные электровелосипеда ${editBikeForm.inventoryNumber} обновлены`);
       setIsEditBikeModalOpen(false);
@@ -125,7 +139,7 @@ export const BikesPage: React.FC = () => {
       ...prev,
       modelId,
       purchasePrice: selected?.purchasePrice ?? prev.purchasePrice ?? 0,
-      salePrice: selected?.salePrice ?? prev.salePrice ?? 0,
+      salePrice: 0,
     }));
   };
 
@@ -140,7 +154,7 @@ export const BikesPage: React.FC = () => {
         inventoryNumber: nextNum,
         modelId: prev.modelId || models[0]?.id || '',
         purchasePrice: initialModel?.purchasePrice ?? 0,
-        salePrice: initialModel?.salePrice ?? 0,
+        salePrice: 0,
       }));
     } catch {
       const nextNum = calculateNextBikeNumber(bikePrefix, allBikes);
@@ -150,7 +164,7 @@ export const BikesPage: React.FC = () => {
         inventoryNumber: nextNum,
         modelId: prev.modelId || models[0]?.id || '',
         purchasePrice: initialModel?.purchasePrice ?? 0,
-        salePrice: initialModel?.salePrice ?? 0,
+        salePrice: 0,
       }));
     }
     if (models.length === 0) {
@@ -176,6 +190,8 @@ export const BikesPage: React.FC = () => {
   const [isAttachModalOpen, setIsAttachModalOpen] = useState(false);
   const [attachTargetBike, setAttachTargetBike] = useState<Bike | null>(null);
   const [attachSelectedBatteryId, setAttachSelectedBatteryId] = useState<string>('');
+  const [attachBatterySearch, setAttachBatterySearch] = useState('');
+  const [attachBatteryVoltageFilter, setAttachBatteryVoltageFilter] = useState<string>('ALL');
 
 
   // Model Templates Management Modal
@@ -187,9 +203,6 @@ export const BikesPage: React.FC = () => {
     wheelSizeInch: 16.0,
     description: '',
     purchasePrice: 40000,
-    salePrice: 65000,
-    baseRentalPrice: 6000,
-    baseBuyoutPrice: 75000,
   });
 
   const loadData = () => {
@@ -213,7 +226,7 @@ export const BikesPage: React.FC = () => {
             ...prev,
             modelId: modelsRes[0].id,
             purchasePrice: modelsRes[0].purchasePrice ?? prev.purchasePrice,
-            salePrice: modelsRes[0].salePrice ?? prev.salePrice,
+            salePrice: 0,
           }));
         }
       })
@@ -231,7 +244,7 @@ export const BikesPage: React.FC = () => {
       await api.createBike({
         ...newBikeForm,
         purchasePrice: Number(newBikeForm.purchasePrice),
-        salePrice: Number(newBikeForm.salePrice),
+        salePrice: 0,
         batteryId: newBikeForm.batteryId ? newBikeForm.batteryId : undefined,
       });
       toast.success(`Байк ${newBikeForm.inventoryNumber} успешно добавлен в парк!`);
@@ -256,6 +269,8 @@ export const BikesPage: React.FC = () => {
 
   const handleOpenAttachModal = (bike: Bike) => {
     setAttachTargetBike(bike);
+    setAttachBatterySearch('');
+    setAttachBatteryVoltageFilter('ALL');
     setAttachSelectedBatteryId(availableBatteries[0]?.id || '');
     setIsAttachModalOpen(true);
   };
@@ -299,9 +314,6 @@ export const BikesPage: React.FC = () => {
       wheelSizeInch: model.wheelSizeInch ?? 16.0,
       description: model.description || '',
       purchasePrice: model.purchasePrice ?? 40000,
-      salePrice: model.salePrice ?? 65000,
-      baseRentalPrice: model.baseRentalPrice ?? 6000,
-      baseBuyoutPrice: model.baseBuyoutPrice ?? 75000,
     });
   };
 
@@ -313,9 +325,6 @@ export const BikesPage: React.FC = () => {
       wheelSizeInch: 16.0,
       description: '',
       purchasePrice: 40000,
-      salePrice: 65000,
-      baseRentalPrice: 6000,
-      baseBuyoutPrice: 75000,
     });
   };
 
@@ -329,9 +338,6 @@ export const BikesPage: React.FC = () => {
           wheelSizeInch: newModelForm.wheelSizeInch ? Number(newModelForm.wheelSizeInch) : null,
           description: newModelForm.description || '',
           purchasePrice: Number(newModelForm.purchasePrice) || 0,
-          salePrice: Number(newModelForm.salePrice) || 0,
-          baseRentalPrice: Number(newModelForm.baseRentalPrice) || 0,
-          baseBuyoutPrice: Number(newModelForm.baseBuyoutPrice) || 0,
         });
         toast.success(`Шаблон модели "${updated.name}" успешно обновлен!`);
         setEditingModelId(null);
@@ -342,9 +348,6 @@ export const BikesPage: React.FC = () => {
           wheelSizeInch: newModelForm.wheelSizeInch ? Number(newModelForm.wheelSizeInch) : null,
           description: newModelForm.description || '',
           purchasePrice: Number(newModelForm.purchasePrice) || 0,
-          salePrice: Number(newModelForm.salePrice) || 0,
-          baseRentalPrice: Number(newModelForm.baseRentalPrice) || 0,
-          baseBuyoutPrice: Number(newModelForm.baseBuyoutPrice) || 0,
         });
         toast.success(`Шаблон модели "${created.name}" успешно создан!`);
         if (isQuick) {
@@ -361,9 +364,6 @@ export const BikesPage: React.FC = () => {
         wheelSizeInch: 16.0,
         description: '',
         purchasePrice: 40000,
-        salePrice: 65000,
-        baseRentalPrice: 6000,
-        baseBuyoutPrice: 75000,
       });
     } catch (err: any) {
       toast.error(err.message || 'Ошибка сохранения шаблона модели');
@@ -411,6 +411,21 @@ export const BikesPage: React.FC = () => {
       }
     }
   };
+
+  const availableVoltages = Array.from(new Set(availableBatteries.map((b) => b.voltage))).sort((a, b) => a - b);
+
+  const filteredAttachBatteries = availableBatteries.filter((b) => {
+    const matchVoltage = attachBatteryVoltageFilter === 'ALL' || String(b.voltage) === attachBatteryVoltageFilter;
+    const q = attachBatterySearch.toLowerCase().trim();
+    const matchSearch =
+      !q ||
+      b.serialNumber.toLowerCase().includes(q) ||
+      (b.modelName && b.modelName.toLowerCase().includes(q)) ||
+      (b.chemistry && b.chemistry.toLowerCase().includes(q));
+    return matchVoltage && matchSearch;
+  });
+
+  const selectedAttachBat = availableBatteries.find((b) => b.id === attachSelectedBatteryId);
 
   return (
     <div className="space-y-6">
@@ -590,15 +605,6 @@ export const BikesPage: React.FC = () => {
                     ).toLocaleString('ru-RU')} ₽
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-500">
-                  <span>Цена в магазине:</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                    {((bike.salePrice !== undefined && bike.salePrice > 0)
-                      ? bike.salePrice
-                      : bike.model?.salePrice || 0
-                    ).toLocaleString('ru-RU')} ₽
-                  </span>
-                </div>
                 <div className="flex items-start gap-1 text-[11px] text-slate-400 mt-2">
                   <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                   <span className="truncate">{bike.currentLocation}</span>
@@ -622,20 +628,22 @@ export const BikesPage: React.FC = () => {
               )}
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-              {bike.note ? (
-                <p className="text-[11px] text-slate-400 italic truncate max-w-[160px]" title={bike.note}>
-                  {bike.note}
-                </p>
-              ) : (
-                <span className="text-[10px] text-slate-400">ID: {bike.id}</span>
-              )}
+            <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0 max-w-[140px] sm:max-w-[160px]">
+                {bike.note ? (
+                  <p className="text-[11px] text-slate-400 italic truncate" title={bike.note}>
+                    {bike.note}
+                  </p>
+                ) : (
+                  <span className="text-[10px] text-slate-400">ID: {bike.id}</span>
+                )}
+              </div>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5 flex-wrap shrink-0">
                 {bike.status === 'AVAILABLE' && (
                   <button
                     onClick={() => setSendToRepairBike(bike)}
-                    className="p-1 px-2 rounded-lg flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 transition-all border border-amber-500/20 shadow-sm"
+                    className="h-8 px-2.5 rounded-lg flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 transition-all border border-amber-500/20 shadow-2xs"
                     title="Отправить электровелосипед на ТО в мастерскую СТО"
                   >
                     <Wrench className="w-3.5 h-3.5" />
@@ -643,7 +651,7 @@ export const BikesPage: React.FC = () => {
                   </button>
                 )}
                 {bike.status === 'IN_MAINTENANCE' && (
-                  <span className="p-1 px-2 rounded-lg text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 flex items-center gap-1">
+                  <span className="h-8 px-2.5 rounded-lg text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 flex items-center gap-1">
                     <Wrench className="w-3 h-3" />
                     В СТО
                   </span>
@@ -651,24 +659,24 @@ export const BikesPage: React.FC = () => {
 
                 <button
                   onClick={() => handleOpenEditBikeModal(bike)}
-                  className="p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all"
+                  className="h-8 px-2 rounded-lg flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all border border-slate-200/60 dark:border-slate-800"
                   title="Редактировать параметры и цены байка"
                 >
                   <Edit className="w-3.5 h-3.5" />
-                  <span>Изменить</span>
+                  <span className="hidden sm:inline">Изменить</span>
                 </button>
                 <button
                   onClick={() => handleDeleteBike(bike)}
                   title={bike.status === 'RENTED' ? 'Нельзя удалить: байк в аренде' : 'Удалить байк из парка'}
                   disabled={bike.status === 'RENTED'}
-                  className={`p-1.5 rounded-lg flex items-center gap-1 text-[11px] font-semibold transition-all ${
+                  className={`h-8 px-2 rounded-lg flex items-center gap-1 text-[11px] font-semibold transition-all border ${
                     bike.status === 'RENTED'
-                      ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
-                      : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+                      ? 'text-slate-300 dark:text-slate-700 border-transparent cursor-not-allowed'
+                      : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border-slate-200/60 dark:border-slate-800'
                   }`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Удалить</span>
+                  <span className="hidden sm:inline">Удалить</span>
                 </button>
               </div>
             </div>
@@ -809,49 +817,17 @@ export const BikesPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] text-slate-400 mb-0.5">Себестоимость закупки (₽)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newModelForm.purchasePrice}
-                      onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-400 mb-0.5">Цена продажи в магазине (₽)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newModelForm.salePrice}
-                      onChange={(e) => setNewModelForm({ ...newModelForm, salePrice: Number(e.target.value) })}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] text-slate-400 mb-0.5">Базовая аренда (₽/период)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newModelForm.baseRentalPrice}
-                      onChange={(e) => setNewModelForm({ ...newModelForm, baseRentalPrice: Number(e.target.value) })}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 font-semibold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-slate-400 mb-0.5">Базовый выкуп (₽)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newModelForm.baseBuyoutPrice}
-                      onChange={(e) => setNewModelForm({ ...newModelForm, baseBuyoutPrice: Number(e.target.value) })}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs text-amber-600 dark:text-amber-400 font-semibold"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-0.5">Базовая себестоимость закупки (₽)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={newModelForm.purchasePrice}
+                    onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
+                    className="w-full px-2 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+                  />
+                  <span className="text-[9px] text-slate-400">Ориентир цены закупки у поставщика для учета затрат</span>
                 </div>
                 <div className="flex items-center justify-end pt-1">
                   <button
@@ -888,6 +864,17 @@ export const BikesPage: React.FC = () => {
                 ))}
               </select>
             )}
+
+            {!isQuickCreateModelOpen && models.length > 0 && (() => {
+              const selectedM = models.find((m) => m.id === newBikeForm.modelId);
+              if (!selectedM) return null;
+              return (
+                <div className="mt-1.5 px-2 py-1 text-[11px] text-slate-400 flex items-center justify-between">
+                  <span>Характеристики: {selectedM.powerWatts}W {selectedM.wheelSizeInch ? `• ${selectedM.wheelSizeInch}"` : ''}</span>
+                  <span>Базовая закупка модели: <strong className="text-slate-700 dark:text-slate-300">{selectedM.purchasePrice?.toLocaleString('ru-RU') || 0} ₽</strong></span>
+                </div>
+              );
+            })()}
           </div>
 
           <div>
@@ -934,36 +921,26 @@ export const BikesPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
-            <div className="flex flex-col justify-between">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
-                  Себестоимость закупки (₽)
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                  Фактическая себестоимость закупки этого байка (₽)
                 </label>
+                <span className="text-[11px] text-slate-400">
+                  Учитывается в расходах на парк (COGS). По умолчанию взята из шаблона модели.
+                </span>
+              </div>
+              <div className="w-full sm:w-44">
                 <input
                   type="number"
                   min="0"
+                  step="any"
                   value={newBikeForm.purchasePrice}
                   onChange={(e) => setNewBikeForm({ ...newBikeForm, purchasePrice: Number(e.target.value) })}
-                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100"
                 />
               </div>
-              <span className="text-[10px] text-slate-400 mt-1">Себестоимость для учета COGS</span>
-            </div>
-            <div className="flex flex-col justify-between">
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
-                  Цена продажи в магазине (₽)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={newBikeForm.salePrice}
-                  onChange={(e) => setNewBikeForm({ ...newBikeForm, salePrice: Number(e.target.value) })}
-                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
-                />
-              </div>
-              <span className="text-[10px] text-slate-400 mt-1">Розничная цена в POS-терминале</span>
             </div>
           </div>
 
@@ -973,6 +950,7 @@ export const BikesPage: React.FC = () => {
               <input
                 type="number"
                 min="0"
+                step="any"
                 value={newBikeForm.mileageKm}
                 onChange={(e) => setNewBikeForm({ ...newBikeForm, mileageKm: Number(e.target.value) })}
                 className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
@@ -1132,66 +1110,26 @@ export const BikesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-2.5 rounded-xl bg-slate-100/50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20">
-              <div className="flex flex-col justify-between">
+            <div className="p-3 rounded-xl bg-slate-100/50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
-                    Закупка (₽)
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-0.5">
+                    Базовая себестоимость закупки у поставщика (₽)
                   </label>
+                  <span className="text-[11px] text-slate-400">
+                    Ориентир цены закупки для учета затрат на парк (COGS). Тарифы аренды и выкупа настраиваются отдельно в разделе «Аренда».
+                  </span>
+                </div>
+                <div className="w-full sm:w-48 shrink-0">
                   <input
                     type="number"
                     min="0"
+                    step="any"
                     value={newModelForm.purchasePrice}
                     onChange={(e) => setNewModelForm({ ...newModelForm, purchasePrice: Number(e.target.value) })}
-                    className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+                    className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100"
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 mt-1">Себестоимость</span>
-              </div>
-              <div className="flex flex-col justify-between">
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
-                    Продажа (₽)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newModelForm.salePrice}
-                    onChange={(e) => setNewModelForm({ ...newModelForm, salePrice: Number(e.target.value) })}
-                    className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-400 mt-1">В магазине</span>
-              </div>
-              <div className="flex flex-col justify-between">
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
-                    Аренда (₽/пер.)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newModelForm.baseRentalPrice}
-                    onChange={(e) => setNewModelForm({ ...newModelForm, baseRentalPrice: Number(e.target.value) })}
-                    className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-400 mt-1">Базовая аренда</span>
-              </div>
-              <div className="flex flex-col justify-between">
-                <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
-                    Выкуп (₽)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newModelForm.baseBuyoutPrice}
-                    onChange={(e) => setNewModelForm({ ...newModelForm, baseBuyoutPrice: Number(e.target.value) })}
-                    className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-amber-600 dark:text-amber-400"
-                  />
-                </div>
-                <span className="text-[10px] text-slate-400 mt-1">Базовый выкуп</span>
               </div>
             </div>
 
@@ -1275,21 +1213,6 @@ export const BikesPage: React.FC = () => {
                             Закупка: {m.purchasePrice.toLocaleString('ru-RU')} ₽
                           </span>
                         )}
-                        {m.salePrice !== undefined && (
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 font-semibold">
-                            Продажа: {m.salePrice.toLocaleString('ru-RU')} ₽
-                          </span>
-                        )}
-                        {m.baseRentalPrice !== undefined && (
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 font-medium">
-                            Аренда: {m.baseRentalPrice.toLocaleString('ru-RU')} ₽
-                          </span>
-                        )}
-                        {m.baseBuyoutPrice !== undefined && (
-                          <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-300 font-medium">
-                            Выкуп: {m.baseBuyoutPrice.toLocaleString('ru-RU')} ₽
-                          </span>
-                        )}
                       </div>
                     </div>
 
@@ -1364,6 +1287,29 @@ export const BikesPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Серийный № рамы</label>
+              <input
+                type="text"
+                placeholder="FRM-..."
+                value={editBikeForm.frameNumber}
+                onChange={(e) => setEditBikeForm({ ...editBikeForm, frameNumber: e.target.value })}
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
+              />
+            </div>
+            <div className="flex flex-col justify-between">
+              <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Серийный № мотора</label>
+              <input
+                type="text"
+                placeholder="MTR-..."
+                value={editBikeForm.motorNumber}
+                onChange={(e) => setEditBikeForm({ ...editBikeForm, motorNumber: e.target.value })}
+                className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col justify-between">
               <label className="block text-slate-500 mb-1 text-xs min-h-[1.25rem]">Статус байка</label>
               <select
                 value={editBikeForm.status}
@@ -1373,7 +1319,7 @@ export const BikesPage: React.FC = () => {
                 <option value="AVAILABLE">AVAILABLE (Свободен)</option>
                 <option value="RENTED" disabled>RENTED (В аренде)</option>
                 <option value="IN_MAINTENANCE">IN_MAINTENANCE (На СТО)</option>
-                <option value="FOR_SALE">FOR_SALE (На продажу в магазин)</option>
+                <option value="FOR_SALE">FOR_SALE (На продажу)</option>
                 <option value="DECOMMISSIONED">DECOMMISSIONED (Списан)</option>
               </select>
             </div>
@@ -1382,6 +1328,7 @@ export const BikesPage: React.FC = () => {
               <input
                 type="number"
                 min="0"
+                step="any"
                 value={editBikeForm.mileageKm}
                 onChange={(e) => setEditBikeForm({ ...editBikeForm, mileageKm: Number(e.target.value) })}
                 className="w-full h-9 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
@@ -1389,36 +1336,26 @@ export const BikesPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
-            <div className="flex flex-col justify-between">
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
-                  Себестоимость закупки (₽)
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                  Фактическая себестоимость закупки (₽)
                 </label>
+                <span className="text-[11px] text-slate-400">
+                  Учитывается в затратах на технику (COGS)
+                </span>
+              </div>
+              <div className="w-full sm:w-44">
                 <input
                   type="number"
                   min="0"
+                  step="any"
                   value={editBikeForm.purchasePrice}
                   onChange={(e) => setEditBikeForm({ ...editBikeForm, purchasePrice: Number(e.target.value) })}
-                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold"
+                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100"
                 />
               </div>
-              <span className="text-[10px] text-slate-400 mt-1">Себестоимость для учета COGS</span>
-            </div>
-            <div className="flex flex-col justify-between">
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1 text-xs min-h-[1.25rem]">
-                  Цена продажи в магазине (₽)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={editBikeForm.salePrice}
-                  onChange={(e) => setEditBikeForm({ ...editBikeForm, salePrice: Number(e.target.value) })}
-                  className="w-full h-9 px-3 py-1.5 bg-white dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/25 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400"
-                />
-              </div>
-              <span className="text-[10px] text-slate-400 mt-1">Розничная цена в POS-терминале</span>
             </div>
           </div>
 
@@ -1536,62 +1473,219 @@ export const BikesPage: React.FC = () => {
           setAttachTargetBike(null);
         }}
         title={`Установка аккумулятора на байк ${attachTargetBike?.inventoryNumber}`}
-        subtitle="Привязка тяговой батареи со склада"
-        maxWidth="md"
+        subtitle="Выбор тяговой батареи со склада"
+        maxWidth="2xl"
       >
         <form onSubmit={handleAttachSubmit} className="space-y-4 text-xs">
-          <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-            <span className="text-slate-400">Выбранный электровелосипед:</span>
-            <div className="text-sm font-bold text-white flex items-center gap-2">
-              <BikeIcon className="w-4 h-4 text-sky-400" />
-              {attachTargetBike?.inventoryNumber} — {attachTargetBike?.model?.name}
-            </div>
-            <p className="text-slate-400 text-[11px]">
-              Локация: {attachTargetBike?.currentLocation}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">
-              Выберите свободный АКБ со склада:
-            </label>
-            {availableBatteries.length === 0 ? (
-              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs">
-                ⚠️ На складе нет свободных аккумуляторов. Сначала оприходуйте новый АКБ или снимите батарею с другого байка.
+          {/* Target Bike Banner */}
+          <div className="p-3 rounded-xl bg-slate-100 dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Целевой электровелосипед:</span>
+              <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mt-0.5">
+                <BikeIcon className="w-4 h-4 text-emerald-500" />
+                {attachTargetBike?.inventoryNumber} — {attachTargetBike?.model?.name}
               </div>
-            ) : (
-              <select
-                value={attachSelectedBatteryId}
-                onChange={(e) => setAttachSelectedBatteryId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
-              >
-                {availableBatteries.map((bat) => (
-                  <option key={bat.id} value={bat.id}>
-                    {bat.serialNumber} ({bat.voltage}V {bat.capacityAh}Ah • {bat.chemistry || 'Li-ion'})
-                  </option>
-                ))}
-              </select>
-            )}
+            </div>
+            <div className="text-left sm:text-right">
+              <span className="text-[10px] text-slate-400 block">Локация</span>
+              <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                {attachTargetBike?.currentLocation}
+              </span>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => {
-                setIsAttachModalOpen(false);
-                setAttachTargetBike(null);
-              }}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300"
-            >
-              Отмена
-            </button>
-            <button
-              type="submit"
-              disabled={availableBatteries.length === 0}
-              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm"
-            >
-              Установить АКБ
-            </button>
+          {availableBatteries.length === 0 ? (
+            <div className="p-6 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-center space-y-2">
+              <BatteryCharging className="w-8 h-8 text-amber-500 mx-auto" />
+              <p className="font-bold text-amber-800 dark:text-amber-200">
+                На складе нет свободных аккумуляторов
+              </p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 max-w-sm mx-auto">
+                Все батареи либо установлены на других байках, либо выданы курьерам, либо находятся на ТО. Оприходуйте новый АКБ в разделе «Склад аккумуляторов».
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {/* Search and Filters */}
+              <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
+                <div className="relative flex-1">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Поиск по номеру АКБ, модели, химии..."
+                    value={attachBatterySearch}
+                    onChange={(e) => setAttachBatterySearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
+                  />
+                  {attachBatterySearch && (
+                    <button
+                      type="button"
+                      onClick={() => setAttachBatterySearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Voltage Filter Pills */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => setAttachBatteryVoltageFilter('ALL')}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                      attachBatteryVoltageFilter === 'ALL'
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                    }`}
+                  >
+                    Все ({availableBatteries.length})
+                  </button>
+                  {availableVoltages.map((volt) => {
+                    const count = availableBatteries.filter((b) => b.voltage === volt).length;
+                    return (
+                      <button
+                        key={volt}
+                        type="button"
+                        onClick={() => setAttachBatteryVoltageFilter(String(volt))}
+                        className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                          attachBatteryVoltageFilter === String(volt)
+                            ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                        }`}
+                      >
+                        {volt}V ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Cards Grid */}
+              {filteredAttachBatteries.length === 0 ? (
+                <div className="p-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
+                  <p className="text-slate-500 dark:text-slate-400">
+                    Нет свободных аккумуляторов, подходящих под критерии поиска
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAttachBatterySearch('');
+                      setAttachBatteryVoltageFilter('ALL');
+                    }}
+                    className="text-xs text-emerald-500 hover:underline font-semibold"
+                  >
+                    Сбросить фильтры
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                  {filteredAttachBatteries.map((bat) => {
+                    const isSelected = attachSelectedBatteryId === bat.id;
+                    return (
+                      <div
+                        key={bat.id}
+                        onClick={() => setAttachSelectedBatteryId(bat.id)}
+                        className={`cursor-pointer rounded-xl p-3.5 border transition-all text-xs flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-500/10 dark:bg-emerald-950/30 ring-2 ring-emerald-500/30 shadow-md'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#101d17] hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        <div>
+                          {/* Top row: Badges & Select state */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span
+                                className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold border ${getVoltageBadgeColor(
+                                  bat.voltage
+                                )}`}
+                              >
+                                {bat.voltage}V {bat.capacityAh}Ah
+                              </span>
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                                  bat.chemistry === 'LiFePO4'
+                                    ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                                    : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                                }`}
+                              >
+                                {bat.chemistry || 'Li-ion'}
+                              </span>
+                            </div>
+
+                            <div
+                              className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border ${
+                                isSelected
+                                  ? 'bg-emerald-500 border-emerald-500 text-slate-950'
+                                  : 'border-slate-300 dark:border-slate-700 text-transparent'
+                              }`}
+                            >
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                          </div>
+
+                          {/* Serial & Model */}
+                          <div className="mt-2.5">
+                            <div className="font-mono font-bold text-sm text-slate-900 dark:text-white">
+                              {bat.serialNumber}
+                            </div>
+                            {bat.modelName && (
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                {bat.modelName}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Specs & Notes */}
+                        <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px]">
+                          <span className="text-slate-400">
+                            Себестоимость: <strong className="text-slate-700 dark:text-slate-300 font-mono">{bat.purchasePrice ? `${bat.purchasePrice.toLocaleString()} ₽` : '—'}</strong>
+                          </span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            Свободен
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              {selectedAttachBat ? (
+                <span>
+                  Выбран АКБ: <strong className="font-mono text-emerald-600 dark:text-emerald-400">{selectedAttachBat.serialNumber}</strong> ({selectedAttachBat.voltage}V {selectedAttachBat.capacityAh}Ah)
+                </span>
+              ) : (
+                'Выберите АКБ из карточек'
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAttachModalOpen(false);
+                  setAttachTargetBike(null);
+                }}
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 text-xs"
+              >
+                Отмена
+              </button>
+              <button
+                type="submit"
+                disabled={!attachSelectedBatteryId || availableBatteries.length === 0}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-sm text-xs transition"
+              >
+                Установить АКБ
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

@@ -1,3 +1,4 @@
+import fs from "fs";
 import { Request, Response } from "express";
 import {
   getSystemTime,
@@ -6,6 +7,10 @@ import {
   isTimeSimulated,
   resetDb,
   clearDb,
+  flushDb,
+  getDb,
+  getStorageStatus,
+  DB_FILE,
 } from "../repositories/db.js";
 
 export class SystemController {
@@ -60,13 +65,37 @@ export class SystemController {
     }
   }
 
-  static clearTemplates(req: Request, res: Response) {
+  static async clearTemplates(req: Request, res: Response) {
     try {
       clearDb();
+      await flushDb();
       return res.json({
         success: true,
-        message: "Все рабочие шаблоны (аренды, ремонты, платежи) очищены. Вся техника и экипировка свободны на складе.",
+        message: "Все рабочие шаблоны (аренды, ремонты, платежи) очищены. База полностью пуста.",
       });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  static downloadBackup(req: Request, res: Response) {
+    try {
+      const timestamp = new Date().toISOString().slice(0, 10);
+      res.setHeader("Content-Disposition", `attachment; filename="crm_db_backup_${timestamp}.json"`);
+      res.setHeader("Content-Type", "application/json");
+
+      if (fs.existsSync(DB_FILE)) {
+        return res.sendFile(DB_FILE);
+      }
+      return res.send(JSON.stringify(getDb(), null, 2));
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  static getStorageStatus(req: Request, res: Response) {
+    try {
+      return res.json(getStorageStatus());
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }

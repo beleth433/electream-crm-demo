@@ -81,10 +81,10 @@ export const ReviewsPage: React.FC = () => {
 
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all self-start sm:self-auto"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all self-stretch sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
-          Зафиксировать отзыв курьера
+          <Plus className="w-4 h-4 shrink-0" />
+          <span>Зафиксировать отзыв курьера</span>
         </button>
       </div>
 
@@ -169,14 +169,14 @@ export const ReviewsPage: React.FC = () => {
         subtitle="Оценка качества байка и сервиса"
         maxWidth="md"
       >
-        <form onSubmit={handleCreateReview} className="space-y-3 text-xs">
+        <form onSubmit={handleCreateReview} className="space-y-4 text-xs">
           <div>
-            <label className="block text-slate-500 mb-1">Курьер *</label>
+            <label className="block text-slate-500 mb-1 font-semibold">Курьер *</label>
             <select
               required
               value={newReviewForm.clientId}
               onChange={(e) => setNewReviewForm({ ...newReviewForm, clientId: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+              className="w-full h-11 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-xs"
             >
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -187,12 +187,12 @@ export const ReviewsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-slate-500 mb-1">Электровелосипед *</label>
+            <label className="block text-slate-500 mb-1 font-semibold">Электровелосипед *</label>
             <select
               required
               value={newReviewForm.bikeId}
               onChange={(e) => setNewReviewForm({ ...newReviewForm, bikeId: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
+              className="w-full h-11 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-xs"
             >
               {bikes.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -203,17 +203,17 @@ export const ReviewsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-slate-500 mb-1">Оценка техники (1-5 звезд) *</label>
+            <label className="block text-slate-500 mb-1 font-semibold">Оценка техники (1-5 звезд) *</label>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   type="button"
                   key={star}
                   onClick={() => setNewReviewForm({ ...newReviewForm, rating: star })}
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                  className={`flex-1 h-11 rounded-xl border text-sm font-bold transition-all flex items-center justify-center gap-1 ${
                     newReviewForm.rating === star
-                      ? 'bg-amber-500 text-white border-amber-500'
-                      : 'border-slate-200 dark:border-slate-700'
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50'
                   }`}
                 >
                   ★ {star}
@@ -223,13 +223,13 @@ export const ReviewsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-slate-500 mb-1">Текст отзыва / комментарий</label>
+            <label className="block text-slate-500 mb-1 font-semibold">Текст отзыва / комментарий</label>
             <textarea
               rows={3}
               placeholder="Как держит заряд батарея, удобство посадки, работа тормозов..."
               value={newReviewForm.comment}
               onChange={(e) => setNewReviewForm({ ...newReviewForm, comment: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-xs"
             />
           </div>
 
@@ -237,13 +237,13 @@ export const ReviewsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 border border-slate-200 rounded-xl"
+              className="px-4 py-2.5 h-11 border border-slate-200 dark:border-slate-700 font-semibold rounded-xl text-xs"
             >
               Отмена
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-sm"
+              className="px-5 py-2.5 h-11 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl shadow-sm text-xs transition-colors"
             >
               Сохранить отзыв
             </button>

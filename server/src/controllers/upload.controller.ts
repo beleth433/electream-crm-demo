@@ -3,9 +3,17 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-const uploadsDir = path.resolve(process.cwd(), "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+const isVercel = Boolean(process.env.VERCEL);
+const uploadsDir = isVercel
+  ? path.resolve("/tmp", "uploads")
+  : path.resolve(process.cwd(), "uploads");
+
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (err: any) {
+  // Gracefully ignore directory creation failure in read-only serverless environments
 }
 
 const storage = multer.diskStorage({

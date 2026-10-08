@@ -1,4 +1,4 @@
-import { getDb, getSystemTime, RentalStatus, RentalType, PaymentMethod, OutfitStatus, BikeStatus, TariffBuyoutBatteryItem } from "./db.js";
+import { getDb, getSystemTime, saveDb, RentalStatus, RentalType, PaymentMethod, OutfitStatus, BikeStatus, TariffBuyoutBatteryItem } from "./db.js";
 
 export class RentalRepository {
   private static refreshOverdueStatuses() {
@@ -47,7 +47,11 @@ export class RentalRepository {
     });
 
     if (filters?.status) {
-      list = list.filter((r) => r.status === filters.status);
+      if (filters.status === "ACTIVE") {
+        list = list.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+      } else {
+        list = list.filter((r) => r.status === filters.status);
+      }
     }
     if (filters?.clientId) {
       list = list.filter((r) => r.clientId === filters.clientId);
@@ -69,7 +73,9 @@ export class RentalRepository {
   static getById(id: string) {
     this.refreshOverdueStatuses();
     const db = getDb();
-    const r = db.rentals.find((rent) => rent.id === id);
+    const r = db.rentals.find(
+      (rent) => rent.id === id || rent.rentalNumber?.toLowerCase() === id.toLowerCase()
+    );
     if (!r) return null;
 
     const client = db.clients.find((c) => c.id === r.clientId);
@@ -196,6 +202,7 @@ export class RentalRepository {
     rentalNumber?: string;
     customDeposit?: number;
     durationDays?: number;
+    startDate?: string;
     totalBuyoutPrice?: number;
     paymentIntervalDays?: number;
     installmentPayment?: number;
@@ -260,14 +267,22 @@ export class RentalRepository {
     const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? (installmentPayment ?? tariff.price) : tariff.price);
 
     const now = getSystemTime();
+    let startDate = now;
+    if (data.startDate) {
+      const parsedStart = new Date(data.startDate);
+      if (!isNaN(parsedStart.getTime())) {
+        startDate = parsedStart;
+      }
+    }
+
     const nextPaymentDue = isRentToOwn
-      ? new Date(now.getTime() + paymentIntervalDays * 86400000)
-      : new Date(now.getTime() + tariff.durationDays * 86400000);
+      ? new Date(startDate.getTime() + paymentIntervalDays * 86400000)
+      : new Date(startDate.getTime() + tariff.durationDays * 86400000);
     const effectiveDurationDays = data.durationDays && data.durationDays > 0 ? data.durationDays : tariff.durationDays;
-    const expiresAt = new Date(now.getTime() + effectiveDurationDays * 86400000);
+    const expiresAt = new Date(startDate.getTime() + effectiveDurationDays * 86400000);
     const rentalNumber = data.rentalNumber && data.rentalNumber.trim()
       ? data.rentalNumber.trim()
-      : `RNT-${now.getFullYear()}-${(db.rentals.length + 1).toString().padStart(3, "0")}`;
+      : `RNT-${startDate.getFullYear()}-${(db.rentals.length + 1).toString().padStart(3, "0")}`;
     const depositAmount = data.customDeposit !== undefined ? data.customDeposit : tariff.depositRequired;
 
     // 6. Create Rental record
@@ -278,9 +293,9 @@ export class RentalRepository {
       bikeId: data.bikeId,
       tariffId: data.tariffId,
       managerId: data.managerId || db.users[1].id,
-      status: "ACTIVE" as RentalStatus,
+      status: (nextPaymentDue < now ? "OVERDUE" : "ACTIVE") as RentalStatus,
       type: tariff.type,
-      startedAt: now.toISOString(),
+      startedAt: startDate.toISOString(),
       expiresAt: expiresAt.toISOString(),
       nextPaymentDue: nextPaymentDue.toISOString(),
       depositAmount,
@@ -328,18 +343,20 @@ export class RentalRepository {
     });
 
     // 10. Record Payments
-    // Payment 1: Rental fee or initial buyout installment
-    db.payments.push({
-      id: `pay-${Date.now()}-1`,
-      rentalId: rental.id,
-      type: isRentToOwn ? "BUYOUT" : "RENTAL",
-      amount: firstPaymentAmount,
-      method: data.paymentMethod,
-      description: isRentToOwn
-        ? `Первоначальный взнос по выкупу тарифа "${tariff.name}" по договору ${rental.rentalNumber}`
-        : `Оплата тарифа "${tariff.name}" по договору ${rental.rentalNumber}`,
-      createdAt: now.toISOString(),
-    });
+    // Payment 1: Rental fee or initial buyout installment (if > 0)
+    if (firstPaymentAmount > 0) {
+      db.payments.push({
+        id: `pay-${Date.now()}-1`,
+        rentalId: rental.id,
+        type: isRentToOwn ? "BUYOUT" : "RENTAL",
+        amount: firstPaymentAmount,
+        method: data.paymentMethod,
+        description: isRentToOwn
+          ? `Первоначальный взнос по выкупу тарифа "${tariff.name}" по договору ${rental.rentalNumber}`
+          : `Оплата тарифа "${tariff.name}" по договору ${rental.rentalNumber}`,
+        createdAt: startDate.toISOString(),
+      });
+    }
 
     // Payment 2: Deposit (if > 0)
     if (depositAmount > 0) {
@@ -350,7 +367,7 @@ export class RentalRepository {
         amount: depositAmount,
         method: data.paymentMethod,
         description: `Обеспечительный залог по договору ${rental.rentalNumber}`,
-        createdAt: now.toISOString(),
+        createdAt: startDate.toISOString(),
       });
     }
 
@@ -543,11 +560,38 @@ export class RentalRepository {
       });
     }
 
+    saveDb(true);
+
     return {
       rental: this.getById(rental.id),
       repairOrder: repairOrderCreated,
       depositReturned: netRefund,
       totalDeduction,
     };
+  }
+
+  static delete(id: string) {
+    const db = getDb();
+    const index = db.rentals.findIndex((r) => r.id === id);
+    if (index === -1) {
+      throw new Error("Договор аренды не найден");
+    }
+
+    const rental = db.rentals[index];
+
+    // Safety guard: only allow deleting non-active rentals (e.g. completed, bought out, draft, reserved)
+    if (rental.status === "ACTIVE" || rental.status === "OVERDUE") {
+      throw new Error(
+        `Нельзя удалить активный или просроченный договор (${rental.rentalNumber}). Сначала завершите аренду и оформите возврат техники.`
+      );
+    }
+
+    const [removed] = db.rentals.splice(index, 1);
+
+    // Also remove associated rental payments to keep database consistent
+    db.payments = db.payments.filter((p) => p.rentalId !== id);
+
+    saveDb(true);
+    return removed;
   }
 }

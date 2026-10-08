@@ -64,16 +64,47 @@ export type PaymentType =
   | "OUTFIT_SALE"
   | "FINE"
   | "SALARY_PAYMENT"
-  | "RETAIL_SALE";
+  | "RETAIL_SALE"
+  | "PART_PURCHASE";
 
 export type PaymentMethod = "CASH" | "CARD" | "SBP" | "BANK_TRANSFER";
 
+export interface AccessLevelModulePermission {
+  visible: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+export interface AccessLevel {
+  id: string;
+  name: string;
+  description?: string;
+  isSystem?: boolean;
+  canManageEmployees: boolean;
+  canSeeProfits: boolean;
+  permissions: Record<string, AccessLevelModulePermission>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
+  login?: string;
+  username?: string;
   email: string;
   fullName: string;
   role: UserRole;
+  roleTitle?: string;
   phone?: string | null;
+  accessLevelId?: string;
+  accessLevel?: AccessLevel | null;
+  isActive?: boolean;
+  lastLoginAt?: string | null;
+  password?: string;
+  employeeId?: string | null;
+  salaryAmount?: number;
+  salaryType?: 'MONTHLY' | 'PER_SHIFT' | 'PIECEWORK';
+  thisMonthPaid?: number;
 }
 
 export interface BikeModel {
@@ -340,6 +371,37 @@ export interface Part {
   isLowStock?: boolean;
 }
 
+export type PartOrderStatus = "REQUESTED" | "ORDERED" | "RECEIVED" | "ARCHIVED" | "CANCELLED";
+export type PartOrderPriority = "LOW" | "NORMAL" | "URGENT";
+
+export interface PartOrderCategoryItem {
+  id: string;
+  name: string;
+  isSystem?: boolean;
+  orderCount?: number;
+}
+
+export interface PartOrder {
+  id: string;
+  partName: string;
+  partId?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  quantity: number;
+  orderUrl?: string | null;
+  priority: PartOrderPriority;
+  status: PartOrderStatus;
+  estimatedPrice?: number;
+  actualCost?: number;
+  note?: string | null;
+  requestedBy?: string;
+  requestedAt: string;
+  orderedAt?: string | null;
+  receivedAt?: string | null;
+  paymentId?: string | null;
+  paymentMethod?: PaymentMethod | null;
+}
+
 export interface RepairOrder {
   id: string;
   orderNumber: string;
@@ -413,10 +475,11 @@ export interface Article {
   title: string;
   category: string;
   content: string;
-  authorId: string;
+  authorId?: string;
   authorName?: string;
+  pinned?: boolean;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface Employee {
@@ -543,6 +606,7 @@ export interface DashboardStats {
       clientId: string;
       clientName: string;
       clientPhone: string;
+      clientTelegram?: string | null;
       courierService: string;
       bikeInventoryNumber: string;
       daysOverdue: number;
@@ -560,6 +624,7 @@ export interface DashboardStats {
   financials: {
     totalRevenue: number;
     rentalRevenue: number;
+    buyoutRevenue?: number;
     clientRepairRevenue: number;
     outfitRevenue: number;
     retailRevenue?: number;
@@ -567,6 +632,9 @@ export interface DashboardStats {
     totalPartsCost: number;
     retailCogs?: number;
     fixedExpenses: number;
+    monthlyFixedExpenses?: number;
+    fixedExpensesDescription?: string;
+    fixedExpenseItems?: ExpenseItem[];
     netMargin: number;
     activeDepositsHeld: number;
   };
@@ -589,3 +657,62 @@ export interface DashboardStats {
     isSimulated: boolean;
   };
 }
+
+export interface ExpenseItem {
+  id: string;
+  name: string;
+  amount: number;
+}
+
+export interface PaymentDetails {
+  recipientName?: string;
+  bankName?: string;
+  phoneNumber?: string;
+  accountNumber?: string;
+  bik?: string;
+  inn?: string;
+  paymentLinkUrl?: string; // Прямая ссылка для онлайн-оплаты (сбор Т-Банк, Сбер, эквайринг)
+  instructionNote?: string;
+}
+
+export interface FinanceSettings {
+  monthlyFixedExpenses: number;
+  fixedExpensesDescription?: string;
+  fixedExpenseItems?: ExpenseItem[];
+  paymentDetails?: PaymentDetails;
+}
+
+export interface HistoryItem {
+  id: string;
+  category: 'RENTAL' | 'PAYMENT' | 'REPAIR' | 'FLEET' | 'CLIENT' | 'INFO' | 'SYSTEM';
+  action: string;
+  title: string;
+  details: string;
+  timestamp: string;
+  actor: string;
+  amount?: number;
+  badgeText: string;
+  badgeColor: string;
+  entityId?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole?: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface PresenceUser {
+  userId: string;
+  userName: string;
+  userRole?: string;
+  roleTitle?: string;
+  lastSeenAt: string;
+  deviceInfo?: string;
+}
+
+
+

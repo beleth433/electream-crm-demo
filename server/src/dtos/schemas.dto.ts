@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const LoginDto = z.object({
-  email: z.string().email("Некорректный email"),
-  password: z.string().optional(),
+  email: z.string().min(2, "Введите логин или email"),
+  password: z.string().min(1, "Введите пароль для входа"),
 });
 
 export const BikeCreateDto = z.object({
@@ -99,6 +99,7 @@ export const RentalCreateDto = z.object({
   rentalNumber: z.string().optional(),
   customDeposit: z.number().optional(),
   durationDays: z.number().int().positive().optional(),
+  startDate: z.string().optional(),
   totalBuyoutPrice: z.number().min(0).optional(),
   paymentIntervalDays: z.number().int().positive().optional(),
   installmentPayment: z.number().min(0).optional(),
@@ -203,13 +204,96 @@ export const PartRestockDto = z.object({
   quantity: z.number().positive("Количество должно быть больше 0"),
 });
 
+export const PartOrderCreateDto = z.object({
+  partName: z.string().min(2, "Укажите название запчасти"),
+  partId: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+  categoryName: z.string().optional().nullable(),
+  quantity: z.number().min(1, "Количество должно быть от 1 шт."),
+  orderUrl: z.string().optional().nullable(),
+  priority: z.enum(["LOW", "NORMAL", "URGENT"]).optional().default("NORMAL"),
+  estimatedPrice: z.number().min(0).optional(),
+  note: z.string().optional().nullable(),
+  requestedBy: z.string().optional().nullable(),
+});
+
+export const PartOrderUpdateDto = z.object({
+  partName: z.string().min(2).optional(),
+  partId: z.string().optional().nullable(),
+  categoryId: z.string().optional().nullable(),
+  categoryName: z.string().optional().nullable(),
+  quantity: z.number().min(1).optional(),
+  orderUrl: z.string().optional().nullable(),
+  priority: z.enum(["LOW", "NORMAL", "URGENT"]).optional(),
+  status: z.enum(["REQUESTED", "ORDERED", "RECEIVED", "ARCHIVED", "CANCELLED"]).optional(),
+  estimatedPrice: z.number().min(0).optional(),
+  actualCost: z.number().min(0).optional(),
+  note: z.string().optional().nullable(),
+  requestedBy: z.string().optional().nullable(),
+});
+
+export const PartOrderStatusDto = z.object({
+  status: z.enum(["REQUESTED", "ORDERED", "RECEIVED", "ARCHIVED", "CANCELLED"]),
+  actualCost: z.number().min(0).optional(),
+  paymentMethod: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).optional(),
+  addToStock: z.boolean().optional(),
+  createPartData: z
+    .object({
+      name: z.string().optional(),
+      sku: z.string().optional(),
+      categoryId: z.string().optional(),
+      quantity: z.number().min(0).optional(),
+      minQuantity: z.number().min(0).optional(),
+      purchasePrice: z.number().min(0).optional(),
+      clientPrice: z.number().min(0).optional(),
+    })
+    .optional(),
+});
+
 export const PaymentCreateDto = z.object({
   rentalId: z.string().optional(),
-  type: z.enum(["RENTAL", "DEPOSIT", "DEPOSIT_REFUND", "REPAIR", "OUTFIT_SALE", "FINE"]),
+  orderId: z.string().optional().nullable(),
+  type: z.enum(["RENTAL", "DEPOSIT", "DEPOSIT_REFUND", "REPAIR", "OUTFIT_SALE", "FINE", "SALARY_PAYMENT", "RETAIL_SALE", "BUYOUT", "PART_PURCHASE"]),
   amount: z.number().positive("Сумма должна быть положительной"),
   method: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),
   description: z.string().optional(),
 });
+
+export const PaymentUpdateDto = z.object({
+  rentalId: z.string().optional().nullable(),
+  orderId: z.string().optional().nullable(),
+  type: z.enum(["RENTAL", "DEPOSIT", "DEPOSIT_REFUND", "REPAIR", "OUTFIT_SALE", "FINE", "SALARY_PAYMENT", "RETAIL_SALE", "BUYOUT", "PART_PURCHASE"]).optional(),
+  amount: z.number().positive("Сумма должна быть положительной").optional(),
+  method: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).optional(),
+  description: z.string().optional().nullable(),
+  createdAt: z.string().optional(),
+});
+
+export const ExpenseItemDto = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Название статьи обязательно"),
+  amount: z.number().min(0, "Сумма не может быть отрицательной"),
+});
+
+export const PaymentDetailsDto = z.object({
+  recipientName: z.string().optional(),
+  bankName: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  accountNumber: z.string().optional(),
+  bik: z.string().optional(),
+  inn: z.string().optional(),
+  paymentLinkUrl: z.string().optional(),
+  instructionNote: z.string().optional(),
+});
+
+export const FinanceSettingsUpdateDto = z.object({
+  monthlyFixedExpenses: z.number().min(0, "Сумма не может быть отрицательной").optional(),
+  fixedExpensesDescription: z.string().optional(),
+  fixedExpenseItems: z.array(ExpenseItemDto).optional(),
+  paymentDetails: PaymentDetailsDto.optional(),
+});
+
+
 
 export const ReviewCreateDto = z.object({
   clientId: z.string().min(1, "Курьер обязателен"),
@@ -219,8 +303,16 @@ export const ReviewCreateDto = z.object({
 });
 
 export const ArticleCreateDto = z.object({
-  title: z.string().min(3, "Заголовок статьи обязателен"),
+  title: z.string().min(2, "Заголовок статьи обязателен"),
   category: z.string().min(2, "Категория обязательна"),
-  content: z.string().min(10, "Содержимое статьи обязательно"),
+  content: z.string().min(2, "Содержимое статьи обязательно"),
   authorId: z.string().optional(),
+  pinned: z.boolean().optional().default(false),
+});
+
+export const ArticleUpdateDto = z.object({
+  title: z.string().min(2).optional(),
+  category: z.string().min(2).optional(),
+  content: z.string().min(2).optional(),
+  pinned: z.boolean().optional(),
 });

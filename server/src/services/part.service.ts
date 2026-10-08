@@ -56,5 +56,51 @@ export class PartService {
   static deletePart(id: string) {
     return PartRepository.delete(id);
   }
+
+  // --- Procurement Orders ---
+  static getOrderCategories() {
+    return PartRepository.getOrderCategories();
+  }
+
+  static createOrderCategory(data: { name: string }) {
+    return PartRepository.createOrderCategory(data);
+  }
+
+  static updateOrderCategory(id: string, name: string) {
+    return PartRepository.updateOrderCategory(id, name);
+  }
+
+  static deleteOrderCategory(id: string) {
+    return PartRepository.deleteOrderCategory(id);
+  }
+
+  static getOrders(filters?: { status?: string; search?: string; categoryId?: string }) {
+    return PartRepository.getOrders(filters);
+  }
+
+  static createOrder(data: any) {
+    return PartRepository.createOrder(data);
+  }
+
+  static updateOrder(id: string, data: any) {
+    return PartRepository.updateOrder(id, data);
+  }
+
+  static updateOrderStatus(
+    id: string,
+    status: any,
+    options?: {
+      actualCost?: number;
+      paymentMethod?: any;
+      addToStock?: boolean;
+      createPartData?: any;
+    }
+  ) {
+    return PartRepository.updateOrderStatus(id, status, options);
+  }
+
+  static deleteOrder(id: string, options?: { deletePayment?: boolean }) {
+    return PartRepository.deleteOrder(id, options);
+  }
 }
 

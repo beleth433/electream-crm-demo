@@ -421,31 +421,90 @@ export class BatteryRepository {
     };
   }
 
+  static returnToWarehouse(batteryId: string) {
+    const db = getDb();
+    const battery = db.batteries.find((b) => b.id === batteryId);
+    if (!battery) throw new Error("Аккумулятор не найден");
+
+    const now = new Date().toISOString();
+
+    // 1. If installed on a bike
+    if (battery.installedBikeId) {
+      const bike = db.bikes.find((b) => b.id === battery.installedBikeId);
+      if (bike) {
+        bike.batteryId = null;
+        bike.updatedAt = now;
+      }
+      battery.installedBikeId = null;
+    }
+
+    // 2. If recorded as bike.batteryId directly
+    const bikeHolding = db.bikes.find((b) => b.batteryId === batteryId);
+    if (bikeHolding) {
+      bikeHolding.batteryId = null;
+      bikeHolding.updatedAt = now;
+    }
+
+    // 3. If issued as spare or included in active rentals
+    const activeRentals = db.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+    for (const r of activeRentals) {
+      if (r.batteryIds && r.batteryIds.includes(batteryId)) {
+        r.batteryIds = r.batteryIds.filter((id) => id !== batteryId);
+        r.updatedAt = now;
+      }
+    }
+
+    battery.status = "AVAILABLE";
+    battery.issuedBikeId = null;
+    battery.installedBikeId = null;
+    battery.updatedAt = now;
+
+    return {
+      success: true,
+      message: `АКБ ${battery.serialNumber} возвращен на склад`,
+      battery: this.getById(battery.id),
+    };
+  }
+
   static detachFromBike(bikeId: string) {
     const db = getDb();
     const bike = db.bikes.find((b) => b.id === bikeId);
     if (!bike) throw new Error("Электровелосипед не найден");
 
+    const now = new Date().toISOString();
     let detachedBattery: BatteryRecord | null = null;
+    const targetBatteryId = bike.batteryId;
 
-    if (bike.batteryId) {
-      const battery = db.batteries.find((b) => b.id === bike.batteryId);
+    if (targetBatteryId) {
+      const battery = db.batteries.find((b) => b.id === targetBatteryId);
       if (battery) {
         battery.installedBikeId = null;
+        battery.issuedBikeId = null;
         battery.status = "AVAILABLE";
-        battery.updatedAt = new Date().toISOString();
+        battery.updatedAt = now;
         detachedBattery = battery;
       }
       bike.batteryId = null;
-      bike.updatedAt = new Date().toISOString();
+      bike.updatedAt = now;
     } else {
       // Check if any battery points to this bike
       const orphanBattery = db.batteries.find((b) => b.installedBikeId === bikeId);
       if (orphanBattery) {
         orphanBattery.installedBikeId = null;
+        orphanBattery.issuedBikeId = null;
         orphanBattery.status = "AVAILABLE";
-        orphanBattery.updatedAt = new Date().toISOString();
+        orphanBattery.updatedAt = now;
         detachedBattery = orphanBattery;
+      }
+    }
+
+    // If bike was in active rental, keep rental's batteryIds updated
+    if (detachedBattery) {
+      const activeRentals = db.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+      const rental = activeRentals.find((r) => r.bikeId === bikeId);
+      if (rental && rental.batteryIds) {
+        rental.batteryIds = rental.batteryIds.filter((id) => id !== detachedBattery!.id);
+        rental.updatedAt = now;
       }
     }
 
@@ -455,6 +514,99 @@ export class BatteryRepository {
         battery: null,
       },
       battery: detachedBattery ? this.getById(detachedBattery.id) : null,
+    };
+  }
+
+  static swapBatteryGeneral({
+    oldBatteryId,
+    newBatteryId,
+    sendOldToCharging = false,
+  }: {
+    oldBatteryId: string;
+    newBatteryId: string;
+    sendOldToCharging?: boolean;
+  }) {
+    const db = getDb();
+    const oldBat = db.batteries.find((b) => b.id === oldBatteryId);
+    if (!oldBat) throw new Error("Текущий аккумулятор не найден");
+
+    const newBat = db.batteries.find((b) => b.id === newBatteryId);
+    if (!newBat) throw new Error("Новый аккумулятор не найден");
+
+    if (newBat.status !== "AVAILABLE") {
+      throw new Error(`Выбранный аккумулятор ${newBat.serialNumber} недоступен (статус: ${newBat.status})`);
+    }
+
+    const now = new Date().toISOString();
+
+    // Check active rentals
+    const activeRentals = db.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+    const rental = activeRentals.find(
+      (r) =>
+        (r.batteryIds && r.batteryIds.includes(oldBat.id)) ||
+        (oldBat.installedBikeId && r.bikeId === oldBat.installedBikeId) ||
+        (oldBat.issuedBikeId && r.bikeId === oldBat.issuedBikeId)
+    );
+
+    if (oldBat.status === "ISSUED_SPARE" || (!oldBat.installedBikeId && rental)) {
+      // Spare battery replacement
+      newBat.status = "ISSUED_SPARE";
+      newBat.issuedBikeId = oldBat.issuedBikeId || (rental ? rental.bikeId : null);
+      newBat.installedBikeId = null;
+      newBat.updatedAt = now;
+
+      if (rental) {
+        if (!rental.batteryIds) rental.batteryIds = [];
+        rental.batteryIds = rental.batteryIds.map((id) => (id === oldBat.id ? newBat.id : id));
+        if (!rental.batteryIds.includes(newBat.id)) {
+          rental.batteryIds.push(newBat.id);
+        }
+        rental.updatedAt = now;
+      }
+
+      oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
+      oldBat.issuedBikeId = null;
+      oldBat.installedBikeId = null;
+      oldBat.updatedAt = now;
+    } else if (oldBat.installedBikeId) {
+      // Bike-installed battery replacement
+      const bike = db.bikes.find((b) => b.id === oldBat.installedBikeId);
+      if (bike) {
+        bike.batteryId = newBat.id;
+        bike.updatedAt = now;
+      }
+
+      newBat.status = "INSTALLED";
+      newBat.installedBikeId = oldBat.installedBikeId;
+      newBat.issuedBikeId = null;
+      newBat.updatedAt = now;
+
+      if (rental) {
+        if (!rental.batteryIds) rental.batteryIds = [];
+        rental.batteryIds = rental.batteryIds.map((id) => (id === oldBat.id ? newBat.id : id));
+        if (!rental.batteryIds.includes(newBat.id)) {
+          rental.batteryIds.push(newBat.id);
+        }
+        rental.updatedAt = now;
+      }
+
+      oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
+      oldBat.installedBikeId = null;
+      oldBat.issuedBikeId = null;
+      oldBat.updatedAt = now;
+    } else {
+      // Default replacement
+      newBat.status = "AVAILABLE";
+      newBat.updatedAt = now;
+      oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
+      oldBat.updatedAt = now;
+    }
+
+    return {
+      success: true,
+      message: `Замена АКБ выполнена: ${oldBat.serialNumber} ➔ ${newBat.serialNumber}`,
+      oldBattery: this.getById(oldBat.id),
+      newBattery: this.getById(newBat.id),
     };
   }
 

@@ -7,37 +7,59 @@ import {
   Client,
   Rental,
   Tariff,
-  Outfit,
-  OutfitCategoryItem,
-  OutfitTemplate,
   RepairOrder,
   Part,
+  PartOrder,
   PartCategoryItem,
+  PartOrderCategoryItem,
   Payment,
   Review,
-  Article,
   DashboardStats,
   User,
   Employee,
-  RetailOrder,
-  ShopCatalog,
+  FinanceSettings,
+  ExpenseItem,
+  Article,
+  HistoryItem,
+  AccessLevel,
+  ChatMessage,
+  PresenceUser,
+  Outfit,
+  OutfitCategoryItem,
+  OutfitTemplate,
   LoyaltyTier,
+  ShopCatalog,
+  RetailOrder,
 } from '../types';
 
-const API_BASE = '/api';
+const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
+      Pragma: 'no-cache',
+      'Cache-Control': 'no-cache',
       ...options?.headers,
     },
     ...options,
   });
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error ${res.status}`);
+    let errorMessage = `HTTP error ${res.status}`;
+    try {
+      const text = await res.text();
+      try {
+        const errorData = JSON.parse(text);
+        if (errorData.error) errorMessage = errorData.error;
+      } catch {
+        if (text && text.length < 200) errorMessage = `${errorMessage}: ${text}`;
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(errorMessage);
   }
 
   return res.json();
@@ -45,7 +67,8 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   // Auth
-  getMe: () => fetchJson<User>('/auth/me'),
+  getMe: (userId?: string) =>
+    fetchJson<User>(userId ? `/auth/me?userId=${encodeURIComponent(userId)}` : '/auth/me'),
   login: (email: string, password?: string) =>
     fetchJson<{ token: string; user: User }>('/auth/login', {
       method: 'POST',
@@ -85,16 +108,25 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ batteryId, bikeId }),
     }),
-  detachBattery: (bikeId: string) =>
-    fetchJson<{ bike: Bike; battery: Battery | null }>('/batteries/detach', {
+  detachBattery: (target: string | { bikeId?: string; batteryId?: string }) => {
+    const body = typeof target === 'string' ? { bikeId: target } : target;
+    return fetchJson<{ bike?: Bike; battery: Battery | null }>('/batteries/detach', {
       method: 'POST',
-      body: JSON.stringify({ bikeId }),
-    }),
-  swapBattery: (bikeId: string, newBatteryId: string) =>
-    fetchJson<{ bike: Bike; battery: Battery }>('/batteries/swap', {
+      body: JSON.stringify(body),
+    });
+  },
+  swapBattery: (
+    target: string | { bikeId?: string; oldBatteryId?: string; newBatteryId: string; sendOldToCharging?: boolean },
+    newBatteryId?: string
+  ) => {
+    const body = typeof target === 'string'
+      ? { bikeId: target, newBatteryId }
+      : target;
+    return fetchJson<{ bike?: Bike; oldBattery?: Battery; newBattery?: Battery }>('/batteries/swap', {
       method: 'POST',
-      body: JSON.stringify({ bikeId, newBatteryId }),
-    }),
+      body: JSON.stringify(body),
+    });
+  },
 
   // Bikes
   getBikes: (params?: { status?: string; modelId?: string; search?: string }) => {
@@ -143,21 +175,6 @@ export const api = {
   deleteClient: (id: string) =>
     fetchJson<{ success: boolean; message: string }>(`/clients/${id}`, { method: 'DELETE' }),
 
-  // Loyalty System (Система лояльности)
-  getLoyaltyTiers: () => fetchJson<LoyaltyTier[]>('/loyalty/tiers'),
-  getLoyaltyTier: (id: string) => fetchJson<LoyaltyTier>(`/loyalty/tiers/${id}`),
-  createLoyaltyTier: (data: Partial<LoyaltyTier>) =>
-    fetchJson<LoyaltyTier>('/loyalty/tiers', { method: 'POST', body: JSON.stringify(data) }),
-  updateLoyaltyTier: (id: string, data: Partial<LoyaltyTier>) =>
-    fetchJson<LoyaltyTier>(`/loyalty/tiers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  deleteLoyaltyTier: (id: string) =>
-    fetchJson<{ message: string }>(`/loyalty/tiers/${id}`, { method: 'DELETE' }),
-  setClientLoyaltyTier: (clientId: string, manualLoyaltyTierId: string | null) =>
-    fetchJson<Client>(`/loyalty/clients/${clientId}/tier`, {
-      method: 'PATCH',
-      body: JSON.stringify({ manualLoyaltyTierId }),
-    }),
-
   // Rentals
   getRentals: (params?: { status?: string; search?: string; clientId?: string }) => {
     const q = new URLSearchParams();
@@ -185,6 +202,7 @@ export const api = {
     rentalNumber?: string;
     customDeposit?: number;
     durationDays?: number;
+    startDate?: string;
     totalBuyoutPrice?: number;
     paymentIntervalDays?: number;
     installmentPayment?: number;
@@ -221,35 +239,9 @@ export const api = {
       depositReturned: number;
       totalDeduction: number;
     }>(`/rentals/${id}/close`, { method: 'POST', body: JSON.stringify(data) }),
+  deleteRental: (id: string) =>
+    fetchJson<{ success: boolean; message?: string }>(`/rentals/${id}`, { method: 'DELETE' }),
 
-  // Outfits
-  getOutfitCategories: () => fetchJson<OutfitCategoryItem[]>('/outfits/categories'),
-  createOutfitCategory: (data: { name: string }) =>
-    fetchJson<OutfitCategoryItem>('/outfits/categories', { method: 'POST', body: JSON.stringify(data) }),
-  deleteOutfitCategory: (id: string) =>
-    fetchJson<{ success: boolean; message: string }>(`/outfits/categories/${id}`, { method: 'DELETE' }),
-  getOutfitTemplates: () => fetchJson<OutfitTemplate[]>('/outfits/templates'),
-  createOutfitTemplate: (data: { name: string; categoryId: string; defaultDeposit: number; description?: string }) =>
-    fetchJson<OutfitTemplate>('/outfits/templates', { method: 'POST', body: JSON.stringify(data) }),
-  deleteOutfitTemplate: (id: string) =>
-    fetchJson<{ success: boolean; message: string }>(`/outfits/templates/${id}`, { method: 'DELETE' }),
-  getOutfits: (params?: { category?: string; status?: string; search?: string }) => {
-    const q = new URLSearchParams();
-    if (params?.category) q.append('category', params.category);
-    if (params?.status) q.append('status', params.status);
-    if (params?.search) q.append('search', params.search);
-    return fetchJson<Outfit[]>(`/outfits?${q.toString()}`);
-  },
-  getAvailableOutfits: () => fetchJson<Outfit[]>('/outfits/available'),
-  createOutfit: (data: Partial<Outfit>) =>
-    fetchJson<Outfit>('/outfits', { method: 'POST', body: JSON.stringify(data) }),
-  updateOutfitStatus: (id: string, status: string) =>
-    fetchJson<Outfit>(`/outfits/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    }),
-  deleteOutfit: (id: string) =>
-    fetchJson<{ success: boolean; message: string }>(`/outfits/${id}`, { method: 'DELETE' }),
 
   // Repairs
   getRepairs: (params?: { status?: string; faultType?: string; bikeId?: string }) => {
@@ -317,6 +309,55 @@ export const api = {
   deletePart: (id: string) =>
     fetchJson<{ success: boolean; message: string }>(`/parts/${id}`, { method: 'DELETE' }),
 
+  // Part Procurement Orders (Заявки на закупку)
+  getPartOrderCategories: () => fetchJson<PartOrderCategoryItem[]>('/parts/orders/categories'),
+  createPartOrderCategory: (data: { name: string }) =>
+    fetchJson<PartOrderCategoryItem>('/parts/orders/categories', { method: 'POST', body: JSON.stringify(data) }),
+  updatePartOrderCategory: (id: string, data: { name: string }) =>
+    fetchJson<PartOrderCategoryItem>(`/parts/orders/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deletePartOrderCategory: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/parts/orders/categories/${id}`, { method: 'DELETE' }),
+
+  getPartOrders: (params?: { status?: string; search?: string; categoryId?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.append('status', params.status);
+    if (params?.search) q.append('search', params.search);
+    if (params?.categoryId) q.append('categoryId', params.categoryId);
+    return fetchJson<PartOrder[]>(`/parts/orders?${q.toString()}`);
+  },
+  createPartOrder: (data: Partial<PartOrder>) =>
+    fetchJson<PartOrder>('/parts/orders', { method: 'POST', body: JSON.stringify(data) }),
+  updatePartOrder: (id: string, data: Partial<PartOrder>) =>
+    fetchJson<PartOrder>(`/parts/orders/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  updatePartOrderStatus: (
+    id: string,
+    status: string,
+    options?: {
+      actualCost?: number;
+      paymentMethod?: string;
+      addToStock?: boolean;
+      createPartData?: {
+        name?: string;
+        sku?: string;
+        categoryId?: string;
+        quantity?: number;
+        minQuantity?: number;
+        purchasePrice?: number;
+        clientPrice?: number;
+      };
+    }
+  ) =>
+    fetchJson<PartOrder>(`/parts/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, ...options }),
+    }),
+  deletePartOrder: (id: string, options?: { deletePayment?: boolean }) => {
+    const q = new URLSearchParams();
+    if (options?.deletePayment !== undefined) q.append('deletePayment', String(options.deletePayment));
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return fetchJson<{ success: boolean; message: string }>(`/parts/orders/${id}${qs}`, { method: 'DELETE' });
+  },
+
   // Finance
   getPayments: (params?: { type?: string; method?: string; rentalId?: string }) => {
     const q = new URLSearchParams();
@@ -329,15 +370,33 @@ export const api = {
     fetchJson<{
       totalRevenue: number;
       rentalPayments: number;
+      buyoutPayments: number;
       repairPayments: number;
       outfitSales: number;
       fines: number;
+      salaryExpenses?: number;
+      totalPartsCost?: number;
+      monthlyFixedExpenses?: number;
+      fixedExpensesDescription?: string;
+      fixedExpenseItems?: ExpenseItem[];
+      fixedExpenses?: number;
+      netMargin?: number;
       depositsCollected: number;
       depositsRefunded: number;
       activeDepositsHeld: number;
     }>('/payments/summary'),
+  getFinanceSettings: () => fetchJson<FinanceSettings>('/payments/settings'),
+  updateFinanceSettings: (data: Partial<FinanceSettings>) =>
+    fetchJson<FinanceSettings>('/payments/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
   createPayment: (data: Partial<Payment>) =>
     fetchJson<Payment>('/payments', { method: 'POST', body: JSON.stringify(data) }),
+  updatePayment: (id: string, data: Partial<Payment>) =>
+    fetchJson<Payment>(`/payments/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deletePayment: (id: string) =>
+    fetchJson<{ success: boolean; removed?: Payment }>(`/payments/${id}`, { method: 'DELETE' }),
 
   // Reviews
   getReviews: (params?: { bikeId?: string; clientId?: string }) => {
@@ -349,16 +408,6 @@ export const api = {
   createReview: (data: { clientId: string; bikeId: string; rating: number; comment?: string }) =>
     fetchJson<Review>('/reviews', { method: 'POST', body: JSON.stringify(data) }),
 
-  // Knowledge Base (Articles)
-  getArticles: (category?: string) => {
-    const q = category ? `?category=${encodeURIComponent(category)}` : '';
-    return fetchJson<Article[]>(`/articles${q}`);
-  },
-  getArticle: (id: string) => fetchJson<Article>(`/articles/${id}`),
-  createArticle: (data: { title: string; category: string; content: string }) =>
-    fetchJson<Article>('/articles', { method: 'POST', body: JSON.stringify(data) }),
-  updateArticle: (id: string, data: { title?: string; category?: string; content?: string }) =>
-    fetchJson<Article>(`/articles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
   // File Upload
   uploadFile: async (file: File): Promise<{ url: string; filename: string }> => {
@@ -402,6 +451,116 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  // Articles / Knowledge Base ("Информация")
+  getArticles: (params?: { category?: string; search?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.category) q.append('category', params.category);
+    if (params?.search) q.append('search', params.search);
+    return fetchJson<Article[]>(`/articles?${q.toString()}`);
+  },
+  getArticleCategories: () => fetchJson<string[]>('/articles/categories'),
+  getArticle: (id: string) => fetchJson<Article>(`/articles/${id}`),
+  createArticle: (data: Partial<Article>) =>
+    fetchJson<Article>('/articles', { method: 'POST', body: JSON.stringify(data) }),
+  updateArticle: (id: string, data: Partial<Article>) =>
+    fetchJson<Article>(`/articles/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteArticle: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/articles/${id}`, { method: 'DELETE' }),
+  clearAllArticles: () =>
+    fetchJson<{ success: boolean; message: string; count: number }>('/articles/clear-all', { method: 'DELETE' }),
+  resetDefaultArticles: () =>
+    fetchJson<{ success: boolean; message: string; articles: Article[] }>('/articles/reset-defaults', { method: 'POST' }),
+
+  // History & Audit Log ("История")
+  getHistory: (params?: { category?: string; search?: string; limit?: number; days?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.category) q.append('category', params.category);
+    if (params?.search) q.append('search', params.search);
+    if (params?.limit) q.append('limit', String(params.limit));
+    if (params?.days) q.append('days', String(params.days));
+    return fetchJson<{ items: HistoryItem[]; totalCount: number }>(`/history?${q.toString()}`);
+  },
+  logHistory: (data: { category: string; action: string; title: string; details?: string; amount?: number }) =>
+    fetchJson<HistoryItem>('/history', { method: 'POST', body: JSON.stringify(data) }),
+  clearHistory: () =>
+    fetchJson<{ success: boolean; message: string }>('/history', { method: 'DELETE' }),
+
+  // Access Levels (Уровни доступа / RBAC)
+  getAccessLevels: () => fetchJson<AccessLevel[]>('/access-levels'),
+  getAccessLevel: (id: string) => fetchJson<AccessLevel>(`/access-levels/${id}`),
+  createAccessLevel: (data: Partial<AccessLevel>) =>
+    fetchJson<AccessLevel>('/access-levels', { method: 'POST', body: JSON.stringify(data) }),
+  updateAccessLevel: (id: string, data: Partial<AccessLevel>) =>
+    fetchJson<AccessLevel>(`/access-levels/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteAccessLevel: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/access-levels/${id}`, { method: 'DELETE' }),
+
+  // Team Users (Служебные аккаунты, логины и доступы)
+  getUsers: () => fetchJson<User[]>('/users'),
+  createUser: (data: any) => fetchJson<User>('/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (id: string, data: any) =>
+    fetchJson<User>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteUser: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/users/${id}`, { method: 'DELETE' }),
+
+  // Team Chat ("Командный чат базы")
+  getChatMessages: (limit = 100) => fetchJson<ChatMessage[]>(`/chat/messages?limit=${limit}`),
+  sendChatMessage: (data: { text: string; senderId?: string; senderName?: string; senderRole?: string }) =>
+    fetchJson<ChatMessage>('/chat/messages', { method: 'POST', body: JSON.stringify(data) }),
+  deleteChatMessage: (id: string) =>
+    fetchJson<{ success: boolean }>(`/chat/messages/${id}`, { method: 'DELETE' }),
+
+  // Team Presence & Online Status
+  getOnlineUsers: () => fetchJson<PresenceUser[]>('/presence'),
+  sendPresenceHeartbeat: (data: { userId: string; userName: string; userRole?: string; roleTitle?: string; deviceInfo?: string }) =>
+    fetchJson<PresenceUser[]>('/presence/heartbeat', { method: 'POST', body: JSON.stringify(data) }),
+  sendPresenceLogout: (userId: string) =>
+    fetchJson<{ success: boolean }>('/presence/logout', { method: 'POST', body: JSON.stringify({ userId }) }),
+
+  // Outfits
+  getOutfitCategories: () => fetchJson<OutfitCategoryItem[]>('/outfits/categories'),
+  createOutfitCategory: (data: { name: string }) =>
+    fetchJson<OutfitCategoryItem>('/outfits/categories', { method: 'POST', body: JSON.stringify(data) }),
+  deleteOutfitCategory: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/outfits/categories/${id}`, { method: 'DELETE' }),
+  getOutfitTemplates: () => fetchJson<OutfitTemplate[]>('/outfits/templates'),
+  createOutfitTemplate: (data: { name: string; categoryId: string; defaultDeposit: number; description?: string }) =>
+    fetchJson<OutfitTemplate>('/outfits/templates', { method: 'POST', body: JSON.stringify(data) }),
+  deleteOutfitTemplate: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/outfits/templates/${id}`, { method: 'DELETE' }),
+  getOutfits: (params?: { category?: string; status?: string; search?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.category) q.append('category', params.category);
+    if (params?.status) q.append('status', params.status);
+    if (params?.search) q.append('search', params.search);
+    return fetchJson<Outfit[]>(`/outfits?${q.toString()}`);
+  },
+  getAvailableOutfits: () => fetchJson<Outfit[]>('/outfits/available'),
+  createOutfit: (data: Partial<Outfit>) =>
+    fetchJson<Outfit>('/outfits', { method: 'POST', body: JSON.stringify(data) }),
+  updateOutfitStatus: (id: string, status: string) =>
+    fetchJson<Outfit>(`/outfits/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+  deleteOutfit: (id: string) =>
+    fetchJson<{ success: boolean; message: string }>(`/outfits/${id}`, { method: 'DELETE' }),
+
+  // Loyalty System
+  getLoyaltyTiers: () => fetchJson<LoyaltyTier[]>('/loyalty/tiers'),
+  getLoyaltyTier: (id: string) => fetchJson<LoyaltyTier>(`/loyalty/tiers/${id}`),
+  createLoyaltyTier: (data: Partial<LoyaltyTier>) =>
+    fetchJson<LoyaltyTier>('/loyalty/tiers', { method: 'POST', body: JSON.stringify(data) }),
+  updateLoyaltyTier: (id: string, data: Partial<LoyaltyTier>) =>
+    fetchJson<LoyaltyTier>(`/loyalty/tiers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteLoyaltyTier: (id: string) =>
+    fetchJson<{ message: string }>(`/loyalty/tiers/${id}`, { method: 'DELETE' }),
+  setClientLoyaltyTier: (clientId: string, manualLoyaltyTierId: string | null) =>
+    fetchJson<Client>(`/loyalty/clients/${clientId}/tier`, {
+      method: 'PATCH',
+      body: JSON.stringify({ manualLoyaltyTierId }),
+    }),
+
   // Shop & POS Retail Sales
   getShopCatalog: () => fetchJson<ShopCatalog>('/shop/catalog'),
   getShopOrders: () => fetchJson<RetailOrder[]>('/shop/orders'),
@@ -426,3 +585,4 @@ export const api = {
       body: JSON.stringify(data),
     }),
 };
+

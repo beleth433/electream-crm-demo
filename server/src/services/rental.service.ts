@@ -40,6 +40,8 @@ export class RentalService {
     paymentMethod: PaymentMethod;
     rentalNumber?: string;
     customDeposit?: number;
+    durationDays?: number;
+    startDate?: string;
     totalBuyoutPrice?: number;
     paymentIntervalDays?: number;
     installmentPayment?: number;
@@ -85,5 +87,9 @@ export class RentalService {
     }
   ) {
     return RentalRepository.close(id, data);
+  }
+
+  static deleteRental(id: string) {
+    return RentalRepository.delete(id);
   }
 }

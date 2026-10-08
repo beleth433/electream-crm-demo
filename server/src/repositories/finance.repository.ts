@@ -1,4 +1,4 @@
-import { getDb, PaymentType, PaymentMethod } from "./db.js";
+import { getDb, getSettings, updateSettings, PaymentType, PaymentMethod } from "./db.js";
 
 export class FinanceRepository {
   static getAll(filters?: { type?: PaymentType; method?: PaymentMethod; rentalId?: string }) {
@@ -56,10 +56,65 @@ export class FinanceRepository {
     return newPayment;
   }
 
+  static update(
+    id: string,
+    data: {
+      rentalId?: string | null;
+      type?: PaymentType;
+      amount?: number;
+      method?: PaymentMethod;
+      description?: string | null;
+      createdAt?: string;
+    }
+  ) {
+    const db = getDb();
+    const payment = db.payments.find((p) => p.id === id);
+    if (!payment) throw new Error("Платеж не найден");
+
+    if (data.amount !== undefined) payment.amount = data.amount;
+    if (data.type !== undefined) payment.type = data.type;
+    if (data.method !== undefined) payment.method = data.method;
+    if (data.description !== undefined) payment.description = data.description || null;
+    if (data.rentalId !== undefined) payment.rentalId = data.rentalId || null;
+    if (data.createdAt !== undefined) payment.createdAt = data.createdAt;
+
+    return payment;
+  }
+
+  static delete(id: string) {
+    const db = getDb();
+    const idx = db.payments.findIndex((p) => p.id === id);
+    if (idx === -1) throw new Error("Платеж не найден");
+
+    const [deletedPayment] = db.payments.splice(idx, 1);
+    return deletedPayment;
+  }
+
+  static getSettings() {
+    return getSettings();
+  }
+
+  static updateSettings(data: {
+    monthlyFixedExpenses?: number;
+    fixedExpensesDescription?: string;
+    fixedExpenseItems?: Array<{ id?: string; name: string; amount: number }>;
+    paymentDetails?: any;
+  }) {
+    return updateSettings(data);
+  }
+
+
   static getSummary() {
     const db = getDb();
+    const settings = getSettings();
+    const monthlyFixedExpenses = settings.monthlyFixedExpenses ?? 0;
+
     const rentalPayments = db.payments
       .filter((p) => p.type === "RENTAL")
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const buyoutPayments = db.payments
+      .filter((p) => p.type === "BUYOUT")
       .reduce((sum, p) => sum + p.amount, 0);
 
     const repairPayments = db.payments
@@ -70,11 +125,35 @@ export class FinanceRepository {
       .filter((p) => p.type === "OUTFIT_SALE")
       .reduce((sum, p) => sum + p.amount, 0);
 
+    const retailSales = db.payments
+      .filter((p) => p.type === "RETAIL_SALE")
+      .reduce((sum, p) => sum + p.amount, 0);
+
     const fines = db.payments
       .filter((p) => p.type === "FINE")
       .reduce((sum, p) => sum + p.amount, 0);
 
-    const totalRevenue = rentalPayments + repairPayments + outfitSales + fines;
+    const totalRevenue = rentalPayments + buyoutPayments + repairPayments + outfitSales + retailSales + fines;
+
+    const salaryExpenses = db.payments
+      .filter((p) => p.type === "SALARY_PAYMENT")
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const partPurchaseExpenses = db.payments
+      .filter((p) => p.type === "PART_PURCHASE")
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    let totalPartsCost = 0;
+    db.repairs.forEach((rp) => {
+      rp.parts.forEach((pu) => {
+        const part = db.parts.find((p) => p.id === pu.partId);
+        const unitCost = part ? part.purchasePrice : 0;
+        totalPartsCost += pu.quantity * unitCost;
+      });
+    });
+
+    const fixedExpenses = monthlyFixedExpenses + salaryExpenses;
+    const netMargin = totalRevenue - totalPartsCost - fixedExpenses - partPurchaseExpenses;
 
     const depositsCollected = db.payments
       .filter((p) => p.type === "DEPOSIT")
@@ -89,12 +168,23 @@ export class FinanceRepository {
     return {
       totalRevenue,
       rentalPayments,
+      buyoutPayments,
       repairPayments,
       outfitSales,
       fines,
+      salaryExpenses,
+      partPurchaseExpenses,
+      totalPartsCost,
+      monthlyFixedExpenses,
+      fixedExpensesDescription: settings.fixedExpensesDescription || "Аренда сервисного хаба и накладные расходы",
+      fixedExpenseItems: settings.fixedExpenseItems || [],
+      fixedExpenses,
+      netMargin,
       depositsCollected,
       depositsRefunded,
       activeDepositsHeld,
     };
   }
 }
+
+

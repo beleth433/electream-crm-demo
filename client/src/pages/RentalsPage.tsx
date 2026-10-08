@@ -3,6 +3,7 @@ import { Rental, RentalStatus, Tariff, BikeModel, BatteryModel, TariffBuyoutBatt
 import { api } from '../services/api';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
+import { PhoneQrModal } from '../components/PhoneQrModal';
 import {
   Search,
   Filter,
@@ -12,6 +13,7 @@ import {
   Printer,
   Calendar,
   Phone,
+  QrCode,
   ArrowRight,
   Clock,
   CreditCard,
@@ -28,23 +30,57 @@ import {
 import { toast } from 'sonner';
 
 interface RentalsPageProps {
-  onOpenCheckoutWizard: () => void;
+  onOpenCheckoutWizard: (initialType?: 'STANDARD' | 'RENT_TO_OWN') => void;
   onOpenCloseModal: (rental: Rental) => void;
   onOpenPrintAct: (rental: Rental) => void;
+  onNavigateToTab?: (tab: string) => void;
+  refreshTrigger?: number;
 }
 
 export const RentalsPage: React.FC<RentalsPageProps> = ({
   onOpenCheckoutWizard,
   onOpenCloseModal,
   onOpenPrintAct,
+  onNavigateToTab,
+  refreshTrigger,
 }) => {
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ACTIVE');
+  const [activeMode, setActiveMode] = useState<'standard' | 'buyout'>(() => {
+    try {
+      const saved = localStorage.getItem('crm_rentals_mode');
+      return saved === 'buyout' ? 'buyout' : 'standard';
+    } catch {
+      return 'standard';
+    }
+  });
+
+  // Contact / Phone QR Modal state
+  const [selectedContactModal, setSelectedContactModal] = useState<{
+    phone: string;
+    clientName: string;
+    telegram?: string | null;
+    details?: {
+      rentalNumber?: string;
+      bikeInventoryNumber?: string;
+      daysOverdue?: number;
+      courierService?: string;
+      telegram?: string | null;
+    };
+  } | null>(null);
+
+  const handleSelectMode = (mode: 'standard' | 'buyout') => {
+    setActiveMode(mode);
+    try {
+      localStorage.setItem('crm_rentals_mode', mode);
+    } catch {}
+  };
 
   // Tariffs (Rental Templates) state
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
+  const [tariffsFilter, setTariffsFilter] = useState<'ALL' | 'STANDARD' | 'RENT_TO_OWN'>('ALL');
   const [models, setModels] = useState<BikeModel[]>([]);
   const [batteryModels, setBatteryModels] = useState<BatteryModel[]>([]);
   const [isTariffsModalOpen, setIsTariffsModalOpen] = useState(false);
@@ -101,7 +137,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
   useEffect(() => {
     loadRentals();
     loadTariffs();
-  }, [statusFilter]);
+  }, [statusFilter, refreshTrigger]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,61 +335,174 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
     }
   };
 
+  const handleDeleteRental = async (rental: Rental) => {
+    if (rental.status === 'ACTIVE' || rental.status === 'OVERDUE') {
+      toast.error('Нельзя удалить активный или просроченный договор. Сначала оформите возврат техники.');
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Вы действительно хотите безвозвратно удалить завершенный договор ${rental.rentalNumber} (${rental.client?.fullName || 'Курьер'})?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await api.deleteRental(rental.id);
+      toast.success(`Договор аренды ${rental.rentalNumber} успешно удален`);
+      loadRentals();
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка удаления договора');
+    }
+  };
+
+  const standardRentals = rentals.filter((r) => r.type !== 'RENT_TO_OWN');
+  const buyoutRentals = rentals.filter((r) => r.type === 'RENT_TO_OWN');
+
+  const activeStandardCount = standardRentals.filter((r) => r.status === 'ACTIVE' || r.status === 'OVERDUE').length;
+  const activeBuyoutCount = buyoutRentals.filter((r) => r.status === 'ACTIVE' || r.status === 'OVERDUE').length;
+  const overdueStandardCount = standardRentals.filter((r) => r.status === 'OVERDUE').length;
+  const overdueBuyoutCount = buyoutRentals.filter((r) => r.status === 'OVERDUE').length;
+
+  const currentModeRentals = activeMode === 'buyout' ? buyoutRentals : standardRentals;
+
   return (
     <div className="space-y-6">
       {/* Top action header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Реестр договоров аренды
+            {activeMode === 'standard' ? 'Реестр договоров аренды' : 'Реестр выкупа техники (Rent-to-Own)'}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Управление активными, просроченными и завершенными прокатами
+            {activeMode === 'standard'
+              ? 'Управление активными, просроченными и завершенными прокатами'
+              : 'Договоры аренды с правом выкупа, графики регулярных взносов и контроль рассрочки'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => {
+              setTariffsFilter(activeMode === 'buyout' ? 'RENT_TO_OWN' : 'STANDARD');
               setIsTariffsModalOpen(true);
               setIsTariffFormOpen(false);
             }}
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 dark:bg-[#101d17] hover:bg-slate-200 dark:hover:bg-[#162720] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-emerald-500/20 text-xs font-semibold rounded-xl transition-all"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2.5 min-h-[44px] bg-slate-100 dark:bg-[#101d17] hover:bg-slate-200 dark:hover:bg-[#162720] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-emerald-500/20 text-xs font-semibold rounded-xl transition-all"
           >
-            <Sliders className="w-4 h-4 text-emerald-500" />
-            <span>Шаблоны аренды</span>
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold">
+            <Sliders className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="truncate">Шаблоны</span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
               {tariffs.length}
             </span>
           </button>
 
-          <button
-            onClick={onOpenCheckoutWizard}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Оформить новую аренду
-          </button>
+          {activeMode === 'standard' ? (
+            <button
+              onClick={() => onOpenCheckoutWizard('STANDARD')}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all"
+            >
+              <Plus className="w-4 h-4 shrink-0" />
+              <span className="truncate">Новая аренда</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => onOpenCheckoutWizard('RENT_TO_OWN')}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-600/25 transition-all"
+            >
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span className="truncate">Оформить выкуп</span>
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Dual Mode Switcher Tabs */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-[#0c1812] rounded-2xl border border-slate-200/80 dark:border-emerald-500/20">
+        <button
+          type="button"
+          onClick={() => handleSelectMode('standard')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 min-h-[44px] rounded-xl text-xs sm:text-sm font-bold transition-all ${
+            activeMode === 'standard'
+              ? 'bg-white dark:bg-[#152a20] text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/20'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <KeyRound className="w-4 h-4 shrink-0" />
+          <span>Стандартная аренда</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+              activeMode === 'standard'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            {standardRentals.length}
+          </span>
+          {overdueStandardCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white animate-pulse">
+              {overdueStandardCount} проср.
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleSelectMode('buyout')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 min-h-[44px] rounded-xl text-xs sm:text-sm font-bold transition-all ${
+            activeMode === 'buyout'
+              ? 'bg-white dark:bg-[#20152a] text-purple-600 dark:text-purple-400 shadow-sm border border-purple-500/30'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Coins className="w-4 h-4 shrink-0" />
+          <span>Выкуп техники (Rent-to-Own)</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+              activeMode === 'buyout'
+                ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            {buyoutRentals.length}
+          </span>
+          {overdueBuyoutCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white animate-pulse">
+              {overdueBuyoutCount} проср.
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Filters & Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 contour-card">
         {/* Status Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar">
-          {[
-            { id: 'ALL', label: 'Все' },
-            { id: 'ACTIVE', label: 'Активные' },
-            { id: 'OVERDUE', label: 'Просроченные' },
-            { id: 'CLOSED', label: 'Завершенные' },
-            { id: 'BOUGHT_OUT', label: 'Выкупленные' },
-          ].map((tab) => (
+          {(activeMode === 'standard'
+            ? [
+                { id: 'ACTIVE', label: 'Активные' },
+                { id: 'OVERDUE', label: 'Просроченные' },
+                { id: 'CLOSED', label: 'Завершенные' },
+                { id: 'ALL', label: 'Все' },
+              ]
+            : [
+                { id: 'ACTIVE', label: 'В процессе' },
+                { id: 'OVERDUE', label: 'Просрочен взнос' },
+                { id: 'BOUGHT_OUT', label: 'Выкупленные' },
+                { id: 'CLOSED', label: 'Расторгнутые' },
+                { id: 'ALL', label: 'Все' },
+              ]
+          ).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                 statusFilter === tab.id
-                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm shadow-emerald-500/20'
+                  ? activeMode === 'buyout'
+                    ? 'bg-purple-600 text-white font-bold shadow-sm shadow-purple-600/25'
+                    : 'bg-emerald-500 text-slate-950 font-bold shadow-sm shadow-emerald-500/20'
                   : 'bg-slate-100 dark:bg-[#101d17] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#162720] border border-transparent dark:border-emerald-500/10'
               }`}
             >
@@ -367,7 +516,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Номер договора, курьер, байк..."
+            placeholder={activeMode === 'standard' ? "Номер договора, курьер, байк..." : "Договор выкупа, покупатель, байк..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-slate-100"
@@ -375,31 +524,31 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
         </form>
       </div>
 
-      {/* Rentals Table */}
-      <div className="contour-card overflow-hidden">
+      {/* Rentals Table (Desktop) */}
+      <div className="hidden md:block contour-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50/80 dark:bg-[#08100c] text-slate-500 dark:text-emerald-400/80 border-b border-slate-200 dark:border-emerald-500/15">
               <tr>
-                <th className="p-3.5 font-semibold">Договор</th>
-                <th className="p-3.5 font-semibold">Курьер</th>
-                <th className="p-3.5 font-semibold">Байк и экипировка</th>
-                <th className="p-3.5 font-semibold">Тариф</th>
-                <th className="p-3.5 font-semibold">Срок действия</th>
-                <th className="p-3.5 font-semibold">Залог</th>
+                <th className="p-3.5 font-semibold">{activeMode === 'standard' ? 'Договор' : 'Договор выкупа'}</th>
+                <th className="p-3.5 font-semibold">{activeMode === 'standard' ? 'Курьер' : 'Покупатель / Курьер'}</th>
+                <th className="p-3.5 font-semibold">{activeMode === 'standard' ? 'Байк и экипировка' : 'Байк и АКБ'}</th>
+                <th className="p-3.5 font-semibold">{activeMode === 'standard' ? 'Тариф' : 'Прогресс выкупа'}</th>
+                <th className="p-3.5 font-semibold">{activeMode === 'standard' ? 'Срок действия' : 'График взносов'}</th>
+                <th className="p-3.5 font-semibold">{activeMode === 'standard' ? 'Залог' : 'Залог / Депозит'}</th>
                 <th className="p-3.5 font-semibold text-center">Статус</th>
                 <th className="p-3.5 font-semibold text-right">Действия</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10">
-              {rentals.length === 0 ? (
+              {currentModeRentals.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-slate-400 italic">
-                    Договоры аренды не найдены
+                    {activeMode === 'standard' ? 'Договоры аренды не найдены' : 'Договоры выкупа техники не найдены'}
                   </td>
                 </tr>
               ) : (
-                rentals.map((r) => {
+                currentModeRentals.map((r) => {
                   const isOverdue = r.status === 'OVERDUE';
                   const isClosed = r.status === 'CLOSED' || r.status === 'BOUGHT_OUT';
 
@@ -423,13 +572,38 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         <p className="font-bold text-slate-900 dark:text-slate-100">
                           {r.client?.fullName}
                         </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-slate-400" />
-                          {r.client?.phone}
-                        </p>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          {r.client?.courierService || 'Яндекс Еда'}
-                        </span>
+                        {r.client?.phone ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedContactModal({
+                                phone: r.client?.phone || '',
+                                clientName: r.client?.fullName || '',
+                                telegram: r.client?.telegram,
+                                details: {
+                                  rentalNumber: r.rentalNumber,
+                                  bikeInventoryNumber: r.bike?.inventoryNumber,
+                                  daysOverdue: r.status === 'OVERDUE' ? 1 : 0,
+                                  courierService: r.client?.courierService || undefined,
+                                  telegram: r.client?.telegram,
+                                },
+                              })
+                            }
+                            className="inline-flex items-center gap-1.5 px-2 py-0.5 mt-0.5 rounded-lg bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/40 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200/80 dark:border-slate-700 text-[11px] font-medium transition group"
+                            title="Открыть QR-код для звонка или написать в Telegram"
+                          >
+                            <Phone className="w-3 h-3 text-emerald-500" />
+                            <span className="font-mono">{r.client.phone}</span>
+                            <QrCode className="w-3 h-3 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                          </button>
+                        ) : (
+                          <p className="text-[11px] text-slate-400">Нет телефона</p>
+                        )}
+                        <div>
+                          <span className="inline-block mt-1 text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            {r.client?.courierService || 'Яндекс Еда'}
+                          </span>
+                        </div>
                       </td>
 
                       <td className="p-3.5">
@@ -439,11 +613,6 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         <span className="text-slate-700 dark:text-slate-300 font-medium">
                           ({r.bike?.model?.name})
                         </span>
-                        {r.outfits && r.outfits.length > 0 && (
-                          <p className="text-[10px] text-slate-400 mt-0.5 truncate max-w-xs">
-                            Экипировка: {r.outfits.map((o) => o.name.split(' ')[0]).join(', ')}
-                          </p>
-                        )}
                       </td>
 
                       <td className="p-3.5">
@@ -542,7 +711,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         {/* Print Handover Act */}
                         <button
                           onClick={() => onOpenPrintAct(r)}
-                          className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                           title="Печать Акта приема-передачи"
                         >
                           <Printer className="w-3.5 h-3.5" />
@@ -573,6 +742,16 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                             </button>
                           </>
                         )}
+
+                        {isClosed && (
+                          <button
+                            onClick={() => handleDeleteRental(r)}
+                            className="p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                            title="Удалить завершенный договор"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -581,6 +760,194 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Card Layout (visible on phones < 768px) */}
+      <div className="block md:hidden space-y-3">
+        {currentModeRentals.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 italic contour-card">
+            {activeMode === 'standard' ? 'Договоры аренды не найдены' : 'Договоры выкупа техники не найдены'}
+          </div>
+        ) : (
+          currentModeRentals.map((r) => {
+            const isOverdue = r.status === 'OVERDUE';
+            const isClosed = r.status === 'CLOSED' || r.status === 'BOUGHT_OUT';
+
+            return (
+              <div
+                key={r.id}
+                className={`p-4 rounded-2xl border contour-card space-y-3 transition-all ${
+                  isOverdue
+                    ? 'border-rose-300 dark:border-rose-900/50 bg-rose-50/10'
+                    : 'border-slate-200 dark:border-emerald-500/15'
+                }`}
+              >
+                {/* Header: Number, Date, Status, Delete */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-base text-slate-900 dark:text-white">
+                        {r.rentalNumber}
+                      </span>
+                      {r.type === 'RENT_TO_OWN' && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800">
+                          Выкуп
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-slate-400">
+                      От {new Date(r.startedAt).toLocaleDateString('ru-RU')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <StatusBadge type="rental" status={r.status} />
+                    {isClosed && (
+                      <button
+                        onClick={() => handleDeleteRental(r)}
+                        className="p-2 rounded-lg border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        title="Удалить завершенный договор"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Courier & Quick Call Button */}
+                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate">
+                      {r.client?.fullName}
+                    </p>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate">
+                      {r.client?.courierService || 'Яндекс Еда'}
+                    </span>
+                  </div>
+                  {r.client?.phone && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <a
+                        href={`tel:${r.client.phone}`}
+                        className="h-10 px-3 inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-colors active:scale-95"
+                        title="Позвонить курьеру"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span className="font-mono">{r.client.phone}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedContactModal({
+                            phone: r.client?.phone || '',
+                            clientName: r.client?.fullName || '',
+                            telegram: r.client?.telegram,
+                            details: {
+                              rentalNumber: r.rentalNumber,
+                              bikeInventoryNumber: r.bike?.inventoryNumber,
+                              daysOverdue: r.status === 'OVERDUE' ? 1 : 0,
+                              courierService: r.client?.courierService || undefined,
+                              telegram: r.client?.telegram,
+                            },
+                          })
+                        }
+                        className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/40 text-slate-600 dark:text-slate-300 hover:text-emerald-600 transition-colors active:scale-95"
+                        title="Открыть QR-код и Telegram"
+                      >
+                        <QrCode className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bike & Tariff details */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-900/40">
+                    <span className="text-[10px] text-slate-400 block">Байк</span>
+                    <strong className="text-sky-600 dark:text-sky-400 font-bold block truncate">
+                      {r.bike?.inventoryNumber}
+                    </strong>
+                    <span className="text-[10px] text-slate-500 truncate block">
+                      {r.bike?.model?.name}
+                    </span>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-900/40">
+                    <span className="text-[10px] text-slate-400 block">Срок действия</span>
+                    <strong
+                      className={`font-bold block truncate ${
+                        isOverdue ? 'text-rose-600' : 'text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {r.type === 'RENT_TO_OWN'
+                        ? `Взнос: ${new Date(r.nextPaymentDue).toLocaleDateString('ru-RU')}`
+                        : `до ${new Date(r.expiresAt).toLocaleDateString('ru-RU')}`}
+                    </strong>
+                    <span className="text-[10px] text-slate-500 truncate block">
+                      Залог: {r.depositAmount.toLocaleString('ru-RU')} ₽
+                    </span>
+                  </div>
+                </div>
+
+                {/* Buyout Progress bar if rent-to-own */}
+                {r.type === 'RENT_TO_OWN' && (
+                  <div className="p-2 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/30 space-y-1">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-slate-500 dark:text-slate-400">
+                        Выплачено: <strong className="text-emerald-600 font-bold">{(r.totalPaidForBuyout || 0).toLocaleString('ru-RU')} ₽</strong>
+                      </span>
+                      <span className="font-bold text-purple-700 dark:text-purple-300">
+                        Остаток: {(r.remainingBuyoutAmount ?? 0).toLocaleString('ru-RU')} ₽
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-purple-500 h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, Math.round(((r.totalPaidForBuyout || 0) / Math.max(1, r.totalBuyoutPrice || 1)) * 100))}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile Touch Action Buttons (min-height 44px) */}
+                <div className="flex items-center gap-2 pt-1 border-t border-slate-100 dark:border-emerald-500/10">
+                  <button
+                    onClick={() => onOpenPrintAct(r)}
+                    className="h-11 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5 text-xs font-semibold shrink-0"
+                    title="Печать Акта"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>Акт</span>
+                  </button>
+
+                  {!isClosed && (
+                    <>
+                      <button
+                        onClick={() => handleOpenRenewModal(r)}
+                        className={`h-11 flex-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors ${
+                          r.type === 'RENT_TO_OWN'
+                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200'
+                            : 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200'
+                        }`}
+                      >
+                        <Coins className="w-4 h-4" />
+                        <span>{r.type === 'RENT_TO_OWN' ? 'Взнос' : 'Продлить'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => onOpenCloseModal(r)}
+                        className="h-11 flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        <span>Возврат</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Modal: Renew / Buyout Payment */}
@@ -668,6 +1035,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
               <input
                 type="number"
                 min="1"
+                step="any"
                 value={renewalDays}
                 onChange={(e) => setRenewalDays(Number(e.target.value))}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-center"
@@ -678,6 +1046,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
               <input
                 type="number"
                 min="0"
+                step="any"
                 value={renewalAmount}
                 onChange={(e) => {
                   const val = Number(e.target.value);
@@ -751,7 +1120,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
         }}
         title="Шаблоны тарифов аренды"
         subtitle="Настройка шаблонов, которые выбираются менеджером при выдаче байка"
-        maxWidth="lg"
+        maxWidth="3xl"
       >
         <div className="space-y-4 text-xs">
           {isTariffFormOpen ? (
@@ -807,26 +1176,20 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         setTariffForm((prev) => ({
                           ...prev,
                           bikeModelId: selectedModelId,
-                          price: selectedModel?.baseRentalPrice || prev.price,
                         }));
-                        if (selectedModel?.baseRentalPrice) {
-                          toast.info(`Выбрана модель "${selectedModel.name}". Базовая аренда: ${selectedModel.baseRentalPrice.toLocaleString('ru-RU')} ₽`);
+                        if (selectedModel) {
+                          toast.info(`Выбрана модель "${selectedModel.name}"`);
                         }
                       }
                     }}
                     className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
                   >
                     <option value="">Все модели (универсальный тариф)</option>
-                    {models.map((m) => {
-                      const buyoutDisplay = m.baseBuyoutPrice || m.salePrice || 60000;
-                      return (
-                        <option key={m.id} value={m.id}>
-                          {m.name} {tariffForm.type === 'RENT_TO_OWN'
-                            ? `(Выкуп: ${buyoutDisplay.toLocaleString('ru-RU')} ₽)`
-                            : m.baseRentalPrice ? `(${m.baseRentalPrice.toLocaleString('ru-RU')} ₽)` : ''}
-                        </option>
-                      );
-                    })}
+                    {models.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.powerWatts}W)
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -846,12 +1209,11 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                           durationDays: tariffForm.durationDays && tariffForm.durationDays > 30 ? tariffForm.durationDays : 180,
                         });
                       } else {
-                        const selectedModel = models.find((m) => m.id === tariffForm.bikeModelId);
                         setTariffForm((prev) => ({
                           ...prev,
                           type: 'STANDARD',
                           durationDays: prev.durationDays === 180 ? 7 : (prev.durationDays || 7),
-                          price: selectedModel?.baseRentalPrice || 6000,
+                          price: prev.price || 6000,
                         }));
                       }
                     }}
@@ -870,6 +1232,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     required
                     type="number"
                     min="1"
+                    step="any"
                     value={tariffForm.durationDays}
                     onChange={(e) => {
                       const val = Number(e.target.value);
@@ -967,6 +1330,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                                 <input
                                   type="number"
                                   min="1"
+                                  step="any"
                                   title="Количество"
                                   value={item.quantity}
                                   onChange={(e) =>
@@ -979,7 +1343,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                                 <input
                                   type="number"
                                   min="0"
-                                  step="500"
+                                  step="any"
                                   title="Цена за шт. (₽)"
                                   value={item.price}
                                   onChange={(e) =>
@@ -1050,7 +1414,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         required
                         type="number"
                         min="0"
-                        step="1000"
+                        step="any"
                         value={tariffForm.totalBuyoutPrice}
                         onChange={(e) => {
                           const val = Number(e.target.value);
@@ -1077,6 +1441,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         required
                         type="number"
                         min="1"
+                        step="any"
                         value={tariffForm.paymentIntervalDays}
                         onChange={(e) => {
                           const val = Math.max(1, Number(e.target.value));
@@ -1104,7 +1469,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         required
                         type="number"
                         min="0"
-                        step="50"
+                        step="any"
                         value={tariffForm.installmentPayment}
                         onChange={(e) => {
                           const val = Number(e.target.value);
@@ -1152,7 +1517,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                         required
                         type="number"
                         min="0"
-                        step="500"
+                        step="any"
                         value={tariffForm.depositRequired}
                         onChange={(e) =>
                           setTariffForm({ ...tariffForm, depositRequired: Number(e.target.value) })
@@ -1240,7 +1605,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                       required
                       type="number"
                       min="0"
-                      step="100"
+                      step="any"
                       value={tariffForm.price}
                       onChange={(e) =>
                         setTariffForm({ ...tariffForm, price: Number(e.target.value) })
@@ -1257,7 +1622,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                       required
                       type="number"
                       min="0"
-                      step="500"
+                      step="any"
                       value={tariffForm.depositRequired}
                       onChange={(e) =>
                         setTariffForm({ ...tariffForm, depositRequired: Number(e.target.value) })
@@ -1302,27 +1667,44 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
             </form>
           ) : (
             <>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400 font-medium">
-                  Всего шаблонов: <strong className="text-slate-900 dark:text-white">{tariffs.length}</strong>
-                </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-200 dark:border-emerald-500/10">
+                <div className="flex items-center gap-1 overflow-x-auto">
+                  {[
+                    { id: 'ALL', label: 'Все шаблоны' },
+                    { id: 'STANDARD', label: 'Аренда' },
+                    { id: 'RENT_TO_OWN', label: 'Выкуп (Rent-to-Own)' },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setTariffsFilter(f.id as any)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                        tariffsFilter === f.id
+                          ? 'bg-emerald-500 text-slate-950 font-bold'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
                 <button
                   onClick={handleOpenCreateTariff}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs shadow-sm transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs shadow-sm transition-all self-start sm:self-auto shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Создать шаблон
                 </button>
               </div>
 
-              {tariffs.length === 0 ? (
+              {tariffs.filter((t) => tariffsFilter === 'ALL' || t.type === tariffsFilter).length === 0 ? (
                 <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-emerald-500/20 bg-slate-50/50 dark:bg-[#101d17]/50 space-y-2">
                   <Sliders className="w-8 h-8 mx-auto text-slate-400 opacity-60" />
                   <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">
-                    Шаблоны аренды еще не созданы
+                    Шаблоны еще не созданы
                   </p>
                   <p className="text-slate-400 text-xs max-w-sm mx-auto">
-                    Создайте шаблоны с удобными сроками (например, 1 день, 7 дней или 30 дней) для мгновенного выбора при оформлении выдачи.
+                    Создайте шаблоны тарифов для быстрой выдачи техники курьерам.
                   </p>
                   <button
                     onClick={handleOpenCreateTariff}
@@ -1334,7 +1716,9 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                 </div>
               ) : (
                 <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
-                  {tariffs.map((t) => (
+                  {tariffs
+                    .filter((t) => tariffsFilter === 'ALL' || t.type === tariffsFilter)
+                    .map((t) => (
                     <div
                       key={t.id}
                       className="p-3.5 rounded-xl border border-slate-200 dark:border-emerald-500/20 bg-white dark:bg-[#101d17] hover:border-emerald-500/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
@@ -1454,6 +1838,18 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
           </div>
         </div>
       </Modal>
+
+      {/* Contact / Phone QR Modal */}
+      {selectedContactModal && (
+        <PhoneQrModal
+          isOpen={!!selectedContactModal}
+          onClose={() => setSelectedContactModal(null)}
+          phone={selectedContactModal.phone}
+          clientName={selectedContactModal.clientName}
+          telegram={selectedContactModal.telegram}
+          details={selectedContactModal.details}
+        />
+      )}
     </div>
   );
 };

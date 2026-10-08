@@ -1,5 +1,4 @@
 import { getDb, ClientStatus, ClientRecord, ClientType } from "./db.js";
-import { LoyaltyRepository } from "./loyalty.repository.js";
 
 export class ClientRepository {
   static computeClientLoyalty(client: ClientRecord) {
@@ -22,35 +21,22 @@ export class ClientRepository {
     }
 
     // 2. Calculate total spent
-    const retailSpent = (db.retailOrders || [])
-      .filter((ro) => ro.clientId === client.id)
-      .reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
-
     const rentalIds = new Set(clientRentals.map((r) => r.id));
     const rentalPayments = (db.payments || [])
-      .filter((p) => p.rentalId && rentalIds.has(p.rentalId) && (p.type === "RENTAL" || p.type === "FINE"))
+      .filter((p) => p.rentalId && rentalIds.has(p.rentalId) && (p.type === "RENTAL" || p.type === "BUYOUT" || p.type === "FINE"))
       .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
     const calculatedRentalSpent = clientRentals.reduce((sum, r) => {
       const trf = db.tariffs.find((t) => t.id === r.tariffId);
       return sum + (trf?.price || 0);
     }, 0);
-    const effectiveRentalSpent = Math.max(rentalPayments, calculatedRentalSpent);
-
-    const totalSpent = retailSpent + effectiveRentalSpent;
-
-    // 3. Determine tier
-    const loyaltyResult = LoyaltyRepository.determineTier(
-      totalRentalDays,
-      totalSpent,
-      client.manualLoyaltyTierId
-    );
+    const totalSpent = Math.max(rentalPayments, calculatedRentalSpent);
 
     return {
       totalRentalDays,
       totalSpent,
-      loyaltyTier: loyaltyResult.tier,
-      loyaltyMode: loyaltyResult.mode,
+      loyaltyTier: null,
+      loyaltyMode: "AUTO",
     };
   }
 

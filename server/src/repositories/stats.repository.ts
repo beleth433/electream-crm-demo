@@ -29,7 +29,7 @@ export class StatsRepository {
         r.status = "OVERDUE";
       }
 
-      if (r.status === "ACTIVE") activeRentalsCount++;
+      if (r.status === "ACTIVE" || r.status === "OVERDUE") activeRentalsCount++;
       if (r.status === "OVERDUE") {
         overdueCount++;
         const client = db.clients.find((c) => c.id === r.clientId);
@@ -42,6 +42,7 @@ export class StatsRepository {
           clientId: r.clientId,
           clientName: client?.fullName,
           clientPhone: client?.phone,
+          clientTelegram: client?.telegram,
           courierService: client?.courierService,
           bikeInventoryNumber: bike?.inventoryNumber,
           daysOverdue: Math.max(1, diffDays),
@@ -61,9 +62,13 @@ export class StatsRepository {
     const lowStockPartsCount = lowStockParts.length;
 
     // 5. Financial metrics
-    // Revenue = sum(RENTAL) + sum(REPAIR for client fault) + sum(OUTFIT_SALE) + sum(RETAIL_SALE)
+    // Revenue = sum(RENTAL) + sum(BUYOUT) + sum(REPAIR for client fault) + sum(OUTFIT_SALE) + sum(RETAIL_SALE)
     const rentalRevenue = db.payments
       .filter((p) => p.type === "RENTAL")
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const buyoutRevenue = db.payments
+      .filter((p) => p.type === "BUYOUT")
       .reduce((sum, p) => sum + p.amount, 0);
 
     const clientRepairRevenue = db.payments
@@ -78,7 +83,7 @@ export class StatsRepository {
       .filter((p) => p.type === "RETAIL_SALE")
       .reduce((sum, p) => sum + p.amount, 0);
 
-    const totalRevenue = rentalRevenue + clientRepairRevenue + outfitRevenue + retailRevenue;
+    const totalRevenue = rentalRevenue + buyoutRevenue + clientRepairRevenue + outfitRevenue + retailRevenue;
 
     // Parts cost = sum(quantity used * purchasePrice of part) across completed/in-progress repairs + retail cost
     let totalPartsCost = 0;
@@ -102,7 +107,9 @@ export class StatsRepository {
       .reduce((sum, p) => sum + p.amount, 0);
 
     // Fixed overhead costs (Rent of service hub, base overhead + salary payouts)
-    const fixedExpenses = 15000 + salaryExpenses;
+    const settings = db.settings || { monthlyFixedExpenses: 0, fixedExpensesDescription: "" };
+    const monthlyFixedExpenses = settings.monthlyFixedExpenses ?? 0;
+    const fixedExpenses = monthlyFixedExpenses + salaryExpenses;
 
     // Net margin = Revenue - Parts Cost - Retail COGS - Fixed Expenses
     const netMargin = totalRevenue - totalPartsCost - retailCogs - fixedExpenses;
@@ -166,6 +173,7 @@ export class StatsRepository {
       financials: {
         totalRevenue,
         rentalRevenue,
+        buyoutRevenue,
         clientRepairRevenue,
         outfitRevenue,
         retailRevenue,
@@ -173,6 +181,9 @@ export class StatsRepository {
         totalPartsCost,
         retailCogs,
         fixedExpenses,
+        monthlyFixedExpenses,
+        fixedExpensesDescription: settings.fixedExpensesDescription || "Аренда сервисного хаба и накладные расходы",
+        fixedExpenseItems: settings.fixedExpenseItems || [],
         netMargin,
         activeDepositsHeld,
       },

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
+import { getBikeStatusLabel, getBatteryStatusLabel } from '../utils/statusLabels';
 
 interface RepairsPageProps {
   initialData?: {
@@ -175,7 +176,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
           ? `Заказ-наряд СТО на технику клиента "${createForm.customItemName || 'клиентский байк'}" успешно создан!`
           : createForm.itemType === 'BATTERY'
           ? 'Заказ-наряд СТО успешно создан! Аккумулятор переведен в статус ТО.'
-          : 'Заказ-наряд СТО успешно создан! Байк переведен в статус IN_MAINTENANCE.'
+          : 'Заказ-наряд СТО успешно создан! Байк переведен в статус «В ремонте».'
       );
       const nextNum = getNextSequentialNumber(
         [...repairs.map((r) => r.orderNumber), createForm.orderNumber],
@@ -235,7 +236,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
         mechanicNotes,
       });
       toast.success(
-        `Заказ-наряд ${completingRepair.orderNumber} завершен! Запчасти списаны, объект возвращен в статус AVAILABLE.`
+        `Заказ-наряд ${completingRepair.orderNumber} завершен! Запчасти списаны, объект возвращен в статус «Свободен».`
       );
       setCompletingRepair(null);
       loadData();
@@ -268,10 +269,10 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
 
         <button
           onClick={handleOpenCreateModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all self-start sm:self-auto"
+          className="min-h-[44px] flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-emerald-500/20 transition-all self-stretch sm:self-auto"
         >
-          <Plus className="w-4 h-4" />
-          Новый заказ-наряд
+          <Plus className="w-4 h-4 shrink-0" />
+          <span>Новый заказ-наряд</span>
         </button>
       </div>
 
@@ -439,7 +440,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
               </div>
 
               {/* Bottom Cost and Actions */}
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase">Итого затраты:</span>
                   <p className="text-base font-black text-slate-900 dark:text-white">
@@ -450,14 +451,15 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
                 {!isCompleted ? (
                   <button
                     onClick={() => handleOpenCompleteModal(order)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+                    className="min-h-[40px] flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Завершить и списать детали
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span className="hidden sm:inline">Завершить и списать детали</span>
+                    <span className="sm:hidden">Завершить</span>
                   </button>
                 ) : (
                   <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" /> Завершен{' '}
+                    <CheckCircle2 className="w-4 h-4 shrink-0" /> Завершен{' '}
                     {order.completedAt && new Date(order.completedAt).toLocaleDateString('ru-RU')}
                   </span>
                 )}
@@ -591,11 +593,11 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
                 required
                 value={createForm.bikeId}
                 onChange={(e) => setCreateForm({ ...createForm, bikeId: e.target.value })}
-                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-xs"
+                className="w-full h-11 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-base sm:text-xs"
               >
                 {bikes.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.inventoryNumber} — {b.model?.name} (Текущий статус: {b.status})
+                    {b.inventoryNumber} — {b.model?.name} (Текущий статус: {getBikeStatusLabel(b.status)})
                   </option>
                 ))}
               </select>
@@ -607,11 +609,11 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
                 required
                 value={createForm.batteryId}
                 onChange={(e) => setCreateForm({ ...createForm, batteryId: e.target.value })}
-                className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-xs"
+                className="w-full h-11 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-base sm:text-xs"
               >
                 {batteries.map((bat) => (
                   <option key={bat.id} value={bat.id}>
-                    {bat.serialNumber} — {bat.model?.name || 'АКБ'} (Текущий статус: {bat.status})
+                    {bat.serialNumber} — {bat.model?.name || 'АКБ'} (Текущий статус: {getBatteryStatusLabel(bat.status)})
                   </option>
                 ))}
               </select>
@@ -761,6 +763,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
             <label className="block text-slate-500 mb-1">Стоимость работ (нормо-час / работа), ₽</label>
             <input
               type="number"
+              step="any"
               min="0"
               value={createForm.laborCost}
               onChange={(e) => setCreateForm({ ...createForm, laborCost: Number(e.target.value) })}
@@ -870,6 +873,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
               <label className="block text-slate-500 mb-1">Стоимость работ (₽) *</label>
               <input
                 type="number"
+                step="any"
                 min="0"
                 value={completeLaborCost}
                 onChange={(e) => setCompleteLaborCost(Number(e.target.value))}

@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
+import { supabaseAdapter, StorageStatus } from "./supabase.adapter.js";
 import {
+  INITIAL_ACCESS_LEVELS,
   INITIAL_USERS,
   INITIAL_MODELS,
   INITIAL_BATTERY_MODELS,
@@ -10,6 +12,7 @@ import {
   INITIAL_OUTFIT_CATEGORIES,
   INITIAL_OUTFIT_TEMPLATES,
   INITIAL_PART_CATEGORIES,
+  INITIAL_PART_ORDER_CATEGORIES,
   INITIAL_CLIENTS,
   INITIAL_TARIFFS,
   INITIAL_PARTS,
@@ -53,9 +56,36 @@ export type OutfitCategory = "HELMET" | "LOCK" | "BAG" | "BATTERY" | "CHARGER" |
 export type OutfitStatus = "IN_STOCK" | "ISSUED" | "DAMAGED" | "LOST" | "SOLD";
 export type RepairStatus = "DIAGNOSTICS" | "WAITING_PARTS" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 export type RepairFaultType = "COMPANY_EXPENSE" | "CLIENT_FAULT";
-export type PaymentType = "RENTAL" | "DEPOSIT" | "DEPOSIT_REFUND" | "REPAIR" | "OUTFIT_SALE" | "FINE" | "SALARY_PAYMENT" | "RETAIL_SALE" | "BUYOUT";
+export type PaymentType = "RENTAL" | "DEPOSIT" | "DEPOSIT_REFUND" | "REPAIR" | "OUTFIT_SALE" | "FINE" | "SALARY_PAYMENT" | "RETAIL_SALE" | "BUYOUT" | "PART_PURCHASE";
 export type PaymentMethod = "CASH" | "CARD" | "SBP" | "BANK_TRANSFER";
 export type BatteryChemistry = "Li-ion" | "LiFePO4";
+
+export interface ExpenseItemRecord {
+  id?: string;
+  name: string;
+  amount: number;
+}
+
+
+export interface PaymentDetailsRecord {
+  recipientName?: string;       // ФИО или ИП владельца (например, "ИП Ковалев И.В.")
+  bankName?: string;            // Наименование банка (например, "Т-Банк", "Сбербанк")
+  phoneNumber?: string;         // Телефон для СБП (например, "+7 999 123-45-67")
+  accountNumber?: string;       // Расчетный счет или номер карты
+  bik?: string;                 // БИК банка (для платежей по реквизитам)
+  inn?: string;                 // ИНН получателя
+  paymentLinkUrl?: string;      // Персональная ссылка для оплаты (сбор Т-Банк, Сбер, эквайринг)
+  instructionNote?: string;     // Краткая памятка для курьера ("В назначении платежа обязательно пишите номер договора")
+}
+
+export interface SystemSettingsRecord {
+  monthlyFixedExpenses: number;
+  fixedExpensesDescription?: string;
+  fixedExpenseItems?: ExpenseItemRecord[];
+  articlesInitialized?: boolean;
+  paymentDetails?: PaymentDetailsRecord;
+}
+
 
 export interface BatteryModelRecord {
   id: string;
@@ -88,14 +118,37 @@ export interface BatteryRecord {
   updatedAt?: string;
 }
 
+export interface AccessLevelModulePermission {
+  visible: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+export interface AccessLevelRecord {
+  id: string;
+  name: string;
+  description?: string;
+  isSystem?: boolean;
+  canManageEmployees: boolean;
+  canSeeProfits: boolean;
+  permissions: Record<string, AccessLevelModulePermission>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UserRecord {
   id: string;
+  login?: string;
+  username?: string;
   email: string;
   passwordHash: string;
   fullName: string;
   phone?: string | null;
   role: UserRole;
+  roleTitle?: string;
+  accessLevelId?: string;
   isActive: boolean;
+  lastLoginAt?: string;
 }
 
 export interface BikeModelRecord {
@@ -212,6 +265,30 @@ export interface PartRecord {
   clientPrice: number;
 }
 
+export type PartOrderStatus = "REQUESTED" | "ORDERED" | "RECEIVED" | "ARCHIVED" | "CANCELLED";
+export type PartOrderPriority = "LOW" | "NORMAL" | "URGENT";
+
+export interface PartOrderRecord {
+  id: string;
+  partName: string;
+  partId?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  quantity: number;
+  orderUrl?: string | null;
+  priority: PartOrderPriority;
+  status: PartOrderStatus;
+  estimatedPrice?: number;
+  actualCost?: number;
+  note?: string | null;
+  requestedBy?: string;
+  requestedAt: string;
+  orderedAt?: string | null;
+  receivedAt?: string | null;
+  paymentId?: string | null;
+  paymentMethod?: PaymentMethod | null;
+}
+
 export interface RentalRecord {
   id: string;
   rentalNumber: string;
@@ -288,9 +365,25 @@ export interface ArticleRecord {
   title: string;
   category: string;
   content: string;
-  authorId: string;
+  authorId?: string;
+  pinned?: boolean;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface AuditLogRecord {
+  id: string;
+  category: "RENTAL" | "PAYMENT" | "REPAIR" | "FLEET" | "CLIENT" | "INFO" | "SYSTEM";
+  action: string;
+  title: string;
+  details?: string;
+  actorId?: string;
+  actorName?: string;
+  amount?: number;
+  badgeText?: string;
+  badgeColor?: string;
+  entityId?: string;
+  createdAt: string;
 }
 
 export interface EmployeeRecord {
@@ -331,7 +424,26 @@ export interface RetailOrderRecord {
   createdAt: string;
 }
 
+export interface ChatMessageRecord {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole?: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface PresenceRecord {
+  userId: string;
+  userName: string;
+  userRole?: string;
+  roleTitle?: string;
+  lastSeenAt: string;
+  deviceInfo?: string;
+}
+
 export interface DBStore {
+  accessLevels: AccessLevelRecord[];
   users: UserRecord[];
   models: BikeModelRecord[];
   batteryModels: BatteryModelRecord[];
@@ -343,7 +455,9 @@ export interface DBStore {
   clients: ClientRecord[];
   tariffs: TariffRecord[];
   parts: PartRecord[];
+  partOrders?: PartOrderRecord[];
   partCategories: PartCategoryRecord[];
+  partOrderCategories?: PartCategoryRecord[];
   rentals: RentalRecord[];
   repairs: RepairOrderRecord[];
   payments: PaymentRecord[];
@@ -352,18 +466,30 @@ export interface DBStore {
   employees: EmployeeRecord[];
   retailOrders: RetailOrderRecord[];
   loyaltyTiers: LoyaltyTierRecord[];
+  auditLogs?: AuditLogRecord[];
+  chatMessages?: ChatMessageRecord[];
+  presence?: PresenceRecord[];
+  settings?: SystemSettingsRecord;
 }
 
-const DATA_DIR = typeof __dirname !== "undefined"
+const isVercel = Boolean(process.env.VERCEL);
+const DATA_DIR = isVercel
+  ? path.resolve("/tmp", "data")
+  : typeof __dirname !== "undefined"
   ? path.resolve(__dirname, "../../data")
   : path.resolve(process.cwd(), "data");
-const DB_FILE = path.join(DATA_DIR, "crm_db.json");
+export const DB_FILE = path.join(DATA_DIR, "crm_db.json");
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (err: any) {
+  // Gracefully ignore directory creation failure in read-only environments
 }
 
 export const createDefaultEmptyDb = (): DBStore => ({
+  accessLevels: JSON.parse(JSON.stringify(INITIAL_ACCESS_LEVELS)),
   users: JSON.parse(JSON.stringify(INITIAL_USERS)),
   models: [],
   batteryModels: [],
@@ -375,7 +501,9 @@ export const createDefaultEmptyDb = (): DBStore => ({
   clients: [],
   tariffs: [],
   parts: [],
+  partOrders: [],
   partCategories: JSON.parse(JSON.stringify(INITIAL_PART_CATEGORIES)),
+  partOrderCategories: JSON.parse(JSON.stringify(INITIAL_PART_ORDER_CATEGORIES)),
   rentals: [],
   repairs: [],
   payments: [],
@@ -384,9 +512,138 @@ export const createDefaultEmptyDb = (): DBStore => ({
   employees: JSON.parse(JSON.stringify(INITIAL_EMPLOYEES)),
   retailOrders: [],
   loyaltyTiers: JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),
+  auditLogs: [],
+  chatMessages: [
+    {
+      id: "msg-1",
+      senderId: "u-vladik",
+      senderName: "Владислав (Мастер СТО)",
+      senderRole: "MECHANIC",
+      text: "Коллеги, колодки на Minako V8 почти закончились, оформил заявку в закупку.",
+      createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+    },
+    {
+      id: "msg-2",
+      senderId: "u-bogdan",
+      senderName: "Богдан (Менеджер)",
+      senderRole: "MANAGER",
+      text: "Принял! На этой неделе также ожидаем возврат двух байков из долгой аренды.",
+      createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString(),
+    },
+    {
+      id: "msg-3",
+      senderId: "u-bxleth",
+      senderName: "Алексей (Разработчик)",
+      senderRole: "ADMIN",
+      text: "Обновления CRM Lite установлены: добавлены отделы заявок и быстрый QR-звонок курьерам.",
+      createdAt: new Date(Date.now() - 1800000).toISOString(),
+    },
+  ],
+  settings: {
+    monthlyFixedExpenses: 0,
+    fixedExpensesDescription: "Аренда помещения мастерской и накладные расходы",
+    articlesInitialized: false,
+  },
 });
 
 let rawDb: DBStore;
+
+export function sanitizeLoadedDb(parsed: any): DBStore {
+  const defaultDb = createDefaultEmptyDb();
+  if (!parsed || typeof parsed !== "object") return defaultDb;
+
+  // Ensure all standard system access levels (lvl-owner, lvl-manager, lvl-master) exist in db
+  const existingAccessLevels: AccessLevelRecord[] = Array.isArray(parsed.accessLevels)
+    ? parsed.accessLevels
+    : [];
+  for (const initLvl of INITIAL_ACCESS_LEVELS) {
+    const found = existingAccessLevels.find((l) => l.id === initLvl.id);
+    if (!found) {
+      existingAccessLevels.push({ ...initLvl });
+    }
+  }
+
+  // Merge loaded users with INITIAL_USERS to ensure all team accounts (Twizzy, Bogdan, Vladik, BXLETH) are present
+  const existingUsers: UserRecord[] = Array.isArray(parsed.users) ? parsed.users : [];
+  for (const initUser of INITIAL_USERS) {
+    const found = existingUsers.find(
+      (u: any) =>
+        u.id === initUser.id ||
+        (u.login && u.login.toLowerCase() === initUser.login.toLowerCase()) ||
+        (u.username && u.username.toLowerCase() === initUser.username.toLowerCase()) ||
+        (u.email && u.email.toLowerCase() === initUser.email.toLowerCase())
+    );
+    if (!found) {
+      existingUsers.push({ ...initUser });
+    } else {
+      if (!found.roleTitle) found.roleTitle = initUser.roleTitle;
+      if (!found.login) found.login = initUser.login;
+      if (!found.username) found.username = initUser.username;
+      if (!found.accessLevelId) found.accessLevelId = initUser.accessLevelId;
+      if (found.isActive === undefined) found.isActive = true;
+      if (found.passwordHash === "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918") {
+        found.passwordHash = initUser.passwordHash;
+      }
+    }
+  }
+
+  return {
+    accessLevels: existingAccessLevels.length > 0 ? existingAccessLevels : defaultDb.accessLevels,
+    users: existingUsers.length > 0 ? existingUsers : defaultDb.users,
+    models: (parsed.models || []).map((m: any) => ({
+      ...m,
+      baseRentalPrice: m.baseRentalPrice !== undefined && m.baseRentalPrice > 0 ? m.baseRentalPrice : 6000,
+      baseBuyoutPrice: m.baseBuyoutPrice !== undefined && m.baseBuyoutPrice > 0 ? m.baseBuyoutPrice : (m.salePrice || 60000),
+    })),
+    batteryModels: parsed.batteryModels || [],
+    bikes: parsed.bikes || [],
+    batteries: parsed.batteries || [],
+    outfits: parsed.outfits || [],
+    outfitCategories: Array.isArray(parsed.outfitCategories) ? parsed.outfitCategories : defaultDb.outfitCategories,
+    outfitTemplates: parsed.outfitTemplates || [],
+    clients: parsed.clients || [],
+    tariffs: parsed.tariffs || [],
+    parts: parsed.parts || [],
+    partOrders: Array.isArray(parsed.partOrders) ? parsed.partOrders : [],
+    partCategories: Array.isArray(parsed.partCategories) && parsed.partCategories.length > 0
+      ? parsed.partCategories
+      : defaultDb.partCategories,
+    partOrderCategories: Array.isArray(parsed.partOrderCategories) && parsed.partOrderCategories.length > 0
+      ? parsed.partOrderCategories
+      : JSON.parse(JSON.stringify(INITIAL_PART_ORDER_CATEGORIES)),
+    rentals: parsed.rentals || [],
+    repairs: parsed.repairs || [],
+    payments: parsed.payments || [],
+    reviews: parsed.reviews || [],
+    articles: parsed.articles || [],
+    employees: (() => {
+      const emps: EmployeeRecord[] = Array.isArray(parsed.employees) ? parsed.employees : [];
+      for (const initEmp of INITIAL_EMPLOYEES) {
+        if (!emps.some((e) => e.id === initEmp.id || e.phone === initEmp.phone)) {
+          emps.push({ ...initEmp });
+        }
+      }
+      return emps;
+    })(),
+    retailOrders: parsed.retailOrders || [],
+    loyaltyTiers: Array.isArray(parsed.loyaltyTiers) && parsed.loyaltyTiers.length > 0
+      ? parsed.loyaltyTiers
+      : JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),
+    auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [],
+    chatMessages: Array.isArray(parsed.chatMessages) && parsed.chatMessages.length > 0
+      ? parsed.chatMessages
+      : defaultDb.chatMessages,
+    settings: parsed.settings
+      ? {
+          ...parsed.settings,
+          articlesInitialized:
+            typeof parsed.settings.articlesInitialized === "boolean"
+              ? parsed.settings.articlesInitialized
+              : Array.isArray(parsed.articles) && parsed.articles.length > 0,
+        }
+      : defaultDb.settings,
+  };
+}
 
 function loadFromDisk(): DBStore {
   try {
@@ -394,38 +651,19 @@ function loadFromDisk(): DBStore {
       const fileContent = fs.readFileSync(DB_FILE, "utf-8").trim();
       if (fileContent) {
         const parsed = JSON.parse(fileContent);
-        const defaultDb = createDefaultEmptyDb();
-        const merged: DBStore = {
-          users: parsed.users && parsed.users.length > 0 ? parsed.users : defaultDb.users,
-          models: (parsed.models || []).map((m: any) => ({
-            ...m,
-            baseRentalPrice: m.baseRentalPrice !== undefined && m.baseRentalPrice > 0 ? m.baseRentalPrice : 6000,
-            baseBuyoutPrice: m.baseBuyoutPrice !== undefined && m.baseBuyoutPrice > 0 ? m.baseBuyoutPrice : (m.salePrice || 60000),
-          })),
-          batteryModels: parsed.batteryModels || [],
-          bikes: parsed.bikes || [],
-          batteries: parsed.batteries || [],
-          outfits: parsed.outfits || [],
-          outfitCategories: Array.isArray(parsed.outfitCategories) ? parsed.outfitCategories : defaultDb.outfitCategories,
-          outfitTemplates: parsed.outfitTemplates || [],
-          clients: parsed.clients || [],
-          tariffs: parsed.tariffs || [],
-          parts: parsed.parts || [],
-          partCategories: Array.isArray(parsed.partCategories) && parsed.partCategories.length > 0
-            ? parsed.partCategories
-            : defaultDb.partCategories,
-          rentals: parsed.rentals || [],
-          repairs: parsed.repairs || [],
-          payments: parsed.payments || [],
-          reviews: parsed.reviews || [],
-          articles: parsed.articles || [],
-          employees: parsed.employees && parsed.employees.length > 0 ? parsed.employees : defaultDb.employees,
-          retailOrders: parsed.retailOrders || [],
-          loyaltyTiers: Array.isArray(parsed.loyaltyTiers) && parsed.loyaltyTiers.length > 0
-            ? parsed.loyaltyTiers
-            : JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),
-        };
-        return merged;
+        return sanitizeLoadedDb(parsed);
+      }
+    }
+
+    // Also attempt reading bundled template data if DB_FILE is in /tmp
+    const bundledPath = typeof __dirname !== "undefined"
+      ? path.resolve(__dirname, "../../data/crm_db.json")
+      : path.resolve(process.cwd(), "data/crm_db.json");
+    if (bundledPath !== DB_FILE && fs.existsSync(bundledPath)) {
+      const fileContent = fs.readFileSync(bundledPath, "utf-8").trim();
+      if (fileContent) {
+        const parsed = JSON.parse(fileContent);
+        return sanitizeLoadedDb(parsed);
       }
     }
   } catch (err) {
@@ -435,35 +673,107 @@ function loadFromDisk(): DBStore {
   const cleanDb = createDefaultEmptyDb();
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(cleanDb, null, 2), "utf-8");
-  } catch (err) {
-    console.error("[CRM DB] Ошибка создания crm_db.json:", err);
+  } catch (err: any) {
+    // Gracefully ignore write failures in read-only environments
   }
   return cleanDb;
 }
 
 rawDb = loadFromDisk();
 
+let isCloudInitialized = false;
+let hasPendingChanges = false;
+
+export const initCloudDb = async (): Promise<void> => {
+  if (isCloudInitialized) return;
+  isCloudInitialized = true;
+
+  try {
+    const cloudData = await supabaseAdapter.init(() => rawDb);
+    if (cloudData) {
+      const sanitized = sanitizeLoadedDb(cloudData);
+      Object.assign(rawDb, sanitized);
+      // Also cache to disk if writable
+      try {
+        if (fs.existsSync(DATA_DIR)) {
+          fs.writeFileSync(DB_FILE, JSON.stringify(rawDb, null, 2), "utf-8");
+        }
+      } catch (e: any) {
+        // Silently ignore in read-only environment
+      }
+    }
+  } catch (err: any) {
+    console.error("[CRM DB] Ошибка инициализации облачной БД:", err.message);
+  }
+};
+
+export const checkAndSyncCloudDb = async (force = false): Promise<boolean> => {
+  try {
+    const cloudData = await supabaseAdapter.syncIfOutdated(force);
+    if (cloudData) {
+      const sanitized = sanitizeLoadedDb(cloudData);
+      Object.assign(rawDb, sanitized);
+      return true;
+    }
+  } catch (err: any) {
+    console.error("[CRM DB] Ошибка синхронизации с облаком:", err);
+  }
+  return false;
+};
+
+export const getStorageStatus = (): StorageStatus => {
+  return supabaseAdapter.getStatus();
+};
+
+export const flushDb = async (): Promise<void> => {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+    saveTimeout = null;
+  }
+  if (!hasPendingChanges) {
+    return;
+  }
+  saveDbToDiskSafe();
+  hasPendingChanges = false;
+  await supabaseAdapter.saveToCloud(rawDb);
+  await supabaseAdapter.flush();
+};
+
+function saveDbToDiskSafe() {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(rawDb, null, 2), "utf-8");
+  } catch (err: any) {
+    if (err.code !== "EROFS") {
+      console.error("[CRM DB] Ошибка записи на диск crm_db.json:", err);
+    }
+  }
+}
+
 let saveTimeout: NodeJS.Timeout | null = null;
 
 export const saveDb = (immediate = false) => {
+  hasPendingChanges = true;
+  saveDbToDiskSafe();
+
   if (immediate) {
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = null;
-    try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(rawDb, null, 2), "utf-8");
-    } catch (err) {
-      console.error("[CRM DB] Ошибка немедленной записи crm_db.json:", err);
-    }
+    supabaseAdapter.saveToCloud(rawDb).catch((err) => {
+      console.error("[CRM DB] Ошибка сохранения в Supabase:", err);
+    });
+    return;
+  }
+
+  if (isVercel) {
+    // On Vercel, storage middleware doFlush() will await flushDb() sequentially before response completes
     return;
   }
 
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
-    try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(rawDb, null, 2), "utf-8");
-    } catch (err) {
-      console.error("[CRM DB] Ошибка фоновой записи crm_db.json:", err);
-    }
+    supabaseAdapter.saveToCloud(rawDb).catch((err) => {
+      console.error("[CRM DB] Ошибка фоновой синхронизации Supabase:", err);
+    });
   }, 50);
 };
 
@@ -508,6 +818,82 @@ const db = createAutoSavingProxy(rawDb, () => saveDb(false));
 
 export const getDb = () => db;
 
+export const getSettings = (): SystemSettingsRecord => {
+  const currentDb = getDb();
+  if (!currentDb.settings) {
+    currentDb.settings = {
+      monthlyFixedExpenses: 0,
+      fixedExpensesDescription: "Аренда сервисного хаба и накладные расходы",
+      fixedExpenseItems: [],
+    };
+  }
+  if (!Array.isArray(currentDb.settings.fixedExpenseItems)) {
+    if (currentDb.settings.monthlyFixedExpenses > 0) {
+      currentDb.settings.fixedExpenseItems = [
+        {
+          id: "exp-1",
+          name: currentDb.settings.fixedExpensesDescription || "Аренда сервисного хаба",
+          amount: currentDb.settings.monthlyFixedExpenses,
+        },
+      ];
+    } else {
+      currentDb.settings.fixedExpenseItems = [];
+    }
+  }
+  return currentDb.settings;
+};
+
+export const updateSettings = (data: Partial<SystemSettingsRecord>): SystemSettingsRecord => {
+  const currentDb = getDb();
+  if (!currentDb.settings) {
+    currentDb.settings = {
+      monthlyFixedExpenses: 0,
+      fixedExpensesDescription: "Аренда сервисного хаба и накладные расходы",
+      fixedExpenseItems: [],
+    };
+  }
+
+  if (Array.isArray(data.fixedExpenseItems)) {
+    currentDb.settings.fixedExpenseItems = data.fixedExpenseItems.map((item, idx) => ({
+      id: item.id || `exp-${Date.now()}-${idx}`,
+      name: String(item.name || "").trim() || "Расход",
+      amount: Math.max(0, Number(item.amount) || 0),
+    }));
+    // Recalculate total sum from items
+    currentDb.settings.monthlyFixedExpenses = currentDb.settings.fixedExpenseItems.reduce(
+      (sum, item) => sum + item.amount,
+      0
+    );
+    if (data.fixedExpensesDescription !== undefined) {
+      currentDb.settings.fixedExpensesDescription = String(data.fixedExpensesDescription);
+    } else if (currentDb.settings.fixedExpenseItems.length > 0) {
+      currentDb.settings.fixedExpensesDescription = currentDb.settings.fixedExpenseItems
+        .map((i) => i.name)
+        .join(", ");
+    } else {
+      currentDb.settings.fixedExpensesDescription = "";
+    }
+  } else {
+    if (data.monthlyFixedExpenses !== undefined) {
+      currentDb.settings.monthlyFixedExpenses = Math.max(0, Number(data.monthlyFixedExpenses) || 0);
+    }
+    if (data.fixedExpensesDescription !== undefined) {
+      currentDb.settings.fixedExpensesDescription = String(data.fixedExpensesDescription);
+    }
+  }
+
+  if (data.paymentDetails !== undefined) {
+    currentDb.settings.paymentDetails = {
+      ...(currentDb.settings.paymentDetails || {}),
+      ...data.paymentDetails,
+    };
+  }
+
+  saveDb(true);
+  return currentDb.settings;
+};
+
+
 // Time Simulation Machine
 let simulatedDate: Date | null = null;
 
@@ -546,7 +932,15 @@ export const clearDb = () => {
   rawDb.batteryModels = [];
   rawDb.outfitTemplates = [];
   rawDb.tariffs = [];
+  rawDb.employees = [];
+  rawDb.articles = [];
   rawDb.loyaltyTiers = JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS));
+  rawDb.settings = {
+    monthlyFixedExpenses: 0,
+    fixedExpensesDescription: "",
+    fixedExpenseItems: [],
+    articlesInitialized: true,
+  };
   saveDb(true);
 };
 

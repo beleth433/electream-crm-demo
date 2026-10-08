@@ -11,6 +11,46 @@
 }
 
 @layer base {
+  :root {
+    --background: #f2f6f4;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #f8fafc;
+    --accent-foreground: #0f172a;
+    --border: #e2e8f0;
+    --ring: #10b981;
+    --chart-1: #059669;
+    --chart-2: #0284c7;
+    --chart-3: #8b5cf6;
+    --chart-4: #f59e0b;
+    --chart-5: #ec4899;
+  }
+
+  .dark {
+    --background: #060b08;
+    --foreground: #f8fafc;
+    --card: #0b1511;
+    --card-foreground: #f8fafc;
+    --popover: #0e1c16;
+    --popover-foreground: #f8fafc;
+    --muted: #11221a;
+    --muted-foreground: #94a3b8;
+    --accent: #152920;
+    --accent-foreground: #f8fafc;
+    --border: rgba(16, 185, 129, 0.22);
+    --ring: #10b981;
+    --chart-1: #10b981;
+    --chart-2: #38bdf8;
+    --chart-3: #a78bfa;
+    --chart-4: #fbbf24;
+    --chart-5: #f472b6;
+  }
+
   html, body, input, button, select, textarea {
     font-family: 'Rubik', system-ui, -apple-system, sans-serif;
   }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../components/Modal';
-import { Client, Bike, Tariff, Outfit, Rental, Battery } from '../types';
+import { Client, Bike, Tariff, Rental, Battery, BatteryModel, BikeModel, TariffBuyoutBatteryItem, Outfit } from '../types';
 import { api } from '../services/api';
 import {
   UserCheck,
@@ -17,15 +17,20 @@ import {
   Snowflake,
   UploadCloud,
   Sparkles,
+  Trash2,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
+import { COURIER_SERVICES } from '../constants/courierServices';
 
 interface RentalWizardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (newRental: Rental) => void;
   initialClient?: { name: string; phone: string; company: string } | null;
+  initialRentalType?: 'STANDARD' | 'RENT_TO_OWN';
 }
 
 export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
@@ -33,6 +38,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   onClose,
   onSuccess,
   initialClient,
+  initialRentalType,
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,9 +46,12 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   // Data lists
   const [clients, setClients] = useState<Client[]>([]);
   const [availableBikes, setAvailableBikes] = useState<Bike[]>([]);
-  const [availableOutfits, setAvailableOutfits] = useState<Outfit[]>([]);
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
   const [allBatteries, setAllBatteries] = useState<Battery[]>([]);
+  const [batteryModels, setBatteryModels] = useState<BatteryModel[]>([]);
+  const [bikeModels, setBikeModels] = useState<BikeModel[]>([]);
+  const [availableOutfits, setAvailableOutfits] = useState<Outfit[]>([]);
+  const [selectedOutfitIds, setSelectedOutfitIds] = useState<string[]>([]);
 
   // Wizard state
   // Step 1: Client selection or creation
@@ -82,10 +91,9 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     });
   };
 
-  // Step 2: Bike, Batteries and Outfit selection
+  // Step 2: Bike and Batteries selection
   const [selectedBikeId, setSelectedBikeId] = useState<string>('');
   const [selectedBatteryIds, setSelectedBatteryIds] = useState<string[]>([]);
-  const [selectedOutfitIds, setSelectedOutfitIds] = useState<string[]>([]);
 
   // Step 3: Tariff, deposit, payment method, contract prefix
   const [allRentals, setAllRentals] = useState<Rental[]>([]);
@@ -93,6 +101,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   const [rentalNumber, setRentalNumber] = useState<string>('');
   const [selectedTariffId, setSelectedTariffId] = useState<string>('');
   const [customDeposit, setCustomDeposit] = useState<number>(3000);
+  const [startDate, setStartDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'SBP' | 'BANK_TRANSFER'>('CASH');
   const [notes, setNotes] = useState('');
 
@@ -108,6 +117,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     totalBuyoutPrice: 60000,
     paymentIntervalDays: 7,
     installmentPayment: 6000,
+    includedBatteries: [] as TariffBuyoutBatteryItem[],
   });
 
   // Rent-to-own customization fields for this specific contract
@@ -136,7 +146,6 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       setSelectedClient(null);
       setSelectedBikeId('');
       setSelectedBatteryIds([]);
-      setSelectedOutfitIds([]);
       if (initialClient) {
         setIsCreatingClient(true);
         setNewClientForm({
@@ -159,35 +168,54 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       Promise.all([
         api.getClients(),
         api.getBikes({ status: 'AVAILABLE' }),
-        api.getAvailableOutfits(),
         api.getRentalTariffs(),
         api.getBatteries(),
         api.getRentals(),
+        api.getBatteryModels(),
+        api.getBikeModels(),
+        api.getAvailableOutfits().catch(() => []),
       ])
-        .then(([clientsRes, bikesRes, outfitsRes, tariffsRes, batteriesRes, rentalsRes]) => {
+        .then(([clientsRes, bikesRes, tariffsRes, batteriesRes, rentalsRes, batteryModelsRes, bikeModelsRes, outfitsRes]) => {
           setClients(clientsRes);
           setAvailableBikes(bikesRes);
-          setAvailableOutfits(outfitsRes);
           setTariffs(tariffsRes);
           setAllBatteries(batteriesRes);
           setAllRentals(rentalsRes);
+          setBatteryModels(batteryModelsRes);
+          setBikeModels(bikeModelsRes);
+          setAvailableOutfits(outfitsRes || []);
+
+          let activePrefix = rentalPrefix;
+          if (initialRentalType === 'RENT_TO_OWN' && (rentalPrefix === 'ДОГ-' || !rentalPrefix)) {
+            activePrefix = 'ВЫК-';
+            setRentalPrefix('ВЫК-');
+          } else if (initialRentalType === 'STANDARD' && rentalPrefix === 'ВЫК-') {
+            activePrefix = 'ДОГ-';
+            setRentalPrefix('ДОГ-');
+          }
 
           const nextNum = getNextSequentialNumber(
             rentalsRes.map((r) => r.rentalNumber),
-            rentalPrefix,
+            activePrefix,
             3
           );
           setRentalNumber(nextNum);
 
-          if (tariffsRes.length > 0) {
-            setSelectedTariffId(tariffsRes[0].id);
-            setCustomDeposit(tariffsRes[0].depositRequired);
-            if (tariffsRes[0].type === 'RENT_TO_OWN') {
-              const total = tariffsRes[0].totalBuyoutPrice || tariffsRes[0].price || 60000;
-              const interval = tariffsRes[0].paymentIntervalDays || 7;
-              const dur = tariffsRes[0].durationDays || 180;
+          let matchingTariff = tariffsRes[0];
+          if (initialRentalType) {
+            const found = tariffsRes.find((t) => t.type === initialRentalType);
+            if (found) matchingTariff = found;
+          }
+
+          if (matchingTariff) {
+            setSelectedTariffId(matchingTariff.id);
+            setCustomDeposit(matchingTariff.depositRequired);
+            if (matchingTariff.type === 'RENT_TO_OWN') {
+              const total = matchingTariff.totalBuyoutPrice || matchingTariff.price || 60000;
+              const interval = matchingTariff.paymentIntervalDays || 7;
+              const dur = matchingTariff.durationDays || 180;
               const periods = Math.max(1, Math.round(dur / interval));
-              const inst = tariffsRes[0].installmentPayment || Math.ceil((total / periods) / 10) * 10 || tariffsRes[0].price || 6000;
+              const inst = matchingTariff.installmentPayment || Math.ceil((total / periods) / 10) * 10 || matchingTariff.price || 6000;
               setBuyoutTotalPrice(total);
               setBuyoutPaymentIntervalDays(interval);
               setBuyoutDurationDays(dur);
@@ -198,7 +226,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         })
         .catch((err) => toast.error('Ошибка загрузки данных: ' + err.message));
     }
-  }, [isOpen]);
+  }, [isOpen, initialRentalType]);
 
   // Handle client phone search
   const filteredClients = clients.filter(
@@ -239,18 +267,18 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     const targetBatteryIds = batteryIdsToUse || selectedBatteryIds;
     const bats = allBatteries.filter((b) => targetBatteryIds.includes(b.id));
     const batsTotal = bats.reduce((sum, b) => sum + (b.salePrice || 25000), 0);
-    const total = bikePrice + batsTotal;
+    const calculatedTotal = bikePrice + batsTotal;
 
-    if (total > 0) {
-      setBuyoutTotalPrice(total);
-      const dur = curTariff.durationDays || buyoutDurationDays || 180;
-      const interval = curTariff.paymentIntervalDays || buyoutPaymentIntervalDays || 7;
-      const periods = Math.max(1, Math.round(dur / interval));
-      const inst = Math.ceil((total / periods) / 10) * 10;
-      setBuyoutDurationDays(dur);
-      setBuyoutInstallmentPayment(inst);
-      setBuyoutFirstPayment(inst);
-    }
+    const total = curTariff.totalBuyoutPrice ? curTariff.totalBuyoutPrice : (calculatedTotal > 0 ? calculatedTotal : 60000);
+    const dur = curTariff.durationDays || buyoutDurationDays || 90;
+    const interval = curTariff.paymentIntervalDays || buyoutPaymentIntervalDays || 7;
+    const periods = Math.max(1, Math.round(dur / interval));
+    const inst = curTariff.installmentPayment || Math.ceil((total / periods) / 10) * 10;
+    setBuyoutTotalPrice(total);
+    setBuyoutDurationDays(dur);
+    setBuyoutPaymentIntervalDays(interval);
+    setBuyoutInstallmentPayment(inst);
+    setBuyoutFirstPayment(inst);
   };
 
   const handleTariffChange = (tariffId: string, currentBike?: Bike, batteryIdsToUse?: string[]) => {
@@ -266,9 +294,9 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         const batsTotal = bats.reduce((sum, b) => sum + (b.salePrice || 25000), 0);
         const calculatedTotal = bikePrice + batsTotal;
 
-        const total = calculatedTotal > 0 ? calculatedTotal : (trf.totalBuyoutPrice || trf.price || 60000);
+        const total = trf.totalBuyoutPrice ? trf.totalBuyoutPrice : (calculatedTotal > 0 ? calculatedTotal : (trf.price || 60000));
         const interval = trf.paymentIntervalDays || 7;
-        const dur = trf.durationDays || 180;
+        const dur = trf.durationDays || 90;
         const periods = Math.max(1, Math.round(dur / interval));
         const inst = trf.installmentPayment || Math.ceil((total / periods) / 10) * 10 || trf.price || 6000;
         setBuyoutTotalPrice(total);
@@ -281,13 +309,153 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   };
 
   const handleCalculateContractInstallment = () => {
-    const dur = buyoutDurationDays || selectedTariff?.durationDays || 180;
+    const dur = buyoutDurationDays || selectedTariff?.durationDays || 90;
     const interval = buyoutPaymentIntervalDays || 7;
     const periods = Math.max(1, Math.round(dur / interval));
     const inst = Math.ceil((buyoutTotalPrice / periods) / 10) * 10;
     setBuyoutInstallmentPayment(inst);
     setBuyoutFirstPayment(inst);
     toast.success(`Рассчитано: ${periods} платежей по ${inst.toLocaleString('ru-RU')} ₽`);
+  };
+
+  const recalculateBuyoutFromItemsInline = (
+    bikeModelId: string,
+    batteries: TariffBuyoutBatteryItem[],
+    overrides?: { durationDays?: number; paymentIntervalDays?: number; type?: 'STANDARD' | 'RENT_TO_OWN' }
+  ) => {
+    const selectedModel = bikeModels.find((m) => m.id === bikeModelId) || selectedBike?.model;
+    const bikePrice = selectedModel ? (selectedModel.baseBuyoutPrice || selectedModel.salePrice || 60000) : 0;
+    const batteriesTotal = (batteries || []).reduce(
+      (sum, b) => sum + (Number(b.quantity) || 0) * (Number(b.price) || 0),
+      0
+    );
+    const total = bikePrice + batteriesTotal;
+    const dur = overrides?.durationDays ?? newTariffForm.durationDays ?? 90;
+    const interval = overrides?.paymentIntervalDays ?? newTariffForm.paymentIntervalDays ?? 7;
+    const periods = Math.max(1, Math.round(dur / interval));
+    const inst = Math.ceil((total / periods) / 10) * 10;
+
+    setNewTariffForm((prev) => ({
+      ...prev,
+      type: overrides?.type ?? prev.type,
+      bikeModelId,
+      includedBatteries: batteries,
+      durationDays: dur,
+      paymentIntervalDays: interval,
+      totalBuyoutPrice: total > 0 ? total : (prev.totalBuyoutPrice || 60000),
+      installmentPayment: total > 0 ? inst : (prev.installmentPayment || 6000),
+      price: total > 0 ? inst : (prev.price || 6000),
+    }));
+  };
+
+  const handleAddBuyoutBatteryInline = () => {
+    const firstModel = batteryModels[0];
+    const newBat: TariffBuyoutBatteryItem = {
+      batteryModelId: firstModel ? firstModel.id : '',
+      quantity: 1,
+      price: firstModel ? (firstModel.salePrice || 25000) : 25000,
+    };
+    const updated = [...(newTariffForm.includedBatteries || []), newBat];
+    recalculateBuyoutFromItemsInline(newTariffForm.bikeModelId, updated);
+  };
+
+  const handleUpdateBuyoutBatteryInline = (
+    index: number,
+    updates: Partial<TariffBuyoutBatteryItem>
+  ) => {
+    const list = [...(newTariffForm.includedBatteries || [])];
+    const cur = list[index];
+    if (!cur) return;
+    const updatedItem = { ...cur, ...updates };
+    if (updates.batteryModelId && updates.batteryModelId !== cur.batteryModelId) {
+      const found = batteryModels.find((m) => m.id === updates.batteryModelId);
+      if (found) {
+        updatedItem.price = found.salePrice || 25000;
+      }
+    }
+    list[index] = updatedItem;
+    recalculateBuyoutFromItemsInline(newTariffForm.bikeModelId, list);
+  };
+
+  const handleRemoveBuyoutBatteryInline = (index: number) => {
+    const updated = (newTariffForm.includedBatteries || []).filter((_, idx) => idx !== index);
+    recalculateBuyoutFromItemsInline(newTariffForm.bikeModelId, updated);
+  };
+
+  const handleCalculateTariffInstallment = () => {
+    const total = Number(newTariffForm.totalBuyoutPrice) || 0;
+    const dur = Number(newTariffForm.durationDays) || 90;
+    const interval = Number(newTariffForm.paymentIntervalDays) || 7;
+    const periods = Math.max(1, Math.round(dur / interval));
+    const inst = Math.ceil((total / periods) / 10) * 10;
+    setNewTariffForm((prev) => ({
+      ...prev,
+      installmentPayment: inst,
+      price: inst,
+    }));
+    toast.success(`Рассчитано: ${periods} платежей по ${inst.toLocaleString('ru-RU')} ₽`);
+  };
+
+  const handleAutoPopulateBuyoutFromSelection = () => {
+    const batCounts: Record<string, number> = {};
+    selectedBatteries.forEach((b) => {
+      const mId = b.modelId || '';
+      batCounts[mId] = (batCounts[mId] || 0) + 1;
+    });
+
+    const items: TariffBuyoutBatteryItem[] = Object.entries(batCounts).map(([mId, qty]) => {
+      const bm = batteryModels.find((m) => m.id === mId);
+      return {
+        batteryModelId: mId,
+        quantity: qty,
+        price: bm?.salePrice || 25000,
+      };
+    });
+
+    const bModelId = selectedBike?.modelId || newTariffForm.bikeModelId;
+    recalculateBuyoutFromItemsInline(bModelId, items, { type: 'RENT_TO_OWN' });
+    toast.success('Параметры выкупа заполнены из выбранного байка и аккумуляторов');
+  };
+
+  const handleOpenCreateTariffInline = () => {
+    setIsCreatingTariff(true);
+    const bikeModel = selectedBike?.model;
+    const bModelId = selectedBike?.modelId || '';
+
+    const batCounts: Record<string, number> = {};
+    selectedBatteries.forEach((b) => {
+      const mId = b.modelId || '';
+      batCounts[mId] = (batCounts[mId] || 0) + 1;
+    });
+    const items: TariffBuyoutBatteryItem[] = Object.entries(batCounts).map(([mId, qty]) => {
+      const bm = batteryModels.find((m) => m.id === mId);
+      return {
+        batteryModelId: mId,
+        quantity: qty,
+        price: bm?.salePrice || 25000,
+      };
+    });
+
+    const bikePrice = bikeModel ? (bikeModel.baseBuyoutPrice || bikeModel.salePrice || 60000) : 60000;
+    const batsTotal = items.reduce((sum, it) => sum + it.quantity * it.price, 0);
+    const total = bikePrice + batsTotal;
+    const dur = 90;
+    const interval = 7;
+    const periods = Math.max(1, Math.round(dur / interval));
+    const inst = Math.ceil((total / periods) / 10) * 10;
+
+    setNewTariffForm({
+      name: bikeModel?.name ? `${bikeModel.name} Выкуп ${dur}д` : '',
+      type: 'RENT_TO_OWN',
+      bikeModelId: bModelId,
+      durationDays: dur,
+      price: inst,
+      depositRequired: 0,
+      totalBuyoutPrice: total,
+      paymentIntervalDays: interval,
+      installmentPayment: inst,
+      includedBatteries: items,
+    });
   };
 
   const handleCreateTariffInline = async (e: React.FormEvent) => {
@@ -297,15 +465,16 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       const payload = {
         ...newTariffForm,
         bikeModelId: newTariffForm.bikeModelId ? newTariffForm.bikeModelId : (selectedBike?.modelId || null),
+        includedBatteries: newTariffForm.type === 'RENT_TO_OWN' ? newTariffForm.includedBatteries : [],
       };
       const created = await api.createRentalTariff(payload);
       setTariffs((prev) => [...prev, created]);
       setSelectedTariffId(created.id);
       setCustomDeposit(created.depositRequired);
       if (created.type === 'RENT_TO_OWN') {
-        const total = created.totalBuyoutPrice || selectedBike?.model?.baseBuyoutPrice || created.price || 60000;
+        const total = created.totalBuyoutPrice || created.price || 60000;
         const interval = created.paymentIntervalDays || 7;
-        const dur = created.durationDays || 180;
+        const dur = created.durationDays || 90;
         const periods = Math.max(1, Math.round(dur / interval));
         const inst = created.installmentPayment || Math.ceil((total / periods) / 10) * 10 || created.price || 6000;
         setBuyoutTotalPrice(total);
@@ -321,10 +490,11 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         bikeModelId: '',
         durationDays: 7,
         price: 6000,
-        depositRequired: 5000,
+        depositRequired: 0,
         totalBuyoutPrice: 60000,
         paymentIntervalDays: 7,
         installmentPayment: 6000,
+        includedBatteries: [],
       });
       toast.success(`Шаблон тарифа "${created.name}" создан и выбран!`);
     } catch (err: any) {
@@ -384,6 +554,30 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
   const discountedTariffPrice = Math.max(0, baseTariffPrice - rentalDiscountAmount);
   const totalDue = discountedTariffPrice + Number(customDeposit || 0);
 
+  const getDaysAgoDate = (daysAgo: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return d.toISOString().split('T')[0];
+  };
+
+  const formatDisplayDate = (dInput: string | Date) => {
+    const d = typeof dInput === 'string' ? new Date(dInput) : dInput;
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const parsedStartDate = new Date(`${startDate}T12:00:00`);
+  const effectiveDurationDays = isRentToOwn ? Number(buyoutDurationDays || 30) : Number(selectedTariff?.durationDays || 7);
+  const paymentInterval = isRentToOwn ? Number(buyoutPaymentIntervalDays || 7) : effectiveDurationDays;
+
+  const calculatedExpiresAt = new Date(parsedStartDate.getTime() + effectiveDurationDays * 86400000);
+  const calculatedNextPaymentDue = new Date(parsedStartDate.getTime() + paymentInterval * 86400000);
+
+  const todayRef = new Date();
+  todayRef.setHours(12, 0, 0, 0);
+  const daysAgoDiff = Math.max(0, Math.round((todayRef.getTime() - parsedStartDate.getTime()) / 86400000));
+  const calculatedNextDueIsPast = calculatedNextPaymentDue.getTime() < todayRef.getTime();
+
   const handleSubmitCheckout = async () => {
     if (!selectedClient) {
       toast.error('Пожалуйста, выберите курьера');
@@ -412,6 +606,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         paymentMethod,
         rentalNumber: rentalNumber.trim() ? rentalNumber.trim() : undefined,
         customDeposit: Number(customDeposit),
+        startDate: startDate ? new Date(`${startDate}T12:00:00`).toISOString() : undefined,
         durationDays: isRentToOwn ? Number(buyoutDurationDays) : undefined,
         totalBuyoutPrice: isRentToOwn ? Number(buyoutTotalPrice) : undefined,
         paymentIntervalDays: isRentToOwn ? Number(buyoutPaymentIntervalDays) : undefined,
@@ -441,7 +636,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       onClose={onClose}
       title="Оформление аренды электровелосипеда"
       subtitle="Пошаговый мастер выдачи техники и экипировки"
-      maxWidth="2xl"
+      maxWidth="4xl"
     >
       {/* Visual Stepper */}
       <div className="flex items-center justify-between mb-6 px-4">
@@ -644,12 +839,9 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                             onChange={(e) => setClientExtraDetails({ ...clientExtraDetails, courierService: e.target.value })}
                             className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                           >
-                            <option value="Яндекс Еда">Яндекс Еда</option>
-                            <option value="Купер (СберМаркет)">Купер (СберМаркет)</option>
-                            <option value="Самокат">Самокат</option>
-                            <option value="Достависта">Достависта</option>
-                            <option value="Ozon fresh">Ozon fresh</option>
-                            <option value="Частный курьер">Частный курьер</option>
+                            {COURIER_SERVICES.map((s: any) => (
+                              <option key={s.id} value={s.id}>{s.label}</option>
+                            ))}
                           </select>
                         </div>
                         <div>
@@ -762,11 +954,9 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                     onChange={(e) => setNewClientForm({ ...newClientForm, courierService: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                   >
-                    <option value="Яндекс Еда">Яндекс Еда / Маркет</option>
-                    <option value="Самокат">Самокат</option>
-                    <option value="Купер">Купер (СберМаркет)</option>
-                    <option value="Достависта">Достависта / СДЭК</option>
-                    <option value="Частный курьер">Частный курьер</option>
+                    {COURIER_SERVICES.map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.label}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -950,7 +1140,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                         }`}
                       >
                         <div className="flex items-start justify-between gap-1 mb-1">
-                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                          <span className="font-bold text-slate-800 dark:text-slate-200 break-words" title={bat.serialNumber}>
                             {bat.serialNumber}
                           </span>
                           <div className="flex items-center gap-1 shrink-0">
@@ -990,51 +1180,48 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
           </div>
 
           {/* Outfits selection checkboxes */}
-          <div>
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
-              Дополнительная экипировка и аксессуары со склада:
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
-              {availableOutfits.map((outfit) => {
-                const isChecked = selectedOutfitIds.includes(outfit.id);
-                return (
-                  <label
-                    key={outfit.id}
-                    onClick={() => toggleOutfit(outfit.id)}
-                    className={`p-2.5 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-all ${
-                      isChecked
-                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/30'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/30'
-                    }`}
-                  >
-                    <div className="overflow-hidden pr-2">
-                      <p className="font-medium text-slate-800 dark:text-slate-200 truncate">
-                        {outfit.name}
-                      </p>
-                      <p className="text-[10px] text-slate-400">
-                        Инв: {outfit.inventoryNumber || '—'} • Залог: {outfit.depositValue} ₽
-                      </p>
-                    </div>
+          {availableOutfits.length > 0 && (
+            <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
+                Экипировка и аксессуары (опционально)
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                {availableOutfits.map((outfit) => {
+                  const isChecked = selectedOutfitIds.includes(outfit.id);
+                  return (
                     <div
-                      className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                      key={outfit.id}
+                      onClick={() => toggleOutfit(outfit.id)}
+                      className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition-all ${
                         isChecked
-                          ? 'border-sky-600 bg-sky-600 text-white'
-                          : 'border-slate-300 dark:border-slate-600'
+                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 font-bold shadow-xs'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#101c16] hover:border-slate-300'
                       }`}
                     >
-                      {isChecked && <Check className="w-3 h-3" />}
+                      <div className="min-w-0 pr-2">
+                        <div className="truncate font-medium text-slate-900 dark:text-white">{outfit.name}</div>
+                        <div className="text-[10px] text-slate-400">
+                          Инв. №: {outfit.inventoryNumber || '—'} • Залог: {outfit.depositValue.toLocaleString('ru-RU')} ₽
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}}
+                        className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 shrink-0 pointer-events-none"
+                      />
                     </div>
-                  </label>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl"
+              className="px-4 py-2.5 min-h-[44px] border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition"
             >
               ← Назад
             </button>
@@ -1042,9 +1229,10 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               type="button"
               disabled={!selectedBikeId}
               onClick={() => setStep(3)}
-              className="px-5 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+              className="px-5 py-2.5 min-h-[44px] bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5"
             >
-              Далее: Тариф и оплата →
+              <span className="hidden sm:inline">Далее: Тариф и оплата →</span>
+              <span className="sm:hidden">Далее →</span>
             </button>
           </div>
         </div>
@@ -1071,7 +1259,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsCreatingTariff(false)}
-                    className="text-xs text-slate-500 hover:text-slate-700"
+                    className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-semibold"
                   >
                     Отмена
                   </button>
@@ -1079,165 +1267,534 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               </div>
 
               <form onSubmit={handleCreateTariffInline} className="space-y-3 pt-1">
+                {/* Row 1: Name and Bike Model */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex flex-col justify-between">
-                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Название тарифа *</label>
+                    <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
+                      Название тарифа *
+                    </label>
                     <input
                       required
                       type="text"
-                      placeholder="Например: Недельный рабочий, Месячный..."
+                      placeholder="Например: U2 Выкуп 90д"
                       value={newTariffForm.name}
                       onChange={(e) => setNewTariffForm({ ...newTariffForm, name: e.target.value })}
-                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-amber-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
                     />
                   </div>
+
                   <div className="flex flex-col justify-between">
-                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Привязка к модели байка</label>
-                    <div className="h-9 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center">
-                      {selectedBike?.model?.name ? `🚲 Модель: ${selectedBike.model.name}` : 'Универсальный (для всех моделей)'}
-                    </div>
+                    <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
+                      Привязка к модели байка
+                    </label>
+                    <select
+                      value={newTariffForm.bikeModelId}
+                      onChange={(e) => {
+                        const mId = e.target.value;
+                        if (newTariffForm.type === 'RENT_TO_OWN') {
+                          recalculateBuyoutFromItemsInline(mId, newTariffForm.includedBatteries);
+                        } else {
+                          setNewTariffForm((prev) => ({ ...prev, bikeModelId: mId }));
+                        }
+                      }}
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-amber-500/20 rounded-xl font-medium text-slate-900 dark:text-white"
+                    >
+                      <option value="">Все модели (универсальный тариф)</option>
+                      {bikeModels.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.powerWatts}W)
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
+                {/* Row 2: Type and Duration */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="flex flex-col justify-between">
-                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Тип аренды *</label>
+                    <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
+                      Тип аренды *
+                    </label>
                     <select
                       value={newTariffForm.type}
-                      onChange={(e) =>
-                        setNewTariffForm({
-                          ...newTariffForm,
-                          type: e.target.value as 'STANDARD' | 'RENT_TO_OWN',
-                        })
-                      }
-                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                      onChange={(e) => {
+                        const newType = e.target.value as 'STANDARD' | 'RENT_TO_OWN';
+                        if (newType === 'RENT_TO_OWN') {
+                          recalculateBuyoutFromItemsInline(newTariffForm.bikeModelId, newTariffForm.includedBatteries || [], {
+                            type: 'RENT_TO_OWN',
+                            durationDays: newTariffForm.durationDays && newTariffForm.durationDays > 30 ? newTariffForm.durationDays : 90,
+                          });
+                        } else {
+                          setNewTariffForm((prev) => ({
+                            ...prev,
+                            type: 'STANDARD',
+                            durationDays: prev.durationDays === 90 || prev.durationDays === 180 ? 7 : (prev.durationDays || 7),
+                            price: prev.price || 6000,
+                          }));
+                        }
+                      }}
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-amber-500/20 rounded-xl font-semibold text-slate-900 dark:text-white"
                     >
-                      <option value="STANDARD">Обычная аренда</option>
-                      <option value="RENT_TO_OWN">Аренда с правом выкупа</option>
+                      <option value="STANDARD">Обычная аренда (STANDARD)</option>
+                      <option value="RENT_TO_OWN">Аренда с правом выкупа (RENT_TO_OWN)</option>
                     </select>
                   </div>
 
                   <div className="flex flex-col justify-between">
-                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Срок аренды (дней) *</label>
-                    <input
-                      required
-                      type="number"
-                      min="1"
-                      value={newTariffForm.durationDays}
-                      onChange={(e) =>
-                        setNewTariffForm({ ...newTariffForm, durationDays: Number(e.target.value) })
-                      }
-                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="flex flex-col justify-between">
-                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">
-                      {newTariffForm.type === 'RENT_TO_OWN' ? 'Регулярный взнос (₽) *' : 'Стоимость аренды (₽) *'}
+                    <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
+                      {newTariffForm.type === 'RENT_TO_OWN' ? 'Общий срок выкупа (дней) *' : 'Срок аренды (дней) *'}
                     </label>
                     <input
                       required
                       type="number"
-                      min="0"
-                      step="100"
-                      value={newTariffForm.price}
+                      min="1"
+                      step="any"
+                      value={newTariffForm.durationDays}
                       onChange={(e) => {
                         const val = Number(e.target.value);
-                        setNewTariffForm({
-                          ...newTariffForm,
-                          price: val,
-                          installmentPayment: val,
+                        setNewTariffForm((prev) => {
+                          const interval = prev.paymentIntervalDays || 7;
+                          const periods = Math.max(1, Math.round(val / interval));
+                          const inst = Math.ceil(((prev.totalBuyoutPrice || 0) / periods) / 10) * 10;
+                          return {
+                            ...prev,
+                            durationDays: val,
+                            installmentPayment: prev.type === 'RENT_TO_OWN' ? inst : prev.installmentPayment,
+                            price: prev.type === 'RENT_TO_OWN' ? inst : prev.price,
+                          };
                         });
                       }}
-                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-emerald-600"
-                    />
-                  </div>
-
-                  <div className="flex flex-col justify-between">
-                    <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Залог (₽) *</label>
-                    <input
-                      required
-                      type="number"
-                      min="0"
-                      step="500"
-                      value={newTariffForm.depositRequired}
-                      onChange={(e) =>
-                        setNewTariffForm({ ...newTariffForm, depositRequired: Number(e.target.value) })
-                      }
-                      className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                      className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-amber-500/20 rounded-xl font-bold text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
 
-                {newTariffForm.type === 'RENT_TO_OWN' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1 border-t border-amber-200 dark:border-amber-800/40">
+                {/* If STANDARD */}
+                {newTariffForm.type === 'STANDARD' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="flex flex-col justify-between">
-                      <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Полная выкупная цена (₽) *</label>
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
+                        Стоимость аренды (₽) *
+                      </label>
                       <input
                         required
                         type="number"
                         min="0"
-                        step="1000"
-                        value={newTariffForm.totalBuyoutPrice}
+                        step="any"
+                        value={newTariffForm.price}
                         onChange={(e) =>
-                          setNewTariffForm({ ...newTariffForm, totalBuyoutPrice: Number(e.target.value) })
+                          setNewTariffForm({ ...newTariffForm, price: Number(e.target.value) })
                         }
-                        className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg text-xs font-bold text-purple-600 dark:text-purple-400"
+                        className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-emerald-600"
                       />
                     </div>
                     <div className="flex flex-col justify-between">
-                      <label className="block text-slate-500 mb-1 text-[11px] min-h-[1.25rem]">Интервал платежей (дней) *</label>
+                      <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
+                        Обязательный залог (₽) *
+                      </label>
                       <input
                         required
                         type="number"
-                        min="1"
-                        value={newTariffForm.paymentIntervalDays}
+                        min="0"
+                        step="any"
+                        value={newTariffForm.depositRequired}
                         onChange={(e) =>
-                          setNewTariffForm({ ...newTariffForm, paymentIntervalDays: Number(e.target.value) })
+                          setNewTariffForm({ ...newTariffForm, depositRequired: Number(e.target.value) })
                         }
-                        className="w-full h-9 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
+                        className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-white"
                       />
                     </div>
                   </div>
+                ) : (
+                  /* If RENT_TO_OWN: full purple box identical to RentalsPage */
+                  <div className="p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/30 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <span className="font-bold text-purple-900 dark:text-purple-200 text-xs">
+                        Параметры выкупа (рассрочки)
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {(selectedBike || selectedBatteries.length > 0) && (
+                          <button
+                            type="button"
+                            onClick={handleAutoPopulateBuyoutFromSelection}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-purple-900/60 hover:bg-purple-100 text-purple-700 dark:text-purple-200 border border-purple-300 dark:border-purple-700 rounded-lg text-[10px] font-bold transition shadow-sm"
+                            title="Заполнить комплект из выбранного на предыдущих шагах байка и АКБ"
+                          >
+                            <Sparkles className="w-3 h-3 text-purple-500" />
+                            Из выбранного байка и АКБ
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleCalculateTariffInstallment}
+                          className="flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition shadow-sm"
+                          title="Автоматически рассчитать платёж исходя из общей суммы и интервала"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          Рассчитать платёж
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Batteries list */}
+                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1611] border border-purple-200 dark:border-purple-800/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-slate-800 dark:text-purple-300 text-xs flex items-center gap-1">
+                            🔋 Аккумуляторы в выкупе
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            ({newTariffForm.includedBatteries.length} поз.)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddBuyoutBatteryInline}
+                          className="flex items-center gap-1 px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition shadow-sm"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Добавить АКБ
+                        </button>
+                      </div>
+
+                      {newTariffForm.includedBatteries.length === 0 ? (
+                        <p className="text-[11px] text-slate-400 italic py-2 px-3 text-center bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-dashed border-purple-200 dark:border-purple-800/30">
+                          Велосипед идет в выкуп без аккумуляторов. Нажмите <strong>«+ Добавить АКБ»</strong>, если в выкуп входят батареи.
+                        </p>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <div className="grid grid-cols-12 gap-2 text-[10px] font-semibold text-slate-400 px-1">
+                            <span className="col-span-6">Модель аккумулятора</span>
+                            <span className="col-span-2 text-center">Кол-во</span>
+                            <span className="col-span-2 text-right">Цена за шт.</span>
+                            <span className="col-span-2 text-right">Итого</span>
+                          </div>
+                          {newTariffForm.includedBatteries.map((item, idx) => {
+                            const rowTotal = (Number(item.quantity) || 0) * (Number(item.price) || 0);
+                            return (
+                              <div
+                                key={idx}
+                                className="grid grid-cols-12 gap-2 items-center p-2 rounded-lg bg-slate-50 dark:bg-[#101d17] border border-purple-100 dark:border-purple-900/40 text-xs"
+                              >
+                                <div className="col-span-6">
+                                  <select
+                                    value={item.batteryModelId}
+                                    onChange={(e) =>
+                                      handleUpdateBuyoutBatteryInline(idx, { batteryModelId: e.target.value })
+                                    }
+                                    className="w-full px-2 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-purple-800/40 rounded-lg text-[11px] font-semibold"
+                                  >
+                                    <option value="">-- Выберите модель АКБ --</option>
+                                    {batteryModels.map((bm) => (
+                                      <option key={bm.id} value={bm.id}>
+                                        {bm.name} ({bm.voltage}V {bm.capacityAh}Ah) — {(bm.salePrice || 25000).toLocaleString('ru-RU')} ₽
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="col-span-2">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    step="any"
+                                    title="Количество"
+                                    value={item.quantity}
+                                    onChange={(e) =>
+                                      handleUpdateBuyoutBatteryInline(idx, { quantity: Math.max(1, Number(e.target.value)) })
+                                    }
+                                    className="w-full px-2 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-purple-800/40 rounded-lg text-[11px] font-bold text-center"
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="any"
+                                    title="Цена за шт. (₽)"
+                                    value={item.price}
+                                    onChange={(e) =>
+                                      handleUpdateBuyoutBatteryInline(idx, { price: Number(e.target.value) })
+                                    }
+                                    className="w-full px-2 py-1.5 bg-white dark:bg-[#0c1611] border border-slate-200 dark:border-purple-800/40 rounded-lg text-[11px] font-bold text-emerald-600 dark:text-emerald-400 text-right"
+                                  />
+                                </div>
+                                <div className="col-span-2 flex items-center justify-end gap-1.5">
+                                  <span className="font-extrabold text-[11px] text-purple-700 dark:text-purple-300">
+                                    {rowTotal.toLocaleString('ru-RU')} ₽
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveBuyoutBatteryInline(idx)}
+                                    className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition"
+                                    title="Удалить АКБ"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Real-time Breakdown bar */}
+                      {(() => {
+                        const curModel = bikeModels.find((m) => m.id === newTariffForm.bikeModelId) || selectedBike?.model;
+                        const bPrice = curModel ? (curModel.baseBuyoutPrice || curModel.salePrice || 60000) : 0;
+                        const batsTotal = (newTariffForm.includedBatteries || []).reduce(
+                          (sum, b) => sum + (Number(b.quantity) || 0) * (Number(b.price) || 0),
+                          0
+                        );
+                        const totalCalculated = bPrice + batsTotal;
+                        return (
+                          <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px] pt-1.5 border-t border-purple-100 dark:border-purple-800/30">
+                            <span className="text-slate-600 dark:text-slate-400">
+                              Авто-расчёт: {curModel ? curModel.name : 'Байк'} ({bPrice.toLocaleString('ru-RU')} ₽)
+                              {batsTotal > 0 && ` + АКБ (${batsTotal.toLocaleString('ru-RU')} ₽)`}
+                              {' = '}
+                              <strong className="font-black text-purple-700 dark:text-purple-300">
+                                {totalCalculated.toLocaleString('ru-RU')} ₽
+                              </strong>
+                            </span>
+                            {newTariffForm.totalBuyoutPrice !== totalCalculated && totalCalculated > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => recalculateBuyoutFromItemsInline(newTariffForm.bikeModelId, newTariffForm.includedBatteries)}
+                                className="text-[10px] text-purple-600 dark:text-purple-400 hover:underline font-bold"
+                              >
+                                ↻ Применить расчет ({totalCalculated.toLocaleString('ru-RU')} ₽)
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Row: Total Buyout Price & Payment Interval */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                      <div className="flex flex-col justify-between">
+                        <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem] flex items-center justify-between">
+                          <span>Полная выкупная цена (₽) *</span>
+                          <span className="text-[10px] text-slate-400 font-normal">можно изменить</span>
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={newTariffForm.totalBuyoutPrice}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            const dur = newTariffForm.durationDays || 90;
+                            const interval = newTariffForm.paymentIntervalDays || 7;
+                            const periods = Math.max(1, Math.round(dur / interval));
+                            const inst = Math.ceil((val / periods) / 10) * 10;
+                            setNewTariffForm({
+                              ...newTariffForm,
+                              totalBuyoutPrice: val,
+                              installmentPayment: inst,
+                              price: inst,
+                            });
+                          }}
+                          className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-purple-700 dark:text-purple-300"
+                        />
+                      </div>
+
+                      <div className="flex flex-col justify-between">
+                        <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
+                          Интервал платежей (дней) *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="1"
+                          step="any"
+                          value={newTariffForm.paymentIntervalDays}
+                          onChange={(e) => {
+                            const val = Math.max(1, Number(e.target.value));
+                            const dur = newTariffForm.durationDays || 90;
+                            const periods = Math.max(1, Math.round(dur / val));
+                            const inst = Math.ceil(((newTariffForm.totalBuyoutPrice || 0) / periods) / 10) * 10;
+                            setNewTariffForm({
+                              ...newTariffForm,
+                              paymentIntervalDays: val,
+                              installmentPayment: inst,
+                              price: inst,
+                            });
+                          }}
+                          className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row: Regular Payment & Required Deposit */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="flex flex-col justify-between">
+                        <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
+                          Регулярный платёж за интервал (₽) *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={newTariffForm.installmentPayment}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            const total = Number(newTariffForm.totalBuyoutPrice) || 0;
+                            const interval = Number(newTariffForm.paymentIntervalDays) || 7;
+                            if (val >= 500 && total > 0) {
+                              const periods = Math.max(1, Math.ceil(total / val));
+                              const newDur = Math.min(3650, periods * interval);
+                              setNewTariffForm({
+                                ...newTariffForm,
+                                installmentPayment: val,
+                                price: val,
+                                durationDays: newDur,
+                              });
+                            } else {
+                              setNewTariffForm({
+                                ...newTariffForm,
+                                installmentPayment: val,
+                                price: val,
+                              });
+                            }
+                          }}
+                          onBlur={() => {
+                            const val = Number(newTariffForm.installmentPayment) || 0;
+                            const total = Number(newTariffForm.totalBuyoutPrice) || 0;
+                            const interval = Number(newTariffForm.paymentIntervalDays) || 7;
+                            if (val > 0 && total > 0) {
+                              const periods = Math.max(1, Math.ceil(total / val));
+                              const newDur = Math.min(3650, periods * interval);
+                              setNewTariffForm((prev) => ({
+                                ...prev,
+                                durationDays: newDur,
+                              }));
+                            }
+                          }}
+                          className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-black text-emerald-600 dark:text-emerald-400"
+                        />
+                      </div>
+
+                      <div className="flex flex-col justify-between">
+                        <label className="block text-slate-600 dark:text-slate-300 mb-1 font-semibold text-xs min-h-[1.25rem]">
+                          Обязательный залог (₽) *
+                        </label>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          step="any"
+                          value={newTariffForm.depositRequired}
+                          onChange={(e) =>
+                            setNewTariffForm({ ...newTariffForm, depositRequired: Number(e.target.value) })
+                          }
+                          className="w-full h-10 px-3 py-2 bg-white dark:bg-[#0c1611] border border-purple-300 dark:border-purple-800 rounded-xl font-bold text-slate-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Dynamic Buyout Schedule Summary */}
+                    {(() => {
+                      const total = Number(newTariffForm.totalBuyoutPrice) || 0;
+                      const interval = Number(newTariffForm.paymentIntervalDays) || 7;
+                      const inst = Number(newTariffForm.installmentPayment) || 0;
+                      const dur = Number(newTariffForm.durationDays) || 90;
+                      const periods = inst > 0 && total > 0
+                        ? Math.max(1, Math.ceil(total / inst))
+                        : Math.max(1, Math.round(dur / interval));
+                      const alignedDays = periods * interval;
+                      const regularCount = Math.max(0, periods - 1);
+                      const regularTotal = regularCount * inst;
+                      const finalPayment = Math.max(0, total - regularTotal);
+                      const isDurationMismatched = dur !== alignedDays;
+
+                      return (
+                        <div className="p-3 rounded-xl bg-purple-100/60 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 space-y-2 text-xs">
+                          <div className="flex flex-wrap items-center justify-between gap-1.5">
+                            <span className="font-bold text-purple-950 dark:text-purple-200 flex items-center gap-1.5 text-[11px]">
+                              📊 График выплат: {periods} {periods === 1 ? 'платёж' : periods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн. (срок {alignedDays} дн.)
+                            </span>
+                            {isDurationMismatched && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNewTariffForm((prev) => ({ ...prev, durationDays: alignedDays }));
+                                  toast.success(`Срок синхронизирован: ${alignedDays} дн. (${periods} плат.)`);
+                                }}
+                                className="px-2 py-0.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-bold transition shadow-sm"
+                                title="Установить срок тарифа равным рассчитанному сроку погашения"
+                              >
+                                ↻ Синхронизировать срок ({alignedDays} дн.)
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-1.5 border-t border-purple-200/70 dark:border-purple-800/40">
+                            <div>
+                              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">
+                                {regularCount > 0 ? `Платежи 1–${regularCount}:` : 'Платёж:'}
+                              </span>
+                              <strong className="text-slate-800 dark:text-slate-100 font-bold">
+                                {inst.toLocaleString('ru-RU')} ₽ / {interval} дн.
+                              </strong>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Финальный платёж:</span>
+                              <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                {finalPayment.toLocaleString('ru-RU')} ₽ (закрывает выкуп)
+                              </strong>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Итоговая сумма:</span>
+                              <strong className="text-purple-700 dark:text-purple-300 font-black">
+                                {total.toLocaleString('ru-RU')} ₽ ровно
+                              </strong>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
 
-                <div className="flex justify-end pt-1">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-amber-200/60 dark:border-amber-800/30">
+                  {tariffs.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingTariff(false)}
+                      className="px-3.5 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-semibold transition"
+                    >
+                      Отмена
+                    </button>
+                  )}
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs shadow-sm"
+                    disabled={isLoading}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-1.5"
                   >
+                    <Sparkles className="w-3.5 h-3.5" />
                     Сохранить и выбрать тариф
                   </button>
                 </div>
               </form>
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <label className="text-slate-500 font-semibold">Выберите шаблон тарифа:</label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreatingTariff(true);
-                    const currentModel = selectedBike?.model;
-                    if (selectedBike && currentModel) {
-                      setNewTariffForm((prev) => ({
-                        ...prev,
-                        bikeModelId: selectedBike.modelId,
-                        price: currentModel.baseRentalPrice || prev.price,
-                        totalBuyoutPrice: currentModel.baseBuyoutPrice || prev.totalBuyoutPrice,
-                      }));
-                    }
-                  }}
-                  className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
-                >
-                  <Plus className="w-3 h-3" /> Новый шаблон
-                </button>
-              </div>
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <label className="text-slate-500 font-semibold">Выберите шаблон тарифа:</label>
+                  <button
+                    type="button"
+                    onClick={handleOpenCreateTariffInline}
+                    className="text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <Plus className="w-3 h-3" /> Новый шаблон
+                  </button>
+                </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
                 {[...tariffs]
                   .sort((a, b) => {
                     const aMatches = selectedBike && a.bikeModelId === selectedBike.modelId ? 2 : (!a.bikeModelId ? 1 : 0);
@@ -1251,36 +1808,39 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                       <div
                         key={tariff.id}
                         onClick={() => handleTariffChange(tariff.id)}
-                        className={`p-3 rounded-xl border text-center cursor-pointer transition-all ${
+                        className={`p-3 rounded-xl border text-center cursor-pointer transition-all flex flex-col justify-between min-h-[145px] ${
                           isSelected
-                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 ring-2 ring-sky-400/20'
+                            ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40 ring-2 ring-sky-400/20 shadow-sm'
                             : isModelMatch
                             ? 'border-emerald-500/40 bg-emerald-50/20 dark:bg-emerald-950/20 hover:border-emerald-500'
                             : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/40 hover:border-slate-300'
                         }`}
                       >
-                        <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate">
-                          {tariff.name}
-                        </p>
-                        <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">
-                          {tariff.price.toLocaleString('ru-RU')} ₽
-                        </p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          {tariff.durationDays} {tariff.durationDays === 1 ? 'день' : 'дней'}
-                        </p>
-                        <div className="flex flex-wrap items-center justify-center gap-1 mt-1">
+                        <div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100 break-words leading-snug" title={tariff.name}>
+                            {tariff.name}
+                          </p>
+                          <p className="text-sm font-black text-slate-900 dark:text-white mt-1.5">
+                            {tariff.price.toLocaleString('ru-RU')} ₽
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {tariff.durationDays} {tariff.durationDays === 1 ? 'день' : 'дней'}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-1 mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/60">
                           {tariff.type === 'RENT_TO_OWN' && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-bold shrink-0">
                               Выкуп
                             </span>
                           )}
                           {tariff.bikeModelId ? (
                             <span
-                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold break-words max-w-full ${
                                 isModelMatch
                                   ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                                   : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
                               }`}
+                              title={tariff.bikeModel?.name || 'Модель'}
                             >
                               🚲 {tariff.bikeModel?.name || 'Модель'}
                             </span>
@@ -1295,7 +1855,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   })}
               </div>
             </div>
-          )}
+              
 
           {/* Rent-To-Own Contract Settings Block */}
           {selectedTariff?.type === 'RENT_TO_OWN' && (
@@ -1392,7 +1952,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   <input
                     type="number"
                     min="0"
-                    step="1000"
+                    step="any"
                     value={buyoutTotalPrice}
                     onChange={(e) => {
                       const val = Number(e.target.value);
@@ -1415,6 +1975,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   <input
                     type="number"
                     min="1"
+                    step="any"
                     value={buyoutDurationDays}
                     onChange={(e) => {
                       const val = Math.max(1, Number(e.target.value));
@@ -1438,6 +1999,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   <input
                     type="number"
                     min="1"
+                    step="any"
                     value={buyoutPaymentIntervalDays}
                     onChange={(e) => {
                       const val = Math.max(1, Number(e.target.value));
@@ -1459,7 +2021,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   <input
                     type="number"
                     min="0"
-                    step="50"
+                    step="any"
                     value={buyoutInstallmentPayment}
                     onChange={(e) => {
                       const val = Number(e.target.value);
@@ -1501,7 +2063,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                 <input
                   type="number"
                   min="0"
-                  step="100"
+                  step="any"
                   value={buyoutFirstPayment}
                   onChange={(e) => setBuyoutFirstPayment(Number(e.target.value))}
                   className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded-lg font-black text-emerald-600 dark:text-emerald-400 text-xs"
@@ -1511,32 +2073,56 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               {/* Dynamic Buyout Schedule Summary in Wizard */}
               {(() => {
                 const total = Number(buyoutTotalPrice) || 0;
-                const dur = Number(buyoutDurationDays) || 180;
+                const dur = Number(buyoutDurationDays) || 91;
                 const interval = Number(buyoutPaymentIntervalDays) || 7;
                 const inst = Number(buyoutInstallmentPayment) || 0;
-                const periods = inst > 0 && total > 0
-                  ? Math.max(1, Math.ceil(total / inst))
-                  : Math.max(1, Math.round(dur / interval));
-                const alignedDays = periods * interval;
-                const regularCount = Math.max(0, periods - 1);
+                const first = Math.max(0, Number(buyoutFirstPayment) || 0);
+
+                // Остаток к погашению регулярными платежами в будущем
+                const remainingToPay = Math.max(0, total - first);
+
+                // Сколько регулярных платежей предстоит сделать
+                const futurePeriods = inst > 0 && remainingToPay > 0
+                  ? Math.max(1, Math.ceil(remainingToPay / inst))
+                  : (remainingToPay === 0 ? 0 : Math.max(1, Math.round(dur / interval)));
+
+                // Рассчитанный общий срок договора:
+                // Если первый взнос внесен сегодня и покрывает целый период (напр. 8 550 ₽),
+                // общий срок = 1 период (сегодня) + futurePeriods * interval.
+                // Если первый взнос 0 ₽, то все futurePeriods идут каждые interval дней.
+                const alignedDays = (first > 0 && first >= inst)
+                  ? (futurePeriods * interval + interval)
+                  : Math.max(interval, futurePeriods * interval);
+
+                const regularCount = Math.max(0, futurePeriods - 1);
                 const regularTotal = regularCount * inst;
-                const finalPayment = Math.max(0, total - regularTotal);
-                const isDurationMismatched = dur !== alignedDays;
+                const finalPayment = Math.max(0, remainingToPay - regularTotal);
+                const isDurationMismatched = dur !== alignedDays && alignedDays > 0;
 
                 return (
-                  <div className="p-3 rounded-xl bg-purple-100/60 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 space-y-2 text-xs">
+                  <div className="p-3.5 rounded-xl bg-purple-100/60 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 space-y-2.5 text-xs">
                     <div className="flex flex-wrap items-center justify-between gap-1.5">
                       <span className="font-bold text-purple-950 dark:text-purple-200 flex items-center gap-1.5 text-[11px]">
-                        📊 График выплат: {periods} {periods === 1 ? 'платёж' : periods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн. (срок {alignedDays} дн.)
+                        📊 Расчет графика:{' '}
+                        {first > 0 ? (
+                          <span>
+                            Взнос сегодня <strong className="text-emerald-700 dark:text-emerald-300">{first.toLocaleString('ru-RU')} ₽</strong> + {futurePeriods} будущ. {futurePeriods === 1 ? 'платёж' : futurePeriods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн.
+                          </span>
+                        ) : (
+                          <span>
+                            Без взноса (0 ₽ сегодня) → {futurePeriods} {futurePeriods === 1 ? 'платёж' : futurePeriods < 5 ? 'платежа' : 'платежей'} каждые {interval} дн.
+                          </span>
+                        )}
+                        {' '}(срок {alignedDays} дн.)
                       </span>
                       {isDurationMismatched && (
                         <button
                           type="button"
                           onClick={() => {
                             setBuyoutDurationDays(alignedDays);
-                            toast.success(`Срок синхронизирован: ${alignedDays} дн. (${periods} нед./плат.)`);
+                            toast.success(`Срок синхронизирован: ${alignedDays} дн. (${futurePeriods} плат.)`);
                           }}
-                          className="px-2 py-0.5 bg-purple-600 hover:bg-purple-500 text-white rounded text-[10px] font-bold transition shadow-sm"
+                          className="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-[10px] font-bold transition shadow-sm"
                           title="Установить срок договора равным рассчитанному сроку погашения"
                         >
                           ↻ Синхронизировать срок ({alignedDays} дн.)
@@ -1544,10 +2130,28 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-1.5 border-t border-purple-200/70 dark:border-purple-800/40">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] pt-1.5 border-t border-purple-200/70 dark:border-purple-800/40">
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Взнос сегодня:</span>
+                        <strong className="text-emerald-600 dark:text-emerald-400 font-extrabold">
+                          {first.toLocaleString('ru-RU')} ₽
+                        </strong>
+                        <span className="text-[9px] text-slate-400 block">
+                          {first === 0 ? 'Без предоплаты' : first === inst ? 'Платёж № 1' : 'Первонач. взнос'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Остаток долга:</span>
+                        <strong className="text-purple-700 dark:text-purple-300 font-extrabold">
+                          {remainingToPay.toLocaleString('ru-RU')} ₽
+                        </strong>
+                        <span className="text-[9px] text-slate-400 block">
+                          {futurePeriods} {futurePeriods === 1 ? 'платеж' : futurePeriods < 5 ? 'платежа' : 'платежей'}
+                        </span>
+                      </div>
                       <div>
                         <span className="text-slate-500 dark:text-slate-400 block text-[10px]">
-                          {regularCount > 0 ? `Платежи 1–${regularCount}:` : 'Платёж:'}
+                          {futurePeriods > 1 ? `Платежи 1–${regularCount}:` : 'Будущий платёж:'}
                         </span>
                         <strong className="text-slate-800 dark:text-slate-100 font-bold">
                           {inst.toLocaleString('ru-RU')} ₽ / {interval} дн.
@@ -1556,14 +2160,9 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                       <div>
                         <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Финальный платёж:</span>
                         <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
-                          {finalPayment.toLocaleString('ru-RU')} ₽ (закрывает долг)
+                          {finalPayment.toLocaleString('ru-RU')} ₽
                         </strong>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 dark:text-slate-400 block text-[10px]">Итоговая сумма:</span>
-                        <strong className="text-purple-700 dark:text-purple-300 font-black">
-                          {total.toLocaleString('ru-RU')} ₽ ровно
-                        </strong>
+                        <span className="text-[9px] text-slate-400 block">закроет выкуп</span>
                       </div>
                     </div>
                   </div>
@@ -1571,6 +2170,74 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               })()}
             </div>
           )}
+
+          {/* Start Date / Backdated calculation */}
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <label className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                <Calendar className="w-4 h-4 text-sky-500" />
+                Дата начала расчета аренды
+              </label>
+              {/* Presets */}
+              <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                <span className="text-slate-400 text-[10px] mr-0.5">Быстро:</span>
+                {[
+                  { label: 'Сегодня', days: 0 },
+                  { label: 'Вчера', days: 1 },
+                  { label: '2 дня назад', days: 2 },
+                  { label: '3 дня назад', days: 3 },
+                ].map(({ label, days }) => {
+                  const targetDate = getDaysAgoDate(days);
+                  const isSelected = startDate === targetDate;
+                  return (
+                    <button
+                      key={days}
+                      type="button"
+                      onClick={() => setStartDate(targetDate)}
+                      className={`px-2 py-1 min-h-[30px] rounded-lg text-[11px] font-semibold transition ${
+                        isSelected
+                          ? 'bg-sky-600 text-white font-bold shadow-sm'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full h-11 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-base sm:text-xs font-semibold text-slate-900 dark:text-slate-100 focus:border-sky-500 focus:outline-none"
+                />
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
+                {daysAgoDiff > 0 ? (
+                  <span className="text-amber-600 dark:text-amber-400 font-bold">
+                    Задним числом (-{daysAgoDiff} дн.)
+                  </span>
+                ) : (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    С сегодняшнего дня
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {daysAgoDiff > 0 && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-lg p-2 flex items-start gap-1.5">
+                <Clock className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>
+                  Договор будет открыт от <strong>{formatDisplayDate(startDate)}</strong>. График платежей и дата окончания аренды рассчитаются с момента фактической выдачи.
+                </span>
+              </p>
+            )}
+          </div>
 
           {/* Contract / Rental Number with Prefix */}
           <div>
@@ -1644,7 +2311,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               <input
                 type="number"
                 min="0"
-                step="500"
+                step="any"
                 value={customDeposit}
                 onChange={(e) => setCustomDeposit(Number(e.target.value))}
                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100"
@@ -1708,6 +2375,30 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                   <span className="text-amber-400 font-semibold">Без аккумулятора</span>
                 )}
               </div>
+            </div>
+            <div className="flex justify-between items-center pb-2 border-b border-slate-700">
+              <span className="text-slate-400">Дата начала расчета:</span>
+              <span className="font-semibold text-sky-300">
+                {formatDisplayDate(startDate)}
+                {daysAgoDiff > 0 && (
+                  <span className="ml-1 text-[10px] text-amber-400 font-normal">(-{daysAgoDiff} дн.)</span>
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between items-center pb-2 border-b border-slate-700">
+              <span className="text-slate-400">Срок аренды:</span>
+              <span className="font-semibold text-slate-200">
+                до {formatDisplayDate(calculatedExpiresAt)} ({effectiveDurationDays} дн.)
+              </span>
+            </div>
+            <div className="flex justify-between items-center pb-2 border-b border-slate-700">
+              <span className="text-slate-400">Очередной платёж:</span>
+              <span className={`font-semibold ${calculatedNextDueIsPast ? 'text-amber-400' : 'text-slate-200'}`}>
+                {formatDisplayDate(calculatedNextPaymentDue)}
+                {calculatedNextDueIsPast && (
+                  <span className="ml-1 text-[10px] text-amber-400 font-bold">⚠️ уже наступил</span>
+                )}
+              </span>
             </div>
             {isRentToOwn ? (
               <>
@@ -1778,11 +2469,11 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between gap-2 pt-2">
             <button
               type="button"
               onClick={() => setStep(2)}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl"
+              className="px-4 py-2.5 min-h-[44px] border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition"
             >
               ← Назад
             </button>
@@ -1790,14 +2481,23 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
               type="button"
               disabled={isLoading || !selectedTariffId}
               onClick={handleSubmitCheckout}
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2"
+              className="px-5 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
             >
-              <Check className="w-4 h-4" />
-              {isLoading ? 'Оформление...' : 'Оформить и сгенерировать акт'}
+              <Check className="w-4 h-4 shrink-0" />
+              {isLoading ? (
+                'Оформление...'
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Оформить и сгенерировать акт</span>
+                  <span className="sm:hidden">Оформить договор</span>
+                </>
+              )}
             </button>
           </div>
-        </div>
+        </>
       )}
+    </div>
+  )}
     </Modal>
   );
 };

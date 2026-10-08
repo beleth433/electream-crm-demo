@@ -84,9 +84,13 @@ export class BatteryController {
 
   static detach(req: Request, res: Response) {
     try {
-      const { bikeId } = req.body;
+      const { bikeId, batteryId } = req.body;
+      if (batteryId) {
+        const result = BatteryRepository.returnToWarehouse(batteryId);
+        return res.json(result);
+      }
       if (!bikeId) {
-        return res.status(400).json({ error: "Укажите bikeId" });
+        return res.status(400).json({ error: "Укажите bikeId или batteryId" });
       }
       const result = BatteryRepository.detachFromBike(bikeId);
       return res.json(result);
@@ -97,12 +101,20 @@ export class BatteryController {
 
   static swap(req: Request, res: Response) {
     try {
-      const { bikeId, newBatteryId } = req.body;
-      if (!bikeId || !newBatteryId) {
-        return res.status(400).json({ error: "Укажите bikeId и newBatteryId" });
+      const { oldBatteryId, newBatteryId, bikeId, sendOldToCharging } = req.body;
+      if (oldBatteryId && newBatteryId) {
+        const result = BatteryRepository.swapBatteryGeneral({
+          oldBatteryId,
+          newBatteryId,
+          sendOldToCharging: Boolean(sendOldToCharging),
+        });
+        return res.json(result);
       }
-      const result = BatteryRepository.swapBattery(bikeId, newBatteryId);
-      return res.json(result);
+      if (bikeId && newBatteryId) {
+        const result = BatteryRepository.swapBattery(bikeId, newBatteryId);
+        return res.json(result);
+      }
+      return res.status(400).json({ error: "Укажите oldBatteryId и newBatteryId (или bikeId и newBatteryId)" });
     } catch (err: any) {
       return res.status(400).json({ error: err.message });
     }

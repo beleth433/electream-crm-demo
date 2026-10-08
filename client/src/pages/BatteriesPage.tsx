@@ -27,6 +27,7 @@ import {
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 import { QuickSendToRepairModal } from '../components/QuickSendToRepairModal';
+import { getBikeStatusLabel } from '../utils/statusLabels';
 
 export const BatteriesPage: React.FC = () => {
   const [batteries, setBatteries] = useState<Battery[]>([]);
@@ -157,6 +158,13 @@ export const BatteriesPage: React.FC = () => {
   const [isAttachModalOpen, setIsAttachModalOpen] = useState(false);
   const [targetBattery, setTargetBattery] = useState<Battery | null>(null);
   const [selectedBikeId, setSelectedBikeId] = useState<string>('');
+
+  // Modal: Swap Battery
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
+  const [swapTargetBattery, setSwapTargetBattery] = useState<Battery | null>(null);
+  const [swapSelectedNewBatteryId, setSwapSelectedNewBatteryId] = useState<string>('');
+  const [swapSendOldToCharging, setSwapSendOldToCharging] = useState(false);
+  const [swapSearch, setSwapSearch] = useState('');
 
 
   const loadData = async () => {
@@ -412,6 +420,57 @@ export const BatteriesPage: React.FC = () => {
     }
   };
 
+  // Return spare battery from rental to warehouse
+  const handleReturnSpare = async (bat: Battery) => {
+    if (!confirm(`Вернуть дополнительный АКБ ${bat.serialNumber} на склад и отвязать от курьера?`)) {
+      return;
+    }
+    try {
+      await api.detachBattery({ batteryId: bat.id });
+      toast.success(`АКБ ${bat.serialNumber} успешно возвращен на склад`);
+      loadData();
+    } catch (err: any) {
+      toast.error('Ошибка возврата АКБ: ' + err.message);
+    }
+  };
+
+  // Open Swap Modal
+  const handleOpenSwap = (bat: Battery) => {
+    setSwapTargetBattery(bat);
+    setSwapSendOldToCharging(true);
+    setSwapSearch('');
+    const candidates = batteries.filter(
+      (b) => b.status === 'AVAILABLE' && b.id !== bat.id && b.voltage === bat.voltage
+    );
+    setSwapSelectedNewBatteryId(candidates[0]?.id || '');
+    setIsSwapModalOpen(true);
+  };
+
+  // Submit Battery Swap
+  const handleSwapSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!swapTargetBattery || !swapSelectedNewBatteryId) {
+      toast.error('Выберите новый аккумулятор со склада');
+      return;
+    }
+    try {
+      await api.swapBattery({
+        oldBatteryId: swapTargetBattery.id,
+        newBatteryId: swapSelectedNewBatteryId,
+        sendOldToCharging: swapSendOldToCharging,
+      });
+      const newBat = batteries.find((b) => b.id === swapSelectedNewBatteryId);
+      toast.success(
+        `Замена АКБ выполнена: ${swapTargetBattery.serialNumber} ➔ ${newBat?.serialNumber || ''}`
+      );
+      setIsSwapModalOpen(false);
+      setSwapTargetBattery(null);
+      loadData();
+    } catch (err: any) {
+      toast.error('Ошибка замены АКБ: ' + err.message);
+    }
+  };
+
   // Send to maintenance or show info
   const handleToggleMaintenance = (bat: Battery) => {
     if (bat.status === 'IN_MAINTENANCE') {
@@ -544,7 +603,7 @@ export const BatteriesPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* View Mode Toggle */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5">
             <button
@@ -878,9 +937,9 @@ export const BatteriesPage: React.FC = () => {
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-slate-400 block text-[10px]">Цена в магазине:</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                          {bat.salePrice ? `${bat.salePrice.toLocaleString()} ₽` : '—'}
+                        <span className="text-slate-400 block text-[10px]">Химия ячеек:</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300 font-mono">
+                          {bat.chemistry || 'Li-ion'}
                         </span>
                       </div>
                     </div>
@@ -888,8 +947,8 @@ export const BatteriesPage: React.FC = () => {
                 </div>
 
                 {/* Bottom Actions */}
-                <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {bat.status === 'AVAILABLE' && (
                       <button
                         onClick={() => handleOpenAttach(bat)}
@@ -900,6 +959,31 @@ export const BatteriesPage: React.FC = () => {
                       </button>
                     )}
 
+                    {/* Quick Swap for installed or spare battery in rental */}
+                    {(bat.status === 'INSTALLED' || bat.status === 'ISSUED_SPARE') && (
+                      <button
+                        onClick={() => handleOpenSwap(bat)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-lg text-xs font-semibold transition shadow-sm"
+                        title="Быстрая замена АКБ у курьера"
+                      >
+                        <ArrowRightLeft className="w-3.5 h-3.5 text-purple-500" />
+                        Заменить АКБ
+                      </button>
+                    )}
+
+                    {/* Spare battery return to warehouse */}
+                    {bat.status === 'ISSUED_SPARE' && (
+                      <button
+                        onClick={() => handleReturnSpare(bat)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold transition"
+                        title="Сдать доп. АКБ на склад"
+                      >
+                        <LogOut className="w-3.5 h-3.5 text-slate-500" />
+                        Сдать на склад
+                      </button>
+                    )}
+
+                    {/* Installed battery detach to warehouse */}
                     {bat.status === 'INSTALLED' && bat.installedBikeId && (
                       <button
                         onClick={() => handleDetach(bat.installedBikeId!, bat.serialNumber)}
@@ -969,7 +1053,7 @@ export const BatteriesPage: React.FC = () => {
                 <th className="px-4 py-3">Модель</th>
                 <th className="px-4 py-3">Характеристики</th>
                 <th className="px-4 py-3">Статус</th>
-                <th className="px-4 py-3">Цены (себест. / продажа)</th>
+                <th className="px-4 py-3">Себестоимость</th>
                 <th className="px-4 py-3">Текущее размещение</th>
                 <th className="px-4 py-3">Заметки</th>
                 <th className="px-4 py-3 text-right">Действия</th>
@@ -1007,11 +1091,8 @@ export const BatteriesPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">{getStatusBadge(bat.status, bat.installedBike, bat)}</td>
                     <td className="px-4 py-3 text-xs whitespace-nowrap">
-                      <div className="font-mono text-slate-600 dark:text-slate-300">
+                      <div className="font-mono font-semibold text-slate-700 dark:text-slate-300">
                         {bat.purchasePrice ? `${bat.purchasePrice.toLocaleString()} ₽` : '—'}
-                      </div>
-                      <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        {bat.salePrice ? `${bat.salePrice.toLocaleString()} ₽` : '—'}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-xs">
@@ -1068,11 +1149,26 @@ export const BatteriesPage: React.FC = () => {
                             </button>
                           </>
                         )}
-                        {bat.status === 'IN_MAINTENANCE' && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                            <Wrench className="w-3 h-3" />
-                            В СТО
-                          </span>
+                        {/* Quick Swap for installed or spare battery in rental */}
+                        {(bat.status === 'INSTALLED' || bat.status === 'ISSUED_SPARE') && (
+                          <button
+                            onClick={() => handleOpenSwap(bat)}
+                            className="px-2 py-1 bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/40 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded text-xs transition font-semibold flex items-center gap-1"
+                            title="Быстрая замена АКБ"
+                          >
+                            <ArrowRightLeft className="w-3 h-3 text-purple-500" />
+                            Замена
+                          </button>
+                        )}
+                        {/* Spare battery return to warehouse */}
+                        {bat.status === 'ISSUED_SPARE' && (
+                          <button
+                            onClick={() => handleReturnSpare(bat)}
+                            className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-xs transition font-semibold"
+                            title="Сдать доп. АКБ на склад"
+                          >
+                            Сдать на склад
+                          </button>
                         )}
                         {bat.status === 'INSTALLED' && bat.installedBikeId && (
                           <button
@@ -1082,6 +1178,12 @@ export const BatteriesPage: React.FC = () => {
                           >
                             Снять на склад
                           </button>
+                        )}
+                        {bat.status === 'IN_MAINTENANCE' && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <Wrench className="w-3 h-3" />
+                            В СТО
+                          </span>
                         )}
                         <button
                           onClick={() => handleOpenEdit(bat)}
@@ -1264,6 +1366,7 @@ export const BatteriesPage: React.FC = () => {
                   <input
                     type="number"
                     min="0"
+                    step="any"
                     value={createForm.purchasePrice}
                     onChange={(e) => setCreateForm({ ...createForm, purchasePrice: Number(e.target.value) })}
                     className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
@@ -1280,6 +1383,7 @@ export const BatteriesPage: React.FC = () => {
                   <input
                     type="number"
                     min="0"
+                    step="any"
                     value={createForm.salePrice}
                     onChange={(e) => setCreateForm({ ...createForm, salePrice: Number(e.target.value) })}
                     className="w-full h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
@@ -1358,7 +1462,7 @@ export const BatteriesPage: React.FC = () => {
                   const currentBat = batteries.find((bat) => bat.id === b.batteryId);
                   return (
                     <option key={b.id} value={b.id}>
-                      {b.inventoryNumber} — {b.model?.name || 'Байк'} [{b.status}]{' '}
+                      {b.inventoryNumber} — {b.model?.name || 'Байк'} [{getBikeStatusLabel(b.status)}]{' '}
                       {currentBat ? `(Текущий АКБ: ${currentBat.serialNumber})` : '⚠️ [БЕЗ АКБ]'}
                     </option>
                   );
@@ -1407,6 +1511,244 @@ export const BatteriesPage: React.FC = () => {
             >
               Установить АКБ
             </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL: Быстрая замена АКБ (Swap) */}
+      <Modal
+        isOpen={isSwapModalOpen}
+        onClose={() => {
+          setIsSwapModalOpen(false);
+          setSwapTargetBattery(null);
+        }}
+        title={`Замена аккумулятора: ${swapTargetBattery?.serialNumber}`}
+        subtitle="Быстрая выдача заряженной батареи со склада взамен текущей"
+        maxWidth="2xl"
+      >
+        <form onSubmit={handleSwapSubmit} className="space-y-4 text-xs">
+          {/* Current Battery Context Banner */}
+          <div className="p-3.5 rounded-xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-purple-900 dark:text-purple-200">
+                Текущий заменяемый аккумулятор:
+              </span>
+              <span className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
+                {swapTargetBattery?.voltage}V {swapTargetBattery?.capacityAh}Ah • {swapTargetBattery?.chemistry || 'Li-ion'}
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+              <div className="font-mono font-extrabold text-slate-900 dark:text-white text-base">
+                {swapTargetBattery?.serialNumber}
+              </div>
+              <div className="text-slate-600 dark:text-slate-300 text-[11px]">
+                {swapTargetBattery?.status === 'ISSUED_SPARE' ? (
+                  <span>
+                    Выдан как доп. АКБ курьеру{' '}
+                    <strong>{swapTargetBattery.currentRental?.clientName || 'Курьер'}</strong>
+                  </span>
+                ) : swapTargetBattery?.installedBike ? (
+                  <span>
+                    Установлен на байк{' '}
+                    <strong className="font-mono">{swapTargetBattery.installedBike.inventoryNumber}</strong>
+                    {swapTargetBattery.currentRental?.clientName && (
+                      <> (курьер <strong>{swapTargetBattery.currentRental.clientName}</strong>)</>
+                    )}
+                  </span>
+                ) : (
+                  'Находится в парке'
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Destination for old battery */}
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0c1611] border border-slate-200 dark:border-slate-800 space-y-2">
+            <label className="block font-bold text-slate-800 dark:text-slate-200">
+              Куда перевести снятый аккумулятор ({swapTargetBattery?.serialNumber})?
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div
+                onClick={() => setSwapSendOldToCharging(true)}
+                className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition ${
+                  swapSendOldToCharging
+                    ? 'border-amber-500 bg-amber-500/10 text-amber-900 dark:text-amber-200 font-bold ring-1 ring-amber-500/30'
+                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="oldBatDest"
+                  checked={swapSendOldToCharging}
+                  onChange={() => setSwapSendOldToCharging(true)}
+                  className="accent-amber-500"
+                />
+                <div>
+                  <div>⚡ На зарядку / в СТО</div>
+                  <div className="text-[10px] text-slate-500 font-normal">Статус «В обслуживании»</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setSwapSendOldToCharging(false)}
+                className={`flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition ${
+                  !swapSendOldToCharging
+                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200 font-bold ring-1 ring-emerald-500/30'
+                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="oldBatDest"
+                  checked={!swapSendOldToCharging}
+                  onChange={() => setSwapSendOldToCharging(false)}
+                  className="accent-emerald-500"
+                />
+                <div>
+                  <div>📦 На склад как свободный</div>
+                  <div className="text-[10px] text-slate-500 font-normal">Статус «Свободен»</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* New Battery Selector */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-slate-800 dark:text-slate-200">
+                Выберите новый заряженный АКБ со склада:
+              </label>
+              <span className="text-[11px] text-slate-400">
+                Рекомендуется вольтаж: <strong>{swapTargetBattery?.voltage}V</strong>
+              </span>
+            </div>
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Поиск нового АКБ по номеру, модели..."
+                value={swapSearch}
+                onChange={(e) => setSwapSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+              />
+            </div>
+
+            {(() => {
+              const available = batteries.filter((b) => b.status === 'AVAILABLE' && b.id !== swapTargetBattery?.id);
+              const q = swapSearch.toLowerCase().trim();
+              const filtered = available.filter(
+                (b) =>
+                  !q ||
+                  b.serialNumber.toLowerCase().includes(q) ||
+                  (b.modelName && b.modelName.toLowerCase().includes(q))
+              );
+
+              if (available.length === 0) {
+                return (
+                  <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 text-center">
+                    ⚠️ На складе нет свободных аккумуляторов для замены.
+                  </div>
+                );
+              }
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 text-center">
+                    АКБ по запросу не найдены.
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                  {filtered.map((bat) => {
+                    const isSelected = swapSelectedNewBatteryId === bat.id;
+                    const isVoltMatch = swapTargetBattery && bat.voltage === swapTargetBattery.voltage;
+                    return (
+                      <div
+                        key={bat.id}
+                        onClick={() => setSwapSelectedNewBatteryId(bat.id)}
+                        className={`p-3 rounded-xl border cursor-pointer transition flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-purple-500 bg-purple-500/10 dark:bg-purple-950/30 ring-2 ring-purple-500/30 shadow-md'
+                            : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#101d17] hover:border-slate-300'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-1">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${getVoltageBadgeColor(
+                                bat.voltage
+                              )}`}
+                            >
+                              {bat.voltage}V {bat.capacityAh}Ah
+                            </span>
+                            {isVoltMatch ? (
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                                <Check className="w-3 h-3" /> Вольтаж совпадает
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                ⚠️ {bat.voltage}V ≠ {swapTargetBattery?.voltage}V
+                              </span>
+                            )}
+                          </div>
+                          <div className="font-mono font-bold text-sm text-slate-900 dark:text-white mt-1.5">
+                            {bat.serialNumber}
+                          </div>
+                          {bat.modelName && (
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {bat.modelName}
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/80 text-[10px] text-slate-400 flex items-center justify-between">
+                          <span>{bat.chemistry || 'Li-ion'}</span>
+                          <span className="text-emerald-600 font-medium">Свободен на складе</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="text-[11px] text-slate-500">
+              {swapSelectedNewBatteryId ? (
+                <span>
+                  Выбран новый АКБ:{' '}
+                  <strong className="font-mono text-purple-600 dark:text-purple-400">
+                    {batteries.find((b) => b.id === swapSelectedNewBatteryId)?.serialNumber}
+                  </strong>
+                </span>
+              ) : (
+                'Выберите новый АКБ со склада'
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSwapModalOpen(false);
+                  setSwapTargetBattery(null);
+                }}
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs"
+              >
+                Отмена
+              </button>
+              <button
+                type="submit"
+                disabled={!swapSelectedNewBatteryId}
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-bold rounded-lg text-xs transition shadow-sm"
+              >
+                Выполнить замену АКБ
+              </button>
+            </div>
           </div>
         </form>
       </Modal>
@@ -1490,6 +1832,7 @@ export const BatteriesPage: React.FC = () => {
               </label>
               <input
                 type="number"
+                step="any"
                 value={editForm.voltage}
                 onChange={(e) => setEditForm({ ...editForm, voltage: Number(e.target.value) })}
                 className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
@@ -1502,7 +1845,7 @@ export const BatteriesPage: React.FC = () => {
               </label>
               <input
                 type="number"
-                step="0.1"
+                step="any"
                 value={editForm.capacityAh}
                 onChange={(e) => setEditForm({ ...editForm, capacityAh: Number(e.target.value) })}
                 className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
@@ -1516,6 +1859,7 @@ export const BatteriesPage: React.FC = () => {
               <input
                 type="number"
                 min="0"
+                step="any"
                 value={editForm.purchasePrice}
                 onChange={(e) => setEditForm({ ...editForm, purchasePrice: Number(e.target.value) })}
                 className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"
@@ -1529,6 +1873,7 @@ export const BatteriesPage: React.FC = () => {
               <input
                 type="number"
                 min="0"
+                step="any"
                 value={editForm.salePrice}
                 onChange={(e) => setEditForm({ ...editForm, salePrice: Number(e.target.value) })}
                 className="w-full h-10 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-white font-mono focus:border-emerald-500 focus:outline-none"

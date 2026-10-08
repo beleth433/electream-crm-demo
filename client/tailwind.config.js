@@ -11,6 +11,26 @@ export default {
         sans: ['Rubik', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
+        border: 'var(--border)',
+        ring: 'var(--ring)',
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        card: {
+          DEFAULT: 'var(--card)',
+          foreground: 'var(--card-foreground)',
+        },
+        popover: {
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)',
+        },
+        muted: {
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          foreground: 'var(--accent-foreground)',
+        },
         brand: {
           50: '#f0fdf4',
           100: '#dcfce7',
