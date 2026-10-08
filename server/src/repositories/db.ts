@@ -563,8 +563,10 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
     }
   }
 
-  // Merge loaded users with INITIAL_USERS to ensure all team accounts (Twizzy, Bogdan, Vladik, BXLETH) are present
-  const existingUsers: UserRecord[] = Array.isArray(parsed.users) ? parsed.users : [];
+  // Merge loaded users with INITIAL_USERS to ensure all team accounts (Bogdan, Vladik, BXLETH) are present
+  const existingUsers: UserRecord[] = (Array.isArray(parsed.users) ? parsed.users : []).filter(
+    (u: any) => u.id !== "usr-twizzy" && u.login !== "twizzy" && u.username !== "twizzy"
+  );
   for (const initUser of INITIAL_USERS) {
     const found = existingUsers.find(
       (u: any) =>
@@ -629,7 +631,9 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
     loyaltyTiers: Array.isArray(parsed.loyaltyTiers) && parsed.loyaltyTiers.length > 0
       ? parsed.loyaltyTiers
       : JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),
-    auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [],
+    auditLogs: (Array.isArray(parsed.auditLogs) ? parsed.auditLogs : []).filter(
+      (l: any) => l.entityId !== "usr-twizzy" && !l.title?.toLowerCase().includes("twizzy")
+    ),
     chatMessages: Array.isArray(parsed.chatMessages) && parsed.chatMessages.length > 0
       ? parsed.chatMessages
       : defaultDb.chatMessages,

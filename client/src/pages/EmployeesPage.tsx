@@ -56,7 +56,6 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ currentUser }) => 
   const isHighestAccess = (u: User) =>
     u.accessLevelId === 'lvl-owner' ||
     u.accessLevel?.id === 'lvl-owner' ||
-    u.login === 'twizzy' ||
     u.login === 'bxleth';
 
   const loadData = async () => {
@@ -113,7 +112,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ currentUser }) => 
       toast.error('У вас нет прав удаления сотрудников');
       return;
     }
-    if (targetUser.login === 'twizzy' || targetUser.login === 'bxleth') {
+    if (targetUser.login === 'bxleth') {
       toast.error('Учетная запись руководителя защищена от удаления');
       return;
     }

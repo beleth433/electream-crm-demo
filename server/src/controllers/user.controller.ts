@@ -247,7 +247,7 @@ export class UserController {
       }
 
       const target = db.users[index];
-      if (target.id === "usr-twizzy" || target.id === "usr-bxleth" || target.login === "twizzy" || target.login === "bxleth") {
+      if (target.id === "usr-bxleth" || target.login === "bxleth") {
         return res.status(403).json({ error: "Нельзя удалить учетную запись руководителя или главного администратора" });
       }
 

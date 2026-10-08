@@ -68,7 +68,7 @@ export class AuthService {
         throw new Error(`Пользователь с ID "${userId}" не найден`);
       }
     } else {
-      user = db.users.find((u) => u.id === "usr-twizzy") || db.users[0];
+      user = db.users.find((u) => u.id === "usr-bxleth") || db.users[0];
       if (!user) {
         throw new Error("В системе нет зарегистрированных пользователей");
       }

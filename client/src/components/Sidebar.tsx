@@ -526,11 +526,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     .join('')
                     .toUpperCase()
                     .slice(0, 2)
-                : 'TW'}
+                : 'AD'}
             </div>
             <div className="overflow-hidden">
               <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
-                {currentUser?.fullName || 'Twizzy'}
+                {currentUser?.fullName || 'Администратор'}
               </p>
               <p className="text-[10px] text-slate-400 dark:text-emerald-400/80 flex items-center gap-1 font-medium truncate">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shadow-xs shadow-emerald-500 shrink-0" />

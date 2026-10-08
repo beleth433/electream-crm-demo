@@ -112,6 +112,6 @@ npm run build --prefix client
 
 ## 👥 Демо-доступы
 
-- **Владелец / SuperAdmin**: логин `twizzy` или `bxleth`, пароль `admin`
+- **Владелец / SuperAdmin**: логин `bxleth`, пароль `admin`
 - **Менеджер парка**: логин `bogdan`, пароль `1234`
 - **Мастер СТО**: логин `vladik`, пароль `1234`

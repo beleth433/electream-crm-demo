@@ -226,14 +226,14 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               <input
                 type="text"
                 required
-                disabled={Boolean(user && (user.login === 'twizzy' || user.login === 'bxleth'))}
+                disabled={Boolean(user && user.login === 'bxleth')}
                 placeholder="ivan_manager"
                 value={login}
                 onChange={(e) => setLogin(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                 className="w-full h-11 pl-8 pr-3 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-[16px] sm:text-sm font-mono font-bold text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500 disabled:opacity-60"
               />
             </div>
-            {Boolean(user && (user.login === 'twizzy' || user.login === 'bxleth')) && (
+            {Boolean(user && user.login === 'bxleth') && (
               <p className="text-[10px] text-slate-400 mt-1">Логин главного администратора защищен от смены</p>
             )}
           </div>

@@ -81,19 +81,6 @@ export const INITIAL_ACCESS_LEVELS = [
 
 export const INITIAL_USERS = [
   {
-    id: "usr-twizzy",
-    login: "twizzy",
-    username: "twizzy",
-    email: "twizzy@ebike-crm.ru",
-    passwordHash: "admin",
-    fullName: "Twizzy",
-    phone: "+7 (999) 000-01-01",
-    role: "ADMIN" as const,
-    roleTitle: "Руководитель парка",
-    accessLevelId: "lvl-owner",
-    isActive: true,
-  },
-  {
     id: "usr-bogdan",
     login: "bogdan",
     username: "bogdan",

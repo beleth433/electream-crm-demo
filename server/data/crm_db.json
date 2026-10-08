@@ -1,30 +1,291 @@
 {
+  "accessLevels": [
+    {
+      "id": "lvl-owner",
+      "name": "Владелец / SuperAdmin",
+      "description": "Полный доступ ко всей системе, кассе, прибыли, управлению сотрудниками и паролями",
+      "isSystem": true,
+      "canManageEmployees": true,
+      "canSeeProfits": true,
+      "permissions": {
+        "dashboard": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "rentals": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "shop": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "bikes": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "batteries": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "outfits": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "clients": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "repairs": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "inventory": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "finance": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "employees": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "loyalty": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "info": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "history": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        }
+      },
+      "createdAt": "2026-10-01T00:00:00.000Z",
+      "updatedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "lvl-manager",
+      "name": "Менеджер парка",
+      "description": "Аренда, курьеры, касса, байки и АКБ. Скрыты сотрудники, настройки и чистая прибыль P&L",
+      "isSystem": true,
+      "canManageEmployees": false,
+      "canSeeProfits": false,
+      "permissions": {
+        "dashboard": {
+          "visible": true,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "rentals": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "shop": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "bikes": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "batteries": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "outfits": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "clients": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "repairs": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "inventory": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "finance": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "employees": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "loyalty": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "info": {
+          "visible": true,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "history": {
+          "visible": true,
+          "canEdit": false,
+          "canDelete": false
+        }
+      },
+      "createdAt": "2026-10-01T00:00:00.000Z",
+      "updatedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "lvl-master",
+      "name": "Мастер СТО",
+      "description": "Мастерская СТО, склад запчастей, заявки на закупку Ozon, статус техники. Касса и аренда скрыты",
+      "isSystem": true,
+      "canManageEmployees": false,
+      "canSeeProfits": false,
+      "permissions": {
+        "dashboard": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "rentals": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "shop": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "bikes": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "batteries": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "outfits": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "clients": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "repairs": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "inventory": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "finance": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "employees": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "loyalty": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "info": {
+          "visible": true,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "history": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        }
+      },
+      "createdAt": "2026-10-01T00:00:00.000Z",
+      "updatedAt": "2026-10-01T00:00:00.000Z"
+    }
+  ],
   "users": [
     {
-      "id": "usr-admin-1",
-      "email": "admin@ebike-crm.ru",
-      "passwordHash": "hash_admin_secret",
-      "fullName": "Дмитрий Орлов",
-      "phone": "+7 (999) 111-22-33",
+      "id": "usr-bxleth",
+      "login": "bxleth",
+      "username": "bxleth",
+      "email": "bxleth@ebike-crm.ru",
+      "passwordHash": "admin",
+      "fullName": "BXLETH",
+      "phone": "+7 (999) 000-00-00",
       "role": "ADMIN",
-      "isActive": true
+      "roleTitle": "Главный инженер / Разработчик",
+      "accessLevelId": "lvl-owner",
+      "isActive": true,
+      "lastLoginAt": "2026-10-08T11:27:52.572Z"
     },
     {
-      "id": "usr-mgr-1",
-      "email": "manager@ebike-crm.ru",
-      "passwordHash": "hash_manager_secret",
-      "fullName": "Иван Ковалев",
-      "phone": "+7 (999) 222-33-44",
+      "id": "usr-bogdan",
+      "login": "bogdan",
+      "username": "bogdan",
+      "email": "bogdan@ebike-crm.ru",
+      "passwordHash": "1234",
+      "fullName": "Богдан",
+      "phone": "+7 (999) 000-02-02",
       "role": "MANAGER",
+      "roleTitle": "Управляющий базой",
+      "accessLevelId": "lvl-manager",
       "isActive": true
     },
     {
-      "id": "usr-mech-1",
-      "email": "mechanic@ebike-crm.ru",
-      "passwordHash": "hash_mechanic_secret",
-      "fullName": "Алексей Смирнов",
-      "phone": "+7 (999) 333-44-55",
+      "id": "usr-vladik",
+      "login": "vladik",
+      "username": "vladik",
+      "email": "vladik@ebike-crm.ru",
+      "passwordHash": "1234",
+      "fullName": "Владислав",
+      "phone": "+7 (999) 000-03-03",
       "role": "MECHANIC",
+      "roleTitle": "Мастер СТО",
+      "accessLevelId": "lvl-master",
       "isActive": true
     }
   ],
@@ -466,6 +727,7 @@
       "clientPrice": 1200
     }
   ],
+  "partOrders": [],
   "partCategories": [
     {
       "id": "cat-part-brakes",
@@ -513,6 +775,33 @@
       "isSystem": false
     }
   ],
+  "partOrderCategories": [
+    {
+      "id": "cat-ord-tuning",
+      "name": "Тюнинг",
+      "isSystem": false
+    },
+    {
+      "id": "cat-ord-parts",
+      "name": "Запчасти (пластик, ручки, тормоза)",
+      "isSystem": false
+    },
+    {
+      "id": "cat-ord-garage",
+      "name": "Закуп для гаража",
+      "isSystem": false
+    },
+    {
+      "id": "cat-ord-tools",
+      "name": "Закуп инструментов для работы",
+      "isSystem": false
+    },
+    {
+      "id": "cat-ord-consumables",
+      "name": "Расходники (перчатки, очистители)",
+      "isSystem": false
+    }
+  ],
   "rentals": [],
   "repairs": [
     {
@@ -549,7 +838,44 @@
     }
   ],
   "reviews": [],
-  "articles": [],
+  "articles": [
+    {
+      "title": "Прайс-лист и тарифы аренды (Шпаргалка)",
+      "category": "Цены и тарифы",
+      "pinned": true,
+      "content": "📋 ТЕКУЩИЕ ТАРИФЫ АРЕНДЫ ДЛЯ КУРЬЕРОВ:\n\n• Недельный тариф (1 АКБ):\n  — Стоимость: 5 600 ₽ / 7 дней (800 ₽/сутки)\n  — Обеспечительный залог: 3 000 ₽ (возвратный)\n  — В комплекте: байк, 1 АКБ, зарядное 3A/5A, замок\n\n• Недельный тариф (2 АКБ — Двойная смена):\n  — Стоимость: 6 600 ₽ / 7 дней (942 ₽/сутки)\n  — Обеспечительный залог: 5 000 ₽ (возвратный)\n  — В комплекте: байк, 2 АКБ, зарядное, замок, шлем\n\n• Месячный тариф:\n  — Стоимость: 22 000 ₽ / 30 дней (скидка ~15%)\n  — Залог: 5 000 ₽\n\n💡 Дополнительные опции:\n— Второй АКБ на замену: 1 000 ₽/неделя\n— Термосумка Delivery / Яндекс: бесплатно под залог 1 500 ₽\n— Зимние муфты / перчатки: бесплатно в зимний сезон",
+      "id": "art-default-1",
+      "createdAt": "2026-10-08T11:27:52.673Z",
+      "updatedAt": "2026-10-08T11:27:52.673Z"
+    },
+    {
+      "title": "Условия и расчет выкупа электровелосипеда (Rent-to-Own)",
+      "category": "Выкуп техники",
+      "pinned": true,
+      "content": "🚴‍♂️ ПРОГРАММА АРЕНДЫ С ВЫКУПОМ:\n\n1. Базовая стоимость выкупа:\n   • Wenbox U2 / Maikolin: 60 000 – 75 000 ₽\n   • Almiko U2 Pro (60V): 100 000 – 110 000 ₽\n\n2. Условия рассрочки:\n   • Взнос оплачивается каждые 7 дней\n   • Стандартный взнос: 6 000 ₽ в неделю\n   • Срок выплаты: 10 – 18 недель\n\n3. Правила и досрочный выкуп:\n   • Досрочный выкуп возможен в любой день без комиссии\n   • При досрочном выкупе сумма оставшегося долга гасится разовым платежом\n   • После внесения 100% суммы договор закрывается со статусом «Выкуплен», а байк переводится в статус «Продан» и переходит в полную собственность курьера.",
+      "id": "art-default-2",
+      "createdAt": "2026-10-08T10:27:52.673Z",
+      "updatedAt": "2026-10-08T10:27:52.673Z"
+    },
+    {
+      "title": "Памятка курьеру при выдаче техники",
+      "category": "Памятка курьеру",
+      "pinned": false,
+      "content": "🔍 ЧЕК-ЛИСТ ПРОВЕРКИ ПЕРЕД ВЫЕЗДОМ:\n\n1. Тормозная система:\n   — Проверить ход ручек тормоза\n   — Проверить толщину колодок и отсутствие скрипа\n\n2. Аккумулятор и электрика:\n   — Убедиться, что ключ замка АКБ зафиксирован\n   — Разъем XT60 плотно вставлен, нет оплавления\n   — Фара, стоп-сигнал и гудок исправны\n\n3. Колеса и давление:\n   — Давление в шинах: 2.5 – 3.0 bar\n   — Осмотреть покрышки на отсутствие порезов\n\n4. Действия при ЧП или ДТП:\n   — Незамедлительно связаться с менеджером парка\n   — Сделать фото/видео повреждений\n   — При необходимости оформить протокол",
+      "id": "art-default-3",
+      "createdAt": "2026-10-08T09:27:52.673Z",
+      "updatedAt": "2026-10-08T09:27:52.673Z"
+    },
+    {
+      "title": "Штрафы и компенсация ущерба",
+      "category": "Правила и регламенты",
+      "pinned": false,
+      "content": "⚠️ РЕГЛАМЕНТ ВОЗМЕЩЕНИЯ УЩЕРБА:\n\n• Просрочка регулярного платежа: 300 ₽/день (свыше 24 часов)\n• Утеря ключа зажигания / замка АКБ: 500 ₽\n• Повреждение зарядного устройства: 1 500 ₽\n• Утеря или поломка замка безопасности: 1 000 ₽\n• Прокол колеса / замена камеры по вине курьера: 800 ₽\n• Механическое повреждение фары / экрана: по себестоимости детали + 500 ₽ работа СТО\n• Утеря шлема / термосумки: удержание залоговой стоимости (1 500 – 2 500 ₽)",
+      "id": "art-default-4",
+      "createdAt": "2026-10-08T08:27:52.673Z",
+      "updatedAt": "2026-10-08T08:27:52.673Z"
+    }
+  ],
   "employees": [
     {
       "id": "emp-1790100947687",
@@ -574,6 +900,30 @@
       "status": "ACTIVE",
       "hiredAt": "2026-09-22",
       "notes": null
+    },
+    {
+      "id": "emp-bogdan",
+      "fullName": "Богдан",
+      "phone": "+7 (999) 000-02-02",
+      "email": "bogdan@ebike-crm.ru",
+      "role": "Управляющий базой",
+      "salaryType": "MONTHLY",
+      "salaryAmount": 65000,
+      "status": "ACTIVE",
+      "hiredAt": "2026-09-01",
+      "notes": "Ответственный за выдачу байков курьерам и кассу"
+    },
+    {
+      "id": "emp-vladik",
+      "fullName": "Владислав",
+      "phone": "+7 (999) 000-03-03",
+      "email": "vladik@ebike-crm.ru",
+      "role": "Мастер СТО",
+      "salaryType": "MONTHLY",
+      "salaryAmount": 60000,
+      "status": "ACTIVE",
+      "hiredAt": "2026-09-01",
+      "notes": "Ремонт электровелосипедов, АКБ, заказ запчастей"
     }
   ],
   "retailOrders": [
@@ -650,6 +1000,140 @@
       "discountRepairsPercent": 15,
       "description": "От 90 дней аренды или 100 000 ₽ трат. VIP-статус и максимальная скидка 15%",
       "isDefault": false
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log-1791459501999-ypw1",
+      "category": "SYSTEM",
+      "action": "USER_DELETE",
+      "title": "Удален сотрудник: Иван Ковалев (@manager)",
+      "actorName": "Иван Ковалев (Менеджер)",
+      "badgeText": "Удалено",
+      "badgeColor": "rose",
+      "entityId": "usr-mgr-1",
+      "createdAt": "2026-10-08T11:38:21.999Z"
+    },
+    {
+      "id": "log-1791459497797-81xx",
+      "category": "SYSTEM",
+      "action": "USER_UPDATE",
+      "title": "Обновлен сотрудник: Иван Ковалев",
+      "details": "Статус: Активен. Уровень доступа: lvl-manager",
+      "actorName": "Иван Ковалев (Менеджер)",
+      "badgeText": "Сотрудник",
+      "badgeColor": "sky",
+      "entityId": "usr-mgr-1",
+      "createdAt": "2026-10-08T11:38:17.797Z"
+    },
+    {
+      "id": "log-1791459493869-cwkn",
+      "category": "SYSTEM",
+      "action": "USER_DELETE",
+      "title": "Удален сотрудник: Дмитрий Орлов (@admin)",
+      "actorName": "Иван Ковалев (Менеджер)",
+      "badgeText": "Удалено",
+      "badgeColor": "rose",
+      "entityId": "usr-admin-1",
+      "createdAt": "2026-10-08T11:38:13.869Z"
+    },
+    {
+      "id": "log-1791459491535-59rz",
+      "category": "SYSTEM",
+      "action": "USER_DELETE",
+      "title": "Удален сотрудник: Алексей Смирнов (@mechanic)",
+      "actorName": "Иван Ковалев (Менеджер)",
+      "badgeText": "Удалено",
+      "badgeColor": "rose",
+      "entityId": "usr-mech-1",
+      "createdAt": "2026-10-08T11:38:11.535Z"
+    },
+    {
+      "id": "log-1791459486695-y667",
+      "category": "SYSTEM",
+      "action": "USER_UPDATE",
+      "title": "Обновлен сотрудник: Алексей Смирнов",
+      "details": "Статус: Активен. Уровень доступа: lvl-manager",
+      "actorName": "Иван Ковалев (Менеджер)",
+      "badgeText": "Сотрудник",
+      "badgeColor": "sky",
+      "entityId": "usr-mech-1",
+      "createdAt": "2026-10-08T11:38:06.695Z"
+    },
+    {
+      "id": "log-1791459455687-u0xb",
+      "category": "SYSTEM",
+      "action": "USER_UPDATE",
+      "title": "Обновлен сотрудник: Дмитрий Орлов",
+      "details": "Статус: Активен. Уровень доступа: lvl-manager",
+      "actorName": "Иван Ковалев (Менеджер)",
+      "badgeText": "Сотрудник",
+      "badgeColor": "sky",
+      "entityId": "usr-admin-1",
+      "createdAt": "2026-10-08T11:37:35.687Z"
+    },
+    {
+      "id": "log-1791459430588-881o",
+      "category": "SYSTEM",
+      "action": "USER_DELETE",
+      "title": "Удален сотрудник: Владислав (@vladik)",
+      "actorName": "Иван Ковалев (Менеджер)",
+      "badgeText": "Удалено",
+      "badgeColor": "rose",
+      "entityId": "usr-vladik",
+      "createdAt": "2026-10-08T11:37:10.588Z"
+    },
+    {
+      "id": "log-1791459426957-kkku",
+      "category": "SYSTEM",
+      "action": "USER_DELETE",
+      "title": "Удален сотрудник: Богдан (@bogdan)",
+      "actorName": "Иван Ковалев (Менеджер)",
+      "badgeText": "Удалено",
+      "badgeColor": "rose",
+      "entityId": "usr-bogdan",
+      "createdAt": "2026-10-08T11:37:06.957Z"
+    }
+  ],
+  "chatMessages": [
+    {
+      "id": "msg-1",
+      "senderId": "u-vladik",
+      "senderName": "Владислав (Мастер СТО)",
+      "senderRole": "MECHANIC",
+      "text": "Коллеги, колодки на Minako V8 почти закончились, оформил заявку в закупку.",
+      "createdAt": "2026-10-08T08:26:29.724Z"
+    },
+    {
+      "id": "msg-2",
+      "senderId": "u-bogdan",
+      "senderName": "Богдан (Менеджер)",
+      "senderRole": "MANAGER",
+      "text": "Принял! На этой неделе также ожидаем возврат двух байков из долгой аренды.",
+      "createdAt": "2026-10-08T09:56:29.725Z"
+    },
+    {
+      "id": "msg-3",
+      "senderId": "u-bxleth",
+      "senderName": "Алексей (Разработчик)",
+      "senderRole": "ADMIN",
+      "text": "Обновления CRM Lite установлены: добавлены отделы заявок и быстрый QR-звонок курьерам.",
+      "createdAt": "2026-10-08T10:56:29.725Z"
+    }
+  ],
+  "settings": {
+    "monthlyFixedExpenses": 0,
+    "fixedExpensesDescription": "Аренда помещения мастерской и накладные расходы",
+    "articlesInitialized": true,
+    "fixedExpenseItems": []
+  },
+  "presence": [
+    {
+      "userId": "usr-bxleth",
+      "userName": "BXLETH",
+      "userRole": "ADMIN",
+      "roleTitle": "Главный инженер / Разработчик",
+      "lastSeenAt": "2026-10-08T11:42:32.674Z"
     }
   ]
 }
