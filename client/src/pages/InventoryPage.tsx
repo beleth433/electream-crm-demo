@@ -1540,285 +1540,262 @@ export const InventoryPage: React.FC = () => {
         <>
           {/* Orders Table (Desktop) */}
           <div className="contour-card overflow-hidden hidden md:block">
-            <div className="w-full">
-              <table className="w-full text-left text-xs table-auto">
-                <thead className="bg-slate-50/80 dark:bg-[#08100c] text-slate-500 dark:text-amber-400/80 border-b border-slate-200 dark:border-amber-500/15">
-                  <tr>
-                    <th className="px-3 py-3 font-semibold whitespace-nowrap">Статус</th>
-                    <th className="px-2 py-3 font-semibold whitespace-nowrap">Срочность</th>
-                    <th className="px-2.5 py-3 font-semibold">Отдел</th>
-                    <th className="px-3 py-3 font-semibold">Наименование расходника</th>
-                    <th className="px-2 py-3 font-semibold text-center whitespace-nowrap">Кол-во</th>
-                    <th className="px-2.5 py-3 font-semibold whitespace-nowrap">Ориент. цена</th>
-                    <th className="px-2 py-3 font-semibold whitespace-nowrap text-center">Ссылка</th>
-                    <th className="px-2.5 py-3 font-semibold">Заявитель</th>
-                    <th className="px-3 py-3 font-semibold text-right whitespace-nowrap">Действия</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredOrders.map((order) => {
-                    const isUrgent = order.priority === 'URGENT';
-                    const isLow = order.priority === 'LOW';
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/80 dark:bg-[#08100c] text-slate-500 dark:text-amber-400/80 border-b border-slate-200 dark:border-amber-500/15">
+                <tr>
+                  <th className="px-2.5 py-2.5 font-semibold whitespace-nowrap">Статус</th>
+                  <th className="px-2 py-2.5 font-semibold whitespace-nowrap">Срочность</th>
+                  <th className="px-2 py-2.5 font-semibold whitespace-nowrap">Отдел</th>
+                  <th className="px-3 py-2.5 font-semibold">Наименование расходника</th>
+                  <th className="px-2 py-2.5 font-semibold text-center whitespace-nowrap">Кол-во</th>
+                  <th className="px-2.5 py-2.5 font-semibold whitespace-nowrap">Ориент. цена</th>
+                  <th className="px-2 py-2.5 font-semibold whitespace-nowrap text-center">Ссылка</th>
+                  <th className="px-2.5 py-2.5 font-semibold">Заявитель</th>
+                  <th className="px-2.5 py-2.5 font-semibold text-right whitespace-nowrap">Действия</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredOrders.map((order) => {
+                  const isUrgent = order.priority === 'URGENT';
+                  const isLow = order.priority === 'LOW';
 
-                    return (
-                      <tr
-                        key={order.id}
-                        className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ${
-                          isUrgent ? 'bg-rose-500/5 dark:bg-rose-950/15 border-l-2 border-l-rose-500' : ''
-                        }`}
-                      >
-                        {/* Status */}
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          {order.status === 'REQUESTED' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300">
-                              <Clock className="w-3.5 h-3.5" />
-                              Требуется
-                            </span>
-                          )}
-                          {order.status === 'ORDERED' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300">
-                              <Truck className="w-3.5 h-3.5" />
-                              В пути
-                            </span>
-                          )}
-                          {order.status === 'RECEIVED' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              На складе
-                            </span>
-                          )}
-                          {order.status === 'ARCHIVED' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/40 dark:border-slate-700">
-                              <Archive className="w-3.5 h-3.5 text-slate-400" />
-                              В архиве
-                            </span>
-                          )}
-                          {order.status === 'CANCELLED' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                              <X className="w-3.5 h-3.5" />
-                              Отменено
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Priority */}
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          {isUrgent ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-500/30">
-                              🔥 Срочно
-                            </span>
-                          ) : isLow ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                              Низкий
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                              Обычный
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Department / Category - Multi-line without truncation */}
-                        <td className="px-2.5 py-3">
-                          {order.categoryName ? (
-                            <span className="inline-flex items-start gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 leading-tight whitespace-normal break-words">
-                              <Tag className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
-                              <span>{order.categoryName}</span>
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 text-xs italic">—</span>
-                          )}
-                        </td>
-
-                        {/* Part Name + Note - Multi-line without truncation */}
-                        <td className="px-3 py-3">
-                          <div className="font-bold text-slate-900 dark:text-white leading-snug whitespace-normal break-words">
-                            {order.partName}
-                          </div>
-                          {order.note && (
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 italic mt-0.5 leading-snug whitespace-normal break-words">
-                              {order.note}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Quantity */}
-                        <td className="px-2 py-3 text-center whitespace-nowrap">
-                          <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                            {order.quantity} шт.
+                  return (
+                    <tr
+                      key={order.id}
+                      className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ${
+                        isUrgent ? 'bg-rose-500/5 dark:bg-rose-950/15 border-l-2 border-l-rose-500' : ''
+                      }`}
+                    >
+                      {/* Status */}
+                      <td className="px-2.5 py-2.5 whitespace-nowrap">
+                        {order.status === 'REQUESTED' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300">
+                            <Clock className="w-3.5 h-3.5" />
+                            Требуется
                           </span>
-                        </td>
+                        )}
+                        {order.status === 'ORDERED' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300">
+                            <Truck className="w-3.5 h-3.5" />
+                            В пути
+                          </span>
+                        )}
+                        {order.status === 'RECEIVED' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            На складе
+                          </span>
+                        )}
+                        {order.status === 'ARCHIVED' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/40 dark:border-slate-700">
+                            <Archive className="w-3.5 h-3.5 text-slate-400" />
+                            В архиве
+                          </span>
+                        )}
+                        {order.status === 'CANCELLED' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                            <X className="w-3.5 h-3.5" />
+                            Отменено
+                          </span>
+                        )}
+                      </td>
 
-                        {/* Estimated Price / Actual Cost */}
-                        <td className="px-2.5 py-3 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
-                          {order.actualCost !== undefined && order.actualCost > 0 ? (
-                            <div>
-                              <span className="font-extrabold text-slate-900 dark:text-white">
-                                {order.actualCost.toLocaleString('ru-RU')} ₽
+                      {/* Priority */}
+                      <td className="px-2 py-2.5 whitespace-nowrap">
+                        {isUrgent ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-500/30">
+                            🔥 Срочно
+                          </span>
+                        ) : isLow ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                            Низкий
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            Обычный
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Department / Category - Fully visible without truncation */}
+                      <td className="px-2 py-2.5">
+                        {order.categoryName ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 whitespace-normal break-words leading-tight">
+                            <Tag className="w-3 h-3 text-amber-500 shrink-0" />
+                            <span>{order.categoryName}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">—</span>
+                        )}
+                      </td>
+
+                      {/* Part Name + Note - Multi-line without truncation */}
+                      <td className="px-3 py-2.5">
+                        <div className="font-bold text-slate-900 dark:text-white leading-snug whitespace-normal break-words">
+                          {order.partName}
+                        </div>
+                        {order.note && (
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 italic mt-0.5 leading-snug whitespace-normal break-words">
+                            {order.note}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Quantity */}
+                      <td className="px-2 py-2.5 text-center whitespace-nowrap">
+                        <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          {order.quantity} шт.
+                        </span>
+                      </td>
+
+                      {/* Estimated Price / Actual Cost */}
+                      <td className="px-2.5 py-2.5 text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
+                        {order.actualCost !== undefined && order.actualCost > 0 ? (
+                          <div>
+                            <span className="font-extrabold text-slate-900 dark:text-white">
+                              {order.actualCost.toLocaleString('ru-RU')} ₽
+                            </span>
+                            <div className="flex items-center gap-1 text-[10px] text-sky-600 dark:text-sky-400 font-semibold mt-0.5">
+                              <Receipt className="w-3 h-3 shrink-0" />
+                              <span>
+                                {order.paymentMethod === 'CARD'
+                                  ? 'Карта'
+                                  : order.paymentMethod === 'SBP'
+                                  ? 'СБП'
+                                  : order.paymentMethod === 'CASH'
+                                  ? 'Наличные'
+                                  : 'Р/С'}
                               </span>
-                              <div className="flex items-center gap-1 text-[10px] text-sky-600 dark:text-sky-400 font-semibold mt-0.5">
-                                <Receipt className="w-3 h-3 shrink-0" />
-                                <span>
-                                  {order.paymentMethod === 'CARD'
-                                    ? 'Карта'
-                                    : order.paymentMethod === 'SBP'
-                                    ? 'СБП'
-                                    : order.paymentMethod === 'CASH'
-                                    ? 'Наличные'
-                                    : 'Р/С'}
-                                </span>
-                              </div>
                             </div>
-                          ) : order.estimatedPrice ? (
-                            <div>
-                              <span className="font-semibold text-slate-800 dark:text-slate-200">
-                                {((order.estimatedPrice || 0) * (order.quantity || 1)).toLocaleString('ru-RU')} ₽
-                              </span>
-                              <span className="block text-[10px] text-slate-400">
-                                ({order.estimatedPrice.toLocaleString('ru-RU')} ₽/шт.)
-                              </span>
-                            </div>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
-
-                        {/* Marketplace link */}
-                        <td className="px-2 py-3 text-center whitespace-nowrap">
-                          {order.orderUrl ? (
-                            <a
-                              href={order.orderUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[30px] bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-xs transition-all whitespace-nowrap"
-                              title="Открыть ссылку на товар"
-                            >
-                              <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-                              <span>Купить</span>
-                              <ExternalLink className="w-3 h-3 shrink-0 opacity-80" />
-                            </a>
-                          ) : (
-                            <span className="text-slate-400 italic text-[11px]">—</span>
-                          )}
-                        </td>
-
-                        {/* Requester - Multi-line without truncation */}
-                        <td className="px-2.5 py-3">
-                          <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs leading-tight whitespace-normal break-words">
-                            {order.requestedBy}
                           </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5 whitespace-nowrap">
-                            {order.requestedAt ? new Date(order.requestedAt).toLocaleDateString('ru-RU') : '—'}
+                        ) : order.estimatedPrice ? (
+                          <div>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                              {((order.estimatedPrice || 0) * (order.quantity || 1)).toLocaleString('ru-RU')} ₽
+                            </span>
+                            <span className="block text-[10px] text-slate-400">
+                              ({order.estimatedPrice.toLocaleString('ru-RU')} ₽/шт.)
+                            </span>
                           </div>
-                        </td>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
 
-                        {/* Actions - Always in view, compact and complete */}
-                        <td className="px-3 py-3 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center justify-end gap-1">
-                            {order.status === 'REQUESTED' && (
-                              <button
-                                onClick={() => handlePromptPurchase(order)}
-                                className="inline-flex items-center gap-1 px-2 py-1 min-h-[30px] bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 rounded-lg text-xs font-bold transition-all border border-sky-300/40 whitespace-nowrap shrink-0"
-                                title="Оплатить и перевести в статус: Заказано / В пути"
-                              >
-                                <Truck className="w-3.5 h-3.5 shrink-0" />
-                                <span>Заказано</span>
-                              </button>
-                            )}
+                      {/* Marketplace link */}
+                      <td className="px-2 py-2.5 text-center whitespace-nowrap">
+                        {order.orderUrl ? (
+                          <a
+                            href={order.orderUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[28px] bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold shadow-xs transition-all whitespace-nowrap"
+                            title="Открыть ссылку на товар"
+                          >
+                            <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+                            <span>Купить</span>
+                            <ExternalLink className="w-3 h-3 shrink-0 opacity-80" />
+                          </a>
+                        ) : (
+                          <span className="text-slate-400 italic text-[11px]">—</span>
+                        )}
+                      </td>
 
-                            {order.status === 'ORDERED' && (
-                              <button
-                                onClick={() => handlePromptReceiveOrder(order)}
-                                className="inline-flex items-center gap-1 px-2 py-1 min-h-[30px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-lg text-xs font-bold transition-all shadow-xs whitespace-nowrap shrink-0"
-                                title="Оприходовать на склад или как расходник"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                                <span>Принять</span>
-                              </button>
-                            )}
+                      {/* Requester - Fully visible without truncation */}
+                      <td className="px-2.5 py-2.5">
+                        <div className="font-semibold text-slate-800 dark:text-slate-200 text-xs leading-tight whitespace-normal break-words">
+                          {order.requestedBy}
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5 whitespace-nowrap">
+                          {order.requestedAt ? new Date(order.requestedAt).toLocaleDateString('ru-RU') : '—'}
+                        </div>
+                      </td>
 
-                            {(order.status === 'RECEIVED' || order.status === 'ARCHIVED' || order.status === 'CANCELLED') && (
-                              <button
-                                onClick={() => handleReorder(order)}
-                                className="inline-flex items-center gap-1 px-2 py-1 min-h-[30px] bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-bold transition-all border border-amber-300/40 whitespace-nowrap shrink-0"
-                                title="Заказать снова (создать новую заявку с этими же данными)"
-                              >
-                                <RotateCw className="w-3.5 h-3.5 shrink-0" />
-                                <span>Заказать снова</span>
-                              </button>
-                            )}
-
-                            {order.status === 'RECEIVED' && (
-                              <button
-                                onClick={() => handleArchiveOrder(order)}
-                                className="inline-flex items-center gap-1 px-2 py-1 min-h-[30px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold transition-all border border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0"
-                                title="Перенести в архив (чек в кассе сохраняется)"
-                              >
-                                <Archive className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                                <span>В архив</span>
-                              </button>
-                            )}
-
-                            <select
-                              value={order.status}
-                              onChange={(e) => {
-                                const newStatus = e.target.value as any;
-                                if (newStatus === 'ORDERED') {
-                                  handlePromptPurchase(order);
-                                } else if (newStatus === 'RECEIVED') {
-                                  handlePromptReceiveOrder(order);
-                                } else {
-                                  handleUpdateOrderStatus(order.id, newStatus);
-                                }
-                              }}
-                              className="px-1.5 py-1 min-h-[30px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] font-semibold text-slate-700 dark:text-slate-200 cursor-pointer focus:outline-none shrink-0"
-                            >
-                              <option value="REQUESTED">Требуется</option>
-                              <option value="ORDERED">В пути</option>
-                              <option value="RECEIVED">Получено</option>
-                              <option value="ARCHIVED">В архиве</option>
-                              <option value="CANCELLED">Отменено</option>
-                            </select>
-
+                      {/* Actions */}
+                      <td className="px-2.5 py-2.5 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          {order.status === 'REQUESTED' && (
                             <button
-                              onClick={() => handleOpenEditOrderModal(order)}
-                              title="Редактировать заявку"
-                              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-all shrink-0"
+                              onClick={() => handlePromptPurchase(order)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 min-h-[28px] bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 rounded-lg text-xs font-bold transition-all border border-sky-300/40 whitespace-nowrap shrink-0"
+                              title="Оплатить и перевести в статус: Заказано / В пути"
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
+                              <Truck className="w-3.5 h-3.5 shrink-0" />
+                              <span>Заказано</span>
                             </button>
+                          )}
 
+                          {order.status === 'ORDERED' && (
                             <button
-                              onClick={() => handleDeleteOrderClick(order)}
-                              title="Удалить заявку / Перенести в архив"
-                              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-all shrink-0"
+                              onClick={() => handlePromptReceiveOrder(order)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 min-h-[28px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-lg text-xs font-bold transition-all shadow-xs whitespace-nowrap shrink-0"
+                              title="Оприходовать на склад или как расходник"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                              <span>Принять</span>
                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot className="bg-slate-50/95 dark:bg-[#08100c]/95 border-t-2 border-slate-200 dark:border-amber-500/30 text-xs">
-                  <tr>
-                    <td colSpan={4} className="px-3 py-3.5 font-black text-slate-800 dark:text-slate-100">
-                      Итого по текущей выборке ({filteredOrders.length} {filteredOrders.length === 1 ? 'позиция' : filteredOrders.length < 5 ? 'позиции' : 'позиций'}):
-                    </td>
-                    <td className="px-2 py-3.5 text-center text-slate-900 dark:text-white font-extrabold whitespace-nowrap">
-                      {filteredOrdersTotalQuantity} шт.
-                    </td>
-                    <td className="px-2.5 py-3.5 text-amber-600 dark:text-amber-400 font-black text-sm whitespace-nowrap">
-                      {filteredOrdersTotalSum.toLocaleString('ru-RU')} ₽
-                    </td>
-                    <td colSpan={3} className="px-3 py-3.5 text-right text-[11px] font-medium text-slate-400">
-                      Авторасчет: кол-во × ориент. цена
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                          )}
+
+                          {(order.status === 'RECEIVED' || order.status === 'ARCHIVED' || order.status === 'CANCELLED') && (
+                            <button
+                              onClick={() => handleReorder(order)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 min-h-[28px] bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-bold transition-all border border-amber-300/40 whitespace-nowrap shrink-0"
+                              title="Заказать снова"
+                            >
+                              <RotateCw className="w-3.5 h-3.5 shrink-0" />
+                              <span>Повторить</span>
+                            </button>
+                          )}
+
+                          {order.status === 'RECEIVED' && (
+                            <button
+                              onClick={() => handleArchiveOrder(order)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 min-h-[28px] bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold transition-all border border-slate-200 dark:border-slate-700 whitespace-nowrap shrink-0"
+                              title="Перенести в архив"
+                            >
+                              <Archive className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                              <span>В архив</span>
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleOpenEditOrderModal(order)}
+                            title="Редактировать заявку"
+                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-all shrink-0"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteOrderClick(order)}
+                            title="Удалить заявку"
+                            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-all shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot className="bg-slate-50/95 dark:bg-[#08100c]/95 border-t-2 border-slate-200 dark:border-amber-500/30 text-xs">
+                <tr>
+                  <td colSpan={4} className="px-3 py-3 font-black text-slate-800 dark:text-slate-100">
+                    Итого по текущей выборке ({filteredOrders.length} {filteredOrders.length === 1 ? 'позиция' : filteredOrders.length < 5 ? 'позиции' : 'позиций'}):
+                  </td>
+                  <td className="px-2 py-3 text-center text-slate-900 dark:text-white font-extrabold whitespace-nowrap">
+                    {filteredOrdersTotalQuantity} шт.
+                  </td>
+                  <td className="px-2.5 py-3 text-amber-600 dark:text-amber-400 font-black text-sm whitespace-nowrap">
+                    {filteredOrdersTotalSum.toLocaleString('ru-RU')} ₽
+                  </td>
+                  <td colSpan={3} className="px-2.5 py-3 text-right text-[11px] font-medium text-slate-400">
+                    Авторасчет: кол-во × цена
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
 
           {/* Orders Cards (Mobile Touch UX) */}

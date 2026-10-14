@@ -38,32 +38,32 @@ export const SimulationBar: React.FC = () => {
 
   if (!isActive) {
     return (
-      <div className="bg-gradient-to-r from-emerald-900/10 via-teal-900/10 to-sky-900/10 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-sky-950/40 border-b border-emerald-500/20 px-6 py-2 flex items-center justify-between text-xs transition-colors">
-        <div className="flex items-center gap-2 text-slate-700 dark:text-emerald-300">
-          <span className="p-1 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">
+      <div className="bg-gradient-to-r from-emerald-900/10 via-teal-900/10 to-sky-900/10 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-sky-950/40 border-b border-emerald-500/20 px-3 sm:px-6 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs transition-colors">
+        <div className="flex items-center gap-2 text-slate-700 dark:text-emerald-300 min-w-0">
+          <span className="p-1 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
             🎮
           </span>
-          <span className="font-semibold text-slate-800 dark:text-slate-200">
-            Тест-драйв CRM: Симуляция живых клиентов
+          <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+            Тест-драйв CRM: Симуляция клиентов
           </span>
-          <span className="text-slate-500 dark:text-slate-400 hidden md:inline">
-            • 1 игровой день за 15 реальных минут • Проверка аренды, магазина и СТО без лишних данных в базе
+          <span className="text-slate-500 dark:text-slate-400 hidden lg:inline">
+            • 1 игровой день за 15 реальных минут
           </span>
         </div>
 
         <button
           onClick={togglePlayPause}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-sm shadow-emerald-600/30 hover:scale-105 active:scale-95 transition-all text-xs"
+          className="flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[38px] bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-sm shadow-emerald-600/30 hover:scale-105 active:scale-95 transition-all text-xs shrink-0 self-stretch sm:self-auto"
         >
-          <Play className="w-3.5 h-3.5 fill-white" />
-          Запустить симуляцию (15 мин)
+          <Play className="w-3.5 h-3.5 fill-white shrink-0" />
+          <span>Запустить симуляцию (15 мин)</span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="relative bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white border-b border-emerald-500/30 px-6 py-2 text-xs shadow-md transition-all shrink-0">
+    <div className="relative bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white border-b border-emerald-500/30 px-3 sm:px-6 py-2 text-xs shadow-md transition-all shrink-0">
       {/* Top micro progress bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-slate-800">
         <div
