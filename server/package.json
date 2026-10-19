@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && npx esbuild src/serverless.ts --bundle --platform=node --target=node18 --format=cjs --outfile=index.js && npx esbuild src/serverless.ts --bundle --platform=node --target=node18 --format=cjs --outfile=app.js",
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",

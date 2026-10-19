@@ -1,0 +1,36 @@
+{
+  "services": {
+    "client": {
+      "root": "client",
+      "installCommand": "npm install",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist"
+    },
+    "server": {
+      "root": "server",
+      "entrypoint": "index.js",
+      "installCommand": "npm install",
+      "buildCommand": "npm run build"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "server"
+      }
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": {
+        "service": "server"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "client"
+      }
+    }
+  ]
+}
