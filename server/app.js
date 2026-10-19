@@ -58524,6 +58524,9 @@ var initCloudDb = async () => {
   }
 };
 var checkAndSyncCloudDb = async (force = false) => {
+  if (hasPendingChanges) {
+    return false;
+  }
   try {
     const cloudData = await supabaseAdapter.syncIfOutdated(force);
     if (cloudData) {
@@ -58539,12 +58542,12 @@ var checkAndSyncCloudDb = async (force = false) => {
 var getStorageStatus = () => {
   return supabaseAdapter.getStatus();
 };
-var flushDb = async () => {
+var flushDb = async (force = false) => {
   if (saveTimeout) {
     clearTimeout(saveTimeout);
     saveTimeout = null;
   }
-  if (!hasPendingChanges) {
+  if (!hasPendingChanges && !force) {
     return;
   }
   saveDbToDiskSafe();
@@ -63417,6 +63420,7 @@ var BikeRepository = class {
       baseBuyoutPrice: data.baseBuyoutPrice !== void 0 ? Number(data.baseBuyoutPrice) : void 0
     };
     db2.models.push(newModel);
+    saveDb();
     return {
       ...newModel,
       bikesCount: 0
@@ -63436,6 +63440,7 @@ var BikeRepository = class {
     if (data.salePrice !== void 0) model.salePrice = Number(data.salePrice);
     if (data.baseRentalPrice !== void 0) model.baseRentalPrice = Number(data.baseRentalPrice);
     if (data.baseBuyoutPrice !== void 0) model.baseBuyoutPrice = Number(data.baseBuyoutPrice);
+    saveDb();
     const bikesCount = db2.bikes.filter((b) => b.modelId === model.id).length;
     return {
       ...model,
@@ -63455,6 +63460,7 @@ var BikeRepository = class {
       );
     }
     const removed = db2.models.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
   static create(data) {
@@ -63490,6 +63496,7 @@ var BikeRepository = class {
         battery.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
       }
     }
+    saveDb();
     return this.getById(newBike.id);
   }
   static update(id, data) {
@@ -63501,6 +63508,7 @@ var BikeRepository = class {
       ...data,
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
+    saveDb();
     return this.getById(id);
   }
   static updateStatus(id, status, location2) {
@@ -63510,6 +63518,7 @@ var BikeRepository = class {
     bike.status = status;
     if (location2) bike.currentLocation = location2;
     bike.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    saveDb();
     return bike;
   }
   static delete(id) {
@@ -63533,6 +63542,7 @@ var BikeRepository = class {
       attachedBattery.status = "AVAILABLE";
       attachedBattery.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     }
+    saveDb();
     return removed;
   }
 };
@@ -63818,6 +63828,7 @@ var ClientRepository = class {
       createdAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     db2.clients.push(newClient);
+    saveDb();
     return this.getById(newClient.id);
   }
   static update(id, data) {
@@ -63828,6 +63839,7 @@ var ClientRepository = class {
       ...db2.clients[index],
       ...data
     };
+    saveDb();
     return this.getById(id);
   }
   static setLoyaltyTier(id, manualLoyaltyTierId) {
@@ -63837,6 +63849,7 @@ var ClientRepository = class {
       throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     }
     client.manualLoyaltyTierId = manualLoyaltyTierId && manualLoyaltyTierId.trim() ? manualLoyaltyTierId.trim() : null;
+    saveDb();
     return this.getById(id);
   }
   static updateStatus(id, status, blackListReason) {
@@ -63845,6 +63858,7 @@ var ClientRepository = class {
     if (!client) return null;
     client.status = status;
     client.blackListReason = blackListReason || null;
+    saveDb();
     return this.getById(id);
   }
   static delete(id) {
@@ -63860,6 +63874,7 @@ var ClientRepository = class {
       throw new Error(`\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u043A\u0443\u0440\u044C\u0435\u0440\u0430 \u0441 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0439 \u0430\u0440\u0435\u043D\u0434\u043E\u0439 (${activeRental.rentalNumber})`);
     }
     const removed = db2.clients.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
 };
@@ -64719,6 +64734,7 @@ var RepairRepository = class {
       parts: partsList
     };
     db2.repairs.push(newRepair);
+    saveDb();
     return this.getById(newRepair.id);
   }
   static updateStatus(id, status) {
@@ -64726,6 +64742,7 @@ var RepairRepository = class {
     const repair = db2.repairs.find((r) => r.id === id);
     if (!repair) return null;
     repair.status = status;
+    saveDb();
     return this.getById(id);
   }
   static complete(id, data) {
@@ -64791,6 +64808,7 @@ var RepairRepository = class {
         createdAt: now.toISOString()
       });
     }
+    saveDb();
     return this.getById(repair.id);
   }
 };
@@ -66022,6 +66040,7 @@ var FinanceRepository = class {
       createdAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     db2.payments.push(newPayment);
+    saveDb();
     return newPayment;
   }
   static update(id, data) {
@@ -66034,6 +66053,7 @@ var FinanceRepository = class {
     if (data.description !== void 0) payment.description = data.description || null;
     if (data.rentalId !== void 0) payment.rentalId = data.rentalId || null;
     if (data.createdAt !== void 0) payment.createdAt = data.createdAt;
+    saveDb();
     return payment;
   }
   static delete(id) {
@@ -66041,6 +66061,7 @@ var FinanceRepository = class {
     const idx = db2.payments.findIndex((p) => p.id === id);
     if (idx === -1) throw new Error("\u041F\u043B\u0430\u0442\u0435\u0436 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     const [deletedPayment] = db2.payments.splice(idx, 1);
+    saveDb();
     return deletedPayment;
   }
   static getSettings() {
@@ -66449,6 +66470,7 @@ var EmployeeRepository = class {
       notes: data.notes || null
     };
     db2.employees.unshift(newEmp);
+    saveDb();
     return newEmp;
   }
   async update(id, data) {
@@ -66460,6 +66482,7 @@ var EmployeeRepository = class {
       ...data,
       salaryAmount: data.salaryAmount !== void 0 ? Number(data.salaryAmount) : db2.employees[index].salaryAmount
     };
+    saveDb();
     return db2.employees[index];
   }
   async delete(id) {
@@ -66467,6 +66490,7 @@ var EmployeeRepository = class {
     const index = db2.employees.findIndex((e) => e.id === id);
     if (index === -1) return false;
     db2.employees.splice(index, 1);
+    saveDb();
     return true;
   }
   async recordPayout(employeeId, amount, method, comment) {
@@ -66484,6 +66508,7 @@ var EmployeeRepository = class {
       createdAt: getSystemTime().toISOString()
     };
     db2.payments.unshift(payment);
+    saveDb();
     return payment;
   }
 };
@@ -66614,6 +66639,7 @@ var BatteryRepository = class {
       salePrice: data.salePrice !== void 0 ? Number(data.salePrice) : void 0
     };
     db2.batteryModels.push(newModel);
+    saveDb();
     return {
       ...newModel,
       batteriesCount: 0
@@ -66641,6 +66667,7 @@ var BatteryRepository = class {
     if (data.description !== void 0) model.description = data.description;
     if (data.purchasePrice !== void 0) model.purchasePrice = Number(data.purchasePrice);
     if (data.salePrice !== void 0) model.salePrice = Number(data.salePrice);
+    saveDb();
     const batteriesCount = db2.batteries.filter((b) => b.modelId === model.id).length;
     return {
       ...model,
@@ -66660,6 +66687,7 @@ var BatteryRepository = class {
       );
     }
     const removed = db2.batteryModels.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
   static enrichBattery(bat, db2) {
@@ -66805,6 +66833,7 @@ var BatteryRepository = class {
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     db2.batteries.push(newBattery);
+    saveDb();
     return this.getById(newBattery.id);
   }
   static update(id, data) {
@@ -66845,6 +66874,7 @@ var BatteryRepository = class {
     if (data.purchasePrice !== void 0) db2.batteries[index].purchasePrice = Number(data.purchasePrice);
     if (data.salePrice !== void 0) db2.batteries[index].salePrice = Number(data.salePrice);
     db2.batteries[index].updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    saveDb();
     return this.getById(id);
   }
   static delete(id) {
@@ -66872,6 +66902,7 @@ var BatteryRepository = class {
       );
     }
     const removed = db2.batteries.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
   static attachToBike(batteryId, bikeId) {
@@ -66903,6 +66934,7 @@ var BatteryRepository = class {
     newBattery.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     bike.batteryId = newBattery.id;
     bike.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    saveDb();
     return {
       battery: this.getById(newBattery.id),
       bike: {
@@ -66940,6 +66972,7 @@ var BatteryRepository = class {
     battery.issuedBikeId = null;
     battery.installedBikeId = null;
     battery.updatedAt = now;
+    saveDb();
     return {
       success: true,
       message: `\u0410\u041A\u0411 ${battery.serialNumber} \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0435\u043D \u043D\u0430 \u0441\u043A\u043B\u0430\u0434`,
@@ -66982,6 +67015,7 @@ var BatteryRepository = class {
         rental.updatedAt = now;
       }
     }
+    saveDb();
     return {
       bike: {
         ...bike,
@@ -67053,6 +67087,7 @@ var BatteryRepository = class {
       oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
       oldBat.updatedAt = now;
     }
+    saveDb();
     return {
       success: true,
       message: `\u0417\u0430\u043C\u0435\u043D\u0430 \u0410\u041A\u0411 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0430: ${oldBat.serialNumber} \u2794 ${newBat.serialNumber}`,
@@ -67711,6 +67746,7 @@ var AccessLevelRepository = class {
       updatedAt: now
     };
     db2.accessLevels.push(newLvl);
+    saveDb();
     await HistoryRepository.logAction({
       category: "SYSTEM",
       action: "ACCESS_LEVEL_CREATE",
@@ -67738,6 +67774,7 @@ var AccessLevelRepository = class {
       updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     db2.accessLevels[index] = updated;
+    saveDb();
     await HistoryRepository.logAction({
       category: "SYSTEM",
       action: "ACCESS_LEVEL_UPDATE",
@@ -67763,6 +67800,7 @@ var AccessLevelRepository = class {
       throw new Error(`\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0443\u0440\u043E\u0432\u0435\u043D\u044C \u0434\u043E\u0441\u0442\u0443\u043F\u0430 "${target.name}": \u043E\u043D \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D ${usersWithThisLevel.length} \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0430\u043C`);
     }
     db2.accessLevels.splice(index, 1);
+    saveDb();
     await HistoryRepository.logAction({
       category: "SYSTEM",
       action: "ACCESS_LEVEL_DELETE",
@@ -67938,6 +67976,7 @@ var UserController = class {
         matchedEmp.salaryAmount = Number(salaryAmount);
         if (salaryType) matchedEmp.salaryType = salaryType;
       }
+      saveDb();
       await HistoryRepository.logAction({
         category: "SYSTEM",
         action: "USER_CREATE",
@@ -68009,6 +68048,7 @@ var UserController = class {
         if (salaryType !== void 0) matchedEmp.salaryType = salaryType;
         if (isActive !== void 0) matchedEmp.status = isActive ? "ACTIVE" : "DISMISSED";
       }
+      saveDb();
       await HistoryRepository.logAction({
         category: "SYSTEM",
         action: "USER_UPDATE",
@@ -68058,6 +68098,7 @@ var UserController = class {
       if (empIndex !== -1) {
         db2.employees.splice(empIndex, 1);
       }
+      saveDb();
       await HistoryRepository.logAction({
         category: "SYSTEM",
         action: "USER_DELETE",
@@ -68287,6 +68328,7 @@ var OutfitRepository = class {
       isSystem: false
     };
     db2.outfitCategories.push(newCategory);
+    saveDb();
     return {
       ...newCategory,
       itemCount: 0
@@ -68307,7 +68349,9 @@ var OutfitRepository = class {
         `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044E "${cat.name}": \u043A \u043D\u0435\u0439 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D\u043E ${outfitsWithCategory.length} \u043F\u0440\u0435\u0434\u043C\u0435\u0442\u043E\u0432 \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0438`
       );
     }
-    return db2.outfitCategories.splice(index, 1)[0];
+    const removed = db2.outfitCategories.splice(index, 1)[0];
+    saveDb();
+    return removed;
   }
   static getTemplates() {
     const db2 = getDb();
@@ -68334,6 +68378,7 @@ var OutfitRepository = class {
       salePrice: data.salePrice !== void 0 ? Number(data.salePrice) : void 0
     };
     db2.outfitTemplates.push(newTemplate);
+    saveDb();
     const category = db2.outfitCategories.find((c) => c.id === newTemplate.categoryId || c.name === newTemplate.categoryId);
     return {
       ...newTemplate,
@@ -68346,7 +68391,9 @@ var OutfitRepository = class {
     if (index === -1) {
       throw new Error("\u0428\u0430\u0431\u043B\u043E\u043D \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     }
-    return db2.outfitTemplates.splice(index, 1)[0];
+    const removed = db2.outfitTemplates.splice(index, 1)[0];
+    saveDb();
+    return removed;
   }
   static getAll(filters) {
     const db2 = getDb();
@@ -68421,6 +68468,7 @@ var OutfitRepository = class {
       status: data.status || "IN_STOCK"
     };
     db2.outfits.push(newOutfit);
+    saveDb();
     return newOutfit;
   }
   static updateStatus(id, status) {
@@ -68428,11 +68476,12 @@ var OutfitRepository = class {
     const outfit = db2.outfits.find((o) => o.id === id);
     if (!outfit) return null;
     outfit.status = status;
+    saveDb();
     return outfit;
   }
   static delete(id) {
     const db2 = getDb();
-    const index = db2.outfits.findIndex((o) => o.id === id);
+    const index = db2.outfits.findIndex((c) => c.id === id);
     if (index === -1) {
       throw new Error("\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
     }
@@ -68443,6 +68492,7 @@ var OutfitRepository = class {
       throw new Error(`\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0443, \u0432\u044B\u0434\u0430\u043D\u043D\u0443\u044E \u043F\u043E \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u043C\u0443 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 (${activeRental.rentalNumber})`);
     }
     const removed = db2.outfits.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
 };
@@ -68644,6 +68694,7 @@ var LoyaltyRepository = class {
       isDefault: Boolean(data.isDefault)
     };
     db2.loyaltyTiers.push(newTier);
+    saveDb();
     return newTier;
   }
   static update(id, data) {
@@ -68659,6 +68710,7 @@ var LoyaltyRepository = class {
       discountPartsPercent: data.discountPartsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountPartsPercent) || 0)) : db2.loyaltyTiers[index].discountPartsPercent,
       discountRepairsPercent: data.discountRepairsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)) : db2.loyaltyTiers[index].discountRepairsPercent
     };
+    saveDb();
     return db2.loyaltyTiers[index];
   }
   static delete(id) {
@@ -68674,6 +68726,7 @@ var LoyaltyRepository = class {
         client.manualLoyaltyTierId = null;
       }
     }
+    saveDb();
     return true;
   }
   /**
@@ -69067,6 +69120,7 @@ var ShopRepository = class {
       createdAt: getSystemTime().toISOString()
     };
     db2.payments.unshift(payment);
+    saveDb();
     return order;
   }
   async getOrders() {
@@ -69380,7 +69434,7 @@ app.use(async (req, res, next) => {
       }
       flushed = true;
       try {
-        await flushDb();
+        await flushDb(true);
       } catch (err) {
         console.error("[Storage Middleware] Flush error:", err);
       }

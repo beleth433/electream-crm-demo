@@ -1,4 +1,4 @@
-import { getDb, getSystemTime, EmployeeRecord, PaymentRecord } from './db.js';
+import { getDb, getSystemTime, EmployeeRecord, PaymentRecord, saveDb } from './db.js';
 
 export class EmployeeRepository {
   async findAll() {
@@ -58,6 +58,7 @@ export class EmployeeRepository {
       notes: data.notes || null,
     };
     db.employees.unshift(newEmp);
+    saveDb();
     return newEmp;
   }
 
@@ -74,6 +75,7 @@ export class EmployeeRepository {
           ? Number(data.salaryAmount)
           : db.employees[index].salaryAmount,
     };
+    saveDb();
     return db.employees[index];
   }
 
@@ -83,6 +85,7 @@ export class EmployeeRepository {
     if (index === -1) return false;
 
     db.employees.splice(index, 1);
+    saveDb();
     return true;
   }
 
@@ -111,6 +114,7 @@ export class EmployeeRepository {
     };
 
     db.payments.unshift(payment);
+    saveDb();
     return payment;
   }
 }

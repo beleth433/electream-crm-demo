@@ -205,3 +205,8 @@ npm run build
    - В `INITIAL_USERS` оставлен исключительно системный аккаунт Владельца (`usr-bxleth`, login: `bxleth`, пароль `admin`).
    - `INITIAL_EMPLOYEES` очищен (`[]`).
    - Все фолбэки исполнителей в репозиториях переведены на `usr-bxleth`.
+7. **Сквозное гарантированное сохранение в облако Supabase (`saveDb()` & `flushDb(true)`)**:
+   - Во все методы мутаций (`createModel`, `updateModel`, `deleteModel`, `create`, `update`, `delete`, `swap`, `attach`, `detach`) репозиториев `BikeRepository`, `BatteryRepository`, `ClientRepository`, `RepairRepository`, `EmployeeRepository`, `OutfitRepository`, `LoyaltyRepository`, `FinanceRepository` и `UserController` добавлен обязательный вызов `saveDb()`.
+   - В `server/src/repositories/db.ts` метод `flushDb(force = false)` расширен параметром принудительного сохранения: при вызове после мутаций он гарантированно сбрасывает данные в Supabase PostgreSQL / REST API, а `checkAndSyncCloudDb()` защищен от перезаписи грязного состояния в памяти (`hasPendingChanges`).
+   - В `server/src/app.ts` промежуточный слой middleware перехватывает все запросы `POST`, `PUT`, `PATCH`, `DELETE` и вызывает `await flushDb(true)` перед отправкой ответа клиенту, гарантируя персистентность на Vercel Serverless.
+   - Скомпилированы обновленные бандлы `server/index.js` и `server/app.js` через esbuild.

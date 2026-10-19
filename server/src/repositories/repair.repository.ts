@@ -1,4 +1,4 @@
-import { getDb, RepairStatus, RepairFaultType, PaymentMethod, RepairOrderRecord } from "./db.js";
+import { getDb, RepairStatus, RepairFaultType, PaymentMethod, RepairOrderRecord, saveDb } from "./db.js";
 import { getCurrentUser } from "../context/userContext.js";
 
 export class RepairRepository {
@@ -192,6 +192,7 @@ export class RepairRepository {
     };
 
     db.repairs.push(newRepair);
+    saveDb();
 
     return this.getById(newRepair.id);
   }
@@ -202,6 +203,7 @@ export class RepairRepository {
     if (!repair) return null;
 
     repair.status = status;
+    saveDb();
     return this.getById(id);
   }
 
@@ -296,6 +298,7 @@ export class RepairRepository {
       });
     }
 
+    saveDb();
     return this.getById(repair.id);
   }
 }

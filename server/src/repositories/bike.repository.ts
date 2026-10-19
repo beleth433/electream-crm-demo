@@ -1,4 +1,4 @@
-import { getDb, BikeStatus, BikeRecord } from "./db.js";
+import { getDb, BikeStatus, BikeRecord, saveDb } from "./db.js";
 
 export class BikeRepository {
   static getAll(filters?: { status?: BikeStatus; modelId?: string; search?: string }) {
@@ -133,6 +133,7 @@ export class BikeRepository {
       baseBuyoutPrice: data.baseBuyoutPrice !== undefined ? Number(data.baseBuyoutPrice) : undefined,
     };
     db.models.push(newModel);
+    saveDb();
     return {
       ...newModel,
       bikesCount: 0,
@@ -166,6 +167,7 @@ export class BikeRepository {
     if (data.baseRentalPrice !== undefined) model.baseRentalPrice = Number(data.baseRentalPrice);
     if (data.baseBuyoutPrice !== undefined) model.baseBuyoutPrice = Number(data.baseBuyoutPrice);
 
+    saveDb();
     const bikesCount = db.bikes.filter((b) => b.modelId === model.id).length;
     return {
       ...model,
@@ -188,6 +190,7 @@ export class BikeRepository {
     }
 
     const removed = db.models.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
 
@@ -244,6 +247,7 @@ export class BikeRepository {
       }
     }
 
+    saveDb();
     return this.getById(newBike.id);
   }
 
@@ -258,6 +262,7 @@ export class BikeRepository {
       updatedAt: new Date().toISOString(),
     };
 
+    saveDb();
     return this.getById(id);
   }
 
@@ -269,6 +274,7 @@ export class BikeRepository {
     bike.status = status;
     if (location) bike.currentLocation = location;
     bike.updatedAt = new Date().toISOString();
+    saveDb();
     return bike;
   }
 
@@ -298,6 +304,7 @@ export class BikeRepository {
       attachedBattery.updatedAt = new Date().toISOString();
     }
 
+    saveDb();
     return removed;
   }
 }

@@ -1,4 +1,4 @@
-import { getDb, BatteryRecord, BatteryStatus, BatteryModelRecord, BatteryChemistry } from "./db.js";
+import { getDb, BatteryRecord, BatteryStatus, BatteryModelRecord, BatteryChemistry, saveDb } from "./db.js";
 
 export class BatteryRepository {
   // Battery Model Templates CRUD
@@ -42,6 +42,7 @@ export class BatteryRepository {
       salePrice: data.salePrice !== undefined ? Number(data.salePrice) : undefined,
     };
     db.batteryModels.push(newModel);
+    saveDb();
     return {
       ...newModel,
       batteriesCount: 0,
@@ -84,6 +85,7 @@ export class BatteryRepository {
     if (data.purchasePrice !== undefined) model.purchasePrice = Number(data.purchasePrice);
     if (data.salePrice !== undefined) model.salePrice = Number(data.salePrice);
 
+    saveDb();
     const batteriesCount = db.batteries.filter((b) => b.modelId === model.id).length;
     return {
       ...model,
@@ -106,6 +108,7 @@ export class BatteryRepository {
     }
 
     const removed = db.batteryModels.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
 
@@ -293,6 +296,7 @@ export class BatteryRepository {
     };
 
     db.batteries.push(newBattery);
+    saveDb();
     return this.getById(newBattery.id);
   }
 
@@ -338,6 +342,7 @@ export class BatteryRepository {
     if (data.salePrice !== undefined) db.batteries[index].salePrice = Number(data.salePrice);
 
     db.batteries[index].updatedAt = new Date().toISOString();
+    saveDb();
     return this.getById(id);
   }
 
@@ -370,6 +375,7 @@ export class BatteryRepository {
     }
 
     const removed = db.batteries.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
 
@@ -412,6 +418,7 @@ export class BatteryRepository {
     bike.batteryId = newBattery.id;
     bike.updatedAt = new Date().toISOString();
 
+    saveDb();
     return {
       battery: this.getById(newBattery.id),
       bike: {
@@ -459,6 +466,7 @@ export class BatteryRepository {
     battery.installedBikeId = null;
     battery.updatedAt = now;
 
+    saveDb();
     return {
       success: true,
       message: `АКБ ${battery.serialNumber} возвращен на склад`,
@@ -508,6 +516,7 @@ export class BatteryRepository {
       }
     }
 
+    saveDb();
     return {
       bike: {
         ...bike,
@@ -602,6 +611,7 @@ export class BatteryRepository {
       oldBat.updatedAt = now;
     }
 
+    saveDb();
     return {
       success: true,
       message: `Замена АКБ выполнена: ${oldBat.serialNumber} ➔ ${newBat.serialNumber}`,

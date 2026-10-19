@@ -1,4 +1,4 @@
-import { getDb, getSettings, updateSettings, PaymentType, PaymentMethod } from "./db.js";
+import { getDb, getSettings, updateSettings, PaymentType, PaymentMethod, saveDb } from "./db.js";
 
 export class FinanceRepository {
   static getAll(filters?: { type?: PaymentType; method?: PaymentMethod; rentalId?: string }) {
@@ -53,6 +53,7 @@ export class FinanceRepository {
     };
 
     db.payments.push(newPayment);
+    saveDb();
     return newPayment;
   }
 
@@ -78,6 +79,7 @@ export class FinanceRepository {
     if (data.rentalId !== undefined) payment.rentalId = data.rentalId || null;
     if (data.createdAt !== undefined) payment.createdAt = data.createdAt;
 
+    saveDb();
     return payment;
   }
 
@@ -87,6 +89,7 @@ export class FinanceRepository {
     if (idx === -1) throw new Error("Платеж не найден");
 
     const [deletedPayment] = db.payments.splice(idx, 1);
+    saveDb();
     return deletedPayment;
   }
 

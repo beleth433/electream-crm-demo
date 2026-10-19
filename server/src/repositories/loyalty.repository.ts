@@ -1,4 +1,4 @@
-import { getDb, LoyaltyTierRecord } from "./db.js";
+import { getDb, LoyaltyTierRecord, saveDb } from "./db.js";
 
 export class LoyaltyRepository {
   static getAll(): LoyaltyTierRecord[] {
@@ -46,6 +46,7 @@ export class LoyaltyRepository {
     };
 
     db.loyaltyTiers.push(newTier);
+    saveDb();
     return newTier;
   }
 
@@ -64,6 +65,7 @@ export class LoyaltyRepository {
       discountRepairsPercent: data.discountRepairsPercent !== undefined ? Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)) : db.loyaltyTiers[index].discountRepairsPercent,
     };
 
+    saveDb();
     return db.loyaltyTiers[index];
   }
 
@@ -86,6 +88,7 @@ export class LoyaltyRepository {
       }
     }
 
+    saveDb();
     return true;
   }
 

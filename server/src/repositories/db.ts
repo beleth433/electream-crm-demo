@@ -730,6 +730,10 @@ export const initCloudDb = async (): Promise<void> => {
 };
 
 export const checkAndSyncCloudDb = async (force = false): Promise<boolean> => {
+  // Never overwrite dirty in-memory state that has not been flushed yet
+  if (hasPendingChanges) {
+    return false;
+  }
   try {
     const cloudData = await supabaseAdapter.syncIfOutdated(force);
     if (cloudData) {
@@ -747,12 +751,12 @@ export const getStorageStatus = (): StorageStatus => {
   return supabaseAdapter.getStatus();
 };
 
-export const flushDb = async (): Promise<void> => {
+export const flushDb = async (force = false): Promise<void> => {
   if (saveTimeout) {
     clearTimeout(saveTimeout);
     saveTimeout = null;
   }
-  if (!hasPendingChanges) {
+  if (!hasPendingChanges && !force) {
     return;
   }
   saveDbToDiskSafe();

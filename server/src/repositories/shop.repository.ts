@@ -6,6 +6,7 @@ import {
   RetailOrderItem,
   PaymentRecord,
   PaymentMethod,
+  saveDb,
 } from './db.js';
 
 export interface CreateOrderDto {
@@ -365,6 +366,7 @@ export class ShopRepository {
     };
 
     db.payments.unshift(payment);
+    saveDb();
 
     return order;
   }

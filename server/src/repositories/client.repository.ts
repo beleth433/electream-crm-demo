@@ -1,4 +1,4 @@
-import { getDb, ClientStatus, ClientRecord, ClientType } from "./db.js";
+import { getDb, ClientStatus, ClientRecord, ClientType, saveDb } from "./db.js";
 
 export class ClientRepository {
   static computeClientLoyalty(client: ClientRecord) {
@@ -203,6 +203,7 @@ export class ClientRepository {
     };
 
     db.clients.push(newClient);
+    saveDb();
     return this.getById(newClient.id);
   }
 
@@ -216,6 +217,7 @@ export class ClientRepository {
       ...data,
     };
 
+    saveDb();
     return this.getById(id);
   }
 
@@ -227,6 +229,7 @@ export class ClientRepository {
     }
 
     client.manualLoyaltyTierId = manualLoyaltyTierId && manualLoyaltyTierId.trim() ? manualLoyaltyTierId.trim() : null;
+    saveDb();
     return this.getById(id);
   }
 
@@ -237,6 +240,7 @@ export class ClientRepository {
 
     client.status = status;
     client.blackListReason = blackListReason || null;
+    saveDb();
     return this.getById(id);
   }
 
@@ -255,6 +259,7 @@ export class ClientRepository {
     }
 
     const removed = db.clients.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
 }

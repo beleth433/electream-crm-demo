@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getDb, UserRecord, UserRole } from "../repositories/db.js";
+import { getDb, UserRecord, UserRole, saveDb } from "../repositories/db.js";
 import { HistoryRepository } from "../repositories/history.repository.js";
 
 const historyRepo = new HistoryRepository();
@@ -119,6 +119,8 @@ export class UserController {
         if (salaryType) matchedEmp.salaryType = salaryType;
       }
 
+      saveDb();
+
       await HistoryRepository.logAction({
         category: "SYSTEM",
         action: "USER_CREATE",
@@ -204,6 +206,8 @@ export class UserController {
         if (isActive !== undefined) matchedEmp.status = isActive ? "ACTIVE" : "DISMISSED";
       }
 
+      saveDb();
+
       await HistoryRepository.logAction({
         category: "SYSTEM",
         action: "USER_UPDATE",
@@ -260,6 +264,8 @@ export class UserController {
       if (empIndex !== -1) {
         db.employees.splice(empIndex, 1);
       }
+
+      saveDb();
 
       await HistoryRepository.logAction({
         category: "SYSTEM",

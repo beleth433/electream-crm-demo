@@ -1,4 +1,4 @@
-import { getDb, OutfitStatus } from "./db.js";
+import { getDb, OutfitStatus, saveDb } from "./db.js";
 
 export class OutfitRepository {
   static getCategories() {
@@ -29,6 +29,7 @@ export class OutfitRepository {
       isSystem: false,
     };
     db.outfitCategories.push(newCategory);
+    saveDb();
     return {
       ...newCategory,
       itemCount: 0,
@@ -50,7 +51,9 @@ export class OutfitRepository {
         `Невозможно удалить категорию "${cat.name}": к ней привязано ${outfitsWithCategory.length} предметов экипировки`
       );
     }
-    return db.outfitCategories.splice(index, 1)[0];
+    const removed = db.outfitCategories.splice(index, 1)[0];
+    saveDb();
+    return removed;
   }
 
   static getTemplates() {
@@ -86,6 +89,7 @@ export class OutfitRepository {
       salePrice: data.salePrice !== undefined ? Number(data.salePrice) : undefined,
     };
     db.outfitTemplates.push(newTemplate);
+    saveDb();
     const category = db.outfitCategories.find((c) => c.id === newTemplate.categoryId || c.name === newTemplate.categoryId);
     return {
       ...newTemplate,
@@ -99,7 +103,9 @@ export class OutfitRepository {
     if (index === -1) {
       throw new Error("Шаблон экипировки не найден");
     }
-    return db.outfitTemplates.splice(index, 1)[0];
+    const removed = db.outfitTemplates.splice(index, 1)[0];
+    saveDb();
+    return removed;
   }
 
   static getAll(filters?: { category?: string; status?: OutfitStatus; search?: string }) {
@@ -210,6 +216,7 @@ export class OutfitRepository {
     };
 
     db.outfits.push(newOutfit);
+    saveDb();
     return newOutfit;
   }
 
@@ -219,12 +226,13 @@ export class OutfitRepository {
     if (!outfit) return null;
 
     outfit.status = status;
+    saveDb();
     return outfit;
   }
 
   static delete(id: string) {
     const db = getDb();
-    const index = db.outfits.findIndex((o) => o.id === id);
+    const index = db.outfits.findIndex((c) => c.id === id);
     if (index === -1) {
       throw new Error("Экипировка не найдена");
     }
@@ -237,6 +245,7 @@ export class OutfitRepository {
     }
 
     const removed = db.outfits.splice(index, 1)[0];
+    saveDb();
     return removed;
   }
 }

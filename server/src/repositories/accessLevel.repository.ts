@@ -1,4 +1,4 @@
-import { getDb, AccessLevelRecord } from "./db.js";
+import { getDb, AccessLevelRecord, saveDb } from "./db.js";
 import { HistoryRepository } from "./history.repository.js";
 
 const historyRepo = new HistoryRepository();
@@ -38,6 +38,7 @@ export class AccessLevelRepository {
     };
 
     db.accessLevels.push(newLvl);
+    saveDb();
 
     await HistoryRepository.logAction({
       category: "SYSTEM",
@@ -71,6 +72,7 @@ export class AccessLevelRepository {
     };
 
     db.accessLevels[index] = updated;
+    saveDb();
 
     await HistoryRepository.logAction({
       category: "SYSTEM",
@@ -103,6 +105,7 @@ export class AccessLevelRepository {
     }
 
     db.accessLevels.splice(index, 1);
+    saveDb();
 
     await HistoryRepository.logAction({
       category: "SYSTEM",

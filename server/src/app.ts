@@ -131,7 +131,7 @@ app.use(async (req, res, next) => {
       }
       flushed = true;
       try {
-        await flushDb();
+        await flushDb(true);
       } catch (err: any) {
         console.error("[Storage Middleware] Flush error:", err);
       }
