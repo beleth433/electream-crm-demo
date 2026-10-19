@@ -52,6 +52,11 @@ function getCleanDatabaseUrl(): string {
 function getCandidateSupabaseKeys(): { key: string; name: string }[] {
   const result: { key: string; name: string }[] = [];
   const candidates = [
+    { name: "SUPABASE_PUBLISHABLE_KEY", val: process.env.SUPABASE_PUBLISHABLE_KEY },
+    { name: "supabase_publishable_key", val: process.env.supabase_publishable_key },
+    { name: "SUPABASE_SECRET_KEY", val: process.env.SUPABASE_SECRET_KEY },
+    { name: "supabase_secret_key", val: process.env.supabase_secret_key },
+    { name: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", val: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY },
     { name: "SUPABASE_ANON_KEY", val: process.env.SUPABASE_ANON_KEY },
     { name: "supabase_anon_key", val: process.env.supabase_anon_key },
     { name: "SUPABASE_SERVICE_ROLE_KEY", val: process.env.SUPABASE_SERVICE_ROLE_KEY },
