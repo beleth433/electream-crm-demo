@@ -210,3 +210,9 @@ npm run build
    - В `server/src/repositories/db.ts` метод `flushDb(force = false)` расширен параметром принудительного сохранения: при вызове после мутаций он гарантированно сбрасывает данные в Supabase PostgreSQL / REST API, а `checkAndSyncCloudDb()` защищен от перезаписи грязного состояния в памяти (`hasPendingChanges`).
    - В `server/src/app.ts` промежуточный слой middleware перехватывает все запросы `POST`, `PUT`, `PATCH`, `DELETE` и вызывает `await flushDb(true)` перед отправкой ответа клиенту, гарантируя персистентность на Vercel Serverless.
    - Скомпилированы обновленные бандлы `server/index.js` и `server/app.js` через esbuild.
+8. **Нативная поддержка Vercel Serverless Functions (`api/index.js`, `api/[...all].js`, `api/diagnostics.js`)**:
+   - Устранена проблема с недоступностью API и сбросом данных на Vercel: удален блок `services`, не поддерживаемый на стандартных аккаунтах Vercel.
+   - Развернута нативная структура Serverless Functions в директории `api/` (`api/index.js`, `api/[...all].js`, `api/diagnostics.js`).
+   - В `server/package.json` билд-скрипт компилирует самодостаточный esbuild-бандл прямо в `api/index.js`.
+   - В `vercel.json` настроена маршрутизация Vercel V2: все вызовы `/api/(.*)` и `/uploads/(.*)` обрабатываются бессерверными функциями, а клиентские маршруты отдаются через `client/dist/index.html`.
+   - Эндпоинт `/api/diagnostics` открывается напрямую из браузера для мгновенной верификации подключения к базе данных Supabase.

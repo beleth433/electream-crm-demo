@@ -1,36 +1,19 @@
 {
-  "services": {
-    "client": {
-      "root": "client",
-      "installCommand": "npm install",
-      "buildCommand": "npm run build",
-      "outputDirectory": "dist"
-    },
-    "server": {
-      "root": "server",
-      "entrypoint": "index.js",
-      "installCommand": "npm install",
-      "buildCommand": "npm run build"
-    }
-  },
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "client/dist",
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": {
-        "service": "server"
-      }
+      "destination": "/api/[...all].js"
     },
     {
       "source": "/uploads/(.*)",
-      "destination": {
-        "service": "server"
-      }
+      "destination": "/api/index.js"
     },
     {
-      "source": "/(.*)",
-      "destination": {
-        "service": "client"
-      }
+      "source": "/((?!api|uploads).*)",
+      "destination": "/index.html"
     }
   ]
 }
