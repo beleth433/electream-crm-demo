@@ -1,5 +1,6 @@
 import { getDb, saveDb, ArticleRecord } from "./db.js";
 import { HistoryRepository } from "./history.repository.js";
+import { getCurrentUser } from "../context/userContext.js";
 
 const DEFAULT_ARTICLES: Array<Omit<ArticleRecord, "id" | "createdAt">> = [
   {
@@ -174,13 +175,14 @@ export class ArticleRepository {
     }
     const nowIso = new Date().toISOString();
 
+    const current = getCurrentUser();
     const newArticle: ArticleRecord = {
       id: `art-${Date.now()}`,
       title: data.title.trim(),
       category: data.category?.trim() || "Общая информация",
       content: data.content.trim(),
       pinned: Boolean(data.pinned),
-      authorId: data.authorId || "usr-mgr-1",
+      authorId: data.authorId || current?.id || "usr-admin",
       createdAt: nowIso,
       updatedAt: nowIso,
     };
@@ -194,7 +196,7 @@ export class ArticleRepository {
         action: "ARTICLE_CREATE",
         title: `Создана карточка в базе знаний: «${newArticle.title}»`,
         details: `Категория: ${newArticle.category}. ${newArticle.pinned ? "Закреплена вверху списка." : ""}`,
-        actorName: "Иван Ковалев (Менеджер)",
+        actorName: current?.displayName || "Администратор",
         badgeText: "База знаний",
         badgeColor: "purple",
         entityId: newArticle.id,
@@ -232,7 +234,7 @@ export class ArticleRepository {
         action: "ARTICLE_UPDATE",
         title: `Отредактирована карточка: «${article.title}»`,
         details: `Категория: ${article.category}. Изменения сохранены.`,
-        actorName: "Иван Ковалев (Менеджер)",
+        actorName: getCurrentUser()?.displayName || "Администратор",
         badgeText: "База знаний",
         badgeColor: "purple",
         entityId: article.id,
@@ -269,7 +271,7 @@ export class ArticleRepository {
         action: "ARTICLE_DELETE",
         title: `Удалена карточка: «${removed.title}»`,
         details: `Карточка удалена из базы знаний. Категория: ${removed.category}`,
-        actorName: "Иван Ковалев (Менеджер)",
+        actorName: getCurrentUser()?.displayName || "Администратор",
         badgeText: "Удаление",
         badgeColor: "rose",
         entityId: removed.id,
@@ -297,7 +299,7 @@ export class ArticleRepository {
         action: "ARTICLES_CLEAR_ALL",
         title: "Очищены все карточки базы знаний",
         details: `Удалено карточек: ${count} шт.`,
-        actorName: "Иван Ковалев (Менеджер)",
+        actorName: getCurrentUser()?.displayName || "Администратор",
         badgeText: "Очистка",
         badgeColor: "rose",
       });
@@ -329,7 +331,7 @@ export class ArticleRepository {
         action: "ARTICLES_RESET_DEFAULTS",
         title: "Восстановлены стандартные шаблоны шпаргалок",
         details: "Загружены 4 базовые карточки (тарифы, выкуп, чек-лист, штрафы)",
-        actorName: "Иван Ковалев (Менеджер)",
+        actorName: getCurrentUser()?.displayName || "Администратор",
         badgeText: "Шаблоны",
         badgeColor: "emerald",
       });

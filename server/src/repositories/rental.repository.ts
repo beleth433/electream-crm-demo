@@ -1,4 +1,5 @@
 import { getDb, getSystemTime, saveDb, RentalStatus, RentalType, PaymentMethod, OutfitStatus, BikeStatus, TariffBuyoutBatteryItem } from "./db.js";
+import { getCurrentUser } from "../context/userContext.js";
 
 export class RentalRepository {
   private static refreshOverdueStatuses() {
@@ -292,7 +293,12 @@ export class RentalRepository {
       clientId: data.clientId,
       bikeId: data.bikeId,
       tariffId: data.tariffId,
-      managerId: data.managerId || db.users[1].id,
+      managerId:
+        data.managerId ||
+        getCurrentUser()?.id ||
+        db.users.find((u) => u.role === "MANAGER" || u.role === "ADMIN")?.id ||
+        db.users[0]?.id ||
+        "usr-admin",
       status: (nextPaymentDue < now ? "OVERDUE" : "ACTIVE") as RentalStatus,
       type: tariff.type,
       startedAt: startDate.toISOString(),
@@ -488,7 +494,11 @@ export class RentalRepository {
           id: `rep-${Date.now()}`,
           orderNumber,
           bikeId: bike.id,
-          mechanicId: db.users[2].id, // Default mechanic
+          mechanicId:
+            getCurrentUser()?.id ||
+            db.users.find((u) => u.role === "MECHANIC")?.id ||
+            db.users[0]?.id ||
+            "usr-vladik",
           status: "DIAGNOSTICS" as const,
           faultType: data.faultType || "CLIENT_FAULT",
           description: `Возврат по аренде ${rental.rentalNumber}: ${data.defectDescription || "Дефекты при сдаче"}`,

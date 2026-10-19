@@ -34,13 +34,33 @@ import {
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
 
+function getAuthHeaders(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem('crm_auth_user') || localStorage.getItem('crm_user');
+    if (raw) {
+      const u = JSON.parse(raw);
+      const id = u.id || '';
+      const name = u.fullName || u.username || u.login || '';
+      const role = u.role || '';
+      const headers: Record<string, string> = {};
+      if (id) headers['x-user-id'] = id;
+      if (name) headers['x-user-name'] = encodeURIComponent(name);
+      if (role) headers['x-user-role'] = role;
+      return headers;
+    }
+  } catch {}
+  return {};
+}
+
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const authHeaders = getAuthHeaders();
   const res = await fetch(`${API_BASE}${url}`, {
     cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
       Pragma: 'no-cache',
       'Cache-Control': 'no-cache',
+      ...authHeaders,
       ...options?.headers,
     },
     ...options,
@@ -413,8 +433,12 @@ export const api = {
   uploadFile: async (file: File): Promise<{ url: string; filename: string }> => {
     const formData = new FormData();
     formData.append('file', file);
+    const authHeaders = getAuthHeaders();
     const res = await fetch(`${API_BASE}/upload`, {
       method: 'POST',
+      headers: {
+        ...authHeaders,
+      },
       body: formData,
     });
     if (!res.ok) {

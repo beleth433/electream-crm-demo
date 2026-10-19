@@ -106,7 +106,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
               <p>ООО «Курьер Электро Транспорт»</p>
               <p>ИНН 7701984210 / КПП 770101001</p>
               <p>Адрес базы: г. Москва, Дмитровский пр., д. 10</p>
-              <p>Менеджер: {rental.manager?.fullName || 'Иван Ковалев'}</p>
+              <p>Менеджер: {rental.manager?.fullName || 'Администратор парка'}</p>
               <p>Тел. диспетчерской: +7 (495) 120-40-50</p>
             </div>
             <div>
@@ -344,7 +344,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
             <div>
               <p className="font-semibold mb-4 sm:mb-6">От Арендодателя:</p>
               <div className="flex items-center justify-between border-b border-slate-400 pb-1">
-                <span>Менеджер: {rental.manager?.fullName || 'Иван Ковалев'}</span>
+                <span>Менеджер: {rental.manager?.fullName || 'Администратор парка'}</span>
                 <span className="italic text-[10px] text-slate-400">/ подпись / М.П.</span>
               </div>
             </div>

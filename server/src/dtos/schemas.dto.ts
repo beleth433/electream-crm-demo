@@ -92,7 +92,7 @@ export const RentalCreateDto = z.object({
   clientId: z.string().min(1, "Клиент обязателен"),
   bikeId: z.string().min(1, "Байк обязателен"),
   tariffId: z.string().min(1, "Тариф обязателен"),
-  managerId: z.string().optional().default("usr-mgr-1"),
+  managerId: z.string().optional(),
   outfitIds: z.array(z.string()).optional().default([]),
   batteryIds: z.array(z.string()).optional().default([]),
   paymentMethod: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),

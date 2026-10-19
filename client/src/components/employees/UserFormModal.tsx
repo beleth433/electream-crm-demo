@@ -153,7 +153,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             <input
               type="text"
               required
-              placeholder="Смирнов Алексей Викторович"
+              placeholder="Иванов Петр Сергеевич"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="w-full h-11 px-3 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-[16px] sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"

@@ -174,5 +174,29 @@ npm run build
    - Backend: DTO в `server/src/dtos/schemas.dto.ts` $\rightarrow$ репозиторий `db.ts` $\rightarrow$ сервис $\rightarrow$ контроллер;
    - Frontend: типы в `client/src/types/index.ts` $\rightarrow$ сервис `api.ts` $\rightarrow$ React-компоненты.
 4. **Проверьте сборку**: `npm run build` (0 ошибок).
-5. **Обновите `ARCHITECTURE.md`**, если добавились новые поля, статусы или связи.
+5. **Обновите `ARCHITECTURE.md` и `AGENT_HANDOVER.md`**, если добавились новые поля, статусы или связи.
 6. **Закоммитьте изменения** с понятным комментарием в формате Conventional Commits (`feat:`, `fix:`, `refactor:`).
+
+---
+
+## 7. Журнал последних архитектурных обновлений (Recent Updates Log)
+
+### Синхронизация обновлений (End-to-End User Session Tracking & Procurement Ergonomics):
+1. **Сквозная идентификация автора действий (`AsyncLocalStorage`)**:
+   - Создан `server/src/context/userContext.ts` на базе `AsyncLocalStorage` (`userStorage`). Серверные репозитории (`history.repository.ts`, `rental.repository.ts`, `repair.repository.ts`, `article.repository.ts`) теперь безошибочно определяют автора действий через `getCurrentUser()`.
+   - Клиентский сетевой слой `client/src/services/api.ts` (`fetchJson`, `uploadFile`) автоматически передает заголовки `x-user-id`, `x-user-name` и `x-user-role` из сохраненной сессии `localStorage`.
+2. **Полное искоренение вымышленных персонажей**:
+   - Из печатных актов приема-передачи (`PrintableActModal.tsx`), заказ-нарядов СТО (`RepairsPage.tsx`), базы знаний (`article.repository.ts`), журнала аудита (`history.repository.ts`) и карточек симуляции удален хардкод («Иван Ковалев», «Алексей Смирнов»).
+   - В модальном мастере выдачи (`RentalWizardModal.tsx`) настроена передача `managerId: currentUser?.id` с сохранением выбранной экипировки (`outfitIds`).
+   - В `server/src/repositories/db.ts` старые записи с шаблонными именами мигрируются в профиль руководителя парка (`BXLETH (Руководитель парка)`).
+3. **Привязка заявителя в Заявках на закупку (`InventoryPage.tsx`)**:
+   - Заявки на закупку расходников предзаполняют поле «Заявитель» именем и должностью активного пользователя.
+   - Поля ввода в модальных окнах закупки снабжены эргономичной иконкой профиля `UserIcon` и идеально выровнены по высоте и базовой линии.
+4. **Очистка интерфейса**:
+   - Удален технический суффикс `(Recharts)` из названия таба финансовой аналитики в `DashboardPage.tsx`.
+5. **Сохранение эксклюзивных модулей парка**:
+   - 100% сохранены все 3 эксклюзивных модуля парка:
+     1. `ShopPage` (розничная POS-касса, печать чеков 80 мм);
+     2. `OutfitsPage` (склад экипировки, учет шлемов, замков и термосумок);
+     3. `LoyaltyPage` (программа лояльности курьеров с 4 уровнями скидок).
+   - Сохранена полная 14-вкладочная навигация в `Sidebar.tsx` и `App.tsx`.

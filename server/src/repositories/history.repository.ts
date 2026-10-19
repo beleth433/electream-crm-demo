@@ -1,4 +1,5 @@
 import { getDb, saveDb, AuditLogRecord } from "./db.js";
+import { getCurrentUser } from "../context/userContext.js";
 
 export interface UnifiedHistoryItem {
   id: string;
@@ -31,13 +32,16 @@ export class HistoryRepository {
       db.auditLogs = [];
     }
 
+    const current = getCurrentUser();
+    const defaultActor = current?.displayName || "Администратор";
+
     const log: AuditLogRecord = {
       id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       category: entry.category,
       action: entry.action,
       title: entry.title,
       details: entry.details,
-      actorName: entry.actorName || "Иван Ковалев (Менеджер)",
+      actorName: entry.actorName || defaultActor,
       amount: entry.amount,
       badgeText: entry.badgeText,
       badgeColor: entry.badgeColor,
@@ -65,6 +69,10 @@ export class HistoryRepository {
 
     // 1. Explicit audit logs
     (db.auditLogs || []).forEach((log) => {
+      let actor = log.actorName || "Администратор";
+      if (actor.includes("Ковалев") || actor.includes("Смирнов")) {
+        actor = "BXLETH (Руководитель парка)";
+      }
       items.push({
         id: log.id,
         category: log.category,
@@ -72,7 +80,7 @@ export class HistoryRepository {
         title: log.title,
         details: log.details || "",
         timestamp: log.createdAt,
-        actor: log.actorName || "Система",
+        actor,
         amount: log.amount,
         badgeText: log.badgeText || log.category,
         badgeColor: log.badgeColor || "emerald",
@@ -87,6 +95,11 @@ export class HistoryRepository {
       const clientName = client?.fullName || "Курьер";
       const bikeNum = bike?.inventoryNumber || "Байк";
 
+      const manager = db.users.find((u) => u.id === r.managerId);
+      const actor = manager
+        ? `${manager.fullName} (${manager.roleTitle || (manager.role === "ADMIN" ? "Руководитель" : "Менеджер")})`
+        : "Менеджер Проката";
+
       // Rental creation
       items.push({
         id: `hist-rent-create-${r.id}`,
@@ -95,7 +108,7 @@ export class HistoryRepository {
         title: `Оформлен договор аренды ${r.rentalNumber}`,
         details: `Курьер: ${clientName} (${client?.phone || ""}), Байк: ${bikeNum}, Залог: ${(r.depositAmount || 0).toLocaleString("ru-RU")} ₽`,
         timestamp: r.startedAt || r.createdAt || new Date().toISOString(),
-        actor: "Иван Ковалев (Менеджер)",
+        actor,
         amount: r.totalBuyoutPrice || r.depositAmount,
         badgeText: r.type === "RENT_TO_OWN" ? "Выкуп" : "Аренда",
         badgeColor: r.type === "RENT_TO_OWN" ? "purple" : "sky",
@@ -111,7 +124,7 @@ export class HistoryRepository {
           title: `${r.status === "BOUGHT_OUT" ? "🎉 Договор выкуплен" : "Возврат техники по договору"} ${r.rentalNumber}`,
           details: `Курьер: ${clientName}, Байк: ${bikeNum}. Договор закрыт.`,
           timestamp: r.updatedAt || r.expiresAt || new Date().toISOString(),
-          actor: "Иван Ковалев (Менеджер)",
+          actor,
           badgeText: r.status === "BOUGHT_OUT" ? "Выкуплен" : "Возврат",
           badgeColor: r.status === "BOUGHT_OUT" ? "purple" : "emerald",
           entityId: r.id,
@@ -151,6 +164,11 @@ export class HistoryRepository {
         color = "rose";
       }
 
+      const cashier = (p as any).cashierId ? db.users.find((u) => u.id === (p as any).cashierId) : undefined;
+      const actor = cashier
+        ? `${cashier.fullName} (${cashier.roleTitle || "Кассир"})`
+        : "Кассир / Менеджер";
+
       items.push({
         id: `hist-pay-${p.id}`,
         category: "PAYMENT",
@@ -158,7 +176,7 @@ export class HistoryRepository {
         title,
         details: `${p.description || "Оплата"} (Метод: ${p.method})`,
         timestamp: p.createdAt,
-        actor: "Кассир / Менеджер",
+        actor,
         amount: p.amount,
         badgeText: badge,
         badgeColor: color,
@@ -168,6 +186,13 @@ export class HistoryRepository {
 
     // 4. Synthesize from Repairs & Workshop
     (db.repairs || []).forEach((rep) => {
+      const mechanic = rep.mechanicId ? db.users.find((u) => u.id === rep.mechanicId) : undefined;
+      const actor = (rep as any).mechanicName
+        ? `${(rep as any).mechanicName} (Мастер)`
+        : mechanic
+        ? `${mechanic.fullName} (${mechanic.roleTitle || "Мастер СТО"})`
+        : "Мастер СТО";
+
       items.push({
         id: `hist-rep-create-${rep.id}`,
         category: "REPAIR",
@@ -175,7 +200,7 @@ export class HistoryRepository {
         title: `Создан заказ-наряд СТО ${rep.orderNumber}`,
         details: `Неисправность: ${rep.description}. Ответственность: ${rep.faultType === "CLIENT_FAULT" ? "По вине клиента" : "Сервис компании"}`,
         timestamp: rep.createdAt,
-        actor: "Алексей Смирнов (Механик)",
+        actor,
         amount: rep.totalCost,
         badgeText: "СТО Наряд",
         badgeColor: "amber",
@@ -190,7 +215,7 @@ export class HistoryRepository {
           title: `Завершен заказ-наряд ${rep.orderNumber}`,
           details: `Работы выполнены. Детали списаны. Итоговая стоимость: ${(rep.totalCost || 0).toLocaleString("ru-RU")} ₽`,
           timestamp: rep.completedAt,
-          actor: "Алексей Смирнов (Механик)",
+          actor,
           amount: rep.totalCost,
           badgeText: "СТО Завершен",
           badgeColor: "emerald",
@@ -201,6 +226,11 @@ export class HistoryRepository {
 
     // 5. Synthesize from Clients
     (db.clients || []).forEach((c) => {
+      const creator = (c as any).createdById ? db.users.find((u) => u.id === (c as any).createdById) : undefined;
+      const actor = creator
+        ? `${creator.fullName} (${creator.roleTitle || "Менеджер"})`
+        : "Менеджер Проката";
+
       items.push({
         id: `hist-client-${c.id}`,
         category: "CLIENT",
@@ -208,7 +238,7 @@ export class HistoryRepository {
         title: `Зарегистрирован клиент/курьер ${c.fullName}`,
         details: `Телефон: ${c.phone}, служба: ${c.courierService || "Не указана"}, гражданство: ${c.citizenship || "РФ"}`,
         timestamp: c.createdAt || new Date().toISOString(),
-        actor: "Иван Ковалев (Менеджер)",
+        actor,
         badgeText: "Курьер",
         badgeColor: "blue",
         entityId: c.id,
@@ -225,7 +255,7 @@ export class HistoryRepository {
         title: `Добавлен электровелосипед ${b.inventoryNumber}`,
         details: `Модель: ${model?.name || "Байк"}, локация: ${b.currentLocation || "Центральная база"}`,
         timestamp: b.createdAt || new Date().toISOString(),
-        actor: "Иван Ковалев (Менеджер)",
+        actor: "Администратор парка",
         badgeText: "Байк",
         badgeColor: "teal",
         entityId: b.id,
@@ -234,6 +264,11 @@ export class HistoryRepository {
 
     // 7. Synthesize from Articles / Knowledge Base
     (db.articles || []).forEach((art) => {
+      const author = art.authorId ? db.users.find((u) => u.id === art.authorId) : undefined;
+      const actor = author
+        ? `${author.fullName} (${author.roleTitle || "Менеджер"})`
+        : "Администратор";
+
       items.push({
         id: `hist-art-${art.id}`,
         category: "INFO",
@@ -241,7 +276,7 @@ export class HistoryRepository {
         title: `Карточка базы знаний: «${art.title}»`,
         details: `Категория: ${art.category || "Общая"}. ${art.pinned ? "Закреплена вверху списка." : ""}`,
         timestamp: art.createdAt || new Date().toISOString(),
-        actor: "Иван Ковалев (Менеджер)",
+        actor,
         badgeText: "База знаний",
         badgeColor: "purple",
         entityId: art.id,
@@ -254,7 +289,7 @@ export class HistoryRepository {
           title: `Обновлена карточка: «${art.title}»`,
           details: `Категория: ${art.category || "Общая"}. Изменения сохранены.`,
           timestamp: art.updatedAt,
-          actor: "Иван Ковалев (Менеджер)",
+          actor,
           badgeText: "База знаний",
           badgeColor: "purple",
           entityId: art.id,
@@ -271,7 +306,7 @@ export class HistoryRepository {
         title: `Поступил аккумулятор ${bat.serialNumber}`,
         details: `Напряжение: ${bat.voltage}V, емкость: ${bat.capacityAh}Ah, статус: ${bat.status}`,
         timestamp: bat.createdAt || new Date().toISOString(),
-        actor: "Иван Ковалев (Менеджер)",
+        actor: "Администратор парка",
         badgeText: "АКБ",
         badgeColor: "teal",
         entityId: bat.id,

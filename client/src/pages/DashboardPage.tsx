@@ -158,7 +158,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           >
             <TrendingUp className="w-4 h-4 shrink-0" />
             <span className="sm:hidden">Аналитика KPI</span>
-            <span className="hidden sm:inline">Финансовая аналитика & KPI (Recharts)</span>
+            <span className="hidden sm:inline">Финансовая аналитика & KPI</span>
           </button>
         </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '../components/Modal';
 import { Client, Bike, Tariff, Rental, Battery, BatteryModel, BikeModel, TariffBuyoutBatteryItem, Outfit } from '../types';
 import { api } from '../services/api';
@@ -42,6 +42,14 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
 }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isLoading, setIsLoading] = useState(false);
+  const currentUser = useMemo(() => {
+    try {
+      const saved = localStorage.getItem('crm_auth_user') || localStorage.getItem('crm_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  }, []);
 
   // Data lists
   const [clients, setClients] = useState<Client[]>([]);
@@ -601,6 +609,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         clientId: selectedClient.id,
         bikeId: selectedBikeId,
         tariffId: selectedTariffId,
+        managerId: currentUser?.id,
         outfitIds: selectedOutfitIds,
         batteryIds: selectedBatteryIds,
         paymentMethod,

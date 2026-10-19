@@ -631,9 +631,18 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
     loyaltyTiers: Array.isArray(parsed.loyaltyTiers) && parsed.loyaltyTiers.length > 0
       ? parsed.loyaltyTiers
       : JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),
-    auditLogs: (Array.isArray(parsed.auditLogs) ? parsed.auditLogs : []).filter(
-      (l: any) => l.entityId !== "usr-twizzy" && !l.title?.toLowerCase().includes("twizzy")
-    ),
+    auditLogs: (Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [])
+      .filter((l: any) => l.entityId !== "usr-twizzy" && !l.title?.toLowerCase().includes("twizzy"))
+      .map((l: any) => {
+        let actorName = l.actorName || "Администратор";
+        if (actorName.includes("Ковалев") || actorName.includes("Смирнов")) {
+          actorName = "BXLETH (Руководитель парка)";
+        }
+        return {
+          ...l,
+          actorName,
+        };
+      }),
     chatMessages: Array.isArray(parsed.chatMessages) && parsed.chatMessages.length > 0
       ? parsed.chatMessages
       : defaultDb.chatMessages,

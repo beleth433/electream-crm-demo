@@ -61,7 +61,7 @@ export const CLIENT_TEMPLATES: ClientTemplate[] = [
     },
   },
   {
-    name: 'Алексей Смирнов',
+    name: 'Михаил Соколов',
     avatar: '⚡',
     company: 'Достависта',
     phone: '+7 (903) 777-12-89',

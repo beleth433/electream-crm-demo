@@ -663,7 +663,7 @@ const MainLayout: React.FC = () => {
               onClearInitialData={() => setRepairInitialData(null)}
             />
           )}
-          {currentTab === 'inventory' && <InventoryPage />}
+          {currentTab === 'inventory' && <InventoryPage currentUser={currentUser} />}
           {currentTab === 'finance' && <FinancePage currentUser={currentUser} />}
           {currentTab === 'loyalty' && <LoyaltyPage />}
           {currentTab === 'info' && <InfoPage />}

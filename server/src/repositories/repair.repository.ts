@@ -1,4 +1,5 @@
 import { getDb, RepairStatus, RepairFaultType, PaymentMethod, RepairOrderRecord } from "./db.js";
+import { getCurrentUser } from "../context/userContext.js";
 
 export class RepairRepository {
   static getAll(filters?: { status?: RepairStatus; faultType?: RepairFaultType; bikeId?: string; batteryId?: string; itemType?: "BIKE" | "BATTERY" | "EXTERNAL_DEVICE" }) {
@@ -173,7 +174,12 @@ export class RepairRepository {
       clientName: data.clientName?.trim() || null,
       clientPhone: data.clientPhone?.trim() || null,
       clientId: data.clientId || null,
-      mechanicId: data.mechanicId || db.users[2]?.id || "usr-mech-1",
+      mechanicId:
+        data.mechanicId ||
+        getCurrentUser()?.id ||
+        db.users.find((u) => u.role === "MECHANIC")?.id ||
+        db.users[0]?.id ||
+        "usr-vladik",
       status: "DIAGNOSTICS" as RepairStatus,
       faultType: data.faultType,
       description: data.description,

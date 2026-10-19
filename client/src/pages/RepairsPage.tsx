@@ -402,7 +402,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
                     )}
                   </div>
                   <span className="text-slate-400 text-[11px] shrink-0">
-                    Мастер: {order.mechanic?.fullName || 'Алексей Смирнов'}
+                    Мастер: {order.mechanic?.fullName || 'Мастер СТО'}
                   </span>
                 </div>
 

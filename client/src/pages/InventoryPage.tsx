@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Part, PartOrder, PartCategoryItem, PartOrderCategoryItem, PaymentMethod } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Part, PartOrder, PartCategoryItem, PartOrderCategoryItem, PaymentMethod, User as AppUser } from '../types';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
 import {
@@ -37,11 +37,16 @@ import {
   Archive,
   RotateCw,
   History,
+  User as UserIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../utils/numbering';
 
-export const InventoryPage: React.FC = () => {
+export interface InventoryPageProps {
+  currentUser?: AppUser | null;
+}
+
+export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => {
   // Mode switcher: 'stock' (В наличии на складе) or 'orders' (Заявки на закупку)
   const [activeMode, setActiveMode] = useState<'stock' | 'orders'>(() => {
     try {
@@ -57,6 +62,27 @@ export const InventoryPage: React.FC = () => {
       localStorage.setItem('crm_inventory_mode', mode);
     } catch {}
   };
+
+  // Determine currently authenticated user display name
+  const currentUserName = useMemo(() => {
+    if (currentUser) {
+      const name = currentUser.fullName || currentUser.username || currentUser.login || '';
+      const role = currentUser.roleTitle || (currentUser.role === 'ADMIN' ? 'Руководитель' : currentUser.role === 'MECHANIC' ? 'Мастер' : '');
+      if (name && role) return `${name} (${role})`;
+      if (name) return name;
+    }
+    try {
+      const saved = localStorage.getItem('crm_auth_user') || localStorage.getItem('crm_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        const name = u.fullName || u.username || u.login || '';
+        const role = u.roleTitle || (u.role === 'ADMIN' ? 'Руководитель' : u.role === 'MECHANIC' ? 'Мастер' : '');
+        if (name && role) return `${name} (${role})`;
+        if (name) return name;
+      }
+    } catch {}
+    return 'Мастер';
+  }, [currentUser]);
 
   const [parts, setParts] = useState<Part[]>([]);
   const [allParts, setAllParts] = useState<Part[]>([]);
@@ -82,8 +108,20 @@ export const InventoryPage: React.FC = () => {
     priority: 'NORMAL' as 'LOW' | 'NORMAL' | 'URGENT',
     estimatedPrice: 0,
     note: '',
-    requestedBy: 'Владислав (Мастер)',
+    requestedBy: currentUserName,
   });
+
+  // Sync requestedBy when currentUser profile loads
+  useEffect(() => {
+    if (currentUserName) {
+      setOrderForm((prev) => {
+        if (!prev.requestedBy || prev.requestedBy === 'Владислав (Мастер)' || prev.requestedBy === 'Мастер') {
+          return { ...prev, requestedBy: currentUserName };
+        }
+        return prev;
+      });
+    }
+  }, [currentUserName]);
 
   // Manage Order Categories Modal State
   const [isManageOrderCategoriesOpen, setIsManageOrderCategoriesOpen] = useState(false);
@@ -103,7 +141,7 @@ export const InventoryPage: React.FC = () => {
     priority: 'NORMAL' as 'LOW' | 'NORMAL' | 'URGENT',
     estimatedPrice: 0,
     note: '',
-    requestedBy: 'Владислав (Мастер)',
+    requestedBy: currentUserName,
   });
 
   // Confirm Purchase & Cash Expense Modal State
@@ -309,7 +347,7 @@ export const InventoryPage: React.FC = () => {
         priority: orderForm.priority,
         estimatedPrice: Number(orderForm.estimatedPrice) || undefined,
         note: orderForm.note.trim() || undefined,
-        requestedBy: orderForm.requestedBy.trim() || 'Владислав (Мастер)',
+        requestedBy: orderForm.requestedBy.trim() || currentUserName,
       });
       toast.success(`Заявка на "${orderForm.partName}" успешно создана!`);
       setIsAddOrderModalOpen(false);
@@ -322,12 +360,27 @@ export const InventoryPage: React.FC = () => {
         priority: 'NORMAL',
         estimatedPrice: 0,
         note: '',
-        requestedBy: 'Владислав (Мастер)',
+        requestedBy: currentUserName,
       });
       loadData();
     } catch (err: any) {
       toast.error(err.message || 'Ошибка создания заявки');
     }
+  };
+
+  const handleOpenAddOrderModal = () => {
+    setOrderForm({
+      partName: '',
+      partId: '',
+      categoryId: orderCategories[0]?.id || '',
+      quantity: 1,
+      orderUrl: '',
+      priority: 'NORMAL',
+      estimatedPrice: 0,
+      note: '',
+      requestedBy: currentUserName,
+    });
+    setIsAddOrderModalOpen(true);
   };
 
   const handleOpenEditOrderModal = (order: PartOrder) => {
@@ -341,7 +394,7 @@ export const InventoryPage: React.FC = () => {
       priority: order.priority,
       estimatedPrice: order.estimatedPrice || 0,
       note: order.note || '',
-      requestedBy: order.requestedBy || 'Владислав (Мастер)',
+      requestedBy: order.requestedBy || currentUserName,
     });
     setIsEditOrderModalOpen(true);
   };
@@ -363,7 +416,7 @@ export const InventoryPage: React.FC = () => {
         priority: editOrderForm.priority,
         estimatedPrice: Number(editOrderForm.estimatedPrice) || 0,
         note: editOrderForm.note.trim() || null,
-        requestedBy: editOrderForm.requestedBy.trim() || 'Владислав (Мастер)',
+        requestedBy: editOrderForm.requestedBy.trim() || currentUserName,
       });
       toast.success(`Заявка на "${editOrderForm.partName}" обновлена!`);
       setIsEditOrderModalOpen(false);
@@ -622,7 +675,7 @@ export const InventoryPage: React.FC = () => {
       priority: order.priority || 'NORMAL',
       estimatedPrice: estPrice,
       note: order.note || '',
-      requestedBy: order.requestedBy || 'Владислав (Мастер)',
+      requestedBy: currentUserName,
     });
     setIsAddOrderModalOpen(true);
     toast.info(`Параметры закупки "${order.partName}" предзаполнены для повторного заказа 🔁`);
@@ -643,7 +696,7 @@ export const InventoryPage: React.FC = () => {
       priority: part.quantity <= (part.minQuantity || 3) ? 'URGENT' : 'NORMAL',
       estimatedPrice: part.purchasePrice || 0,
       note: `Пополнение склада: ${part.sku} (текущий остаток ${part.quantity} шт.)`,
-      requestedBy: 'Владислав (Мастер)',
+      requestedBy: currentUserName,
     });
     setActiveMode('orders');
     setIsAddOrderModalOpen(true);
@@ -960,7 +1013,7 @@ export const InventoryPage: React.FC = () => {
                 <span className="truncate">Отделы заявок</span>
               </button>
               <button
-                onClick={() => setIsAddOrderModalOpen(true)}
+                onClick={handleOpenAddOrderModal}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-amber-500/20 transition-all"
               >
                 <ShoppingBag className="w-4 h-4 shrink-0" />
@@ -1529,7 +1582,7 @@ export const InventoryPage: React.FC = () => {
           </p>
           <button
             type="button"
-            onClick={() => setIsAddOrderModalOpen(true)}
+            onClick={handleOpenAddOrderModal}
             className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-md shadow-amber-500/20 transition-all"
           >
             <Plus className="w-4 h-4" />
@@ -2092,9 +2145,9 @@ export const InventoryPage: React.FC = () => {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
         <div>
-          <label className="block text-slate-500 dark:text-slate-400 mb-1 font-medium">
+          <label className="min-h-[22px] flex items-end text-slate-500 dark:text-slate-400 mb-1.5 font-medium leading-tight">
             Количество (шт.) *
           </label>
           <input
@@ -2109,7 +2162,7 @@ export const InventoryPage: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-slate-500 dark:text-slate-400 mb-1 font-medium">
+          <label className="min-h-[22px] flex items-end text-slate-500 dark:text-slate-400 mb-1.5 font-medium leading-tight">
             Приоритет срочности
           </label>
           <select
@@ -2140,9 +2193,9 @@ export const InventoryPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
         <div>
-          <label className="block text-slate-500 dark:text-slate-400 mb-1 font-medium">
+          <label className="min-h-[28px] flex items-end text-slate-500 dark:text-slate-400 mb-1.5 font-medium leading-tight">
             Ориентировочная цена (₽ за шт.)
           </label>
           <input
@@ -2159,15 +2212,18 @@ export const InventoryPage: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-slate-500 dark:text-slate-400 mb-1 font-medium">
+          <label className="min-h-[28px] flex items-end text-slate-500 dark:text-slate-400 mb-1.5 font-medium leading-tight">
             Заявитель
           </label>
-          <input
-            type="text"
-            value={orderForm.requestedBy}
-            onChange={(e) => setOrderForm({ ...orderForm, requestedBy: e.target.value })}
-            className="w-full px-3 py-2 min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-xs text-slate-900 dark:text-white"
-          />
+          <div className="relative">
+            <UserIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={orderForm.requestedBy}
+              onChange={(e) => setOrderForm({ ...orderForm, requestedBy: e.target.value })}
+              className="w-full pl-9 pr-3 py-2 min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-xs font-semibold text-slate-900 dark:text-white"
+            />
+          </div>
         </div>
       </div>
 
@@ -2743,9 +2799,9 @@ export const InventoryPage: React.FC = () => {
             </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-medium">
+              <label className="min-h-[22px] flex items-end text-slate-500 dark:text-slate-400 mb-1.5 font-medium leading-tight">
                 Количество (шт.) *
               </label>
               <input
@@ -2760,7 +2816,7 @@ export const InventoryPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-medium">
+              <label className="min-h-[22px] flex items-end text-slate-500 dark:text-slate-400 mb-1.5 font-medium leading-tight">
                 Приоритет срочности
               </label>
               <select
@@ -2791,9 +2847,9 @@ export const InventoryPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-medium">
+              <label className="min-h-[28px] flex items-end text-slate-500 dark:text-slate-400 mb-1.5 font-medium leading-tight">
                 Ориентировочная цена (₽ за шт.)
               </label>
               <input
@@ -2810,15 +2866,18 @@ export const InventoryPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-slate-500 dark:text-slate-400 mb-1 font-medium">
+              <label className="min-h-[28px] flex items-end text-slate-500 dark:text-slate-400 mb-1.5 font-medium leading-tight">
                 Заявитель
               </label>
-              <input
-                type="text"
-                value={editOrderForm.requestedBy}
-                onChange={(e) => setEditOrderForm({ ...editOrderForm, requestedBy: e.target.value })}
-                className="w-full px-3 py-2 min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-xs text-slate-900 dark:text-white"
-              />
+              <div className="relative">
+                <UserIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={editOrderForm.requestedBy}
+                  onChange={(e) => setEditOrderForm({ ...editOrderForm, requestedBy: e.target.value })}
+                  className="w-full pl-9 pr-3 py-2 min-h-[44px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-base sm:text-xs font-semibold text-slate-900 dark:text-white"
+                />
+              </div>
             </div>
           </div>
 
