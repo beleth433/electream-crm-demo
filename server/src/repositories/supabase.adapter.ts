@@ -49,6 +49,50 @@ function getCleanDatabaseUrl(): string {
   return cleaned;
 }
 
+function getCleanSupabaseCredentials(): { url: string; key: string } {
+  const rawUrl = (
+    process.env.SUPABASE_URL ||
+    process.env.supabase_url ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    ""
+  ).trim();
+
+  let cleanedUrl = rawUrl;
+  if (
+    (cleanedUrl.startsWith('"') && cleanedUrl.endsWith('"')) ||
+    (cleanedUrl.startsWith("'") && cleanedUrl.endsWith("'"))
+  ) {
+    cleanedUrl = cleanedUrl.slice(1, -1).trim();
+  }
+  cleanedUrl = cleanedUrl.replace(/\/+$/, "");
+
+  const rawKey = (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.supabase_service_role_key ||
+    process.env.SUPABASE_KEY ||
+    process.env.supabase_key ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.supabase_anon_key ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    ""
+  ).trim();
+
+  let cleanedKey = rawKey;
+  if (
+    (cleanedKey.startsWith('"') && cleanedKey.endsWith('"')) ||
+    (cleanedKey.startsWith("'") && cleanedKey.endsWith("'"))
+  ) {
+    cleanedKey = cleanedKey.slice(1, -1).trim();
+  }
+  if (cleanedKey.startsWith("Bearer ")) {
+    cleanedKey = cleanedKey.slice(7).trim();
+  }
+
+  return { url: cleanedUrl, key: cleanedKey };
+}
+
 class SupabaseAdapter {
   private pgPool: pg.Pool | null = null;
   private supabaseClient: SupabaseClient | null = null;
@@ -66,15 +110,7 @@ class SupabaseAdapter {
 
   public detectMode(): StorageMode {
     const dbUrl = getCleanDatabaseUrl();
-
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.supabase_url;
-    const supabaseKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.supabase_service_role_key ||
-      process.env.SUPABASE_KEY ||
-      process.env.supabase_key ||
-      process.env.SUPABASE_ANON_KEY ||
-      process.env.supabase_anon_key;
+    const { url: supabaseUrl, key: supabaseKey } = getCleanSupabaseCredentials();
 
     if (dbUrl && (dbUrl.startsWith("postgres://") || dbUrl.startsWith("postgresql://"))) {
       this.mode = "SUPABASE_POSTGRES";
@@ -205,12 +241,13 @@ class SupabaseAdapter {
   }
 
   private async initRest(seedFallback: () => DBStore): Promise<boolean> {
-    const supabaseUrl = process.env.SUPABASE_URL!;
-    const supabaseKey = (
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SUPABASE_KEY ||
-      process.env.SUPABASE_ANON_KEY
-    )!;
+    const { url: supabaseUrl, key: supabaseKey } = getCleanSupabaseCredentials();
+
+    if (!supabaseUrl || !supabaseKey) {
+      this.isConnected = false;
+      this.lastError = "Missing Supabase URL or Key";
+      return false;
+    }
 
     try {
       console.log(`[Storage] 🔌 Подключение к Supabase REST API (${supabaseUrl})...`);
