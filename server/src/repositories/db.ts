@@ -515,28 +515,12 @@ export const createDefaultEmptyDb = (): DBStore => ({
   auditLogs: [],
   chatMessages: [
     {
-      id: "msg-1",
-      senderId: "u-vladik",
-      senderName: "Владислав (Мастер СТО)",
-      senderRole: "MECHANIC",
-      text: "Коллеги, колодки на Minako V8 почти закончились, оформил заявку в закупку.",
-      createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-    },
-    {
-      id: "msg-2",
-      senderId: "u-bogdan",
-      senderName: "Богдан (Менеджер)",
-      senderRole: "MANAGER",
-      text: "Принял! На этой неделе также ожидаем возврат двух байков из долгой аренды.",
-      createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString(),
-    },
-    {
-      id: "msg-3",
+      id: "msg-welcome",
       senderId: "u-bxleth",
-      senderName: "Алексей (Разработчик)",
+      senderName: "BXLETH (Главный инженер)",
       senderRole: "ADMIN",
-      text: "Обновления CRM Lite установлены: добавлены отделы заявок и быстрый QR-звонок курьерам.",
-      createdAt: new Date(Date.now() - 1800000).toISOString(),
+      text: "Рабочее пространство CRM Lite активно. Система готова к работе.",
+      createdAt: new Date().toISOString(),
     },
   ],
   settings: {
@@ -563,9 +547,18 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
     }
   }
 
-  // Merge loaded users with INITIAL_USERS to ensure all team accounts (Bogdan, Vladik, BXLETH) are present
+  // Merge loaded users with INITIAL_USERS to ensure admin account (BXLETH) is present
   const existingUsers: UserRecord[] = (Array.isArray(parsed.users) ? parsed.users : []).filter(
-    (u: any) => u.id !== "usr-twizzy" && u.login !== "twizzy" && u.username !== "twizzy"
+    (u: any) =>
+      u.id !== "usr-twizzy" &&
+      u.login !== "twizzy" &&
+      u.username !== "twizzy" &&
+      u.id !== "usr-bogdan" &&
+      u.id !== "usr-vladik" &&
+      u.login?.toLowerCase() !== "bogdan" &&
+      u.username?.toLowerCase() !== "bogdan" &&
+      u.login?.toLowerCase() !== "vladik" &&
+      u.username?.toLowerCase() !== "vladik"
   );
   for (const initUser of INITIAL_USERS) {
     const found = existingUsers.find(
@@ -619,7 +612,13 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
     reviews: parsed.reviews || [],
     articles: parsed.articles || [],
     employees: (() => {
-      const emps: EmployeeRecord[] = Array.isArray(parsed.employees) ? parsed.employees : [];
+      const emps: EmployeeRecord[] = (Array.isArray(parsed.employees) ? parsed.employees : []).filter(
+        (e: any) =>
+          e.id !== "emp-bogdan" &&
+          e.id !== "emp-vladik" &&
+          e.fullName !== "Богдан" &&
+          e.fullName !== "Владислав"
+      );
       for (const initEmp of INITIAL_EMPLOYEES) {
         if (!emps.some((e) => e.id === initEmp.id || e.phone === initEmp.phone)) {
           emps.push({ ...initEmp });
@@ -632,7 +631,14 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
       ? parsed.loyaltyTiers
       : JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),
     auditLogs: (Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [])
-      .filter((l: any) => l.entityId !== "usr-twizzy" && !l.title?.toLowerCase().includes("twizzy"))
+      .filter((l: any) =>
+        l.entityId !== "usr-twizzy" &&
+        !l.title?.toLowerCase().includes("twizzy") &&
+        l.entityId !== "usr-bogdan" &&
+        l.entityId !== "usr-vladik" &&
+        !l.title?.toLowerCase().includes("bogdan") &&
+        !l.title?.toLowerCase().includes("vladik")
+      )
       .map((l: any) => {
         let actorName = l.actorName || "Администратор";
         if (actorName.includes("Ковалев") || actorName.includes("Смирнов")) {
@@ -643,9 +649,12 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
           actorName,
         };
       }),
-    chatMessages: Array.isArray(parsed.chatMessages) && parsed.chatMessages.length > 0
-      ? parsed.chatMessages
-      : defaultDb.chatMessages,
+    chatMessages: (() => {
+      const filtered = (Array.isArray(parsed.chatMessages) ? parsed.chatMessages : []).filter(
+        (m: any) => m.senderId !== "u-bogdan" && m.senderId !== "u-vladik"
+      );
+      return filtered.length > 0 ? filtered : defaultDb.chatMessages;
+    })(),
     settings: parsed.settings
       ? {
           ...parsed.settings,

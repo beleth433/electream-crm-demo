@@ -81,32 +81,6 @@ export const INITIAL_ACCESS_LEVELS = [
 
 export const INITIAL_USERS = [
   {
-    id: "usr-bogdan",
-    login: "bogdan",
-    username: "bogdan",
-    email: "bogdan@ebike-crm.ru",
-    passwordHash: "1234",
-    fullName: "Богдан",
-    phone: "+7 (999) 000-02-02",
-    role: "MANAGER" as const,
-    roleTitle: "Управляющий базой",
-    accessLevelId: "lvl-manager",
-    isActive: true,
-  },
-  {
-    id: "usr-vladik",
-    login: "vladik",
-    username: "vladik",
-    email: "vladik@ebike-crm.ru",
-    passwordHash: "1234",
-    fullName: "Владислав",
-    phone: "+7 (999) 000-03-03",
-    role: "MECHANIC" as const,
-    roleTitle: "Мастер СТО",
-    accessLevelId: "lvl-master",
-    isActive: true,
-  },
-  {
     id: "usr-bxleth",
     login: "bxleth",
     username: "bxleth",
@@ -166,32 +140,7 @@ export const INITIAL_PART_ORDER_CATEGORIES = [
 
 export const INITIAL_TARIFFS: any[] = [];
 
-export const INITIAL_EMPLOYEES = [
-  {
-    id: "emp-bogdan",
-    fullName: "Богдан",
-    phone: "+7 (999) 000-02-02",
-    email: "bogdan@ebike-crm.ru",
-    role: "Управляющий базой",
-    salaryType: "MONTHLY" as const,
-    salaryAmount: 65000,
-    status: "ACTIVE" as const,
-    hiredAt: "2026-09-01",
-    notes: "Ответственный за выдачу байков курьерам и кассу",
-  },
-  {
-    id: "emp-vladik",
-    fullName: "Владислав",
-    phone: "+7 (999) 000-03-03",
-    email: "vladik@ebike-crm.ru",
-    role: "Мастер СТО",
-    salaryType: "MONTHLY" as const,
-    salaryAmount: 60000,
-    status: "ACTIVE" as const,
-    hiredAt: "2026-09-01",
-    notes: "Ремонт электровелосипедов, АКБ, заказ запчастей",
-  },
-];
+export const INITIAL_EMPLOYEES: any[] = [];
 
 export const INITIAL_LOYALTY_TIERS = [
   {

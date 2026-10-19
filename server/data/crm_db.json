@@ -261,32 +261,6 @@
       "accessLevelId": "lvl-owner",
       "isActive": true,
       "lastLoginAt": "2026-10-08T11:27:52.572Z"
-    },
-    {
-      "id": "usr-bogdan",
-      "login": "bogdan",
-      "username": "bogdan",
-      "email": "bogdan@ebike-crm.ru",
-      "passwordHash": "1234",
-      "fullName": "Богдан",
-      "phone": "+7 (999) 000-02-02",
-      "role": "MANAGER",
-      "roleTitle": "Управляющий базой",
-      "accessLevelId": "lvl-manager",
-      "isActive": true
-    },
-    {
-      "id": "usr-vladik",
-      "login": "vladik",
-      "username": "vladik",
-      "email": "vladik@ebike-crm.ru",
-      "passwordHash": "1234",
-      "fullName": "Владислав",
-      "phone": "+7 (999) 000-03-03",
-      "role": "MECHANIC",
-      "roleTitle": "Мастер СТО",
-      "accessLevelId": "lvl-master",
-      "isActive": true
     }
   ],
   "models": [
@@ -900,30 +874,6 @@
       "status": "ACTIVE",
       "hiredAt": "2026-09-22",
       "notes": null
-    },
-    {
-      "id": "emp-bogdan",
-      "fullName": "Богдан",
-      "phone": "+7 (999) 000-02-02",
-      "email": "bogdan@ebike-crm.ru",
-      "role": "Управляющий базой",
-      "salaryType": "MONTHLY",
-      "salaryAmount": 65000,
-      "status": "ACTIVE",
-      "hiredAt": "2026-09-01",
-      "notes": "Ответственный за выдачу байков курьерам и кассу"
-    },
-    {
-      "id": "emp-vladik",
-      "fullName": "Владислав",
-      "phone": "+7 (999) 000-03-03",
-      "email": "vladik@ebike-crm.ru",
-      "role": "Мастер СТО",
-      "salaryType": "MONTHLY",
-      "salaryAmount": 60000,
-      "status": "ACTIVE",
-      "hiredAt": "2026-09-01",
-      "notes": "Ремонт электровелосипедов, АКБ, заказ запчастей"
     }
   ],
   "retailOrders": [
@@ -1008,7 +958,7 @@
       "category": "SYSTEM",
       "action": "USER_DELETE",
       "title": "Удален сотрудник: Иван Ковалев (@manager)",
-      "actorName": "Иван Ковалев (Менеджер)",
+      "actorName": "BXLETH (Руководитель парка)",
       "badgeText": "Удалено",
       "badgeColor": "rose",
       "entityId": "usr-mgr-1",
@@ -1020,7 +970,7 @@
       "action": "USER_UPDATE",
       "title": "Обновлен сотрудник: Иван Ковалев",
       "details": "Статус: Активен. Уровень доступа: lvl-manager",
-      "actorName": "Иван Ковалев (Менеджер)",
+      "actorName": "BXLETH (Руководитель парка)",
       "badgeText": "Сотрудник",
       "badgeColor": "sky",
       "entityId": "usr-mgr-1",
@@ -1031,7 +981,7 @@
       "category": "SYSTEM",
       "action": "USER_DELETE",
       "title": "Удален сотрудник: Дмитрий Орлов (@admin)",
-      "actorName": "Иван Ковалев (Менеджер)",
+      "actorName": "BXLETH (Руководитель парка)",
       "badgeText": "Удалено",
       "badgeColor": "rose",
       "entityId": "usr-admin-1",
@@ -1042,7 +992,7 @@
       "category": "SYSTEM",
       "action": "USER_DELETE",
       "title": "Удален сотрудник: Алексей Смирнов (@mechanic)",
-      "actorName": "Иван Ковалев (Менеджер)",
+      "actorName": "BXLETH (Руководитель парка)",
       "badgeText": "Удалено",
       "badgeColor": "rose",
       "entityId": "usr-mech-1",
@@ -1054,7 +1004,7 @@
       "action": "USER_UPDATE",
       "title": "Обновлен сотрудник: Алексей Смирнов",
       "details": "Статус: Активен. Уровень доступа: lvl-manager",
-      "actorName": "Иван Ковалев (Менеджер)",
+      "actorName": "BXLETH (Руководитель парка)",
       "badgeText": "Сотрудник",
       "badgeColor": "sky",
       "entityId": "usr-mech-1",
@@ -1066,52 +1016,14 @@
       "action": "USER_UPDATE",
       "title": "Обновлен сотрудник: Дмитрий Орлов",
       "details": "Статус: Активен. Уровень доступа: lvl-manager",
-      "actorName": "Иван Ковалев (Менеджер)",
+      "actorName": "BXLETH (Руководитель парка)",
       "badgeText": "Сотрудник",
       "badgeColor": "sky",
       "entityId": "usr-admin-1",
       "createdAt": "2026-10-08T11:37:35.687Z"
-    },
-    {
-      "id": "log-1791459430588-881o",
-      "category": "SYSTEM",
-      "action": "USER_DELETE",
-      "title": "Удален сотрудник: Владислав (@vladik)",
-      "actorName": "Иван Ковалев (Менеджер)",
-      "badgeText": "Удалено",
-      "badgeColor": "rose",
-      "entityId": "usr-vladik",
-      "createdAt": "2026-10-08T11:37:10.588Z"
-    },
-    {
-      "id": "log-1791459426957-kkku",
-      "category": "SYSTEM",
-      "action": "USER_DELETE",
-      "title": "Удален сотрудник: Богдан (@bogdan)",
-      "actorName": "Иван Ковалев (Менеджер)",
-      "badgeText": "Удалено",
-      "badgeColor": "rose",
-      "entityId": "usr-bogdan",
-      "createdAt": "2026-10-08T11:37:06.957Z"
     }
   ],
   "chatMessages": [
-    {
-      "id": "msg-1",
-      "senderId": "u-vladik",
-      "senderName": "Владислав (Мастер СТО)",
-      "senderRole": "MECHANIC",
-      "text": "Коллеги, колодки на Minako V8 почти закончились, оформил заявку в закупку.",
-      "createdAt": "2026-10-08T08:26:29.724Z"
-    },
-    {
-      "id": "msg-2",
-      "senderId": "u-bogdan",
-      "senderName": "Богдан (Менеджер)",
-      "senderRole": "MANAGER",
-      "text": "Принял! На этой неделе также ожидаем возврат двух байков из долгой аренды.",
-      "createdAt": "2026-10-08T09:56:29.725Z"
-    },
     {
       "id": "msg-3",
       "senderId": "u-bxleth",
@@ -1133,7 +1045,7 @@
       "userName": "BXLETH",
       "userRole": "ADMIN",
       "roleTitle": "Главный инженер / Разработчик",
-      "lastSeenAt": "2026-10-08T11:42:32.674Z"
+      "lastSeenAt": "2026-10-19T13:20:02.119Z"
     }
   ]
 }

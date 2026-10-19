@@ -179,7 +179,7 @@ export class RepairRepository {
         getCurrentUser()?.id ||
         db.users.find((u) => u.role === "MECHANIC")?.id ||
         db.users[0]?.id ||
-        "usr-vladik",
+        "usr-bxleth",
       status: "DIAGNOSTICS" as RepairStatus,
       faultType: data.faultType,
       description: data.description,

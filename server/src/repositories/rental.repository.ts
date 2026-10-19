@@ -498,7 +498,7 @@ export class RentalRepository {
             getCurrentUser()?.id ||
             db.users.find((u) => u.role === "MECHANIC")?.id ||
             db.users[0]?.id ||
-            "usr-vladik",
+            "usr-bxleth",
           status: "DIAGNOSTICS" as const,
           faultType: data.faultType || "CLIENT_FAULT",
           description: `Возврат по аренде ${rental.rentalNumber}: ${data.defectDescription || "Дефекты при сдаче"}`,
