@@ -57897,6 +57897,9 @@ function getCandidateSupabaseKeys() {
     if (k.startsWith("Bearer ")) {
       k = k.slice(7).trim();
     }
+    if (k.startsWith("http://") || k.startsWith("https://")) {
+      continue;
+    }
     if (k && !result.some((r) => r.key === k)) {
       result.push({ key: k, name: c.name });
     }
@@ -57909,7 +57912,7 @@ function getCleanSupabaseCredentials() {
   if (cleanedUrl.startsWith('"') && cleanedUrl.endsWith('"') || cleanedUrl.startsWith("'") && cleanedUrl.endsWith("'")) {
     cleanedUrl = cleanedUrl.slice(1, -1).trim();
   }
-  cleanedUrl = cleanedUrl.replace(/\/+$/, "");
+  cleanedUrl = cleanedUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
   const candidates = getCandidateSupabaseKeys();
   const cleanedKey = candidates.length > 0 ? candidates[0].key : "";
   return { url: cleanedUrl, key: cleanedKey };

@@ -71,6 +71,9 @@ function getCandidateSupabaseKeys(): { key: string; name: string }[] {
     if (k.startsWith("Bearer ")) {
       k = k.slice(7).trim();
     }
+    if (k.startsWith("http://") || k.startsWith("https://")) {
+      continue; // Ignore URLs accidentally pasted into API key variables
+    }
     if (k && !result.some((r) => r.key === k)) {
       result.push({ key: k, name: c.name });
     }
@@ -95,7 +98,8 @@ function getCleanSupabaseCredentials(): { url: string; key: string } {
   ) {
     cleanedUrl = cleanedUrl.slice(1, -1).trim();
   }
-  cleanedUrl = cleanedUrl.replace(/\/+$/, "");
+  // Auto-strip trailing /rest/v1 if user copied the REST endpoint URL
+  cleanedUrl = cleanedUrl.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
 
   const candidates = getCandidateSupabaseKeys();
   const cleanedKey = candidates.length > 0 ? candidates[0].key : "";
