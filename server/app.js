@@ -57903,12 +57903,23 @@ var SupabaseAdapter = class {
     return this.mode;
   }
   getStatus() {
+    const rawDbUrl = getCleanDatabaseUrl();
+    const rawSupabaseUrl = (process.env.SUPABASE_URL || process.env.supabase_url || "").trim();
+    const rawServiceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.supabase_service_role_key || "").trim();
+    const rawAnonKey = (process.env.SUPABASE_ANON_KEY || process.env.supabase_anon_key || process.env.SUPABASE_KEY || process.env.supabase_key || "").trim();
     return {
       mode: this.mode,
       connected: this.isConnected,
       provider: this.mode === "SUPABASE_POSTGRES" ? "postgres" : this.mode === "SUPABASE_REST" ? "supabase" : "local",
       lastSyncedAt: this.lastSyncedAt || void 0,
-      error: this.lastError
+      error: this.lastError,
+      envCheck: {
+        hasDatabaseUrl: Boolean(rawDbUrl),
+        hasSupabaseUrl: Boolean(rawSupabaseUrl),
+        hasServiceRoleKey: Boolean(rawServiceRoleKey),
+        hasAnonKey: Boolean(rawAnonKey),
+        isVercel: Boolean(process.env.VERCEL)
+      }
     };
   }
   async init(seedFallback) {
@@ -69405,7 +69416,8 @@ app.get(["/diagnostics", "/api/diagnostics"], (req, res) => {
     node: process.version,
     isVercel: Boolean(process.env.VERCEL),
     hasDatabaseUrl: Boolean(rawUrl),
-    databaseUrlMasked: maskedUrl
+    databaseUrlMasked: maskedUrl,
+    storage: getStorageStatus()
   });
 });
 app.use((req, res, next) => {

@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
 import apiRouter from "./routes/api.routes.js";
-import { initCloudDb, flushDb, checkAndSyncCloudDb, getDb } from "./repositories/db.js";
+import { initCloudDb, flushDb, checkAndSyncCloudDb, getDb, getStorageStatus } from "./repositories/db.js";
 import { userStorage, CurrentUserContext } from "./context/userContext.js";
 
 dotenv.config();
@@ -97,6 +97,7 @@ app.get(["/diagnostics", "/api/diagnostics"], (req, res) => {
     isVercel: Boolean(process.env.VERCEL),
     hasDatabaseUrl: Boolean(rawUrl),
     databaseUrlMasked: maskedUrl,
+    storage: getStorageStatus(),
   });
 });
 

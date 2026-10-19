@@ -1039,13 +1039,5 @@
     "articlesInitialized": true,
     "fixedExpenseItems": []
   },
-  "presence": [
-    {
-      "userId": "usr-bxleth",
-      "userName": "BXLETH",
-      "userRole": "ADMIN",
-      "roleTitle": "Главный инженер / Разработчик",
-      "lastSeenAt": "2026-10-19T14:21:29.132Z"
-    }
-  ]
+  "presence": []
 }
