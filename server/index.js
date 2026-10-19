@@ -69427,7 +69427,12 @@ app.use((req, res, next) => {
 app.get(["/health", "/api/health"], (req, res) => {
   res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
 });
-app.get(["/diagnostics", "/api/diagnostics"], (req, res) => {
+app.get(["/diagnostics", "/api/diagnostics"], async (req, res) => {
+  try {
+    await initCloudDb();
+  } catch (err) {
+    console.error("[Diagnostics] initCloudDb error:", err);
+  }
   const rawUrl = (process.env.DATABASE_URL || process.env.database_url || process.env.DATEBASE_URL || process.env.datebase_url || "").trim();
   const maskedUrl = rawUrl ? rawUrl.replace(/:([^:@]+)@/, ":****@") : null;
   res.json({

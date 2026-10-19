@@ -81,7 +81,13 @@ app.get(["/health", "/api/health"], (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.get(["/diagnostics", "/api/diagnostics"], (req, res) => {
+app.get(["/diagnostics", "/api/diagnostics"], async (req, res) => {
+  try {
+    await initCloudDb();
+  } catch (err: any) {
+    console.error("[Diagnostics] initCloudDb error:", err);
+  }
+
   const rawUrl = (
     process.env.DATABASE_URL ||
     process.env.database_url ||
