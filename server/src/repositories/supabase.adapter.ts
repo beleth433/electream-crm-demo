@@ -49,6 +49,36 @@ function getCleanDatabaseUrl(): string {
   return cleaned;
 }
 
+function getCandidateSupabaseKeys(): { key: string; name: string }[] {
+  const result: { key: string; name: string }[] = [];
+  const candidates = [
+    { name: "SUPABASE_ANON_KEY", val: process.env.SUPABASE_ANON_KEY },
+    { name: "supabase_anon_key", val: process.env.supabase_anon_key },
+    { name: "SUPABASE_SERVICE_ROLE_KEY", val: process.env.SUPABASE_SERVICE_ROLE_KEY },
+    { name: "supabase_service_role_key", val: process.env.supabase_service_role_key },
+    { name: "SUPABASE_KEY", val: process.env.SUPABASE_KEY },
+    { name: "supabase_key", val: process.env.supabase_key },
+    { name: "NEXT_PUBLIC_SUPABASE_ANON_KEY", val: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY },
+    { name: "VITE_SUPABASE_ANON_KEY", val: process.env.VITE_SUPABASE_ANON_KEY },
+  ];
+
+  for (const c of candidates) {
+    if (!c.val) continue;
+    let k = c.val.trim();
+    if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
+      k = k.slice(1, -1).trim();
+    }
+    if (k.startsWith("Bearer ")) {
+      k = k.slice(7).trim();
+    }
+    if (k && !result.some((r) => r.key === k)) {
+      result.push({ key: k, name: c.name });
+    }
+  }
+
+  return result;
+}
+
 function getCleanSupabaseCredentials(): { url: string; key: string } {
   const rawUrl = (
     process.env.SUPABASE_URL ||
@@ -67,28 +97,8 @@ function getCleanSupabaseCredentials(): { url: string; key: string } {
   }
   cleanedUrl = cleanedUrl.replace(/\/+$/, "");
 
-  const rawKey = (
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.supabase_service_role_key ||
-    process.env.SUPABASE_KEY ||
-    process.env.supabase_key ||
-    process.env.SUPABASE_ANON_KEY ||
-    process.env.supabase_anon_key ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY ||
-    ""
-  ).trim();
-
-  let cleanedKey = rawKey;
-  if (
-    (cleanedKey.startsWith('"') && cleanedKey.endsWith('"')) ||
-    (cleanedKey.startsWith("'") && cleanedKey.endsWith("'"))
-  ) {
-    cleanedKey = cleanedKey.slice(1, -1).trim();
-  }
-  if (cleanedKey.startsWith("Bearer ")) {
-    cleanedKey = cleanedKey.slice(7).trim();
-  }
+  const candidates = getCandidateSupabaseKeys();
+  const cleanedKey = candidates.length > 0 ? candidates[0].key : "";
 
   return { url: cleanedUrl, key: cleanedKey };
 }
@@ -241,51 +251,56 @@ class SupabaseAdapter {
   }
 
   private async initRest(seedFallback: () => DBStore): Promise<boolean> {
-    const { url: supabaseUrl, key: supabaseKey } = getCleanSupabaseCredentials();
+    const { url: supabaseUrl } = getCleanSupabaseCredentials();
+    const candidateKeys = getCandidateSupabaseKeys();
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || candidateKeys.length === 0) {
       this.isConnected = false;
       this.lastError = "Missing Supabase URL or Key";
       return false;
     }
 
-    try {
-      console.log(`[Storage] 🔌 Подключение к Supabase REST API (${supabaseUrl})...`);
-      this.supabaseClient = createClient(supabaseUrl, supabaseKey, {
-        auth: { persistSession: false },
-      });
+    let lastErrorMessage = "";
+    for (const item of candidateKeys) {
+      try {
+        console.log(`[Storage] 🔌 Пробуем ключ ${item.name} для Supabase REST API (${supabaseUrl})...`);
+        const client = createClient(supabaseUrl, item.key, {
+          auth: { persistSession: false },
+        });
 
-      // Verify connection by reading crm_store
-      const { data, error } = await this.supabaseClient
-        .from("crm_store")
-        .select("id")
-        .eq("id", "main")
-        .maybeSingle();
+        const { data, error } = await client
+          .from("crm_store")
+          .select("id")
+          .eq("id", "main")
+          .maybeSingle();
 
-      if (error) {
-        // Table might not exist yet
-        console.warn("[Storage] ⚠️ Таблица 'crm_store' не найдена в Supabase. Создайте её через SQL Editor:", error.message);
-        this.lastError = error.message;
-        return false;
+        if (error) {
+          lastErrorMessage = error.message;
+          console.warn(`[Storage] ⚠️ Ошибка с ключом ${item.name}: ${error.message}`);
+          continue;
+        }
+
+        this.supabaseClient = client;
+        this.isConnected = true;
+        this.lastError = null;
+        console.log(`[Storage] ✅ Подключение к Supabase REST API успешно с ключом ${item.name}!`);
+
+        if (!data) {
+          console.log("[Storage] 🚀 Облачная запись 'main' отсутствует. Сохраняем начальные данные в Supabase...");
+          const initialData = seedFallback();
+          await this.saveToRest(initialData);
+        }
+
+        return true;
+      } catch (err: any) {
+        lastErrorMessage = err.message;
       }
-
-      this.isConnected = true;
-      this.lastError = null;
-      console.log("[Storage] ✅ Подключение к Supabase REST API успешно!");
-
-      if (!data) {
-        console.log("[Storage] 🚀 Облачная запись 'main' отсутствует. Сохраняем начальные данные в Supabase...");
-        const initialData = seedFallback();
-        await this.saveToRest(initialData);
-      }
-
-      return true;
-    } catch (err: any) {
-      this.isConnected = false;
-      this.lastError = err.message;
-      console.error("[Storage] ❌ Ошибка подключения к Supabase REST API:", err.message);
-      return false;
     }
+
+    this.isConnected = false;
+    this.lastError = lastErrorMessage || "All Supabase API keys failed";
+    console.error("[Storage] ❌ Ни один из ключей Supabase не подошел:", this.lastError);
+    return false;
   }
 
   private lastSyncCheckTime = 0;

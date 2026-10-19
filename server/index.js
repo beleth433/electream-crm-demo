@@ -57876,6 +57876,33 @@ function getCleanDatabaseUrl() {
   });
   return cleaned;
 }
+function getCandidateSupabaseKeys() {
+  const result = [];
+  const candidates = [
+    { name: "SUPABASE_ANON_KEY", val: process.env.SUPABASE_ANON_KEY },
+    { name: "supabase_anon_key", val: process.env.supabase_anon_key },
+    { name: "SUPABASE_SERVICE_ROLE_KEY", val: process.env.SUPABASE_SERVICE_ROLE_KEY },
+    { name: "supabase_service_role_key", val: process.env.supabase_service_role_key },
+    { name: "SUPABASE_KEY", val: process.env.SUPABASE_KEY },
+    { name: "supabase_key", val: process.env.supabase_key },
+    { name: "NEXT_PUBLIC_SUPABASE_ANON_KEY", val: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY },
+    { name: "VITE_SUPABASE_ANON_KEY", val: process.env.VITE_SUPABASE_ANON_KEY }
+  ];
+  for (const c of candidates) {
+    if (!c.val) continue;
+    let k = c.val.trim();
+    if (k.startsWith('"') && k.endsWith('"') || k.startsWith("'") && k.endsWith("'")) {
+      k = k.slice(1, -1).trim();
+    }
+    if (k.startsWith("Bearer ")) {
+      k = k.slice(7).trim();
+    }
+    if (k && !result.some((r) => r.key === k)) {
+      result.push({ key: k, name: c.name });
+    }
+  }
+  return result;
+}
 function getCleanSupabaseCredentials() {
   const rawUrl = (process.env.SUPABASE_URL || process.env.supabase_url || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").trim();
   let cleanedUrl = rawUrl;
@@ -57883,14 +57910,8 @@ function getCleanSupabaseCredentials() {
     cleanedUrl = cleanedUrl.slice(1, -1).trim();
   }
   cleanedUrl = cleanedUrl.replace(/\/+$/, "");
-  const rawKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.supabase_service_role_key || process.env.SUPABASE_KEY || process.env.supabase_key || process.env.SUPABASE_ANON_KEY || process.env.supabase_anon_key || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "").trim();
-  let cleanedKey = rawKey;
-  if (cleanedKey.startsWith('"') && cleanedKey.endsWith('"') || cleanedKey.startsWith("'") && cleanedKey.endsWith("'")) {
-    cleanedKey = cleanedKey.slice(1, -1).trim();
-  }
-  if (cleanedKey.startsWith("Bearer ")) {
-    cleanedKey = cleanedKey.slice(7).trim();
-  }
+  const candidates = getCandidateSupabaseKeys();
+  const cleanedKey = candidates.length > 0 ? candidates[0].key : "";
   return { url: cleanedUrl, key: cleanedKey };
 }
 var SupabaseAdapter = class {
@@ -58009,38 +58030,44 @@ var SupabaseAdapter = class {
     }
   }
   async initRest(seedFallback) {
-    const { url: supabaseUrl, key: supabaseKey } = getCleanSupabaseCredentials();
-    if (!supabaseUrl || !supabaseKey) {
+    const { url: supabaseUrl } = getCleanSupabaseCredentials();
+    const candidateKeys = getCandidateSupabaseKeys();
+    if (!supabaseUrl || candidateKeys.length === 0) {
       this.isConnected = false;
       this.lastError = "Missing Supabase URL or Key";
       return false;
     }
-    try {
-      console.log(`[Storage] \u{1F50C} \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u043A Supabase REST API (${supabaseUrl})...`);
-      this.supabaseClient = createClient(supabaseUrl, supabaseKey, {
-        auth: { persistSession: false }
-      });
-      const { data, error } = await this.supabaseClient.from("crm_store").select("id").eq("id", "main").maybeSingle();
-      if (error) {
-        console.warn("[Storage] \u26A0\uFE0F \u0422\u0430\u0431\u043B\u0438\u0446\u0430 'crm_store' \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u0432 Supabase. \u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u0435\u0451 \u0447\u0435\u0440\u0435\u0437 SQL Editor:", error.message);
-        this.lastError = error.message;
-        return false;
+    let lastErrorMessage = "";
+    for (const item of candidateKeys) {
+      try {
+        console.log(`[Storage] \u{1F50C} \u041F\u0440\u043E\u0431\u0443\u0435\u043C \u043A\u043B\u044E\u0447 ${item.name} \u0434\u043B\u044F Supabase REST API (${supabaseUrl})...`);
+        const client = createClient(supabaseUrl, item.key, {
+          auth: { persistSession: false }
+        });
+        const { data, error } = await client.from("crm_store").select("id").eq("id", "main").maybeSingle();
+        if (error) {
+          lastErrorMessage = error.message;
+          console.warn(`[Storage] \u26A0\uFE0F \u041E\u0448\u0438\u0431\u043A\u0430 \u0441 \u043A\u043B\u044E\u0447\u043E\u043C ${item.name}: ${error.message}`);
+          continue;
+        }
+        this.supabaseClient = client;
+        this.isConnected = true;
+        this.lastError = null;
+        console.log(`[Storage] \u2705 \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u043A Supabase REST API \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0441 \u043A\u043B\u044E\u0447\u043E\u043C ${item.name}!`);
+        if (!data) {
+          console.log("[Storage] \u{1F680} \u041E\u0431\u043B\u0430\u0447\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C 'main' \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442. \u0421\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u043C \u043D\u0430\u0447\u0430\u043B\u044C\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0432 Supabase...");
+          const initialData = seedFallback();
+          await this.saveToRest(initialData);
+        }
+        return true;
+      } catch (err) {
+        lastErrorMessage = err.message;
       }
-      this.isConnected = true;
-      this.lastError = null;
-      console.log("[Storage] \u2705 \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u043A Supabase REST API \u0443\u0441\u043F\u0435\u0448\u043D\u043E!");
-      if (!data) {
-        console.log("[Storage] \u{1F680} \u041E\u0431\u043B\u0430\u0447\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C 'main' \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442. \u0421\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u043C \u043D\u0430\u0447\u0430\u043B\u044C\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0432 Supabase...");
-        const initialData = seedFallback();
-        await this.saveToRest(initialData);
-      }
-      return true;
-    } catch (err) {
-      this.isConnected = false;
-      this.lastError = err.message;
-      console.error("[Storage] \u274C \u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043A Supabase REST API:", err.message);
-      return false;
     }
+    this.isConnected = false;
+    this.lastError = lastErrorMessage || "All Supabase API keys failed";
+    console.error("[Storage] \u274C \u041D\u0438 \u043E\u0434\u0438\u043D \u0438\u0437 \u043A\u043B\u044E\u0447\u0435\u0439 Supabase \u043D\u0435 \u043F\u043E\u0434\u043E\u0448\u0435\u043B:", this.lastError);
+    return false;
   }
   lastSyncCheckTime = 0;
   async syncIfOutdated(force = false) {
