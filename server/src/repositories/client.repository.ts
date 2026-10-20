@@ -1,4 +1,5 @@
 import { getDb, ClientStatus, ClientRecord, ClientType, saveDb } from "./db.js";
+import { LoyaltyRepository } from "./loyalty.repository.js";
 
 export class ClientRepository {
   static computeClientLoyalty(client: ClientRecord) {
@@ -20,7 +21,8 @@ export class ClientRepository {
       totalRentalDays += trf?.durationDays || 1;
     }
 
-    // 2. Calculate total spent
+    // 2. Calculate total spent across all CRM modules:
+    // a) Rentals spent (actual payments or tariff calculations)
     const rentalIds = new Set(clientRentals.map((r) => r.id));
     const rentalPayments = (db.payments || [])
       .filter((p) => p.rentalId && rentalIds.has(p.rentalId) && (p.type === "RENTAL" || p.type === "BUYOUT" || p.type === "FINE"))
@@ -30,13 +32,62 @@ export class ClientRepository {
       const trf = db.tariffs.find((t) => t.id === r.tariffId);
       return sum + (trf?.price || 0);
     }, 0);
-    const totalSpent = Math.max(rentalPayments, calculatedRentalSpent);
+    const rentalSpent = Math.max(rentalPayments, calculatedRentalSpent);
+
+    // b) Retail Store spent: all orders by this client (by clientId or phone match)
+    const cleanPhone = client.phone ? client.phone.replace(/\D/g, "") : "";
+    const clientRetailOrders = (db.retailOrders || []).filter(
+      (ro) =>
+        ro.clientId === client.id ||
+        (cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone)
+    );
+    const retailSpent = clientRetailOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
+
+    // c) Repairs spent (СТО repairs: CLIENT_FAULT or external device)
+    const clientRepairs = (db.repairs || []).filter(
+      (rep) =>
+        rep.clientId === client.id ||
+        (cleanPhone.length >= 6 && rep.clientPhone && rep.clientPhone.replace(/\D/g, "") === cleanPhone)
+    );
+    const repairIds = new Set(clientRepairs.map((rep) => rep.id));
+    const repairPayments = (db.payments || [])
+      .filter((p) => (p.repairOrderId && repairIds.has(p.repairOrderId)) || (p.clientId === client.id && p.type === "REPAIR"))
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const repairSpent = Math.max(
+      repairPayments,
+      clientRepairs
+        .filter((rep) => rep.faultType === "CLIENT_FAULT" || rep.itemType === "EXTERNAL_DEVICE")
+        .reduce((sum, rep) => sum + (Number(rep.totalCost || (rep.partsCost || 0) + (rep.laborCost || 0)) || 0), 0)
+    );
+
+    // d) Other direct payments from this client
+    const otherPayments = (db.payments || [])
+      .filter(
+        (p) =>
+          p.clientId === client.id &&
+          !p.rentalId &&
+          !p.orderId &&
+          !p.repairOrderId &&
+          p.type !== "SALARY_PAYMENT" &&
+          p.type !== "PART_PURCHASE" &&
+          p.type !== "DEPOSIT_REFUND"
+      )
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+    const totalSpent = rentalSpent + retailSpent + repairSpent + otherPayments;
+
+    // 3. Dynamic Loyalty Tier Determination via LoyaltyRepository
+    const { tier, mode } = LoyaltyRepository.determineTier(
+      totalRentalDays,
+      totalSpent,
+      client.manualLoyaltyTierId
+    );
 
     return {
       totalRentalDays,
       totalSpent,
-      loyaltyTier: null,
-      loyaltyMode: "AUTO",
+      loyaltyTier: tier,
+      loyaltyMode: mode,
     };
   }
 
@@ -48,11 +99,16 @@ export class ClientRepository {
   }) {
     const db = getDb();
     let list = db.clients.map((c) => {
+      const cleanPhone = c.phone ? c.phone.replace(/\D/g, "") : "";
       const activeRental = db.rentals.find(
         (r) => r.clientId === c.id && (r.status === "ACTIVE" || r.status === "OVERDUE")
       );
       const totalRentals = db.rentals.filter((r) => r.clientId === c.id).length;
-      const clientOrders = (db.retailOrders || []).filter((ro) => ro.clientId === c.id);
+      const clientOrders = (db.retailOrders || []).filter(
+        (ro) =>
+          ro.clientId === c.id ||
+          (cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone)
+      );
       const retailOrdersCount = clientOrders.length;
       const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
       const isCourier = c.clientType === "COURIER" || totalRentals > 0 || Boolean(c.courierService);
@@ -129,9 +185,28 @@ export class ClientRepository {
         return { ...rv, bike };
       });
 
+    const cleanPhone = client.phone ? client.phone.replace(/\D/g, "") : "";
     const clientOrders = (db.retailOrders || [])
-      .filter((ro) => ro.clientId === client.id)
+      .filter(
+        (ro) =>
+          ro.clientId === client.id ||
+          (cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone)
+      )
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    // Backfill clientId on matching orders if not set
+    clientOrders.forEach((ro) => {
+      if (!ro.clientId) ro.clientId = client.id;
+    });
+
+    const clientRepairs = (db.repairs || [])
+      .filter(
+        (rep) =>
+          rep.clientId === client.id ||
+          (cleanPhone.length >= 6 && rep.clientPhone && rep.clientPhone.replace(/\D/g, "") === cleanPhone)
+      )
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     const retailOrdersCount = clientOrders.length;
     const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
     const totalRentals = rentals.length;
@@ -148,6 +223,7 @@ export class ClientRepository {
       retailOrders: clientOrders,
       retailOrdersCount,
       retailOrdersSpent,
+      repairs: clientRepairs,
       isCourier,
       isRetailBuyer,
       ...loyalty,
@@ -263,4 +339,3 @@ export class ClientRepository {
     return removed;
   }
 }
-

@@ -354,6 +354,7 @@ export class RentalRepository {
       db.payments.push({
         id: `pay-${Date.now()}-1`,
         rentalId: rental.id,
+        clientId: rental.clientId,
         type: isRentToOwn ? "BUYOUT" : "RENTAL",
         amount: firstPaymentAmount,
         method: data.paymentMethod,
@@ -369,6 +370,7 @@ export class RentalRepository {
       db.payments.push({
         id: `pay-${Date.now()}-2`,
         rentalId: rental.id,
+        clientId: rental.clientId,
         type: "DEPOSIT",
         amount: depositAmount,
         method: data.paymentMethod,
@@ -403,7 +405,8 @@ export class RentalRepository {
     db.payments.push({
       id: `pay-${Date.now()}`,
       rentalId: rental.id,
-      type: paymentType as any,
+        clientId: rental.clientId,
+        type: paymentType as any,
       amount,
       method: data.method,
       description: isRentToOwn
@@ -542,6 +545,7 @@ export class RentalRepository {
       db.payments.push({
         id: `pay-${Date.now()}-refund`,
         rentalId: rental.id,
+        clientId: rental.clientId,
         type: "DEPOSIT_REFUND",
         amount: netRefund,
         method: data.refundMethod || "CASH",

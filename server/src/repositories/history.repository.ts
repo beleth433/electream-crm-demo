@@ -162,6 +162,22 @@ export class HistoryRepository {
         title = `Выплата заработной платы: -${p.amount.toLocaleString("ru-RU")} ₽`;
         badge = "Зарплата";
         color = "rose";
+      } else if (p.type === "RETAIL_SALE") {
+        title = `Продажа в магазине: +${p.amount.toLocaleString("ru-RU")} ₽`;
+        badge = "Магазин";
+        color = "teal";
+      } else if (p.type === "PART_PURCHASE") {
+        title = `Закупка расходников/склад: -${p.amount.toLocaleString("ru-RU")} ₽`;
+        badge = "Склад";
+        color = "amber";
+      } else if (p.type === "OUTFIT_SALE") {
+        title = `Продажа экипировки: +${p.amount.toLocaleString("ru-RU")} ₽`;
+        badge = "Экипировка";
+        color = "cyan";
+      } else if (p.type === "FINE") {
+        title = `Оплата штрафа: +${p.amount.toLocaleString("ru-RU")} ₽`;
+        badge = "Штраф";
+        color = "rose";
       }
 
       const cashier = (p as any).cashierId ? db.users.find((u) => u.id === (p as any).cashierId) : undefined;

@@ -5,17 +5,45 @@ export class FinanceRepository {
     const db = getDb();
     let list = db.payments.map((p) => {
       const rental = p.rentalId ? db.rentals.find((r) => r.id === p.rentalId) : null;
-      const client = rental ? db.clients.find((c) => c.id === rental.clientId) : null;
+      const order = p.orderId ? db.retailOrders.find((ro) => ro.id === p.orderId) : null;
+      const repair = (p as any).repairOrderId ? db.repairs.find((rep) => rep.id === (p as any).repairOrderId) : null;
+      const client = (p as any).clientId
+        ? db.clients.find((c) => c.id === (p as any).clientId)
+        : rental
+        ? db.clients.find((c) => c.id === rental.clientId)
+        : order?.clientId
+        ? db.clients.find((c) => c.id === order.clientId)
+        : repair?.clientId
+        ? db.clients.find((c) => c.id === repair.clientId)
+        : null;
       const bike = rental ? db.bikes.find((b) => b.id === rental.bikeId) : null;
+
+      const customerName = client?.fullName || order?.customerName || repair?.clientName || null;
 
       return {
         ...p,
+        clientId: client?.id || (p as any).clientId || null,
+        clientName: customerName,
         rental: rental
           ? {
               id: rental.id,
               rentalNumber: rental.rentalNumber,
               clientName: client?.fullName,
               bikeInventoryNumber: bike?.inventoryNumber,
+            }
+          : null,
+        order: order
+          ? {
+              id: order.id,
+              orderNumber: order.orderNumber,
+              customerName: order.customerName,
+            }
+          : null,
+        repair: repair
+          ? {
+              id: repair.id,
+              orderNumber: repair.orderNumber,
+              clientName: repair.clientName,
             }
           : null,
       };
@@ -36,24 +64,34 @@ export class FinanceRepository {
 
   static create(data: {
     rentalId?: string;
+    clientId?: string;
+    orderId?: string;
+    repairOrderId?: string;
     type: PaymentType;
     amount: number;
     method: PaymentMethod;
     description?: string;
+    createdAt?: string;
   }) {
     const db = getDb();
+    const rental = data.rentalId ? db.rentals.find((r) => r.id === data.rentalId) : null;
+    const resolvedClientId = data.clientId || rental?.clientId || null;
+
     const newPayment = {
       id: `pay-${Date.now()}`,
       rentalId: data.rentalId || null,
+      clientId: resolvedClientId,
+      orderId: data.orderId || null,
+      repairOrderId: data.repairOrderId || null,
       type: data.type,
       amount: data.amount,
       method: data.method,
       description: data.description || null,
-      createdAt: new Date().toISOString(),
+      createdAt: data.createdAt || new Date().toISOString(),
     };
 
     db.payments.push(newPayment);
-    saveDb();
+    saveDb(true);
     return newPayment;
   }
 

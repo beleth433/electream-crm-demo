@@ -58514,7 +58514,20 @@ function sanitizeLoadedDb(parsed) {
       }
       return emps;
     })(),
-    retailOrders: parsed.retailOrders || [],
+    retailOrders: (() => {
+      const orders = Array.isArray(parsed.retailOrders) ? parsed.retailOrders : [];
+      const clients = Array.isArray(parsed.clients) ? parsed.clients : [];
+      orders.forEach((ro) => {
+        if (!ro.clientId && ro.customerPhone) {
+          const clean = ro.customerPhone.replace(/\D/g, "");
+          if (clean.length >= 6) {
+            const match = clients.find((c) => c.phone?.replace(/\D/g, "") === clean);
+            if (match) ro.clientId = match.id;
+          }
+        }
+      });
+      return orders;
+    })(),
     loyaltyTiers: Array.isArray(parsed.loyaltyTiers) && parsed.loyaltyTiers.length > 0 ? parsed.loyaltyTiers : JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),
     auditLogs: (Array.isArray(parsed.auditLogs) ? parsed.auditLogs : []).filter(
       (l) => l.entityId !== "usr-twizzy" && !l.title?.toLowerCase().includes("twizzy") && l.entityId !== "usr-bogdan" && l.entityId !== "usr-vladik" && !l.title?.toLowerCase().includes("bogdan") && !l.title?.toLowerCase().includes("vladik")
@@ -63746,6 +63759,111 @@ var BikeController = class {
   }
 };
 
+// src/repositories/loyalty.repository.ts
+var LoyaltyRepository = class {
+  static getAll() {
+    const db2 = getDb();
+    if (!db2.loyaltyTiers || db2.loyaltyTiers.length === 0) {
+      return [];
+    }
+    return [...db2.loyaltyTiers].sort((a, b) => {
+      if (a.minRentalDays !== b.minRentalDays) {
+        return a.minRentalDays - b.minRentalDays;
+      }
+      return a.minTotalSpent - b.minTotalSpent;
+    });
+  }
+  static getById(id) {
+    const db2 = getDb();
+    return db2.loyaltyTiers.find((t) => t.id === id) || null;
+  }
+  static create(data) {
+    const db2 = getDb();
+    const newTier = {
+      id: `tier-${Date.now()}`,
+      name: data.name.trim(),
+      color: data.color || "amber",
+      minRentalDays: Math.max(0, Number(data.minRentalDays) || 0),
+      minTotalSpent: Math.max(0, Number(data.minTotalSpent) || 0),
+      discountRentalPercent: Math.min(100, Math.max(0, Number(data.discountRentalPercent) || 0)),
+      discountPartsPercent: Math.min(100, Math.max(0, Number(data.discountPartsPercent) || 0)),
+      discountRepairsPercent: Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)),
+      description: data.description?.trim() || "",
+      isDefault: Boolean(data.isDefault)
+    };
+    db2.loyaltyTiers.push(newTier);
+    saveDb();
+    return newTier;
+  }
+  static update(id, data) {
+    const db2 = getDb();
+    const index = db2.loyaltyTiers.findIndex((t) => t.id === id);
+    if (index === -1) return null;
+    db2.loyaltyTiers[index] = {
+      ...db2.loyaltyTiers[index],
+      ...data,
+      minRentalDays: data.minRentalDays !== void 0 ? Math.max(0, Number(data.minRentalDays) || 0) : db2.loyaltyTiers[index].minRentalDays,
+      minTotalSpent: data.minTotalSpent !== void 0 ? Math.max(0, Number(data.minTotalSpent) || 0) : db2.loyaltyTiers[index].minTotalSpent,
+      discountRentalPercent: data.discountRentalPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountRentalPercent) || 0)) : db2.loyaltyTiers[index].discountRentalPercent,
+      discountPartsPercent: data.discountPartsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountPartsPercent) || 0)) : db2.loyaltyTiers[index].discountPartsPercent,
+      discountRepairsPercent: data.discountRepairsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)) : db2.loyaltyTiers[index].discountRepairsPercent
+    };
+    saveDb();
+    return db2.loyaltyTiers[index];
+  }
+  static delete(id) {
+    const db2 = getDb();
+    const index = db2.loyaltyTiers.findIndex((t) => t.id === id);
+    if (index === -1) return false;
+    if (db2.loyaltyTiers.length <= 1) {
+      throw new Error("\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0435\u0434\u0438\u043D\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439 \u043E\u0441\u0442\u0430\u0432\u0448\u0438\u0439\u0441\u044F \u0443\u0440\u043E\u0432\u0435\u043D\u044C \u043B\u043E\u044F\u043B\u044C\u043D\u043E\u0441\u0442\u0438");
+    }
+    db2.loyaltyTiers.splice(index, 1);
+    for (const client of db2.clients) {
+      if (client.manualLoyaltyTierId === id) {
+        client.manualLoyaltyTierId = null;
+      }
+    }
+    saveDb();
+    return true;
+  }
+  /**
+   * Determine client tier based on manual assignment or automatic thresholds
+   */
+  static determineTier(totalDays, totalSpent, manualTierId) {
+    const tiers = this.getAll();
+    const fallbackTier = tiers.find((t) => t.isDefault) || tiers[0] || {
+      id: "tier-bronze",
+      name: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439",
+      color: "slate",
+      minRentalDays: 0,
+      minTotalSpent: 0,
+      discountRentalPercent: 0,
+      discountPartsPercent: 0,
+      discountRepairsPercent: 0
+    };
+    if (manualTierId) {
+      const manual = tiers.find((t) => t.id === manualTierId);
+      if (manual) {
+        return { tier: manual, mode: "MANUAL" };
+      }
+    }
+    const sortedDescending = [...tiers].sort((a, b) => {
+      const scoreB = b.minTotalSpent + b.minRentalDays * 1e3;
+      const scoreA = a.minTotalSpent + a.minRentalDays * 1e3;
+      return scoreB - scoreA;
+    });
+    for (const t of sortedDescending) {
+      const daysMet = t.minRentalDays > 0 && totalDays >= t.minRentalDays;
+      const spentMet = t.minTotalSpent > 0 && totalSpent >= t.minTotalSpent;
+      if (daysMet || spentMet || t.minRentalDays === 0 && t.minTotalSpent === 0) {
+        return { tier: t, mode: "AUTO" };
+      }
+    }
+    return { tier: fallbackTier, mode: "AUTO" };
+  }
+};
+
 // src/repositories/client.repository.ts
 var ClientRepository = class {
   static computeClientLoyalty(client) {
@@ -63770,22 +63888,48 @@ var ClientRepository = class {
       const trf = db2.tariffs.find((t) => t.id === r.tariffId);
       return sum + (trf?.price || 0);
     }, 0);
-    const totalSpent = Math.max(rentalPayments, calculatedRentalSpent);
+    const rentalSpent = Math.max(rentalPayments, calculatedRentalSpent);
+    const cleanPhone = client.phone ? client.phone.replace(/\D/g, "") : "";
+    const clientRetailOrders = (db2.retailOrders || []).filter(
+      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone
+    );
+    const retailSpent = clientRetailOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
+    const clientRepairs = (db2.repairs || []).filter(
+      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && rep.clientPhone.replace(/\D/g, "") === cleanPhone
+    );
+    const repairIds = new Set(clientRepairs.map((rep) => rep.id));
+    const repairPayments = (db2.payments || []).filter((p) => p.repairOrderId && repairIds.has(p.repairOrderId) || p.clientId === client.id && p.type === "REPAIR").reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const repairSpent = Math.max(
+      repairPayments,
+      clientRepairs.filter((rep) => rep.faultType === "CLIENT_FAULT" || rep.itemType === "EXTERNAL_DEVICE").reduce((sum, rep) => sum + (Number(rep.totalCost || (rep.partsCost || 0) + (rep.laborCost || 0)) || 0), 0)
+    );
+    const otherPayments = (db2.payments || []).filter(
+      (p) => p.clientId === client.id && !p.rentalId && !p.orderId && !p.repairOrderId && p.type !== "SALARY_PAYMENT" && p.type !== "PART_PURCHASE" && p.type !== "DEPOSIT_REFUND"
+    ).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    const totalSpent = rentalSpent + retailSpent + repairSpent + otherPayments;
+    const { tier, mode } = LoyaltyRepository.determineTier(
+      totalRentalDays,
+      totalSpent,
+      client.manualLoyaltyTierId
+    );
     return {
       totalRentalDays,
       totalSpent,
-      loyaltyTier: null,
-      loyaltyMode: "AUTO"
+      loyaltyTier: tier,
+      loyaltyMode: mode
     };
   }
   static getAll(filters) {
     const db2 = getDb();
     let list = db2.clients.map((c) => {
+      const cleanPhone = c.phone ? c.phone.replace(/\D/g, "") : "";
       const activeRental = db2.rentals.find(
         (r) => r.clientId === c.id && (r.status === "ACTIVE" || r.status === "OVERDUE")
       );
       const totalRentals = db2.rentals.filter((r) => r.clientId === c.id).length;
-      const clientOrders = (db2.retailOrders || []).filter((ro) => ro.clientId === c.id);
+      const clientOrders = (db2.retailOrders || []).filter(
+        (ro) => ro.clientId === c.id || cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone
+      );
       const retailOrdersCount = clientOrders.length;
       const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
       const isCourier = c.clientType === "COURIER" || totalRentals > 0 || Boolean(c.courierService);
@@ -63844,7 +63988,16 @@ var ClientRepository = class {
       const bike = db2.bikes.find((b) => b.id === rv.bikeId);
       return { ...rv, bike };
     });
-    const clientOrders = (db2.retailOrders || []).filter((ro) => ro.clientId === client.id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const cleanPhone = client.phone ? client.phone.replace(/\D/g, "") : "";
+    const clientOrders = (db2.retailOrders || []).filter(
+      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone
+    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    clientOrders.forEach((ro) => {
+      if (!ro.clientId) ro.clientId = client.id;
+    });
+    const clientRepairs = (db2.repairs || []).filter(
+      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && rep.clientPhone.replace(/\D/g, "") === cleanPhone
+    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const retailOrdersCount = clientOrders.length;
     const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
     const totalRentals = rentals.length;
@@ -63859,6 +64012,7 @@ var ClientRepository = class {
       retailOrders: clientOrders,
       retailOrdersCount,
       retailOrdersSpent,
+      repairs: clientRepairs,
       isCourier,
       isRetailBuyer,
       ...loyalty
@@ -64325,6 +64479,7 @@ var RentalRepository = class {
       db2.payments.push({
         id: `pay-${Date.now()}-1`,
         rentalId: rental.id,
+        clientId: rental.clientId,
         type: isRentToOwn ? "BUYOUT" : "RENTAL",
         amount: firstPaymentAmount,
         method: data.paymentMethod,
@@ -64336,6 +64491,7 @@ var RentalRepository = class {
       db2.payments.push({
         id: `pay-${Date.now()}-2`,
         rentalId: rental.id,
+        clientId: rental.clientId,
         type: "DEPOSIT",
         amount: depositAmount,
         method: data.paymentMethod,
@@ -64364,6 +64520,7 @@ var RentalRepository = class {
     db2.payments.push({
       id: `pay-${Date.now()}`,
       rentalId: rental.id,
+      clientId: rental.clientId,
       type: paymentType,
       amount,
       method: data.method,
@@ -64463,6 +64620,7 @@ var RentalRepository = class {
       db2.payments.push({
         id: `pay-${Date.now()}-refund`,
         rentalId: rental.id,
+        clientId: rental.clientId,
         type: "DEPOSIT_REFUND",
         amount: netRefund,
         method: data.refundMethod || "CASH",
@@ -64649,316 +64807,6 @@ var RentalController = class {
   }
 };
 
-// src/repositories/repair.repository.ts
-var RepairRepository = class {
-  static getAll(filters) {
-    const db2 = getDb();
-    let list = db2.repairs.map((r) => {
-      const bike = r.bikeId ? db2.bikes.find((b) => b.id === r.bikeId) : null;
-      const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
-      const battery = r.batteryId ? db2.batteries.find((bt) => bt.id === r.batteryId) : null;
-      const batteryModel = battery?.modelId ? db2.batteryModels.find((m) => m.id === battery.modelId) : null;
-      const mechanic = db2.users.find((u) => u.id === r.mechanicId);
-      const client = r.clientId ? db2.clients.find((c) => c.id === r.clientId) : null;
-      const partsDetailed = r.parts.map((p) => {
-        const partInfo = db2.parts.find((part) => part.id === p.partId);
-        return {
-          ...p,
-          part: partInfo
-        };
-      });
-      return {
-        ...r,
-        itemType: r.itemType || (r.batteryId ? "BATTERY" : r.bikeId ? "BIKE" : "EXTERNAL_DEVICE"),
-        bike: bike ? { ...bike, model: bikeModel } : null,
-        battery: battery ? { ...battery, model: batteryModel } : null,
-        client: client || (r.clientName ? { id: r.clientId || "ext", fullName: r.clientName, phone: r.clientPhone } : null),
-        mechanic,
-        parts: partsDetailed
-      };
-    });
-    if (filters?.status) {
-      list = list.filter((r) => r.status === filters.status);
-    }
-    if (filters?.faultType) {
-      list = list.filter((r) => r.faultType === filters.faultType);
-    }
-    if (filters?.bikeId) {
-      list = list.filter((r) => r.bikeId === filters.bikeId);
-    }
-    if (filters?.batteryId) {
-      list = list.filter((r) => r.batteryId === filters.batteryId);
-    }
-    if (filters?.itemType) {
-      list = list.filter((r) => (r.itemType || (r.batteryId ? "BATTERY" : r.bikeId ? "BIKE" : "EXTERNAL_DEVICE")) === filters.itemType);
-    }
-    return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-  }
-  static getById(id) {
-    const db2 = getDb();
-    const r = db2.repairs.find((rep) => rep.id === id);
-    if (!r) return null;
-    const bike = r.bikeId ? db2.bikes.find((b) => b.id === r.bikeId) : null;
-    const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
-    const battery = r.batteryId ? db2.batteries.find((bt) => bt.id === r.batteryId) : null;
-    const batteryModel = battery?.modelId ? db2.batteryModels.find((m) => m.id === battery.modelId) : null;
-    const mechanic = db2.users.find((u) => u.id === r.mechanicId);
-    const client = r.clientId ? db2.clients.find((c) => c.id === r.clientId) : null;
-    const partsDetailed = r.parts.map((p) => {
-      const partInfo = db2.parts.find((part) => part.id === p.partId);
-      return {
-        ...p,
-        part: partInfo
-      };
-    });
-    return {
-      ...r,
-      itemType: r.itemType || (r.batteryId ? "BATTERY" : r.bikeId ? "BIKE" : "EXTERNAL_DEVICE"),
-      bike: bike ? { ...bike, model: bikeModel } : null,
-      battery: battery ? { ...battery, model: batteryModel } : null,
-      client: client || (r.clientName ? { id: r.clientId || "ext", fullName: r.clientName, phone: r.clientPhone } : null),
-      mechanic,
-      parts: partsDetailed
-    };
-  }
-  static create(data) {
-    const db2 = getDb();
-    const now = /* @__PURE__ */ new Date();
-    const orderNumber = data.orderNumber && data.orderNumber.trim() ? data.orderNumber.trim() : `\u0417\u041D-${now.getFullYear()}-${(db2.repairs.length + 1).toString().padStart(3, "0")}`;
-    const isExternal = data.itemType === "EXTERNAL_DEVICE" || !data.bikeId && !data.batteryId;
-    const isBattery = !isExternal && (data.itemType === "BATTERY" || Boolean(data.batteryId));
-    let resolvedBikeId = null;
-    let resolvedBatteryId = null;
-    if (isExternal) {
-      resolvedBikeId = null;
-      resolvedBatteryId = null;
-    } else if (isBattery) {
-      if (!data.batteryId) {
-        throw new Error("\u041D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u0434\u043B\u044F \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0430 \u0422\u041E");
-      }
-      const battery = db2.batteries.find((b) => b.id === data.batteryId);
-      if (!battery) throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-      if (battery.installedBikeId) {
-        const parentBike = db2.bikes.find((bk) => bk.id === battery.installedBikeId);
-        if (parentBike) {
-          parentBike.batteryId = null;
-          parentBike.updatedAt = now.toISOString();
-        }
-        battery.installedBikeId = null;
-      }
-      battery.status = "IN_MAINTENANCE";
-      battery.updatedAt = now.toISOString();
-      resolvedBatteryId = battery.id;
-    } else {
-      if (!data.bikeId) {
-        throw new Error("\u041D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D \u044D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u0434\u043B\u044F \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0430 \u0422\u041E");
-      }
-      const bike = db2.bikes.find((b) => b.id === data.bikeId);
-      if (!bike) throw new Error("\u0411\u0430\u0439\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-      bike.status = "IN_MAINTENANCE";
-      bike.currentLocation = "\u041C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0430\u044F \u0421\u0422\u041E";
-      bike.updatedAt = now.toISOString();
-      resolvedBikeId = bike.id;
-    }
-    let partsCost = 0;
-    const partsList = [];
-    if (data.parts && data.parts.length > 0) {
-      for (const p of data.parts) {
-        const part = db2.parts.find((item) => item.id === p.partId);
-        if (part) {
-          const price = data.faultType === "CLIENT_FAULT" ? part.clientPrice : part.purchasePrice;
-          partsCost += price * p.quantity;
-          partsList.push({
-            partId: p.partId,
-            quantity: p.quantity,
-            priceCharged: price
-          });
-        }
-      }
-    }
-    const laborCost = data.laborCost || 0;
-    const totalCost = laborCost + partsCost;
-    const newRepair = {
-      id: `rep-${Date.now()}`,
-      orderNumber,
-      itemType: isExternal ? "EXTERNAL_DEVICE" : isBattery ? "BATTERY" : "BIKE",
-      bikeId: resolvedBikeId,
-      batteryId: resolvedBatteryId,
-      customItemName: isExternal ? data.customItemName?.trim() || "\u0421\u0442\u043E\u0440\u043E\u043D\u043D\u044F\u044F \u0442\u0435\u0445\u043D\u0438\u043A\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0430" : null,
-      clientName: data.clientName?.trim() || null,
-      clientPhone: data.clientPhone?.trim() || null,
-      clientId: data.clientId || null,
-      mechanicId: data.mechanicId || getCurrentUser()?.id || db2.users.find((u) => u.role === "MECHANIC")?.id || db2.users[0]?.id || "usr-bxleth",
-      status: "DIAGNOSTICS",
-      faultType: data.faultType,
-      description: data.description,
-      laborCost,
-      partsCost,
-      totalCost,
-      createdAt: now.toISOString(),
-      completedAt: null,
-      parts: partsList
-    };
-    db2.repairs.push(newRepair);
-    saveDb();
-    return this.getById(newRepair.id);
-  }
-  static updateStatus(id, status) {
-    const db2 = getDb();
-    const repair = db2.repairs.find((r) => r.id === id);
-    if (!repair) return null;
-    repair.status = status;
-    saveDb();
-    return this.getById(id);
-  }
-  static complete(id, data) {
-    const db2 = getDb();
-    const repair = db2.repairs.find((r) => r.id === id);
-    if (!repair) throw new Error("\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    if (repair.status === "COMPLETED") throw new Error("\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D");
-    const bike = repair.bikeId ? db2.bikes.find((b) => b.id === repair.bikeId) : null;
-    const battery = repair.batteryId ? db2.batteries.find((b) => b.id === repair.batteryId) : null;
-    const now = /* @__PURE__ */ new Date();
-    const finalPartsToDeduct = data.partsUsed || repair.parts;
-    let computedPartsCost = 0;
-    const finalPartsList = [];
-    for (const p of finalPartsToDeduct) {
-      const part = db2.parts.find((item) => item.id === p.partId);
-      if (!part) {
-        throw new Error(`\u0414\u0435\u0442\u0430\u043B\u044C \u0441 ID ${p.partId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u043D\u0430 \u0441\u043A\u043B\u0430\u0434\u0435`);
-      }
-      if (part.quantity < p.quantity) {
-        throw new Error(`\u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u043E \u0434\u0435\u0442\u0430\u043B\u0438 "${part.name}" \u043D\u0430 \u0441\u043A\u043B\u0430\u0434\u0435. \u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E: ${part.quantity}, \u0437\u0430\u043F\u0440\u043E\u0448\u0435\u043D\u043E: ${p.quantity}`);
-      }
-      part.quantity -= p.quantity;
-      const price = repair.faultType === "CLIENT_FAULT" ? part.clientPrice : part.purchasePrice;
-      computedPartsCost += price * p.quantity;
-      finalPartsList.push({
-        partId: p.partId,
-        quantity: p.quantity,
-        priceCharged: price
-      });
-    }
-    const laborCost = data.laborCost !== void 0 ? data.laborCost : repair.laborCost;
-    const totalCost = laborCost + computedPartsCost;
-    repair.parts = finalPartsList;
-    repair.laborCost = laborCost;
-    repair.partsCost = computedPartsCost;
-    repair.totalCost = totalCost;
-    repair.status = "COMPLETED";
-    repair.completedAt = now.toISOString();
-    if (data.mechanicNotes) {
-      repair.description += `
-[\u041C\u0430\u0441\u0442\u0435\u0440 ${now.toLocaleDateString("ru-RU")}]: ${data.mechanicNotes}`;
-    }
-    if (bike) {
-      bike.status = "AVAILABLE";
-      bike.currentLocation = "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F \u0431\u0430\u0437\u0430 (\u043C. \u0414\u043C\u0438\u0442\u0440\u043E\u0432\u0441\u043A\u0430\u044F)";
-      bike.note = `\u041E\u0442\u0440\u0435\u043C\u043E\u043D\u0442\u0438\u0440\u043E\u0432\u0430\u043D \u043F\u043E \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0443 ${repair.orderNumber}`;
-      bike.updatedAt = now.toISOString();
-    }
-    if (battery) {
-      battery.status = "AVAILABLE";
-      battery.notes = battery.notes ? `${battery.notes} | \u041E\u0431\u0441\u043B\u0443\u0436\u0435\u043D \u043F\u043E \u0417\u041D ${repair.orderNumber}` : `\u041E\u0431\u0441\u043B\u0443\u0436\u0435\u043D \u043F\u043E \u0417\u041D ${repair.orderNumber}`;
-      battery.updatedAt = now.toISOString();
-    }
-    if (repair.faultType === "CLIENT_FAULT" && totalCost > 0 && data.paymentMethod) {
-      const paymentDesc = repair.itemType === "EXTERNAL_DEVICE" ? `\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0435\u043C\u043E\u043D\u0442\u0430 \u0441\u0442\u043E\u0440\u043E\u043D\u043D\u0435\u0439 \u0442\u0435\u0445\u043D\u0438\u043A\u0438 "${repair.customItemName || "\u043A\u043B\u0438\u0435\u043D\u0442\u0430"}" (\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${repair.orderNumber})` : `\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0435\u043C\u043E\u043D\u0442\u0430 \u043F\u043E \u0432\u0438\u043D\u0435 \u043A\u0443\u0440\u044C\u0435\u0440\u0430 (\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${repair.orderNumber})`;
-      db2.payments.push({
-        id: `pay-${Date.now()}`,
-        rentalId: null,
-        type: "REPAIR",
-        amount: totalCost,
-        method: data.paymentMethod,
-        description: paymentDesc,
-        createdAt: now.toISOString()
-      });
-    }
-    saveDb();
-    return this.getById(repair.id);
-  }
-};
-
-// src/services/repair.service.ts
-var RepairService = class {
-  static getAllRepairs(filters) {
-    return RepairRepository.getAll(filters);
-  }
-  static getRepairById(id) {
-    const repair = RepairRepository.getById(id);
-    if (!repair) {
-      throw new Error(`\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-    }
-    return repair;
-  }
-  static createRepair(data) {
-    return RepairRepository.create(data);
-  }
-  static updateStatus(id, status) {
-    const repair = RepairRepository.updateStatus(id, status);
-    if (!repair) {
-      throw new Error(`\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-    }
-    return repair;
-  }
-  static completeRepair(id, data) {
-    return RepairRepository.complete(id, data);
-  }
-};
-
-// src/controllers/repair.controller.ts
-var RepairController = class {
-  static getAll(req, res) {
-    try {
-      const { status, faultType, bikeId } = req.query;
-      const repairs = RepairService.getAllRepairs({
-        status,
-        faultType,
-        bikeId
-      });
-      return res.json(repairs);
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-  static getById(req, res) {
-    try {
-      const repair = RepairService.getRepairById(req.params.id);
-      return res.json(repair);
-    } catch (err) {
-      return res.status(404).json({ error: err.message });
-    }
-  }
-  static create(req, res) {
-    try {
-      const parsed = RepairCreateDto.parse(req.body);
-      const repair = RepairService.createRepair(parsed);
-      return res.status(201).json(repair);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static updateStatus(req, res) {
-    try {
-      const { status } = req.body;
-      if (!status) return res.status(400).json({ error: "\u0421\u0442\u0430\u0442\u0443\u0441 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D" });
-      const repair = RepairService.updateStatus(req.params.id, status);
-      return res.json(repair);
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  }
-  static complete(req, res) {
-    try {
-      const parsed = RepairCompleteDto.parse(req.body);
-      const repair = RepairService.completeRepair(req.params.id, parsed);
-      return res.json(repair);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-};
-
 // src/repositories/history.repository.ts
 var HistoryRepository = class {
   static logAction(entry) {
@@ -65072,6 +64920,22 @@ var HistoryRepository = class {
       } else if (p.type === "SALARY_PAYMENT") {
         title = `\u0412\u044B\u043F\u043B\u0430\u0442\u0430 \u0437\u0430\u0440\u0430\u0431\u043E\u0442\u043D\u043E\u0439 \u043F\u043B\u0430\u0442\u044B: -${p.amount.toLocaleString("ru-RU")} \u20BD`;
         badge = "\u0417\u0430\u0440\u043F\u043B\u0430\u0442\u0430";
+        color = "rose";
+      } else if (p.type === "RETAIL_SALE") {
+        title = `\u041F\u0440\u043E\u0434\u0430\u0436\u0430 \u0432 \u043C\u0430\u0433\u0430\u0437\u0438\u043D\u0435: +${p.amount.toLocaleString("ru-RU")} \u20BD`;
+        badge = "\u041C\u0430\u0433\u0430\u0437\u0438\u043D";
+        color = "teal";
+      } else if (p.type === "PART_PURCHASE") {
+        title = `\u0417\u0430\u043A\u0443\u043F\u043A\u0430 \u0440\u0430\u0441\u0445\u043E\u0434\u043D\u0438\u043A\u043E\u0432/\u0441\u043A\u043B\u0430\u0434: -${p.amount.toLocaleString("ru-RU")} \u20BD`;
+        badge = "\u0421\u043A\u043B\u0430\u0434";
+        color = "amber";
+      } else if (p.type === "OUTFIT_SALE") {
+        title = `\u041F\u0440\u043E\u0434\u0430\u0436\u0430 \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0438: +${p.amount.toLocaleString("ru-RU")} \u20BD`;
+        badge = "\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430";
+        color = "cyan";
+      } else if (p.type === "FINE") {
+        title = `\u041E\u043F\u043B\u0430\u0442\u0430 \u0448\u0442\u0440\u0430\u0444\u0430: +${p.amount.toLocaleString("ru-RU")} \u20BD`;
+        badge = "\u0428\u0442\u0440\u0430\u0444";
         color = "rose";
       }
       const cashier = p.cashierId ? db2.users.find((u) => u.id === p.cashierId) : void 0;
@@ -65230,6 +65094,352 @@ var HistoryRepository = class {
     db2.auditLogs = [];
     saveDb(true);
     return { success: true, message: "\u0416\u0443\u0440\u043D\u0430\u043B \u0430\u0443\u0434\u0438\u0442\u0430 \u043E\u0447\u0438\u0449\u0435\u043D" };
+  }
+};
+
+// src/repositories/repair.repository.ts
+var RepairRepository = class {
+  static getAll(filters) {
+    const db2 = getDb();
+    let list = db2.repairs.map((r) => {
+      const bike = r.bikeId ? db2.bikes.find((b) => b.id === r.bikeId) : null;
+      const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
+      const battery = r.batteryId ? db2.batteries.find((bt) => bt.id === r.batteryId) : null;
+      const batteryModel = battery?.modelId ? db2.batteryModels.find((m) => m.id === battery.modelId) : null;
+      const mechanic = db2.users.find((u) => u.id === r.mechanicId);
+      const client = r.clientId ? db2.clients.find((c) => c.id === r.clientId) : null;
+      const partsDetailed = r.parts.map((p) => {
+        const partInfo = db2.parts.find((part) => part.id === p.partId);
+        return {
+          ...p,
+          part: partInfo
+        };
+      });
+      return {
+        ...r,
+        itemType: r.itemType || (r.batteryId ? "BATTERY" : r.bikeId ? "BIKE" : "EXTERNAL_DEVICE"),
+        bike: bike ? { ...bike, model: bikeModel } : null,
+        battery: battery ? { ...battery, model: batteryModel } : null,
+        client: client || (r.clientName ? { id: r.clientId || "ext", fullName: r.clientName, phone: r.clientPhone } : null),
+        mechanic,
+        parts: partsDetailed
+      };
+    });
+    if (filters?.status) {
+      list = list.filter((r) => r.status === filters.status);
+    }
+    if (filters?.faultType) {
+      list = list.filter((r) => r.faultType === filters.faultType);
+    }
+    if (filters?.bikeId) {
+      list = list.filter((r) => r.bikeId === filters.bikeId);
+    }
+    if (filters?.batteryId) {
+      list = list.filter((r) => r.batteryId === filters.batteryId);
+    }
+    if (filters?.itemType) {
+      list = list.filter((r) => (r.itemType || (r.batteryId ? "BATTERY" : r.bikeId ? "BIKE" : "EXTERNAL_DEVICE")) === filters.itemType);
+    }
+    return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  }
+  static getById(id) {
+    const db2 = getDb();
+    const r = db2.repairs.find((rep) => rep.id === id);
+    if (!r) return null;
+    const bike = r.bikeId ? db2.bikes.find((b) => b.id === r.bikeId) : null;
+    const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
+    const battery = r.batteryId ? db2.batteries.find((bt) => bt.id === r.batteryId) : null;
+    const batteryModel = battery?.modelId ? db2.batteryModels.find((m) => m.id === battery.modelId) : null;
+    const mechanic = db2.users.find((u) => u.id === r.mechanicId);
+    const client = r.clientId ? db2.clients.find((c) => c.id === r.clientId) : null;
+    const partsDetailed = r.parts.map((p) => {
+      const partInfo = db2.parts.find((part) => part.id === p.partId);
+      return {
+        ...p,
+        part: partInfo
+      };
+    });
+    return {
+      ...r,
+      itemType: r.itemType || (r.batteryId ? "BATTERY" : r.bikeId ? "BIKE" : "EXTERNAL_DEVICE"),
+      bike: bike ? { ...bike, model: bikeModel } : null,
+      battery: battery ? { ...battery, model: batteryModel } : null,
+      client: client || (r.clientName ? { id: r.clientId || "ext", fullName: r.clientName, phone: r.clientPhone } : null),
+      mechanic,
+      parts: partsDetailed
+    };
+  }
+  static create(data) {
+    const db2 = getDb();
+    const now = /* @__PURE__ */ new Date();
+    const orderNumber = data.orderNumber && data.orderNumber.trim() ? data.orderNumber.trim() : `\u0417\u041D-${now.getFullYear()}-${(db2.repairs.length + 1).toString().padStart(3, "0")}`;
+    const isExternal = data.itemType === "EXTERNAL_DEVICE" || !data.bikeId && !data.batteryId;
+    const isBattery = !isExternal && (data.itemType === "BATTERY" || Boolean(data.batteryId));
+    let resolvedBikeId = null;
+    let resolvedBatteryId = null;
+    if (isExternal) {
+      resolvedBikeId = null;
+      resolvedBatteryId = null;
+    } else if (isBattery) {
+      if (!data.batteryId) {
+        throw new Error("\u041D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u0434\u043B\u044F \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0430 \u0422\u041E");
+      }
+      const battery = db2.batteries.find((b) => b.id === data.batteryId);
+      if (!battery) throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+      if (battery.installedBikeId) {
+        const parentBike = db2.bikes.find((bk) => bk.id === battery.installedBikeId);
+        if (parentBike) {
+          parentBike.batteryId = null;
+          parentBike.updatedAt = now.toISOString();
+        }
+        battery.installedBikeId = null;
+      }
+      battery.status = "IN_MAINTENANCE";
+      battery.updatedAt = now.toISOString();
+      resolvedBatteryId = battery.id;
+    } else {
+      if (!data.bikeId) {
+        throw new Error("\u041D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D \u044D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u0434\u043B\u044F \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438 \u043D\u0430 \u0422\u041E");
+      }
+      const bike = db2.bikes.find((b) => b.id === data.bikeId);
+      if (!bike) throw new Error("\u0411\u0430\u0439\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+      bike.status = "IN_MAINTENANCE";
+      bike.currentLocation = "\u041C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0430\u044F \u0421\u0422\u041E";
+      bike.updatedAt = now.toISOString();
+      resolvedBikeId = bike.id;
+    }
+    let partsCost = 0;
+    const partsList = [];
+    if (data.parts && data.parts.length > 0) {
+      for (const p of data.parts) {
+        const part = db2.parts.find((item) => item.id === p.partId);
+        if (part) {
+          const price = data.faultType === "CLIENT_FAULT" ? part.clientPrice : part.purchasePrice;
+          partsCost += price * p.quantity;
+          partsList.push({
+            partId: p.partId,
+            quantity: p.quantity,
+            priceCharged: price
+          });
+        }
+      }
+    }
+    const laborCost = data.laborCost || 0;
+    const totalCost = laborCost + partsCost;
+    let resolvedClientId = data.clientId || null;
+    let resolvedClientName = data.clientName?.trim() || null;
+    let resolvedClientPhone = data.clientPhone?.trim() || null;
+    if (!resolvedClientId && resolvedClientPhone) {
+      const clean = resolvedClientPhone.replace(/\D/g, "");
+      const found = db2.clients.find((c) => c.phone.replace(/\D/g, "") === clean);
+      if (found) {
+        resolvedClientId = found.id;
+        if (!resolvedClientName) resolvedClientName = found.fullName;
+      }
+    }
+    if (!resolvedClientId && resolvedBikeId) {
+      const activeRental = db2.rentals.find(
+        (r) => r.bikeId === resolvedBikeId && (r.status === "ACTIVE" || r.status === "OVERDUE")
+      );
+      if (activeRental) {
+        resolvedClientId = activeRental.clientId;
+        const found = db2.clients.find((c) => c.id === activeRental.clientId);
+        if (found) {
+          if (!resolvedClientName) resolvedClientName = found.fullName;
+          if (!resolvedClientPhone) resolvedClientPhone = found.phone;
+        }
+      }
+    }
+    const newRepair = {
+      id: `rep-${Date.now()}`,
+      orderNumber,
+      itemType: isExternal ? "EXTERNAL_DEVICE" : isBattery ? "BATTERY" : "BIKE",
+      bikeId: resolvedBikeId,
+      batteryId: resolvedBatteryId,
+      customItemName: isExternal ? data.customItemName?.trim() || "\u0421\u0442\u043E\u0440\u043E\u043D\u043D\u044F\u044F \u0442\u0435\u0445\u043D\u0438\u043A\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0430" : null,
+      clientName: resolvedClientName,
+      clientPhone: resolvedClientPhone,
+      clientId: resolvedClientId,
+      mechanicId: data.mechanicId || getCurrentUser()?.id || db2.users.find((u) => u.role === "MECHANIC")?.id || db2.users[0]?.id || "usr-bxleth",
+      status: "DIAGNOSTICS",
+      faultType: data.faultType,
+      description: data.description,
+      laborCost,
+      partsCost,
+      totalCost,
+      createdAt: now.toISOString(),
+      completedAt: null,
+      parts: partsList
+    };
+    db2.repairs.push(newRepair);
+    saveDb();
+    return this.getById(newRepair.id);
+  }
+  static updateStatus(id, status) {
+    const db2 = getDb();
+    const repair = db2.repairs.find((r) => r.id === id);
+    if (!repair) return null;
+    repair.status = status;
+    saveDb();
+    return this.getById(id);
+  }
+  static complete(id, data) {
+    const db2 = getDb();
+    const repair = db2.repairs.find((r) => r.id === id);
+    if (!repair) throw new Error("\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (repair.status === "COMPLETED") throw new Error("\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D");
+    const bike = repair.bikeId ? db2.bikes.find((b) => b.id === repair.bikeId) : null;
+    const battery = repair.batteryId ? db2.batteries.find((b) => b.id === repair.batteryId) : null;
+    const now = /* @__PURE__ */ new Date();
+    const finalPartsToDeduct = data.partsUsed || repair.parts;
+    let computedPartsCost = 0;
+    const finalPartsList = [];
+    for (const p of finalPartsToDeduct) {
+      const part = db2.parts.find((item) => item.id === p.partId);
+      if (!part) {
+        throw new Error(`\u0414\u0435\u0442\u0430\u043B\u044C \u0441 ID ${p.partId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u043D\u0430 \u0441\u043A\u043B\u0430\u0434\u0435`);
+      }
+      if (part.quantity < p.quantity) {
+        throw new Error(`\u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u043E \u0434\u0435\u0442\u0430\u043B\u0438 "${part.name}" \u043D\u0430 \u0441\u043A\u043B\u0430\u0434\u0435. \u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E: ${part.quantity}, \u0437\u0430\u043F\u0440\u043E\u0448\u0435\u043D\u043E: ${p.quantity}`);
+      }
+      part.quantity -= p.quantity;
+      const price = repair.faultType === "CLIENT_FAULT" ? part.clientPrice : part.purchasePrice;
+      computedPartsCost += price * p.quantity;
+      finalPartsList.push({
+        partId: p.partId,
+        quantity: p.quantity,
+        priceCharged: price
+      });
+    }
+    const laborCost = data.laborCost !== void 0 ? data.laborCost : repair.laborCost;
+    const totalCost = laborCost + computedPartsCost;
+    repair.parts = finalPartsList;
+    repair.laborCost = laborCost;
+    repair.partsCost = computedPartsCost;
+    repair.totalCost = totalCost;
+    repair.status = "COMPLETED";
+    repair.completedAt = now.toISOString();
+    if (data.mechanicNotes) {
+      repair.description += `
+[\u041C\u0430\u0441\u0442\u0435\u0440 ${now.toLocaleDateString("ru-RU")}]: ${data.mechanicNotes}`;
+    }
+    if (bike) {
+      bike.status = "AVAILABLE";
+      bike.currentLocation = "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F \u0431\u0430\u0437\u0430 (\u043C. \u0414\u043C\u0438\u0442\u0440\u043E\u0432\u0441\u043A\u0430\u044F)";
+      bike.note = `\u041E\u0442\u0440\u0435\u043C\u043E\u043D\u0442\u0438\u0440\u043E\u0432\u0430\u043D \u043F\u043E \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0443 ${repair.orderNumber}`;
+      bike.updatedAt = now.toISOString();
+    }
+    if (battery) {
+      battery.status = "AVAILABLE";
+      battery.notes = battery.notes ? `${battery.notes} | \u041E\u0431\u0441\u043B\u0443\u0436\u0435\u043D \u043F\u043E \u0417\u041D ${repair.orderNumber}` : `\u041E\u0431\u0441\u043B\u0443\u0436\u0435\u043D \u043F\u043E \u0417\u041D ${repair.orderNumber}`;
+      battery.updatedAt = now.toISOString();
+    }
+    if (repair.faultType === "CLIENT_FAULT" && totalCost > 0 && data.paymentMethod) {
+      const paymentDesc = repair.itemType === "EXTERNAL_DEVICE" ? `\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0435\u043C\u043E\u043D\u0442\u0430 \u0441\u0442\u043E\u0440\u043E\u043D\u043D\u0435\u0439 \u0442\u0435\u0445\u043D\u0438\u043A\u0438 "${repair.customItemName || "\u043A\u043B\u0438\u0435\u043D\u0442\u0430"}" (\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${repair.orderNumber})` : `\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0435\u043C\u043E\u043D\u0442\u0430 \u043F\u043E \u0432\u0438\u043D\u0435 \u043A\u0443\u0440\u044C\u0435\u0440\u0430 (\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${repair.orderNumber})`;
+      db2.payments.push({
+        id: `pay-${Date.now()}`,
+        rentalId: null,
+        clientId: repair.clientId,
+        repairOrderId: repair.id,
+        type: "REPAIR",
+        amount: totalCost,
+        method: data.paymentMethod,
+        description: paymentDesc,
+        createdAt: now.toISOString()
+      });
+    }
+    HistoryRepository.logAction({
+      category: "REPAIR",
+      action: "REPAIR_COMPLETE",
+      title: `\u0417\u0430\u0432\u0435\u0440\u0448\u0435\u043D \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u0421\u0422\u041E ${repair.orderNumber}`,
+      details: `\u0420\u0430\u0431\u043E\u0442\u044B \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u044B. \u0421\u0442\u043E\u0438\u043C\u043E\u0441\u0442\u044C: ${totalCost.toLocaleString("ru-RU")} \u20BD. \u041E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0441\u0442\u044C: ${repair.faultType === "CLIENT_FAULT" ? "\u041A\u043B\u0438\u0435\u043D\u0442" : "\u0421\u0435\u0440\u0432\u0438\u0441"}`,
+      amount: totalCost,
+      badgeText: "\u0421\u0422\u041E",
+      badgeColor: "emerald",
+      entityId: repair.id
+    });
+    saveDb();
+    return this.getById(repair.id);
+  }
+};
+
+// src/services/repair.service.ts
+var RepairService = class {
+  static getAllRepairs(filters) {
+    return RepairRepository.getAll(filters);
+  }
+  static getRepairById(id) {
+    const repair = RepairRepository.getById(id);
+    if (!repair) {
+      throw new Error(`\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+    }
+    return repair;
+  }
+  static createRepair(data) {
+    return RepairRepository.create(data);
+  }
+  static updateStatus(id, status) {
+    const repair = RepairRepository.updateStatus(id, status);
+    if (!repair) {
+      throw new Error(`\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+    }
+    return repair;
+  }
+  static completeRepair(id, data) {
+    return RepairRepository.complete(id, data);
+  }
+};
+
+// src/controllers/repair.controller.ts
+var RepairController = class {
+  static getAll(req, res) {
+    try {
+      const { status, faultType, bikeId } = req.query;
+      const repairs = RepairService.getAllRepairs({
+        status,
+        faultType,
+        bikeId
+      });
+      return res.json(repairs);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  static getById(req, res) {
+    try {
+      const repair = RepairService.getRepairById(req.params.id);
+      return res.json(repair);
+    } catch (err) {
+      return res.status(404).json({ error: err.message });
+    }
+  }
+  static create(req, res) {
+    try {
+      const parsed = RepairCreateDto.parse(req.body);
+      const repair = RepairService.createRepair(parsed);
+      return res.status(201).json(repair);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static updateStatus(req, res) {
+    try {
+      const { status } = req.body;
+      if (!status) return res.status(400).json({ error: "\u0421\u0442\u0430\u0442\u0443\u0441 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D" });
+      const repair = RepairService.updateStatus(req.params.id, status);
+      return res.json(repair);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+  static complete(req, res) {
+    try {
+      const parsed = RepairCompleteDto.parse(req.body);
+      const repair = RepairService.completeRepair(req.params.id, parsed);
+      return res.json(repair);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
   }
 };
 
@@ -66071,15 +66281,30 @@ var FinanceRepository = class {
     const db2 = getDb();
     let list = db2.payments.map((p) => {
       const rental = p.rentalId ? db2.rentals.find((r) => r.id === p.rentalId) : null;
-      const client = rental ? db2.clients.find((c) => c.id === rental.clientId) : null;
+      const order = p.orderId ? db2.retailOrders.find((ro) => ro.id === p.orderId) : null;
+      const repair = p.repairOrderId ? db2.repairs.find((rep) => rep.id === p.repairOrderId) : null;
+      const client = p.clientId ? db2.clients.find((c) => c.id === p.clientId) : rental ? db2.clients.find((c) => c.id === rental.clientId) : order?.clientId ? db2.clients.find((c) => c.id === order.clientId) : repair?.clientId ? db2.clients.find((c) => c.id === repair.clientId) : null;
       const bike = rental ? db2.bikes.find((b) => b.id === rental.bikeId) : null;
+      const customerName = client?.fullName || order?.customerName || repair?.clientName || null;
       return {
         ...p,
+        clientId: client?.id || p.clientId || null,
+        clientName: customerName,
         rental: rental ? {
           id: rental.id,
           rentalNumber: rental.rentalNumber,
           clientName: client?.fullName,
           bikeInventoryNumber: bike?.inventoryNumber
+        } : null,
+        order: order ? {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName
+        } : null,
+        repair: repair ? {
+          id: repair.id,
+          orderNumber: repair.orderNumber,
+          clientName: repair.clientName
         } : null
       };
     });
@@ -66096,17 +66321,22 @@ var FinanceRepository = class {
   }
   static create(data) {
     const db2 = getDb();
+    const rental = data.rentalId ? db2.rentals.find((r) => r.id === data.rentalId) : null;
+    const resolvedClientId = data.clientId || rental?.clientId || null;
     const newPayment = {
       id: `pay-${Date.now()}`,
       rentalId: data.rentalId || null,
+      clientId: resolvedClientId,
+      orderId: data.orderId || null,
+      repairOrderId: data.repairOrderId || null,
       type: data.type,
       amount: data.amount,
       method: data.method,
       description: data.description || null,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+      createdAt: data.createdAt || (/* @__PURE__ */ new Date()).toISOString()
     };
     db2.payments.push(newPayment);
-    saveDb();
+    saveDb(true);
     return newPayment;
   }
   static update(id, data) {
@@ -68727,111 +68957,6 @@ var OutfitController = class {
   }
 };
 
-// src/repositories/loyalty.repository.ts
-var LoyaltyRepository = class {
-  static getAll() {
-    const db2 = getDb();
-    if (!db2.loyaltyTiers || db2.loyaltyTiers.length === 0) {
-      return [];
-    }
-    return [...db2.loyaltyTiers].sort((a, b) => {
-      if (a.minRentalDays !== b.minRentalDays) {
-        return a.minRentalDays - b.minRentalDays;
-      }
-      return a.minTotalSpent - b.minTotalSpent;
-    });
-  }
-  static getById(id) {
-    const db2 = getDb();
-    return db2.loyaltyTiers.find((t) => t.id === id) || null;
-  }
-  static create(data) {
-    const db2 = getDb();
-    const newTier = {
-      id: `tier-${Date.now()}`,
-      name: data.name.trim(),
-      color: data.color || "amber",
-      minRentalDays: Math.max(0, Number(data.minRentalDays) || 0),
-      minTotalSpent: Math.max(0, Number(data.minTotalSpent) || 0),
-      discountRentalPercent: Math.min(100, Math.max(0, Number(data.discountRentalPercent) || 0)),
-      discountPartsPercent: Math.min(100, Math.max(0, Number(data.discountPartsPercent) || 0)),
-      discountRepairsPercent: Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)),
-      description: data.description?.trim() || "",
-      isDefault: Boolean(data.isDefault)
-    };
-    db2.loyaltyTiers.push(newTier);
-    saveDb();
-    return newTier;
-  }
-  static update(id, data) {
-    const db2 = getDb();
-    const index = db2.loyaltyTiers.findIndex((t) => t.id === id);
-    if (index === -1) return null;
-    db2.loyaltyTiers[index] = {
-      ...db2.loyaltyTiers[index],
-      ...data,
-      minRentalDays: data.minRentalDays !== void 0 ? Math.max(0, Number(data.minRentalDays) || 0) : db2.loyaltyTiers[index].minRentalDays,
-      minTotalSpent: data.minTotalSpent !== void 0 ? Math.max(0, Number(data.minTotalSpent) || 0) : db2.loyaltyTiers[index].minTotalSpent,
-      discountRentalPercent: data.discountRentalPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountRentalPercent) || 0)) : db2.loyaltyTiers[index].discountRentalPercent,
-      discountPartsPercent: data.discountPartsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountPartsPercent) || 0)) : db2.loyaltyTiers[index].discountPartsPercent,
-      discountRepairsPercent: data.discountRepairsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)) : db2.loyaltyTiers[index].discountRepairsPercent
-    };
-    saveDb();
-    return db2.loyaltyTiers[index];
-  }
-  static delete(id) {
-    const db2 = getDb();
-    const index = db2.loyaltyTiers.findIndex((t) => t.id === id);
-    if (index === -1) return false;
-    if (db2.loyaltyTiers.length <= 1) {
-      throw new Error("\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0435\u0434\u0438\u043D\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439 \u043E\u0441\u0442\u0430\u0432\u0448\u0438\u0439\u0441\u044F \u0443\u0440\u043E\u0432\u0435\u043D\u044C \u043B\u043E\u044F\u043B\u044C\u043D\u043E\u0441\u0442\u0438");
-    }
-    db2.loyaltyTiers.splice(index, 1);
-    for (const client of db2.clients) {
-      if (client.manualLoyaltyTierId === id) {
-        client.manualLoyaltyTierId = null;
-      }
-    }
-    saveDb();
-    return true;
-  }
-  /**
-   * Determine client tier based on manual assignment or automatic thresholds
-   */
-  static determineTier(totalDays, totalSpent, manualTierId) {
-    const tiers = this.getAll();
-    const fallbackTier = tiers.find((t) => t.isDefault) || tiers[0] || {
-      id: "tier-bronze",
-      name: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439",
-      color: "slate",
-      minRentalDays: 0,
-      minTotalSpent: 0,
-      discountRentalPercent: 0,
-      discountPartsPercent: 0,
-      discountRepairsPercent: 0
-    };
-    if (manualTierId) {
-      const manual = tiers.find((t) => t.id === manualTierId);
-      if (manual) {
-        return { tier: manual, mode: "MANUAL" };
-      }
-    }
-    const sortedDescending = [...tiers].sort((a, b) => {
-      const scoreB = b.minTotalSpent + b.minRentalDays * 1e3;
-      const scoreA = a.minTotalSpent + a.minRentalDays * 1e3;
-      return scoreB - scoreA;
-    });
-    for (const t of sortedDescending) {
-      const daysMet = t.minRentalDays > 0 && totalDays >= t.minRentalDays;
-      const spentMet = t.minTotalSpent > 0 && totalSpent >= t.minTotalSpent;
-      if (daysMet || spentMet || t.minRentalDays === 0 && t.minTotalSpent === 0) {
-        return { tier: t, mode: "AUTO" };
-      }
-    }
-    return { tier: fallbackTier, mode: "AUTO" };
-  }
-};
-
 // src/controllers/loyalty.controller.ts
 var LoyaltyController = class {
   static getTiers(req, res) {
@@ -69179,6 +69304,7 @@ var ShopRepository = class {
     const payment = {
       id: `pay-${Date.now()}`,
       orderId: order.id,
+      clientId: resolvedClientId,
       type: "RETAIL_SALE",
       amount: totalAmount,
       method: data.paymentMethod || "CASH",
@@ -69186,7 +69312,17 @@ var ShopRepository = class {
       createdAt: getSystemTime().toISOString()
     };
     db2.payments.unshift(payment);
-    saveDb();
+    HistoryRepository.logAction({
+      category: "PAYMENT",
+      action: "SHOP_SALE",
+      title: `\u0420\u043E\u0437\u043D\u0438\u0447\u043D\u0430\u044F \u043F\u0440\u043E\u0434\u0430\u0436\u0430: \u0427\u0435\u043A ${order.orderNumber} \u043D\u0430 \u0441\u0443\u043C\u043C\u0443 ${order.totalAmount.toLocaleString("ru-RU")} \u20BD`,
+      details: `\u041F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C: ${order.customerName}. \u041E\u043F\u043B\u0430\u0442\u0430: ${order.paymentMethod}. \u0422\u043E\u0432\u0430\u0440\u043E\u0432: ${order.items.length} \u0448\u0442. \u041F\u0440\u0438\u0431\u044B\u043B\u044C: +${order.profit.toLocaleString("ru-RU")} \u20BD`,
+      amount: order.totalAmount,
+      badgeText: "\u041C\u0430\u0433\u0430\u0437\u0438\u043D",
+      badgeColor: "teal",
+      entityId: order.id
+    });
+    saveDb(true);
     return order;
   }
   async getOrders() {

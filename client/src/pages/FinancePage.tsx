@@ -525,6 +525,22 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
                           </span>
                           <p className="text-[10px] text-slate-400">{p.rental.clientName}</p>
                         </div>
+                      ) : (p as any).order ? (
+                        <div>
+                          <span className="font-bold text-teal-600 dark:text-teal-400">
+                            {(p as any).order.orderNumber}
+                          </span>
+                          <p className="text-[10px] text-slate-400">{(p as any).clientName || (p as any).order.customerName}</p>
+                        </div>
+                      ) : (p as any).repair ? (
+                        <div>
+                          <span className="font-bold text-amber-600 dark:text-amber-400">
+                            {(p as any).repair.orderNumber}
+                          </span>
+                          <p className="text-[10px] text-slate-400">{(p as any).clientName || (p as any).repair.clientName}</p>
+                        </div>
+                      ) : (p as any).clientName ? (
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{(p as any).clientName}</p>
                       ) : (
                         '—'
                       )}
@@ -628,14 +644,35 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
                     {new Date(p.createdAt).toLocaleDateString('ru-RU')} {new Date(p.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                {p.rental && (
+                {p.rental ? (
                   <div className="col-span-2 pt-1 border-t border-slate-200/50 dark:border-emerald-500/10 flex items-center justify-between text-xs">
                     <span className="text-slate-400 text-[10px]">Договор:</span>
                     <span className="font-bold text-sky-600 dark:text-sky-400 text-xs">
                       {p.rental.rentalNumber} <span className="font-normal text-slate-400">({p.rental.clientName})</span>
                     </span>
                   </div>
-                )}
+                ) : (p as any).order ? (
+                  <div className="col-span-2 pt-1 border-t border-slate-200/50 dark:border-emerald-500/10 flex items-center justify-between text-xs">
+                    <span className="text-slate-400 text-[10px]">Чек магазина:</span>
+                    <span className="font-bold text-teal-600 dark:text-teal-400 text-xs">
+                      {(p as any).order.orderNumber} <span className="font-normal text-slate-400">({(p as any).clientName || (p as any).order.customerName})</span>
+                    </span>
+                  </div>
+                ) : (p as any).repair ? (
+                  <div className="col-span-2 pt-1 border-t border-slate-200/50 dark:border-emerald-500/10 flex items-center justify-between text-xs">
+                    <span className="text-slate-400 text-[10px]">Заказ-наряд СТО:</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400 text-xs">
+                      {(p as any).repair.orderNumber} <span className="font-normal text-slate-400">({(p as any).clientName || (p as any).repair.clientName})</span>
+                    </span>
+                  </div>
+                ) : (p as any).clientName ? (
+                  <div className="col-span-2 pt-1 border-t border-slate-200/50 dark:border-emerald-500/10 flex items-center justify-between text-xs">
+                    <span className="text-slate-400 text-[10px]">Клиент:</span>
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 text-xs">
+                      {(p as any).clientName}
+                    </span>
+                  </div>
+                ) : null}
               </div>
 
               {/* Actions row */}

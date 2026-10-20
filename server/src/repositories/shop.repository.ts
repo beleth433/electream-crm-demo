@@ -1,3 +1,4 @@
+import { HistoryRepository } from './history.repository.js';
 import {
   getDb,
   getSystemTime,
@@ -358,6 +359,7 @@ export class ShopRepository {
     const payment: PaymentRecord = {
       id: `pay-${Date.now()}`,
       orderId: order.id,
+      clientId: resolvedClientId,
       type: 'RETAIL_SALE',
       amount: totalAmount,
       method: data.paymentMethod || 'CASH',
@@ -366,7 +368,20 @@ export class ShopRepository {
     };
 
     db.payments.unshift(payment);
-    saveDb();
+
+    // Explicit audit log
+    HistoryRepository.logAction({
+      category: 'PAYMENT',
+      action: 'SHOP_SALE',
+      title: `Розничная продажа: Чек ${order.orderNumber} на сумму ${order.totalAmount.toLocaleString('ru-RU')} ₽`,
+      details: `Покупатель: ${order.customerName}. Оплата: ${order.paymentMethod}. Товаров: ${order.items.length} шт. Прибыль: +${order.profit.toLocaleString('ru-RU')} ₽`,
+      amount: order.totalAmount,
+      badgeText: 'Магазин',
+      badgeColor: 'teal',
+      entityId: order.id,
+    });
+
+    saveDb(true);
 
     return order;
   }

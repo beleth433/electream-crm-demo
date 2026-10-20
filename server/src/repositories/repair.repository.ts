@@ -1,3 +1,4 @@
+import { HistoryRepository } from './history.repository.js';
 import { getDb, RepairStatus, RepairFaultType, PaymentMethod, RepairOrderRecord, saveDb } from "./db.js";
 import { getCurrentUser } from "../context/userContext.js";
 
@@ -164,6 +165,33 @@ export class RepairRepository {
     const laborCost = data.laborCost || 0;
     const totalCost = laborCost + partsCost;
 
+    let resolvedClientId = data.clientId || null;
+    let resolvedClientName = data.clientName?.trim() || null;
+    let resolvedClientPhone = data.clientPhone?.trim() || null;
+
+    if (!resolvedClientId && resolvedClientPhone) {
+      const clean = resolvedClientPhone.replace(/\D/g, "");
+      const found = db.clients.find((c) => c.phone.replace(/\D/g, "") === clean);
+      if (found) {
+        resolvedClientId = found.id;
+        if (!resolvedClientName) resolvedClientName = found.fullName;
+      }
+    }
+
+    if (!resolvedClientId && resolvedBikeId) {
+      const activeRental = db.rentals.find(
+        (r) => r.bikeId === resolvedBikeId && (r.status === "ACTIVE" || r.status === "OVERDUE")
+      );
+      if (activeRental) {
+        resolvedClientId = activeRental.clientId;
+        const found = db.clients.find((c) => c.id === activeRental.clientId);
+        if (found) {
+          if (!resolvedClientName) resolvedClientName = found.fullName;
+          if (!resolvedClientPhone) resolvedClientPhone = found.phone;
+        }
+      }
+    }
+
     const newRepair: RepairOrderRecord = {
       id: `rep-${Date.now()}`,
       orderNumber,
@@ -171,9 +199,9 @@ export class RepairRepository {
       bikeId: resolvedBikeId,
       batteryId: resolvedBatteryId,
       customItemName: isExternal ? (data.customItemName?.trim() || "Сторонняя техника клиента") : null,
-      clientName: data.clientName?.trim() || null,
-      clientPhone: data.clientPhone?.trim() || null,
-      clientId: data.clientId || null,
+      clientName: resolvedClientName,
+      clientPhone: resolvedClientPhone,
+      clientId: resolvedClientId,
       mechanicId:
         data.mechanicId ||
         getCurrentUser()?.id ||
@@ -290,6 +318,8 @@ export class RepairRepository {
       db.payments.push({
         id: `pay-${Date.now()}`,
         rentalId: null,
+        clientId: repair.clientId,
+        repairOrderId: repair.id,
         type: "REPAIR",
         amount: totalCost,
         method: data.paymentMethod,
@@ -297,6 +327,17 @@ export class RepairRepository {
         createdAt: now.toISOString(),
       });
     }
+
+    HistoryRepository.logAction({
+      category: "REPAIR",
+      action: "REPAIR_COMPLETE",
+      title: `Завершен заказ-наряд СТО ${repair.orderNumber}`,
+      details: `Работы выполнены. Стоимость: ${totalCost.toLocaleString("ru-RU")} ₽. Ответственность: ${repair.faultType === "CLIENT_FAULT" ? "Клиент" : "Сервис"}`,
+      amount: totalCost,
+      badgeText: "СТО",
+      badgeColor: "emerald",
+      entityId: repair.id,
+    });
 
     saveDb();
     return this.getById(repair.id);

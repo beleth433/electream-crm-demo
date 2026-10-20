@@ -438,6 +438,8 @@ export interface Payment {
   rentalId?: string | null;
   employeeId?: string | null;
   orderId?: string | null;
+  clientId?: string | null;
+  repairOrderId?: string | null;
   rental?: {
     id: string;
     rentalNumber: string;

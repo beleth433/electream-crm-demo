@@ -344,6 +344,8 @@ export interface PaymentRecord {
   rentalId?: string | null;
   employeeId?: string | null;
   orderId?: string | null;
+  clientId?: string | null;
+  repairOrderId?: string | null;
   type: PaymentType;
   amount: number;
   method: PaymentMethod;
@@ -626,7 +628,20 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
       }
       return emps;
     })(),
-    retailOrders: parsed.retailOrders || [],
+    retailOrders: (() => {
+      const orders = Array.isArray(parsed.retailOrders) ? parsed.retailOrders : [];
+      const clients = Array.isArray(parsed.clients) ? parsed.clients : [];
+      orders.forEach((ro: any) => {
+        if (!ro.clientId && ro.customerPhone) {
+          const clean = ro.customerPhone.replace(/\D/g, "");
+          if (clean.length >= 6) {
+            const match = clients.find((c: any) => c.phone?.replace(/\D/g, "") === clean);
+            if (match) ro.clientId = match.id;
+          }
+        }
+      });
+      return orders;
+    })(),
     loyaltyTiers: Array.isArray(parsed.loyaltyTiers) && parsed.loyaltyTiers.length > 0
       ? parsed.loyaltyTiers
       : JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS)),

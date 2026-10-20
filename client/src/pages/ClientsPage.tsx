@@ -412,8 +412,13 @@ export const ClientsPage: React.FC = () => {
                         <span className="font-semibold text-slate-800 dark:text-slate-200">
                           {c.totalRentalDays || 0} дн. в прокате
                         </span>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
-                          Всего: {(c.totalSpent || 0).toLocaleString('ru-RU')} ₽
+                        <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <span>Всего: {(c.totalSpent || 0).toLocaleString('ru-RU')} ₽</span>
+                          {c.loyaltyTier && (
+                            <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 font-extrabold text-[9px] border border-amber-500/20 uppercase">
+                              ★ {c.loyaltyTier.name}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -611,9 +616,14 @@ export const ClientsPage: React.FC = () => {
 
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                     <span className="text-[10px] text-slate-400 block">В прокате</span>
-                    <strong className="text-slate-800 dark:text-slate-200 font-bold block truncate">
-                      {c.totalRentalDays || 0} дн. • {(c.totalSpent || 0).toLocaleString('ru-RU')} ₽
-                    </strong>
+                    <div className="text-slate-800 dark:text-slate-200 font-bold flex items-center justify-between text-xs">
+                      <span>{c.totalRentalDays || 0} дн. • {(c.totalSpent || 0).toLocaleString('ru-RU')} ₽</span>
+                      {c.loyaltyTier && (
+                        <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-500 font-extrabold text-[9px] border border-amber-500/20 uppercase shrink-0">
+                          ★ {c.loyaltyTier.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1130,7 +1140,7 @@ export const ClientsPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="p-2 rounded-xl bg-white/70 dark:bg-black/20 border border-slate-200/60 dark:border-emerald-500/10">
-                  <span className="text-[10px] text-slate-400 block">Сумма оплат аренды</span>
+                  <span className="text-[10px] text-slate-400 block">Всего трат (LTV)</span>
                   <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                     {(profileClient.totalSpent || 0).toLocaleString('ru-RU')} ₽
                   </span>
