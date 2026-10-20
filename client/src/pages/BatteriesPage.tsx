@@ -1390,7 +1390,7 @@ export const BatteriesPage: React.FC = () => {
                     placeholder="25000"
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 mt-1">Розничная цена при продаже в POS Магазине</span>
+                <span className="text-[10px] text-slate-400 mt-1">Розничная цена при продаже в Магазине</span>
               </div>
             </div>
 

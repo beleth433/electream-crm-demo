@@ -597,7 +597,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <div className="flex justify-between text-xs">
                   <span className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded bg-sky-500 inline-block" />
-                    Продажи в магазине (POS)
+                    Продажи в магазине
                   </span>
                   <span className="font-bold text-slate-900 dark:text-white">
                     {(financials.retailRevenue || 0).toLocaleString('ru-RU')} ₽ ({retailPercent}%)

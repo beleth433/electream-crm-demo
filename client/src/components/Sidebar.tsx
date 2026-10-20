@@ -193,7 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'shop',
-      label: 'Магазин (POS)',
+      label: 'Магазин и касса',
       icon: ShoppingBag,
     },
     {

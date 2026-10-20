@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ShopCatalog, RetailOrder, Client, PaymentMethod } from '../types';
 import { api } from '../services/api';
 import { PrintableSaleReceiptModal } from './PrintableSaleReceiptModal';
@@ -56,7 +56,8 @@ export const ShopPage: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [shopOrderPrefix, setShopOrderPrefix] = useState<string>(() => getStoredPrefix('shop', 'ЧЕК-'));
   const [shopOrderNumber, setShopOrderNumber] = useState<string>('');
-  const [customerType, setCustomerType] = useState<'GUEST' | 'CLIENT' | 'EXTERNAL'>('EXTERNAL');
+  const [customerCategory, setCustomerCategory] = useState<'COURIER' | 'RETAIL'>('COURIER');
+  const [isAnonymousRetail, setIsAnonymousRetail] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('');
@@ -196,19 +197,37 @@ export const ShopPage: React.FC = () => {
     }
   };
 
-  // Calculations
-  const cleanedCustomerPhone = customerPhone.replace(/\D/g, '');
-  const matchedClientByPhone =
-    cleanedCustomerPhone.length >= 6
-      ? clients.find((c) => c.phone.replace(/\D/g, '') === cleanedCustomerPhone)
-      : null;
+  // Couriers list: active fleet, courier service, or active rental
+  const courierClients = useMemo(() => {
+    const list = clients.filter(
+      (c) =>
+        c.clientType === 'COURIER' ||
+        Boolean(c.courierService) ||
+        Boolean(c.activeRental)
+    );
+    return list.length > 0 ? list : clients;
+  }, [clients]);
 
-  const selectedClient =
-    customerType === 'CLIENT'
-      ? clients.find((c) => c.id === selectedClientId)
-      : customerType !== 'GUEST'
-        ? matchedClientByPhone
-        : null;
+  // Calculations & Customer Resolution
+  const cleanedCustomerPhone = customerPhone.replace(/\D/g, '');
+  const matchedClientByPhone = useMemo(() => {
+    if (cleanedCustomerPhone.length < 6) return null;
+    return (
+      clients.find(
+        (c) =>
+          c.phone.replace(/\D/g, '').endsWith(cleanedCustomerPhone) ||
+          cleanedCustomerPhone.endsWith(c.phone.replace(/\D/g, ''))
+      ) || null
+    );
+  }, [clients, cleanedCustomerPhone]);
+
+  const selectedClient = useMemo(() => {
+    if (customerCategory === 'COURIER') {
+      return clients.find((c) => c.id === selectedClientId) || null;
+    }
+    if (isAnonymousRetail) return null;
+    return matchedClientByPhone;
+  }, [customerCategory, selectedClientId, clients, isAnonymousRetail, matchedClientByPhone]);
 
   const loyaltyDiscountPercent = selectedClient?.loyaltyTier?.discountPartsPercent || 0;
 
@@ -232,18 +251,50 @@ export const ShopPage: React.FC = () => {
       return;
     }
 
-    const effectiveClient = selectedClient;
-    const finalCustomerName =
-      customerName.trim() ||
-      effectiveClient?.fullName ||
-      (customerType === 'GUEST' ? 'Розничный покупатель (Гость)' : 'Покупатель');
+    if (customerCategory === 'COURIER' && !selectedClientId) {
+      toast.error('Пожалуйста, выберите курьера из списка');
+      return;
+    }
+
+    let finalCustomerType: 'GUEST' | 'CLIENT' | 'EXTERNAL' = 'GUEST';
+    let finalClientId: string | undefined = undefined;
+    let finalCustomerName = 'Розничный покупатель';
+    let finalCustomerPhone: string | undefined = undefined;
+
+    if (customerCategory === 'COURIER') {
+      const courier = clients.find((c) => c.id === selectedClientId);
+      finalCustomerType = 'CLIENT';
+      finalClientId = courier?.id;
+      finalCustomerName = courier?.fullName || customerName.trim() || 'Курьер парка';
+      finalCustomerPhone = courier?.phone || customerPhone.trim() || undefined;
+    } else {
+      if (isAnonymousRetail) {
+        finalCustomerType = 'GUEST';
+        finalCustomerName = customerName.trim() || 'Розничный покупатель (Гость)';
+        finalCustomerPhone = undefined;
+        finalClientId = undefined;
+      } else {
+        if (matchedClientByPhone) {
+          finalCustomerType = 'CLIENT';
+          finalClientId = matchedClientByPhone.id;
+          finalCustomerName = customerName.trim() || matchedClientByPhone.fullName;
+          finalCustomerPhone = customerPhone.trim() || matchedClientByPhone.phone;
+        } else {
+          finalCustomerType = 'EXTERNAL';
+          finalCustomerName =
+            customerName.trim() ||
+            (customerPhone.trim() ? `Покупатель (${customerPhone.trim()})` : 'Розничный покупатель');
+          finalCustomerPhone = customerPhone.trim() || undefined;
+        }
+      }
+    }
 
     try {
       const res = await api.createShopOrder({
-        customerType: customerType === 'GUEST' ? 'GUEST' : effectiveClient ? 'CLIENT' : 'EXTERNAL',
+        customerType: finalCustomerType,
         customerName: finalCustomerName,
-        customerPhone: customerPhone.trim() || effectiveClient?.phone || undefined,
-        clientId: effectiveClient ? effectiveClient.id : undefined,
+        customerPhone: finalCustomerPhone,
+        clientId: finalClientId,
         items: cart.map((i) => {
           const discountPerItem =
             (i.itemType === 'PART' || i.itemType === 'OUTFIT') && loyaltyDiscountPercent > 0
@@ -323,10 +374,10 @@ export const ShopPage: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-emerald-400" />
-            Магазин и кассовый терминал (POS)
+            Магазин и касса
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Продажа электровелосипедов, аккумуляторов, запчастей и экипировки
+            Продажа запчастей, аккумуляторов, экипировки и электровелосипедов
           </p>
         </div>
 
@@ -341,7 +392,7 @@ export const ShopPage: React.FC = () => {
             }`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
-            Кассовый терминал (POS)
+            Касса продажи
           </button>
           <button
             onClick={() => setActiveTab('ORDERS')}
@@ -352,7 +403,7 @@ export const ShopPage: React.FC = () => {
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            Журнал продаж ({orders.length})
+            История чеков ({orders.length})
           </button>
         </div>
       </div>
@@ -746,135 +797,197 @@ export const ShopPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Customer Selector */}
-              <div className="pt-2 border-t border-slate-200 dark:border-emerald-500/15 space-y-2.5 text-xs">
-                <span className="font-bold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider block">
-                  Покупатель и гарантийный чек:
-                </span>
+              {/* Customer Selector: 2 Clear Business Modes */}
+              <div className="pt-2 border-t border-slate-200 dark:border-emerald-500/15 space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider block">
+                    Покупатель и гарантийный чек:
+                  </span>
+                  {selectedClient && selectedClient.loyaltyTier && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                      Скидка {loyaltyDiscountPercent}%
+                    </span>
+                  )}
+                </div>
 
-                <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-[#101d17] rounded-xl border border-slate-200 dark:border-emerald-500/10">
+                {/* 2 Modes: Courier vs Retail Buyer */}
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-[#101d17] rounded-xl border border-slate-200 dark:border-emerald-500/10">
+                  <button
+                    type="button"
+                    onClick={() => setCustomerCategory('COURIER')}
+                    className={`h-11 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                      customerCategory === 'COURIER'
+                        ? 'bg-white dark:bg-emerald-500 text-slate-900 dark:text-slate-950 shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <BikeIcon className="w-4 h-4 shrink-0" />
+                    <span>Курьер парка</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => {
-                      setCustomerType('EXTERNAL');
+                      setCustomerCategory('RETAIL');
                       setSelectedClientId('');
                     }}
-                    className={`py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      customerType === 'EXTERNAL'
+                    className={`h-11 px-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                      customerCategory === 'RETAIL'
                         ? 'bg-white dark:bg-emerald-500 text-slate-900 dark:text-slate-950 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-300'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    Покупатель
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCustomerType('CLIENT')}
-                    className={`py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      customerType === 'CLIENT'
-                        ? 'bg-white dark:bg-emerald-500 text-slate-900 dark:text-slate-950 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    Из базы CRM
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCustomerType('GUEST');
-                      setSelectedClientId('');
-                    }}
-                    className={`py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      customerType === 'GUEST'
-                        ? 'bg-white dark:bg-emerald-500 text-slate-900 dark:text-slate-950 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    Гость
+                    <User className="w-4 h-4 shrink-0" />
+                    <span>Розничный покупатель</span>
                   </button>
                 </div>
 
-                {customerType === 'CLIENT' ? (
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] text-slate-400">
-                      Выберите клиента из базы CRM *
+                {/* Mode 1: Courier of our fleet */}
+                {customerCategory === 'COURIER' ? (
+                  <div className="space-y-2">
+                    <label className="block text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+                      Выберите курьера из базы CRM *
                     </label>
                     <select
                       value={selectedClientId}
                       onChange={(e) => handleSelectClient(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white text-xs"
+                      className="w-full h-11 px-3 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-medium text-slate-900 dark:text-white text-base sm:text-xs focus:border-emerald-500 focus:outline-none"
                     >
-                      <option value="">-- Выберите клиента / курьера --</option>
-                      {clients.map((c) => (
+                      <option value="">-- Выберите курьера / арендатора --</option>
+                      {courierClients.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.fullName} ({c.clientType === 'RETAIL' ? 'Розничный' : c.courierService || 'Курьер'}, {c.phone})
+                          {c.fullName} ({c.courierService || (c.clientType === 'RETAIL' ? 'Клиент' : 'Курьер')}, {c.phone})
                           {c.loyaltyTier ? ` • ${c.loyaltyTier.name} (-${c.loyaltyTier.discountPartsPercent}%)` : ''}
                         </option>
                       ))}
                     </select>
 
-                    {selectedClient && selectedClient.loyaltyTier && (
-                      <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-amber-500 flex items-center gap-1">
-                          ★ Программа лояльности: {selectedClient.loyaltyTier.name}
-                        </span>
-                        <span className="font-extrabold text-amber-500">
-                          Скидка {loyaltyDiscountPercent}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ) : customerType === 'EXTERNAL' ? (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Телефон (+7...)*"
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          className="w-full px-3 py-1.5 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs text-slate-900 dark:text-white font-medium"
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          placeholder={matchedClientByPhone ? matchedClientByPhone.fullName : "ФИО покупателя..."}
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full px-3 py-1.5 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-xs text-slate-900 dark:text-white"
-                        />
-                      </div>
-                    </div>
-
-                    {matchedClientByPhone ? (
-                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] space-y-1">
-                        <div className="flex items-center justify-between font-bold text-emerald-600 dark:text-emerald-400">
-                          <span>✓ Найден в базе: {matchedClientByPhone.fullName}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-semibold">
-                            {matchedClientByPhone.courierService || (matchedClientByPhone.isCourier ? 'Курьер' : 'Покупатель')}
+                    {selectedClient ? (
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900 dark:text-white text-xs">
+                            {selectedClient.fullName}
                           </span>
+                          {selectedClient.courierService && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              {selectedClient.courierService}
+                            </span>
+                          )}
                         </div>
-                        {matchedClientByPhone.loyaltyTier && (
-                          <div className="flex items-center justify-between text-amber-500 font-semibold text-[10px]">
-                            <span>★ Программа лояльности: {matchedClientByPhone.loyaltyTier.name}</span>
-                            <span>Скидка {loyaltyDiscountPercent}% на запчасти/экип</span>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                          <span>Телефон: {selectedClient.phone}</span>
+                          {selectedClient.activeRental && (
+                            <span className="text-emerald-500 font-medium">
+                              Аренда: {selectedClient.activeRental.rentalNumber}
+                            </span>
+                          )}
+                        </div>
+                        {selectedClient.loyaltyTier && (
+                          <div className="pt-1.5 border-t border-slate-200 dark:border-emerald-500/10 flex items-center justify-between text-[11px] text-amber-500 font-semibold">
+                            <span className="flex items-center gap-1">
+                              ★ Программа лояльности: {selectedClient.loyaltyTier.name}
+                            </span>
+                            <span className="font-bold">
+                              Скидка {loyaltyDiscountPercent}% на запчасти/экип
+                            </span>
                           </div>
                         )}
                       </div>
-                    ) : cleanedCustomerPhone.length >= 6 ? (
-                      <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                        <span>✓ Новый покупатель: будет автоматически сохранен в базу клиентов для гарантии и скидок</span>
-                      </div>
                     ) : (
                       <p className="text-[10px] text-slate-400">
-                        Введите номер телефона: клиент автоматически сохранится или свяжется с существующим профилем.
+                        При выборе курьера чек привязывается к его истории и автоматически применяется персональная скидка на запчасти.
                       </p>
                     )}
                   </div>
                 ) : (
-                  <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/10 text-[11px] text-slate-500 dark:text-slate-400">
-                    Чек оформляется без привязки к клиенту. Накопительная программа и гарантийный учет по номеру телефона отключены.
+                  /* Mode 2: Retail Customer */
+                  <div className="space-y-2.5">
+                    {/* Fast Walk-in Toggle */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/15 min-h-[44px]">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isAnonymousRetail}
+                          onChange={(e) => setIsAnonymousRetail(e.target.checked)}
+                          className="w-4 h-4 rounded text-emerald-500 border-slate-300 dark:border-slate-700 focus:ring-emerald-500"
+                        />
+                        <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                          Разовый чек без телефона (быстрая продажа)
+                        </span>
+                      </label>
+                      {isAnonymousRetail && (
+                        <span className="text-[10px] font-bold text-amber-500">Анонимный чек</span>
+                      )}
+                    </div>
+
+                    {!isAnonymousRetail ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-1 font-medium">
+                              Телефон покупателя *
+                            </label>
+                            <input
+                              type="tel"
+                              placeholder="+7 (999) 000-00-00"
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value)}
+                              className="w-full h-11 px-3 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-base sm:text-xs text-slate-900 dark:text-white font-medium focus:border-emerald-500 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-500 dark:text-slate-400 mb-1 font-medium">
+                              ФИО покупателя
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={matchedClientByPhone ? matchedClientByPhone.fullName : "ФИО (для гарантии)..."}
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              className="w-full h-11 px-3 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-base sm:text-xs text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        {matchedClientByPhone ? (
+                          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] space-y-1">
+                            <div className="flex items-center justify-between font-bold text-emerald-600 dark:text-emerald-400">
+                              <span>✓ Постоянный розничный клиент: {matchedClientByPhone.fullName}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-semibold">
+                                {matchedClientByPhone.clientType === 'RETAIL' ? 'Розница' : 'В базе CRM'}
+                              </span>
+                            </div>
+                            {matchedClientByPhone.loyaltyTier && (
+                              <div className="flex items-center justify-between text-amber-500 font-semibold text-[10px]">
+                                <span>★ Программа лояльности: {matchedClientByPhone.loyaltyTier.name}</span>
+                                <span>Скидка {loyaltyDiscountPercent}% на запчасти/экип</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : cleanedCustomerPhone.length >= 6 ? (
+                          <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                            <span>✓ Новый покупатель: будет автоматически сохранен в базу клиентов для гарантии и накопительных скидок</span>
+                          </div>
+                        ) : (
+                          <p className="text-[10px] text-slate-400">
+                            Введите номер телефона: покупатель сохранится в базе розничных клиентов для гарантии на запчасти и накопительных скидок.
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <input
+                          type="text"
+                          placeholder="Примечание / имя гостя (необязательно)"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="w-full h-11 px-3 bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 rounded-xl text-base sm:text-xs text-slate-900 dark:text-white focus:border-emerald-500 focus:outline-none"
+                        />
+                        <p className="text-[10px] text-slate-400">
+                          Быстрая продажа за наличные/карту без сохранения профиля в базу. Гарантийный учет по номеру телефона отключен.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

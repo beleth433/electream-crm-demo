@@ -488,7 +488,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
                   RENTAL: { label: 'Аренда', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
                   BUYOUT: { label: 'Выкуп техники', color: 'bg-purple-500/10 text-purple-500 dark:text-purple-400 border-purple-500/30' },
                   PART_PURCHASE: { label: 'Закупка расходников', color: 'bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20' },
-                  RETAIL_SALE: { label: 'Магазин (POS)', color: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
+                  RETAIL_SALE: { label: 'Магазин / Розница', color: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
                   SALARY_PAYMENT: { label: 'Зарплата / ФОТ', color: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
                   DEPOSIT: { label: 'Залог', color: 'bg-sky-500/10 text-sky-400 border-sky-500/20' },
                   DEPOSIT_REFUND: { label: 'Возврат залога', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
@@ -576,7 +576,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
             RENTAL: { label: 'Аренда', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
             BUYOUT: { label: 'Выкуп техники', color: 'bg-purple-500/10 text-purple-500 dark:text-purple-400 border-purple-500/30' },
             PART_PURCHASE: { label: 'Закупка расходников', color: 'bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20' },
-            RETAIL_SALE: { label: 'Магазин (POS)', color: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
+            RETAIL_SALE: { label: 'Магазин / Розница', color: 'bg-teal-500/10 text-teal-400 border-teal-500/20' },
             SALARY_PAYMENT: { label: 'Зарплата / ФОТ', color: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
             DEPOSIT: { label: 'Залог', color: 'bg-sky-500/10 text-sky-400 border-sky-500/20' },
             DEPOSIT_REFUND: { label: 'Возврат залога', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
@@ -769,7 +769,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
               <option value="DEPOSIT_REFUND">Возврат залога (DEPOSIT_REFUND)</option>
               <option value="REPAIR">Оплата ремонта СТО (REPAIR)</option>
               <option value="OUTFIT_SALE">Продажа экипировки (OUTFIT_SALE)</option>
-              <option value="RETAIL_SALE">Магазин POS (RETAIL_SALE)</option>
+              <option value="RETAIL_SALE">Магазин / Розница (RETAIL_SALE)</option>
               <option value="SALARY_PAYMENT">Выплата зарплаты (SALARY_PAYMENT)</option>
               <option value="FINE">Штраф за нарушение (FINE)</option>
             </select>
