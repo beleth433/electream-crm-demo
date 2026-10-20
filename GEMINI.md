@@ -1,5 +1,5 @@
 # Правила проекта для ИИ-агента (Antigravity & Gemini)
-## Репозиторий: ebike-crm-lite-OU2P
+## Репозиторий: courier-ebike-crm (ELECTREAM PRO SAMOKAT)
 
 ### 1. Архитектура и согласованность
 - **Перед внесением изменений**: обязательно ознакомься с `ARCHITECTURE.md` и `AGENT_HANDOVER.md`.

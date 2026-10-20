@@ -521,7 +521,7 @@ export const createDefaultEmptyDb = (): DBStore => ({
       senderId: "u-bxleth",
       senderName: "BXLETH (Главный инженер)",
       senderRole: "ADMIN",
-      text: "Рабочее пространство CRM Lite активно. Система готова к работе.",
+      text: "Рабочее пространство ELECTREAM CRM активно. Система готова к работе.",
       createdAt: new Date().toISOString(),
     },
   ],

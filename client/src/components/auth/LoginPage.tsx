@@ -144,7 +144,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 className="w-48 h-auto object-contain mx-auto"
               />
               <p className="text-[11px] font-black tracking-widest uppercase text-slate-500 dark:text-emerald-400 mt-0.5">
-                OU2PRO EDITION
+                PRO SAMOKAT EDITION
               </p>
             </div>
 
