@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
-import { getDb, UserRecord, UserRole, saveDb } from "../repositories/db.js";
+import { getDb, getSystemTime, UserRecord, UserRole, saveDb } from "../repositories/db.js";
 import { HistoryRepository } from "../repositories/history.repository.js";
+import { hashPassword } from "../services/session.service.js";
+import { normalizePhone } from "../repositories/relations.js";
 
 const historyRepo = new HistoryRepository();
 
@@ -11,11 +13,11 @@ export class UserController {
       const accessLevels = db.accessLevels || [];
       const employees = db.employees || [];
       const payments = (db.payments || []).filter((p) => p.type === "SALARY_PAYMENT");
-      const currentMonth = new Date().toISOString().slice(0, 7);
+      const currentMonth = getSystemTime().toISOString().slice(0, 7);
 
       const users = (db.users || []).map((u) => {
         const lvl = accessLevels.find((l) => l.id === u.accessLevelId) || null;
-        const emp = employees.find(
+        const emp = employees.find((employee) => employee.id === u.employeeId) || employees.find(
           (e) => (u.phone && e.phone === u.phone) || e.fullName.toLowerCase() === u.fullName.toLowerCase()
         ) || null;
 
@@ -37,7 +39,6 @@ export class UserController {
           accessLevel: lvl,
           isActive: u.isActive !== false,
           lastLoginAt: u.lastLoginAt || null,
-          password: u.passwordHash || "1234",
           employeeId: emp?.id || null,
           salaryAmount: emp ? (typeof emp.salaryAmount === "number" ? emp.salaryAmount : 0) : 0,
           salaryType: emp?.salaryType ?? "MONTHLY",
@@ -85,7 +86,7 @@ export class UserController {
         login: cleanLogin,
         username: cleanLogin,
         email: `${cleanLogin}@ebike-crm.ru`,
-        passwordHash: password.trim(),
+        passwordHash: hashPassword(password.trim()),
         fullName: fullName.trim(),
         phone: phone?.trim() || null,
         role: chosenRole,
@@ -108,7 +109,7 @@ export class UserController {
           email: newUser.email,
           role: newUser.roleTitle || "Сотрудник",
           salaryType: salaryType || "MONTHLY",
-          salaryAmount: Number(salaryAmount) || 50000,
+          salaryAmount: salaryAmount !== undefined ? Math.max(0, Number(salaryAmount) || 0) : 0,
           status: "ACTIVE",
           hiredAt: new Date().toISOString().slice(0, 10),
           notes: `Учетная запись: @${newUser.login}`,
@@ -118,6 +119,7 @@ export class UserController {
         matchedEmp.salaryAmount = Number(salaryAmount);
         if (salaryType) matchedEmp.salaryType = salaryType;
       }
+      newUser.employeeId = matchedEmp.id;
 
       saveDb();
 
@@ -146,7 +148,7 @@ export class UserController {
         accessLevel: lvl,
         isActive: newUser.isActive,
         employeeId: matchedEmp?.id || null,
-        salaryAmount: matchedEmp?.salaryAmount || 50000,
+        salaryAmount: matchedEmp?.salaryAmount ?? 0,
         salaryType: matchedEmp?.salaryType || "MONTHLY",
         thisMonthPaid: 0,
       });
@@ -164,6 +166,9 @@ export class UserController {
       }
 
       const { fullName, login, phone, roleTitle, role, accessLevelId, isActive, password, salaryAmount, salaryType } = req.body;
+      const matchedEmp = db.employees.find((employee) => employee.id === user.employeeId) || db.employees.find((employee) => (user.phone && normalizePhone(employee.phone) === normalizePhone(user.phone)) || employee.fullName.toLowerCase() === user.fullName.toLowerCase());
+      if (matchedEmp) user.employeeId = matchedEmp.id;
+      if (user.id === "usr-bxleth" && (isActive === false || (accessLevelId && accessLevelId !== "lvl-owner") || (role && role !== "ADMIN"))) return res.status(403).json({ error: "Нельзя заблокировать или понизить доступ владельца" });
 
       if (login !== undefined && login.trim()) {
         const cleanLogin = login.trim().toLowerCase();
@@ -191,12 +196,9 @@ export class UserController {
       }
       if (accessLevelId !== undefined) user.accessLevelId = accessLevelId;
       if (isActive !== undefined) user.isActive = Boolean(isActive);
-      if (password && password.trim()) user.passwordHash = password.trim();
+      if (password && password.trim()) user.passwordHash = hashPassword(password.trim());
 
       // Update linked employee record if present
-      const matchedEmp = (db.employees || []).find(
-        (e) => (user.phone && e.phone === user.phone) || e.fullName.toLowerCase() === user.fullName.toLowerCase()
-      );
       if (matchedEmp) {
         if (fullName !== undefined) matchedEmp.fullName = user.fullName;
         if (phone !== undefined) matchedEmp.phone = user.phone || "";
@@ -232,7 +234,6 @@ export class UserController {
         accessLevelId: user.accessLevelId,
         accessLevel: lvl,
         isActive: user.isActive,
-        password: user.passwordHash || "1234",
         employeeId: matchedEmp?.id || null,
         salaryAmount: matchedEmp ? (typeof matchedEmp.salaryAmount === "number" ? matchedEmp.salaryAmount : 0) : 0,
         salaryType: matchedEmp?.salaryType || "MONTHLY",
@@ -258,11 +259,11 @@ export class UserController {
       db.users.splice(index, 1);
 
       // Also clean up linked employee
-      const empIndex = (db.employees || []).findIndex(
+      const empIndex = db.employees.findIndex((employee) => employee.id === target.employeeId) !== -1 ? db.employees.findIndex((employee) => employee.id === target.employeeId) : (db.employees || []).findIndex(
         (e) => (target.phone && e.phone === target.phone) || e.fullName.toLowerCase() === target.fullName.toLowerCase()
       );
       if (empIndex !== -1) {
-        db.employees.splice(empIndex, 1);
+        db.employees[empIndex].status = "DISMISSED";
       }
 
       saveDb();

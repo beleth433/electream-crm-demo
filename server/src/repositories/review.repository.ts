@@ -39,6 +39,8 @@ export class ReviewRepository {
 
   static create(data: { clientId: string; bikeId: string; rating: number; comment?: string }) {
     const db = getDb();
+    if (!db.clients.some((client) => client.id === data.clientId)) throw new Error("Клиент не найден");
+    if (!db.bikes.some((bike) => bike.id === data.bikeId)) throw new Error("Байк не найден");
     if (data.rating < 1 || data.rating > 5) {
       throw new Error("Рейтинг должен быть от 1 до 5 звезд");
     }

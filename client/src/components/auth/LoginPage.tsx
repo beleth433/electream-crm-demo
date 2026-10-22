@@ -27,6 +27,7 @@ interface TrustedDeviceProfile {
   role?: string;
   initials: string;
   authorizedAt: string;
+  token?: string;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
@@ -60,7 +61,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     setIsLoading(true);
     try {
-      const res = await api.login(cleanId, cleanPass);
+      const res = await api.login(cleanId, cleanPass, rememberDevice);
       localStorage.setItem('crm_auth_token', res.token);
       localStorage.setItem('crm_auth_user', JSON.stringify(res.user));
 
@@ -83,6 +84,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           role: res.user.role,
           initials,
           authorizedAt: new Date().toISOString(),
+          token: res.trustedDeviceToken,
         };
         localStorage.setItem('crm_trusted_device_profile', JSON.stringify(profile));
         setTrustedProfile(profile);
@@ -104,7 +106,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     if (!trustedProfile) return;
     setIsLoading(true);
     try {
-      const res = await api.login(trustedProfile.login);
+      if (!trustedProfile.token) throw new Error('Требуется подтверждение пароля');
+      const res = await api.trustedLogin(trustedProfile.token);
       localStorage.setItem('crm_auth_token', res.token);
       localStorage.setItem('crm_auth_user', JSON.stringify(res.user));
       toast.success(`С возвращением, ${res.user.fullName}!`);

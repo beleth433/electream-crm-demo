@@ -41,7 +41,8 @@ export class ShopRepository {
         const battery = b.batteryId ? db.batteries.find((bt) => bt.id === b.batteryId) : null;
         
         const retailPrice = b.salePrice || model?.salePrice || (b.status === 'FOR_SALE' ? 45000 : 55000);
-        const costPrice = b.purchasePrice || model?.purchasePrice || Math.round(retailPrice * 0.7);
+        const batteryModel = db.batteryModels.find((item) => item.id === battery?.modelId);
+        const costPrice = (b.purchasePrice || model?.purchasePrice || Math.round(retailPrice * 0.7)) + (battery ? battery.purchasePrice || batteryModel?.purchasePrice || 16000 : 0);
 
         return {
           id: b.id,
@@ -161,7 +162,9 @@ export class ShopRepository {
         const defaultPrice =
           bike.salePrice || model?.salePrice || (bike.status === 'FOR_SALE' ? 45000 : 55000);
         const price = item.price !== undefined ? Number(item.price) : defaultPrice;
-        const costPrice = bike.purchasePrice || model?.purchasePrice || Math.round(price * 0.7);
+        const installedBattery = db.batteries.find((battery) => battery.id === bike.batteryId);
+        const installedBatteryModel = db.batteryModels.find((item) => item.id === installedBattery?.modelId);
+        const costPrice = (bike.purchasePrice || model?.purchasePrice || Math.round(price * 0.7)) + (installedBattery ? installedBattery.purchasePrice || installedBatteryModel?.purchasePrice || 16000 : 0);
 
         // Mark bike as SOLD (decommissioned from active fleet due to retail sale)
         bike.status = 'SOLD';
@@ -290,6 +293,7 @@ export class ShopRepository {
     const orderNumber = data.orderNumber && data.orderNumber.trim()
       ? data.orderNumber.trim()
       : `ORD-${Date.now().toString().slice(-6)}`;
+    if (db.retailOrders.some((order) => order.orderNumber.toLowerCase() === orderNumber.toLowerCase())) throw new Error('Номер чека уже существует');
     const profit = totalAmount - totalCost;
 
     // 1. Resolve or Auto-create Client in db.clients
@@ -388,7 +392,7 @@ export class ShopRepository {
       category: 'PAYMENT',
       action: 'SHOP_SALE',
       title: `Розничная продажа: Чек ${order.orderNumber} на сумму ${order.totalAmount.toLocaleString('ru-RU')} ₽`,
-      details: `Покупатель: ${order.customerName}. Оплата: ${order.paymentMethod}. Товаров: ${order.items.length} шт. Прибыль: +${order.profit.toLocaleString('ru-RU')} ₽`,
+      details: `Покупатель: ${order.customerName}. Оплата: ${order.paymentMethod}. Товаров: ${order.items.length} шт.`,
       amount: order.totalAmount,
       badgeText: 'Магазин',
       badgeColor: 'teal',

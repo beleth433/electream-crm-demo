@@ -3,6 +3,7 @@ import { z } from "zod";
 export const LoginDto = z.object({
   email: z.string().min(2, "Введите логин или email"),
   password: z.string().min(1, "Введите пароль для входа"),
+  rememberDevice: z.boolean().optional(),
 });
 
 export const BikeCreateDto = z.object({
@@ -11,7 +12,7 @@ export const BikeCreateDto = z.object({
   batteryId: z.string().optional().nullable(),
   frameNumber: z.string().optional().nullable(),
   motorNumber: z.string().optional().nullable(),
-  status: z.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED"]).optional(),
+  status: z.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED", "SOLD", "BOUGHT_OUT"]).optional(),
   currentLocation: z.string().optional(),
   mileageKm: z.number().min(0).optional(),
   note: z.string().optional(),
@@ -25,7 +26,7 @@ export const BikeUpdateDto = z.object({
   batteryId: z.string().optional().nullable(),
   frameNumber: z.string().optional().nullable(),
   motorNumber: z.string().optional().nullable(),
-  status: z.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED"]).optional(),
+  status: z.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED", "SOLD", "BOUGHT_OUT"]).optional(),
   currentLocation: z.string().optional(),
   mileageKm: z.number().min(0).optional(),
   note: z.string().optional(),

@@ -15,6 +15,7 @@ export class BikeRepository {
 
       return {
         ...bike,
+        currentLocation: activeRental && bike.status === "RENTED" ? `В аренде у ${client?.fullName || "клиента"}` : bike.currentLocation,
         model,
         battery: battery
           ? {
@@ -185,6 +186,7 @@ export class BikeRepository {
     }
 
     const bikesWithModel = db.bikes.filter((b) => b.modelId === id);
+    if (db.tariffs.some((tariff) => tariff.bikeModelId === id)) throw new Error("Модель используется в тарифах; сначала измените или удалите связанные шаблоны");
     if (bikesWithModel.length > 0) {
       throw new Error(
         `Невозможно удалить шаблон "${db.models[index].name}": в парке зарегистрировано ${bikesWithModel.length} байков этой модели (${bikesWithModel.map((b) => b.inventoryNumber).join(', ')})`
@@ -263,6 +265,7 @@ export class BikeRepository {
     const index = db.bikes.findIndex((b) => b.id === id);
     if (index === -1) return null;
     const bike = db.bikes[index];
+    if (["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status) && data.status && data.status !== bike.status) throw new Error("Техника выбыла из парка; изменение статуса не должно возвращать её в аренду");
     if (data.inventoryNumber && db.bikes.some((b) => b.id !== id && b.inventoryNumber.toLowerCase() === data.inventoryNumber!.trim().toLowerCase())) throw new Error("Инвентарный номер уже занят");
     if (data.modelId && !db.models.some((m) => m.id === data.modelId)) throw new Error("Модель байка не найдена");
     if (data.status && data.status !== bike.status && activeRentalForBike(id) && data.status !== "RENTED" && data.status !== "IN_MAINTENANCE") throw new Error("Сначала завершите действующий договор аренды");
@@ -299,6 +302,7 @@ export class BikeRepository {
     if (index === -1) {
       throw new Error("Электровелосипед не найден");
     }
+    if (db.rentals.some((r) => r.bikeId === id) || db.repairs.some((r) => r.bikeId === id) || db.reviews.some((r) => r.bikeId === id) || db.retailOrders.some((order) => order.items.some((item) => item.itemType === "BIKE" && item.itemId === id))) throw new Error("Байк используется в договорах, заказ-нарядах или чеках. Сохраните его карточку для истории");
 
     const activeRental = db.rentals.find(
       (r) => r.bikeId === id && (r.status === "ACTIVE" || r.status === "OVERDUE")

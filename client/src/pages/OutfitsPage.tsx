@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { Outfit, OutfitCategoryItem, OutfitTemplate, OutfitStatus } from '../types';
 import { api } from '../services/api';
@@ -139,6 +140,8 @@ export const OutfitsPage: React.FC = () => {
       .catch((err) => toast.error('Ошибка загрузки данных экипировки: ' + err.message))
       .finally(() => setIsLoading(false));
   };
+
+  useCrmRefresh(loadData);
 
   useEffect(() => {
     loadData();

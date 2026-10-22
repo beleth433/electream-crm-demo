@@ -128,6 +128,7 @@ class SupabaseAdapter {
   }
 
   public detectMode(): StorageMode {
+    if (process.env.CRM_STORAGE_MODE === "LOCAL_FILE") { this.mode = "LOCAL_FILE"; return this.mode; }
     const dbUrl = getCleanDatabaseUrl();
     const { url: supabaseUrl, key: supabaseKey } = getCleanSupabaseCredentials();
 
@@ -328,23 +329,23 @@ class SupabaseAdapter {
     try {
       if (this.mode === "SUPABASE_POSTGRES" && this.pgPool) {
         const checkRes = await this.pgPool.query(
-          "SELECT updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
+          "SELECT updated_at::text AS updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
         );
         if (checkRes.rows.length === 0) return null;
 
         const cloudUpdatedAt = checkRes.rows[0].updated_at
-          ? new Date(checkRes.rows[0].updated_at).toISOString()
+          ? String(checkRes.rows[0].updated_at)
           : null;
 
         if (!cloudUpdatedAt) return null;
 
         if (!this.lastSyncedAt || cloudUpdatedAt !== this.lastSyncedAt) {
           const fullRes = await this.pgPool.query(
-            "SELECT data, updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
+            "SELECT data, updated_at::text AS updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
           );
           if (fullRes.rows.length > 0 && fullRes.rows[0].data) {
             this.lastSyncedAt = fullRes.rows[0].updated_at
-              ? new Date(fullRes.rows[0].updated_at).toISOString()
+              ? String(fullRes.rows[0].updated_at)
               : cloudUpdatedAt;
             console.log(`[Storage] 🔄 Обнаружены свежие данные в Supabase (версия: ${this.lastSyncedAt}), синхронизируем.`);
             return fullRes.rows[0].data as DBStore;
@@ -391,10 +392,10 @@ class SupabaseAdapter {
     try {
       if (this.mode === "SUPABASE_POSTGRES" && this.pgPool) {
         const res = await this.pgPool.query(
-          "SELECT data, updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
+          "SELECT data, updated_at::text AS updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
         );
         if (res.rows.length > 0 && res.rows[0].data) {
-          this.lastSyncedAt = new Date(res.rows[0].updated_at || Date.now()).toISOString();
+          this.lastSyncedAt = String(res.rows[0].updated_at);
           console.log(`[Storage] 📥 Данные успешно загружены из Supabase PostgreSQL (синхронизировано: ${this.lastSyncedAt})`);
           return res.rows[0].data as DBStore;
         }
@@ -427,9 +428,11 @@ class SupabaseAdapter {
   }
 
   public async saveToCloud(store: DBStore): Promise<void> {
-    if (!this.isConnected || this.mode === "LOCAL_FILE") {
+    if (this.mode === "LOCAL_FILE") {
       return;
     }
+    if (!this.isConnected) throw new Error(this.lastError || "Облачное хранилище недоступно");
+    const snapshot: DBStore = JSON.parse(JSON.stringify(store));
 
     // Sequence saves one after another to prevent concurrent UPSERT locks on 'main' row in PostgreSQL
     this.savePromiseChain = this.savePromiseChain
@@ -437,9 +440,9 @@ class SupabaseAdapter {
       .then(async () => {
         try {
           if (this.mode === "SUPABASE_POSTGRES" && this.pgPool) {
-            await this.saveToPostgres(store);
+            await this.saveToPostgres(snapshot);
           } else if (this.mode === "SUPABASE_REST" && this.supabaseClient) {
-            await this.saveToRest(store);
+            await this.saveToRest(snapshot);
           }
           this.lastError = null;
         } catch (err: any) {
@@ -456,38 +459,29 @@ class SupabaseAdapter {
   private async saveToPostgres(store: DBStore): Promise<void> {
     if (!this.pgPool) return;
     const jsonString = JSON.stringify(store);
-    const res = await this.pgPool.query(
-      `
-      INSERT INTO crm_store (id, data, updated_at)
-      VALUES ('main', $1::jsonb, NOW())
-      ON CONFLICT (id) DO UPDATE SET
-        data = EXCLUDED.data,
-        updated_at = NOW()
-      RETURNING updated_at;
-      `,
-      [jsonString]
-    );
+    const res = this.lastSyncedAt
+      ? await this.pgPool.query("UPDATE crm_store SET data = $1::jsonb, updated_at = clock_timestamp() WHERE id = 'main' AND updated_at = $2::timestamptz RETURNING updated_at::text AS updated_at", [jsonString, this.lastSyncedAt])
+      : await this.pgPool.query("INSERT INTO crm_store (id, data, updated_at) VALUES ('main', $1::jsonb, clock_timestamp()) ON CONFLICT (id) DO NOTHING RETURNING updated_at::text AS updated_at", [jsonString]);
+    if (res.rows.length === 0) await this.throwWriteConflict();
     if (res.rows.length > 0 && res.rows[0].updated_at) {
-      this.lastSyncedAt = new Date(res.rows[0].updated_at).toISOString();
+      this.lastSyncedAt = String(res.rows[0].updated_at);
     }
   }
 
   private async saveToRest(store: DBStore): Promise<void> {
     if (!this.supabaseClient) return;
     const nowIso = new Date().toISOString();
-    const { data, error } = await this.supabaseClient
-      .from("crm_store")
-      .upsert({
-        id: "main",
-        data: store,
-        updated_at: nowIso,
-      })
-      .select("updated_at")
-      .maybeSingle();
+    const table = this.supabaseClient.from("crm_store");
+    const request = this.lastSyncedAt
+      ? table.update({ data: store, updated_at: nowIso }).eq("id", "main").eq("updated_at", this.lastSyncedAt)
+      : table.insert({ id: "main", data: store, updated_at: nowIso });
+    const { data, error } = await request.select("updated_at").maybeSingle();
 
     if (error) {
+      if (error.code === "23505") await this.throwWriteConflict();
       throw new Error(error.message);
     }
+    if (!data) await this.throwWriteConflict();
     if (data && data.updated_at) {
       this.lastSyncedAt = data.updated_at;
     } else {
@@ -495,10 +489,44 @@ class SupabaseAdapter {
     }
   }
 
+  private async throwWriteConflict(): Promise<never> {
+    const error: any = new Error("Данные изменены другим сотрудником. Обновите раздел и повторите действие.");
+    error.code = "CRM_STORE_CONFLICT";
+    error.cloudData = await this.loadFromCloud();
+    throw error;
+  }
+
   public async flush(): Promise<void> {
     if (this.savePromiseChain) {
-      await this.savePromiseChain.catch(() => {});
+      await this.savePromiseChain;
     }
+  }
+
+  private documentStorage() {
+    if (!this.supabaseClient) {
+      const { url, key } = getCleanSupabaseCredentials();
+      if (!url || !key) throw new Error("Для облачного хранения документов настройте SUPABASE_URL и серверный ключ Supabase");
+      this.supabaseClient = createClient(url, key);
+    }
+    return { client: this.supabaseClient, bucket: process.env.SUPABASE_STORAGE_BUCKET || "crm-documents" };
+  }
+
+  public async uploadDocument(filename: string, buffer: Buffer, contentType: string): Promise<void> {
+    const { client, bucket } = this.documentStorage();
+    const existing = await client.storage.getBucket(bucket);
+    if (existing.error) {
+      const created = await client.storage.createBucket(bucket, { public: false });
+      if (created.error && !created.error.message.includes("already exists")) throw new Error(created.error.message);
+    }
+    const { error } = await client.storage.from(bucket).upload(filename, buffer, { contentType, upsert: false });
+    if (error) throw new Error(error.message);
+  }
+
+  public async documentDownloadUrl(filename: string): Promise<string> {
+    const { client, bucket } = this.documentStorage();
+    const { data, error } = await client.storage.from(bucket).createSignedUrl(filename, 60);
+    if (error) throw new Error(error.message);
+    return data.signedUrl;
   }
 }
 

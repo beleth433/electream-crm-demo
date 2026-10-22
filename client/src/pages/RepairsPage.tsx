@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { RepairOrder, Bike, Battery, Client, Part, RepairStatus, RepairFaultType } from '../types';
 import { api } from '../services/api';
@@ -127,6 +128,8 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
       .catch((err) => toast.error('Ошибка загрузки СТО: ' + err.message))
       .finally(() => setIsLoading(false));
   };
+
+  useCrmRefresh(loadData);
 
   useEffect(() => {
     loadData();

@@ -1,4 +1,4 @@
-const { test, beforeEach, after } = require('node:test');
+const { test, before, beforeEach, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -6,11 +6,15 @@ const path = require('node:path');
 
 const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ebike-crm-integration-'));
 process.env.CRM_DATA_DIR = testDir;
+process.env.CRM_UPLOADS_DIR = path.join(testDir, 'uploads');
+process.env.CRM_STORAGE_MODE = 'LOCAL_FILE';
 const store = require('../dist/repositories/db.js');
 const { supabaseAdapter } = require('../dist/repositories/supabase.adapter.js');
 // No connection is initialized; persistence never reaches the real cloud.
 supabaseAdapter.saveToCloud = async () => {};
 supabaseAdapter.flush = async () => {};
+supabaseAdapter.init = async () => null;
+supabaseAdapter.syncIfOutdated = async () => null;
 const { RentalRepository: rentals } = require('../dist/repositories/rental.repository.js');
 const { RepairRepository: repairs } = require('../dist/repositories/repair.repository.js');
 const { BatteryRepository: batteries } = require('../dist/repositories/battery.repository.js');
@@ -20,9 +24,21 @@ const { FinanceRepository: finance } = require('../dist/repositories/finance.rep
 const { ClientRepository: clients } = require('../dist/repositories/client.repository.js');
 const { PartRepository: parts } = require('../dist/repositories/part.repository.js');
 const { StatsRepository: stats } = require('../dist/repositories/stats.repository.js');
+const { AuthService } = require('../dist/services/auth.service.js');
+const { authenticateSession, issueSession } = require('../dist/services/session.service.js');
 let db;
+let httpServer;
+let apiUrl;
+
+before(async () => {
+  const app = require('../dist/app.js').default;
+  await new Promise((resolve) => { httpServer = app.listen(0, '127.0.0.1', resolve); });
+  apiUrl = `http://127.0.0.1:${httpServer.address().port}/api`;
+});
 
 beforeEach(async () => {
+  supabaseAdapter.saveToCloud = async () => {};
+  supabaseAdapter.syncIfOutdated = async () => null;
   db = store.getDb();
   Object.assign(db, store.createDefaultEmptyDb());
   store.setSystemTime('2026-10-22T12:00:00Z');
@@ -231,8 +247,179 @@ test('bank import preserves the payment date and repeated import does not add mo
   assert.equal(rentals.getById(rental.id).nextPaymentDue, due);
 });
 
+test('the API rejects forged user headers and accepts a verified session', async () => {
+  const forged = await fetch(`${apiUrl}/clients`, { headers: { 'x-user-id': 'usr-bxleth', 'x-user-role': 'ADMIN' } });
+  assert.equal(forged.status, 401);
+  const { token } = AuthService.login('bxleth', 'admin');
+  const result = await fetch(`${apiUrl}/clients`, { headers: { Authorization: `Bearer ${token}` } });
+  assert.equal(result.status, 200);
+  assert.equal((await result.json())[0].fullName, 'Иван Иванов');
+});
+
+test('trusted-device login works and password changes revoke both session types', () => {
+  const result = AuthService.login('bxleth', 'admin', true);
+  assert.ok(result.trustedDeviceToken);
+  assert.equal(AuthService.trustedLogin(result.trustedDeviceToken).user.id, 'usr-bxleth');
+  assert.ok(db.users[0].passwordHash.startsWith('scrypt:'));
+  db.users[0].passwordHash = 'changed-password';
+  assert.throws(() => authenticateSession(result.token), /отозван/);
+  assert.throws(() => AuthService.trustedLogin(result.trustedDeviceToken), /отозван/);
+});
+
+test('editing employee identity keeps payroll linked through its permanent ID', async () => {
+  const { token } = AuthService.login('bxleth', 'admin');
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const createdResponse = await fetch(`${apiUrl}/users`, { method: 'POST', headers, body: JSON.stringify({ login: 'manager', fullName: 'Алексей Смирнов', phone: '+79995553322', password: 'test-password', role: 'MANAGER', salaryAmount: 0 }) });
+  assert.equal(createdResponse.status, 201);
+  const user = await createdResponse.json();
+  assert.equal(user.salaryAmount, 0);
+  assert.ok(user.employeeId);
+  const updateResponse = await fetch(`${apiUrl}/users/${user.id}`, { method: 'PATCH', headers, body: JSON.stringify({ fullName: 'Сергей Морозов', phone: '+79992221133', salaryAmount: 20000 }) });
+  assert.equal(updateResponse.status, 200);
+  const updated = await updateResponse.json();
+  assert.equal(updated.employeeId, user.employeeId);
+  assert.equal(db.employees.find((e) => e.id === user.employeeId).fullName, 'Сергей Морозов');
+  assert.equal(db.employees.find((e) => e.id === user.employeeId).salaryAmount, 20000);
+  assert.equal(updated.password, undefined);
+});
+
+test('master can load repair reference data but cannot read cash or manage employees', async () => {
+  db.users.push({ id: 'master', fullName: 'Дмитрий Кузнецов', email: 'master@test.invalid', passwordHash: 'test', role: 'MECHANIC', accessLevelId: 'lvl-master', isActive: true });
+  const token = issueSession(db.users.find((u) => u.id === 'master'));
+  const headers = { Authorization: `Bearer ${token}` };
+  assert.equal((await fetch(`${apiUrl}/clients`, { headers })).status, 200);
+  assert.equal((await fetch(`${apiUrl}/repairs`, { headers })).status, 200);
+  assert.equal((await fetch(`${apiUrl}/payments`, { headers })).status, 403);
+  assert.equal((await fetch(`${apiUrl}/users`, { headers })).status, 403);
+  const dashboard = await (await fetch(`${apiUrl}/dashboard/stats`, { headers })).json();
+  assert.equal(dashboard.financials.netMargin, undefined);
+});
+
+test('failed cloud persistence retains dirty local data and blocks stale synchronization', async () => {
+  db.clients[0].fullName = 'Сергей Морозов';
+  supabaseAdapter.saveToCloud = async () => { throw new Error('cloud unavailable'); };
+  await assert.rejects(store.flushDb(true), /cloud unavailable/);
+  let called = false;
+  supabaseAdapter.syncIfOutdated = async () => { called = true; return store.createDefaultEmptyDb(); };
+  assert.equal(await store.checkAndSyncCloudDb(true), false);
+  assert.equal(called, false);
+  assert.equal(db.clients[0].fullName, 'Сергей Морозов');
+  supabaseAdapter.saveToCloud = async () => {};
+  await store.flushDb(true);
+});
+
+test('a mutation during cloud save remains dirty until its own save finishes', async () => {
+  let release;
+  supabaseAdapter.saveToCloud = () => new Promise((resolve) => { release = resolve; });
+  const flushing = store.flushDb(true);
+  db.clients[0].fullName = 'Сергей Морозов';
+  release();
+  await flushing;
+  let synchronized = false;
+  supabaseAdapter.syncIfOutdated = async () => { synchronized = true; return null; };
+  await store.checkAndSyncCloudDb(true);
+  assert.equal(synchronized, false);
+  supabaseAdapter.saveToCloud = async () => {};
+  await store.flushDb(true);
+});
+
+test('manual receipt number passes through the HTTP controller and cannot be duplicated', async () => {
+  const { token } = AuthService.login('bxleth', 'admin');
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const payload = { customerType: 'CLIENT', clientId: 'client', customerName: 'Иван Иванов', paymentMethod: 'CASH', orderNumber: 'ЧЕК-001', items: [{ itemType: 'PART', itemId: 'part1', quantity: 1 }] };
+  const result = await fetch(`${apiUrl}/shop/orders`, { method: 'POST', headers, body: JSON.stringify(payload) });
+  assert.equal(result.status, 201);
+  assert.equal((await result.json()).order.orderNumber, 'ЧЕК-001');
+  const duplicate = await fetch(`${apiUrl}/shop/orders`, { method: 'POST', headers, body: JSON.stringify(payload) });
+  assert.equal(duplicate.status, 400);
+  assert.equal(db.parts[0].quantity, 4);
+});
+
+test('stored documents are readable with a session cookie and reject unauthenticated access', async () => {
+  const { token } = AuthService.login('bxleth', 'admin');
+  const body = new FormData();
+  body.set('file', new Blob(['%PDF-1.4\n'], { type: 'application/pdf' }), 'passport.pdf');
+  const uploaded = await fetch(`${apiUrl}/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
+  assert.equal(uploaded.status, 201);
+  const document = await uploaded.json();
+  const url = apiUrl.replace(/\/api$/, '') + document.url;
+  assert.equal((await fetch(url)).status, 401);
+  const download = await fetch(url, { headers: { Cookie: `crm_session=${token}` } });
+  assert.equal(download.status, 200);
+  assert.equal(await download.text(), '%PDF-1.4\n');
+});
+
+test('linked historical cards cannot be deleted and sold assets cannot reenter the fleet', () => {
+  const rental = issue({ tariffId: 'buyout' });
+  rentals.renew(rental.id, { amount: 3000, method: 'CASH' });
+  assert.throws(() => clients.delete('client'), /связанные документы/);
+  assert.throws(() => bikes.delete('bike'), /истории/);
+  assert.throws(() => batteries.delete('bat2'), /истории/);
+  assert.throws(() => bikes.update('bike', { status: 'AVAILABLE' }), /выбыла/);
+});
+
+test('audit history preserves real employee names and uses system dates', () => {
+  const { HistoryRepository } = require('../dist/repositories/history.repository.js');
+  db.users.push({ id: 'manager', fullName: 'Алексей Смирнов', email: 'manager@test.invalid', passwordHash: 'test', role: 'MANAGER', isActive: true });
+  HistoryRepository.logAction({ category: 'SYSTEM', action: 'TEST', title: 'Проверка автора', actorName: 'Алексей Смирнов (Менеджер)' });
+  const result = HistoryRepository.getAll({ search: 'Проверка автора' });
+  assert.equal(result.items[0].actor, 'Алексей Смирнов (Менеджер)');
+  assert.equal(result.items[0].timestamp, '2026-10-22T12:00:00.000Z');
+  const loaded = store.sanitizeLoadedDb(JSON.parse(JSON.stringify(db)));
+  assert.equal(loaded.auditLogs[0].actorName, 'Алексей Смирнов (Менеджер)');
+});
+
+test('returning a bike with an open repair does not free it or create a duplicate repair', () => {
+  const rental = issue();
+  const repair = repairs.create({ bikeId: 'bike', faultType: 'COMPANY_EXPENSE', description: 'Ремонт' });
+  const result = completeReturn(rental.id);
+  assert.equal(result.repairOrder.id, repair.id);
+  assert.equal(db.repairs.length, 1);
+  assert.equal(db.bikes[0].status, 'IN_MAINTENANCE');
+});
+
+test('a missing buyout total falls back to the complete equipment price rather than one installment', () => {
+  db.tariffs.find((tariff) => tariff.id === 'buyout').totalBuyoutPrice = undefined;
+  const rental = issue({ tariffId: 'buyout' });
+  assert.equal(rental.totalBuyoutPrice, 110000);
+  assert.equal(rental.status, 'ACTIVE');
+});
+
+test('PostgreSQL writes preserve exact version precision and reject stale snapshots', async () => {
+  const adapter = new supabaseAdapter.constructor();
+  adapter.mode = 'SUPABASE_POSTGRES';
+  adapter.isConnected = true;
+  adapter.lastSyncedAt = '2026-10-22 12:00:00.123456+00';
+  let conditionalWrite;
+  const remote = store.createDefaultEmptyDb();
+  adapter.pgPool = { query: async (sql, values) => {
+    if (sql.startsWith('UPDATE')) { conditionalWrite = { sql, values }; return { rows: [] }; }
+    return { rows: [{ data: remote, updated_at: '2026-10-22 12:00:00.987654+00' }] };
+  } };
+  await assert.rejects(adapter.saveToCloud(JSON.parse(JSON.stringify(db))), (error) => error.code === 'CRM_STORE_CONFLICT' && error.cloudData.clients.length === 0);
+  assert.ok(conditionalWrite.sql.includes('updated_at = $2::timestamptz'));
+  assert.equal(conditionalWrite.values[1], '2026-10-22 12:00:00.123456+00');
+});
+
+test('an HTTP storage conflict rolls back the unconfirmed operation and returns current cloud data', async () => {
+  const { token } = AuthService.login('bxleth', 'admin');
+  await store.flushDb(true);
+  const remote = JSON.parse(JSON.stringify(db));
+  supabaseAdapter.saveToCloud = async () => {
+    const error = new Error('Данные изменены другим сотрудником');
+    error.code = 'CRM_STORE_CONFLICT';
+    error.cloudData = remote;
+    throw error;
+  };
+  const response = await fetch(`${apiUrl}/clients`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName: 'Сергей Морозов', phone: '+79995551133' }) });
+  assert.equal(response.status, 409);
+  assert.equal(db.clients.length, 1);
+  supabaseAdapter.saveToCloud = async () => {};
+});
+
 after(async () => {
   await store.flushDb(true);
+  await new Promise((resolve) => httpServer.close(resolve));
   assert.ok(testDir.startsWith(path.join(os.tmpdir(), 'ebike-crm-integration-')));
 });
 process.once('exit', () => fs.rmSync(testDir, { recursive: true, force: true }));

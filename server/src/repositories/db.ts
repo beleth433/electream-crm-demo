@@ -84,6 +84,7 @@ export interface SystemSettingsRecord {
   fixedExpenseItems?: ExpenseItemRecord[];
   articlesInitialized?: boolean;
   paymentDetails?: PaymentDetailsRecord;
+  authSigningKey?: string;
 }
 
 
@@ -149,6 +150,7 @@ export interface UserRecord {
   accessLevelId?: string;
   isActive: boolean;
   lastLoginAt?: string;
+  employeeId?: string | null;
 }
 
 export interface BikeModelRecord {
@@ -660,7 +662,7 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
       )
       .map((l: any) => {
         let actorName = l.actorName || "Администратор";
-        if (actorName.includes("Ковалев") || actorName.includes("Смирнов")) {
+        if ((actorName.includes("Ковалев") || actorName.includes("Смирнов")) && !existingUsers.some((user: UserRecord) => actorName.includes(user.fullName))) {
           actorName = "BXLETH (Руководитель парка)";
         }
         return {
@@ -724,12 +726,14 @@ rawDb = loadFromDisk();
 
 let isCloudInitialized = false;
 let hasPendingChanges = false;
+let changeVersion = 0;
+let cloudInitialization: Promise<void> | null = null;
 
 export const initCloudDb = async (): Promise<void> => {
   if (isCloudInitialized) return;
-  isCloudInitialized = true;
+  if (cloudInitialization) return cloudInitialization;
 
-  try {
+  cloudInitialization = (async () => { try {
     const cloudData = await supabaseAdapter.init(() => rawDb);
     if (cloudData) {
       const sanitized = sanitizeLoadedDb(cloudData);
@@ -743,9 +747,12 @@ export const initCloudDb = async (): Promise<void> => {
         // Silently ignore in read-only environment
       }
     }
+    isCloudInitialized = true;
   } catch (err: any) {
     console.error("[CRM DB] Ошибка инициализации облачной БД:", err.message);
-  }
+    throw err;
+  } finally { cloudInitialization = null; } })();
+  return cloudInitialization;
 };
 
 export const checkAndSyncCloudDb = async (force = false): Promise<boolean> => {
@@ -754,8 +761,9 @@ export const checkAndSyncCloudDb = async (force = false): Promise<boolean> => {
     return false;
   }
   try {
+    const version = changeVersion;
     const cloudData = await supabaseAdapter.syncIfOutdated(force);
-    if (cloudData) {
+    if (cloudData && !hasPendingChanges && version === changeVersion) {
       const sanitized = sanitizeLoadedDb(cloudData);
       Object.assign(rawDb, sanitized);
       return true;
@@ -779,9 +787,20 @@ export const flushDb = async (force = false): Promise<void> => {
     return;
   }
   saveDbToDiskSafe();
-  hasPendingChanges = false;
-  await supabaseAdapter.saveToCloud(rawDb);
-  await supabaseAdapter.flush();
+  const version = changeVersion;
+  const snapshot = JSON.parse(JSON.stringify(rawDb));
+  try {
+    await supabaseAdapter.saveToCloud(snapshot);
+    await supabaseAdapter.flush();
+  } catch (error: any) {
+    if (error.code === "CRM_STORE_CONFLICT" && error.cloudData && version === changeVersion) {
+      Object.assign(rawDb, sanitizeLoadedDb(error.cloudData));
+      hasPendingChanges = false;
+      saveDbToDiskSafe();
+    }
+    throw error;
+  }
+  if (version === changeVersion) hasPendingChanges = false;
 };
 
 function saveDbToDiskSafe() {
@@ -821,14 +840,15 @@ export function withDbTransaction<T>(operation: () => T): T {
 
 export const saveDb = (immediate = false) => {
   hasPendingChanges = true;
+  changeVersion++;
   if (transactionDepth > 0) return;
   saveDbToDiskSafe();
 
   if (immediate) {
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = null;
-    supabaseAdapter.saveToCloud(rawDb).catch((err) => {
-      console.error("[CRM DB] Ошибка сохранения в Supabase:", err);
+    flushDb().catch((err) => {
+      console.error("[CRM DB] Ошибка сохранения в Supabase:", err.message);
     });
     return;
   }
@@ -840,8 +860,9 @@ export const saveDb = (immediate = false) => {
 
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
-    supabaseAdapter.saveToCloud(rawDb).catch((err) => {
-      console.error("[CRM DB] Ошибка фоновой синхронизации Supabase:", err);
+    saveTimeout = null;
+    flushDb().catch((err) => {
+      console.error("[CRM DB] Ошибка фоновой синхронизации Supabase:", err.message);
     });
   }, 50);
 };
@@ -986,6 +1007,7 @@ export const isTimeSimulated = (): boolean => simulatedDate !== null;
 
 // Reset / Clear database to completely clean state
 export const clearDb = () => {
+  const authSigningKey = rawDb.settings?.authSigningKey;
   simulatedDate = null;
   rawDb.rentals = [];
   rawDb.repairs = [];
@@ -1001,10 +1023,12 @@ export const clearDb = () => {
   rawDb.batteryModels = [];
   rawDb.outfitTemplates = [];
   rawDb.tariffs = [];
-  rawDb.employees = [];
+  rawDb.partOrders = [];
+  rawDb.auditLogs = [];
   rawDb.articles = [];
   rawDb.loyaltyTiers = JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS));
   rawDb.settings = {
+    authSigningKey,
     monthlyFixedExpenses: 0,
     fixedExpensesDescription: "",
     fixedExpenseItems: [],

@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { User, AccessLevel, Employee, PaymentMethod } from '../types';
 import { api } from '../services/api';
@@ -75,6 +76,8 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ currentUser }) => 
       setIsLoading(false);
     }
   };
+
+  useCrmRefresh(loadData);
 
   useEffect(() => {
     loadData();

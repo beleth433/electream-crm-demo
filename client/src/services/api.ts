@@ -32,6 +32,7 @@ import {
   RetailOrder,
 } from '../types';
 
+import { notifyCrmChanged } from '../hooks/useCrmRefresh';
 const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
 
 function getAuthHeaders(): Record<string, string> {
@@ -43,6 +44,8 @@ function getAuthHeaders(): Record<string, string> {
       const name = u.fullName || u.username || u.login || '';
       const role = u.role || '';
       const headers: Record<string, string> = {};
+      const token = localStorage.getItem('crm_auth_token');
+      if (token) headers.Authorization = `Bearer ${token}`;
       if (id) headers['x-user-id'] = id;
       if (name) headers['x-user-name'] = encodeURIComponent(name);
       if (role) headers['x-user-role'] = role;
@@ -55,6 +58,7 @@ function getAuthHeaders(): Record<string, string> {
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const authHeaders = getAuthHeaders();
   const res = await fetch(`${API_BASE}${url}`, {
+    ...options,
     cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
@@ -63,10 +67,10 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
       ...authHeaders,
       ...options?.headers,
     },
-    ...options,
   });
 
   if (!res.ok) {
+    if (res.status === 401 && !url.startsWith('/auth/')) window.dispatchEvent(new Event('crm:session-expired'));
     let errorMessage = `HTTP error ${res.status}`;
     try {
       const text = await res.text();
@@ -79,21 +83,27 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     } catch {
       // ignore
     }
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage);
+    (error as any).status = res.status;
+    throw error;
   }
 
-  return res.json();
+  const result = await res.json();
+  if (options?.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method) && !/^\/(presence|chat|auth)\b/.test(url)) notifyCrmChanged();
+  return result;
 }
 
 export const api = {
   // Auth
   getMe: (userId?: string) =>
     fetchJson<User>(userId ? `/auth/me?userId=${encodeURIComponent(userId)}` : '/auth/me'),
-  login: (email: string, password?: string) =>
-    fetchJson<{ token: string; user: User }>('/auth/login', {
+  login: (email: string, password?: string, rememberDevice?: boolean) =>
+    fetchJson<{ token: string; user: User; trustedDeviceToken?: string }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, rememberDevice }),
     }),
+  trustedLogin: (token: string) => fetchJson<{ token: string; user: User }>('/auth/trusted-login', { method: 'POST', body: JSON.stringify({ token }) }),
+  logout: () => fetchJson<{ success: boolean }>('/auth/logout', { method: 'POST' }),
 
   // Dashboard
   getDashboardStats: () => fetchJson<DashboardStats>('/dashboard/stats'),

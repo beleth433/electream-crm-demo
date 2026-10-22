@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { Review, Bike, Client } from '../types';
 import { api } from '../services/api';
@@ -38,6 +39,8 @@ export const ReviewsPage: React.FC = () => {
       .catch((err) => toast.error('Ошибка загрузки отзывов: ' + err.message))
       .finally(() => setIsLoading(false));
   };
+
+  useCrmRefresh(loadData);
 
   useEffect(() => {
     loadData();

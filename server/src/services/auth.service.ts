@@ -1,7 +1,8 @@
 import { getDb } from "../repositories/db.js";
+import { authenticateSession, issueSession, verifyPassword, hashPassword } from "./session.service.js";
 
 export class AuthService {
-  static login(identifier: string, password?: string) {
+  static login(identifier: string, password?: string, rememberDevice = false) {
     const db = getDb();
     const clean = (identifier || "").trim().toLowerCase();
     const user = db.users.find(
@@ -25,10 +26,11 @@ export class AuthService {
     }
 
     const p = password.trim();
-    const valid = p === user.passwordHash;
+    const valid = verifyPassword(p, user.passwordHash);
     if (!valid) {
       throw new Error("Неверный пароль. Проверьте правильность ввода или обратитесь к руководителю.");
     }
+    if (!user.passwordHash.startsWith("scrypt:")) user.passwordHash = hashPassword(p);
 
     user.lastLoginAt = new Date().toISOString();
 
@@ -40,7 +42,8 @@ export class AuthService {
       (db.accessLevels || [])[0];
 
     return {
-      token: `jwt_session_${user.id}_${Date.now()}`,
+      token: issueSession(user),
+      trustedDeviceToken: rememberDevice ? issueSession(user, "device") : undefined,
       user: {
         id: user.id,
         login: user.login || user.username || user.email.split("@")[0],
@@ -57,6 +60,11 @@ export class AuthService {
         isActive: Boolean(user.isActive),
       },
     };
+  }
+
+  static trustedLogin(token: string) {
+    const user = authenticateSession(token, "device");
+    return { token: issueSession(user), user: this.getMe(user.id) };
   }
 
   static getMe(userId?: string) {

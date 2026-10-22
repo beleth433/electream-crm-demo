@@ -115,7 +115,7 @@ export class OutfitRepository {
       const activeRental = db.rentals.find(
         (r) =>
           r.outfitIds.includes(o.id) &&
-          (r.status === "ACTIVE" || r.status === "OVERDUE")
+          (r.status === "ACTIVE" || r.status === "OVERDUE" || r.status === "PROBLEM" || (r.status === "BOUGHT_OUT" && !r.depositRefunded && o.status === "ISSUED"))
       );
       const client = activeRental ? db.clients.find((c) => c.id === activeRental.clientId) : null;
       const categoryObj = db.outfitCategories.find((c) => c.id === o.category || c.name === o.category);
@@ -224,6 +224,8 @@ export class OutfitRepository {
     const db = getDb();
     const outfit = db.outfits.find((o) => o.id === id);
     if (!outfit) return null;
+    if (outfit.status === "SOLD" && status !== "SOLD") throw new Error("Экипировка продана и выбыла из склада");
+    if (status !== "ISSUED" && db.rentals.some((r) => r.outfitIds.includes(id) && (r.status === "ACTIVE" || r.status === "OVERDUE" || r.status === "PROBLEM"))) throw new Error("Для возврата выданной экипировки оформите приёмку по договору");
 
     outfit.status = status;
     saveDb();
@@ -236,6 +238,7 @@ export class OutfitRepository {
     if (index === -1) {
       throw new Error("Экипировка не найдена");
     }
+    if (db.rentals.some((r) => r.outfitIds.includes(id)) || db.retailOrders.some((order) => order.items.some((item) => item.itemType === "OUTFIT" && item.itemId === id))) throw new Error("Экипировка используется в договорах или чеках. Сохраните карточку для истории");
 
     const activeRental = db.rentals.find(
       (r) => r.outfitIds.includes(id) && (r.status === "ACTIVE" || r.status === "OVERDUE")

@@ -1,5 +1,6 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShopCatalog, RetailOrder, Client, PaymentMethod } from '../types';
+import { ShopCatalog, RetailOrder, Client, PaymentMethod, PaymentDetails } from '../types';
 import { api } from '../services/api';
 import { PrintableSaleReceiptModal } from './PrintableSaleReceiptModal';
 import {
@@ -46,6 +47,7 @@ export const ShopPage: React.FC = () => {
   const [catalog, setCatalog] = useState<ShopCatalog | null>(null);
   const [orders, setOrders] = useState<RetailOrder[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
   // Filters for POS catalog
@@ -81,21 +83,24 @@ export const ShopPage: React.FC = () => {
 
   const loadData = () => {
     setIsLoading(true);
-    Promise.all([api.getShopCatalog(), api.getShopOrders(), api.getClients()])
-      .then(([catalogData, ordersData, clientsData]) => {
+    Promise.all([api.getShopCatalog(), api.getShopOrders(), api.getClients(), api.getFinanceSettings()])
+      .then(([catalogData, ordersData, clientsData, settingsData]) => {
         setCatalog(catalogData);
         setOrders(ordersData);
         setClients(clientsData);
+        setPaymentDetails(settingsData.paymentDetails);
         const nextNum = getNextSequentialNumber(
           ordersData.map((o) => o.orderNumber),
           shopOrderPrefix,
           3
         );
-        setShopOrderNumber(nextNum);
+        setShopOrderNumber((current) => current || nextNum);
       })
       .catch((err) => toast.error('Ошибка загрузки данных магазина: ' + err.message))
       .finally(() => setIsLoading(false));
   };
+
+  useCrmRefresh(loadData);
 
   useEffect(() => {
     loadData();
@@ -1227,6 +1232,7 @@ export const ShopPage: React.FC = () => {
         isOpen={!!printedOrder}
         onClose={() => setPrintedOrder(null)}
         order={printedOrder}
+        paymentDetails={paymentDetails}
       />
     </div>
   );

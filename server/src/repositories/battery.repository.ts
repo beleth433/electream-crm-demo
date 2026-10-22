@@ -96,6 +96,7 @@ export class BatteryRepository {
 
   static deleteBatteryModel(id: string) {
     const db = getDb();
+    if (db.tariffs.some((tariff) => tariff.includedBatteries?.some((battery) => battery.batteryModelId === id))) throw new Error("Модель АКБ используется в тарифах выкупа");
     const index = db.batteryModels.findIndex((m) => m.id === id);
     if (index === -1) {
       throw new Error("Шаблон модели аккумулятора не найден");
@@ -308,6 +309,7 @@ export class BatteryRepository {
       throw new Error("Аккумулятор не найден");
     }
     const existing = db.batteries[index];
+    if (["SOLD", "DECOMMISSIONED"].includes(existing.status) && data.status && data.status !== existing.status) throw new Error("АКБ выбыл из парка; его нельзя вернуть изменением статуса");
     if (data.status && data.status !== existing.status) {
       if ((data.status === "INSTALLED" && !existing.installedBikeId) || (data.status === "ISSUED_SPARE" && !existing.issuedBikeId)) {
         throw new Error("Для выдачи или установки АКБ используйте привязку к велосипеду или договору");
@@ -372,6 +374,7 @@ export class BatteryRepository {
     }
 
     const battery = db.batteries[index];
+    if (db.rentals.some((r) => r.batteryIds?.includes(id)) || db.repairs.some((r) => r.batteryId === id) || db.retailOrders.some((order) => order.items.some((item) => item.itemType === "BATTERY" && item.itemId === id))) throw new Error("АКБ используется в договорах, заказ-нарядах или чеках. Сохраните карточку для истории");
     if (battery.installedBikeId) {
       const bike = db.bikes.find((b) => b.id === battery.installedBikeId);
       throw new Error(

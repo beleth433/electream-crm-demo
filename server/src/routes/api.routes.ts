@@ -21,6 +21,7 @@ import { PresenceController } from "../controllers/presence.controller.js";
 import { OutfitController } from "../controllers/outfit.controller.js";
 import { LoyaltyController } from "../controllers/loyalty.controller.js";
 import { ShopController } from "../controllers/shop.controller.js";
+import { authenticateApi } from "../middleware/auth.js";
 
 const router = Router();
 const accessLevelCtrl = new AccessLevelController();
@@ -28,6 +29,9 @@ const userCtrl = new UserController();
 
 // 1. Auth
 router.post("/auth/login", AuthController.login);
+router.post("/auth/trusted-login", AuthController.trustedLogin);
+router.use(authenticateApi);
+router.post("/auth/logout", AuthController.logout);
 router.get("/auth/me", AuthController.getMe);
 
 // 2. Dashboard

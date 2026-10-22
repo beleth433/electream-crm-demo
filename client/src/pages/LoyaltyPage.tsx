@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { LoyaltyTier, Client } from '../types';
 import { api } from '../services/api';
@@ -74,6 +75,8 @@ export const LoyaltyPage: React.FC = () => {
       .catch((err) => toast.error('Ошибка загрузки данных программы лояльности: ' + err.message))
       .finally(() => setIsLoading(false));
   };
+
+  useCrmRefresh(loadData);
 
   useEffect(() => {
     loadData();

@@ -250,6 +250,7 @@ export class RepairRepository {
     const db = getDb();
     const repair = db.repairs.find((r) => r.id === id);
     if (!repair) return null;
+    if (!["DIAGNOSTICS", "WAITING_PARTS", "IN_PROGRESS", "COMPLETED", "CANCELLED"].includes(status)) throw new Error("Неизвестный статус заказ-наряда");
     if (status === repair.status) return this.getById(id);
     if (repair.status === "COMPLETED" || repair.status === "CANCELLED") throw new Error("Завершённый или отменённый заказ-наряд нельзя открыть повторно");
     if (status === "COMPLETED") return this.complete(id, {});

@@ -4,8 +4,10 @@ import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
 import apiRouter from "./routes/api.routes.js";
+import { authenticateApi } from "./middleware/auth.js";
+import { UploadController } from "./controllers/upload.controller.js";
 import { initCloudDb, flushDb, checkAndSyncCloudDb, getDb, getStorageStatus } from "./repositories/db.js";
-import { userStorage, CurrentUserContext } from "./context/userContext.js";
+
 
 dotenv.config();
 
@@ -31,50 +33,6 @@ app.use(
 
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
-
-// User context extraction middleware (stores current authenticated user in AsyncLocalStorage)
-app.use((req, res, next) => {
-  const userId = req.headers["x-user-id"] as string | undefined;
-  const userNameHeader = req.headers["x-user-name"] as string | undefined;
-  const userRole = req.headers["x-user-role"] as string | undefined;
-
-  let userName: string | undefined;
-  if (userNameHeader) {
-    try {
-      userName = decodeURIComponent(userNameHeader);
-    } catch {
-      userName = userNameHeader;
-    }
-  }
-
-  let userCtx: CurrentUserContext | undefined;
-  if (userId || userName) {
-    try {
-      const db = getDb();
-      const userFromDb = userId ? db.users?.find((u) => u.id === userId) : undefined;
-      const resolvedName = userName || userFromDb?.fullName || "Сотрудник";
-      const roleTitle =
-        userFromDb?.roleTitle ||
-        (userRole === "ADMIN" ? "Руководитель" : userRole === "MECHANIC" ? "Мастер" : "Менеджер");
-      userCtx = {
-        id: userId || userFromDb?.id || "usr-current",
-        fullName: resolvedName,
-        role: userRole || userFromDb?.role || "ADMIN",
-        roleTitle,
-        displayName: `${resolvedName} (${roleTitle})`,
-      };
-      (req as any).currentUser = userCtx;
-    } catch {
-      // In case DB is not yet loaded at early ping
-    }
-  }
-
-  if (userCtx) {
-    userStorage.run(userCtx, () => next());
-  } else {
-    next();
-  }
-});
 
 // Immediate Health & Diagnostics endpoints (never block on DB initialization)
 app.get(["/health", "/api/health"], (req, res) => {
@@ -115,6 +73,22 @@ app.use((req, res, next) => {
   next();
 });
 
+// Serialize requests within a worker through persistence. Optimistic cloud
+// versions protect the shared snapshot from writes by other workers.
+let requestQueue = Promise.resolve();
+app.use(async (req, res, next) => {
+  const previous = requestQueue;
+  let release!: () => void;
+  requestQueue = new Promise<void>((resolve) => { release = resolve; });
+  await previous;
+  if (res.destroyed) { release(); return; }
+  let finished = false;
+  const finish = () => { if (!finished) { finished = true; release(); } };
+  res.once("finish", finish);
+  res.once("close", finish);
+  next();
+});
+
 // Storage middleware: ensure DB ready & fresh from Supabase before reading, and flush write requests before response concludes
 app.use(async (req, res, next) => {
   if (req.path.includes("health") || req.path.includes("diagnostics")) {
@@ -140,7 +114,10 @@ app.use(async (req, res, next) => {
       try {
         await flushDb(true);
       } catch (err: any) {
-        console.error("[Storage Middleware] Flush error:", err);
+        console.error("[Storage Middleware] Flush error:", err.message);
+        res.status(err.code === "CRM_STORE_CONFLICT" ? 409 : 503);
+        originalSend(JSON.stringify({ error: err.code === "CRM_STORE_CONFLICT" ? err.message : "Не удалось подтвердить сохранение в облако. Изменение осталось в локальном состоянии; обновите данные после восстановления подключения." }));
+        return;
       }
       cb();
     };
@@ -162,7 +139,7 @@ app.use(async (req, res, next) => {
 });
 
 // Safe static files for uploads (read-only filesystem safe for serverless)
-const uploadsDir = process.env.VERCEL
+const uploadsDir = process.env.CRM_UPLOADS_DIR ? path.resolve(process.env.CRM_UPLOADS_DIR) : process.env.VERCEL
   ? path.resolve("/tmp", "uploads")
   : path.resolve(process.cwd(), "uploads");
 
@@ -173,7 +150,8 @@ try {
 } catch (e: any) {
   // Graceful fallback for read-only environments
 }
-app.use("/uploads", express.static(uploadsDir));
+app.get("/uploads/cloud/:filename", authenticateApi, UploadController.downloadCloud);
+app.use("/uploads", authenticateApi, express.static(uploadsDir));
 
 
 // API Routes (mount on both /api and root to support Vercel rewrites)

@@ -13,7 +13,7 @@ export class ShopController {
 
   static async createOrder(req: Request, res: Response) {
     try {
-      const { customerType, customerName, customerPhone, clientId, items, paymentMethod, notes } =
+      const { customerType, customerName, customerPhone, clientId, items, paymentMethod, notes, orderNumber } =
         req.body;
 
       if (!items || items.length === 0) {
@@ -28,6 +28,7 @@ export class ShopController {
         items,
         paymentMethod: paymentMethod || 'CASH',
         notes,
+        orderNumber,
       });
 
       res.status(201).json({

@@ -130,13 +130,15 @@ export const BankStatementImportModal: React.FC<BankStatementImportModalProps> =
         const bytes = new TextEncoder().encode(signature);
         const digest = await crypto.subtle.digest('SHA-256', bytes);
         const reference = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+        const externalReference = tx.externalReference || `bank:${reference}:${ordinal}`;
+        setTransactions((items) => items.map((entry) => entry.id === tx.id ? { ...entry, externalReference } : entry));
 
         await api.renewRental(rental.id, {
           amount: tx.amount,
           durationDays,
           method: 'BANK_TRANSFER',
           createdAt: new Date(tx.date).toISOString(),
-          externalReference: `bank:${reference}:${ordinal}`,
+          externalReference,
           notes: `Автоматический импорт из банковской выписки. Плательщик: ${tx.payerName || 'Не указан'}. Назначение: ${tx.purpose || ''}`,
         });
 

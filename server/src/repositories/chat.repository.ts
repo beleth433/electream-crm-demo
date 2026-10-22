@@ -1,4 +1,5 @@
 import { getDb, saveDb, ChatMessageRecord } from './db.js';
+import { getCurrentUser } from '../context/userContext.js';
 
 export class ChatRepository {
   public static getMessages(limit = 100): ChatMessageRecord[] {
@@ -23,9 +24,9 @@ export class ChatRepository {
 
     const newMessage: ChatMessageRecord = {
       id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      senderId: data.senderId,
-      senderName: data.senderName,
-      senderRole: data.senderRole || 'USER',
+      senderId: getCurrentUser()?.id || data.senderId,
+      senderName: getCurrentUser()?.fullName || data.senderName,
+      senderRole: getCurrentUser()?.roleTitle || data.senderRole || 'USER',
       text: data.text.trim(),
       createdAt: new Date().toISOString(),
     };

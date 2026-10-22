@@ -46,7 +46,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
       if (user) {
         setFullName(user.fullName || '');
         setLogin(user.login || user.username || '');
-        setPassword(user.password || '');
+        setPassword('');
         setPhone(user.phone || '+7 ');
         setRoleTitle(user.roleTitle || '');
         setAccessLevelId(user.accessLevelId || 'lvl-manager');

@@ -14,6 +14,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
   isOpen,
   onClose,
   rental,
+  paymentDetails,
 }) => {
   if (!rental) return null;
 
@@ -103,11 +104,13 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 my-4 text-[11px]">
             <div>
               <p className="font-bold text-slate-800 mb-1">АРЕНДОДАТЕЛЬ:</p>
-              <p>ООО «Курьер Электро Транспорт»</p>
-              <p>ИНН 7701984210 / КПП 770101001</p>
-              <p>Адрес базы: г. Москва, Дмитровский пр., д. 10</p>
+              <p>{paymentDetails?.recipientName || 'ELECTREAM PRO SAMOKAT'}</p>
+              {paymentDetails?.inn && <p>ИНН {paymentDetails.inn}</p>}
+              {paymentDetails?.bankName && <p>Банк: {paymentDetails.bankName}</p>}
+              {paymentDetails?.accountNumber && <p>Расчётный счёт: {paymentDetails.accountNumber}</p>}
+              {paymentDetails?.bik && <p>БИК: {paymentDetails.bik}</p>}
               <p>Менеджер: {rental.manager?.fullName || 'Администратор парка'}</p>
-              <p>Тел. диспетчерской: +7 (495) 120-40-50</p>
+              {paymentDetails?.phoneNumber && <p>Телефон: {paymentDetails.phoneNumber}</p>}
             </div>
             <div>
               <p className="font-bold text-slate-800 mb-1">АРЕНДАТОР (КУРЬЕР):</p>

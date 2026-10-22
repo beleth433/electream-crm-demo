@@ -185,7 +185,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
         <KpiCard
           label="Поступления за месяц"
           value={`₽${totalRevenue.toLocaleString('ru-RU')}`}
-          delta={0}
+          delta={revenueData.at(-2)?.total ? (totalRevenue - revenueData.at(-2)!.total) / revenueData.at(-2)!.total : undefined}
           period="текущий месяц"
           trend={revenueData.map((r) => r.total)}
           className="border-slate-200 dark:border-emerald-500/20 shadow-xs hover:border-emerald-500/40 transition-colors"
@@ -195,9 +195,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
         <KpiCard
           label="Байков на линии (в аренде)"
           value={`${rentedBikes} шт.`}
-          delta={0}
           period={`из ${totalBikes} в парке`}
-          trend={revenueData.map(() => rentedBikes)}
           className="border-slate-200 dark:border-emerald-500/20 shadow-xs hover:border-emerald-500/40 transition-colors"
         />
 
@@ -205,10 +203,8 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
         <KpiCard
           label="Доля просрочек и долгов"
           value={`${overduePercent.toFixed(1)}%`}
-          delta={0}
           good="down"
           period={overdueCount > 0 ? `${overdueCount} долж.` : 'нет должников'}
-          trend={revenueData.map(() => overduePercent)}
           className="border-slate-200 dark:border-emerald-500/20 shadow-xs hover:border-emerald-500/40 transition-colors sm:col-span-2 lg:col-span-1"
         />
       </div>

@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { Client, ClientStatus } from '../types';
 import { api } from '../services/api';
@@ -22,6 +23,7 @@ import {
   KeyRound,
   Award,
   ShoppingBag,
+  Wrench,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { COURIER_SERVICES } from '../constants/courierServices';
@@ -33,7 +35,7 @@ export const ClientsPage: React.FC = () => {
   const [serviceFilter, setServiceFilter] = useState<string>('ALL');
   const [clientTypeFilter, setClientTypeFilter] = useState<'ALL' | 'COURIER' | 'RETAIL'>('ALL');
   const [search, setSearch] = useState('');
-  const [profileTab, setProfileTab] = useState<'RENTALS' | 'RETAIL' | 'LOYALTY'>('RENTALS');
+  const [profileTab, setProfileTab] = useState<'RENTALS' | 'RETAIL' | 'REPAIRS' | 'LOYALTY'>('RENTALS');
 
   // Contact / Phone QR Modal
   const [selectedContactModal, setSelectedContactModal] = useState<{
@@ -144,6 +146,11 @@ export const ClientsPage: React.FC = () => {
       .catch((err) => toast.error('Ошибка загрузки клиентов: ' + err.message))
       .finally(() => setIsLoading(false));
   };
+
+  useCrmRefresh(() => {
+    loadData();
+    if (profileClient) api.getClient(profileClient.id).then(setProfileClient).catch(() => {});
+  });
 
   useEffect(() => {
     loadData();
@@ -1149,7 +1156,7 @@ export const ClientsPage: React.FC = () => {
             </div>
 
             {/* Profile Tabs */}
-            <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2">
+            <div className="flex flex-wrap border-b border-slate-200 dark:border-slate-800 gap-2">
               <button
                 type="button"
                 onClick={() => setProfileTab('RENTALS')}
@@ -1185,6 +1192,9 @@ export const ClientsPage: React.FC = () => {
               >
                 <Award className="w-3.5 h-3.5" />
                 Лояльность и скидки
+              </button>
+              <button type="button" onClick={() => setProfileTab('REPAIRS')} className={`min-h-[44px] px-3 py-2 text-xs font-bold border-b-2 flex items-center gap-1.5 ${profileTab === 'REPAIRS' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500'}`}>
+                <Wrench className="w-3.5 h-3.5" />СТО ({profileClient.repairs?.length || 0})
               </button>
             </div>
 
@@ -1251,6 +1261,18 @@ export const ClientsPage: React.FC = () => {
                     </div>
                   ))
                 )}
+              </div>
+            )}
+
+            {profileTab === 'REPAIRS' && (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {(profileClient.repairs || []).length === 0 ? <p className="text-center py-6 text-slate-400">У клиента пока нет заказ-нарядов СТО.</p> : (profileClient.repairs || []).map((repair) => (
+                  <div key={repair.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-sm space-y-2">
+                    <div className="flex flex-wrap justify-between gap-2"><strong>{repair.orderNumber}</strong><StatusBadge type="repair" status={repair.status} /></div>
+                    <p>{repair.description}</p>
+                    <p>{new Date(repair.createdAt).toLocaleDateString('ru-RU')} · {repair.totalCost.toLocaleString('ru-RU')} ₽</p>
+                  </div>
+                ))}
               </div>
             )}
 

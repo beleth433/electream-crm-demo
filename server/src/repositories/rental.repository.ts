@@ -30,6 +30,7 @@ export class RentalRepository {
       const fullTariff = tariff ? { ...tariff, bikeModel: tariffBikeModel } : null;
       const outfits = db.outfits.filter((o) => r.outfitIds.includes(o.id));
       const payments = db.payments.filter((p) => p.rentalId === r.id);
+      const manager = db.users.find((user) => user.id === r.managerId);
       const batteries = db.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
 
       const buyoutPayments = payments.filter((p) => p.type === 'RENTAL' || p.type === 'BUYOUT');
@@ -45,6 +46,7 @@ export class RentalRepository {
         tariff: fullTariff,
         outfits,
         payments,
+        manager,
         totalPaidForBuyout,
         totalBuyoutPrice,
         remainingBuyoutAmount,
@@ -283,7 +285,9 @@ export class RentalRepository {
 
     const isRentToOwn = tariff.type === "RENT_TO_OWN";
     const paymentIntervalDays = data.paymentIntervalDays ?? tariff.paymentIntervalDays ?? (isRentToOwn ? 7 : tariff.durationDays);
-    const totalBuyoutPrice = data.totalBuyoutPrice ?? tariff.totalBuyoutPrice ?? (isRentToOwn ? tariff.price : undefined);
+    const model = db.models.find((item) => item.id === bike.modelId);
+    const fallbackKitPrice = (model?.baseBuyoutPrice || model?.salePrice || 60000) + batteries.reduce((sum, battery) => sum + (battery.salePrice || db.batteryModels.find((item) => item.id === battery.modelId)?.salePrice || 25000), 0);
+    const totalBuyoutPrice = data.totalBuyoutPrice ?? tariff.totalBuyoutPrice ?? (isRentToOwn ? fallbackKitPrice : undefined);
     const installmentPayment = data.installmentPayment ?? tariff.installmentPayment ?? (isRentToOwn ? tariff.price : undefined);
     const discount = ClientRepository.computeClientLoyalty(client).loyaltyTier.discountRentalPercent;
     const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? (installmentPayment ?? tariff.price) : Math.round(tariff.price * (1 - discount / 100) * 100) / 100);
@@ -316,8 +320,8 @@ export class RentalRepository {
       bikeId: data.bikeId,
       tariffId: data.tariffId,
       managerId:
-        data.managerId ||
         getCurrentUser()?.id ||
+        data.managerId ||
         db.users.find((u) => u.role === "MANAGER" || u.role === "ADMIN")?.id ||
         db.users[0]?.id ||
         "usr-admin",
@@ -553,11 +557,12 @@ export class RentalRepository {
     // 1. Process Bike Return
     let repairOrderCreated = null;
     if (bike && !isBoughtOut) {
+      const existingRepair = db.repairs.find((repair) => repair.bikeId === bike.id && repair.status !== "COMPLETED" && repair.status !== "CANCELLED");
       if (data.bikeMileageKm && data.bikeMileageKm > bike.mileageKm) {
         bike.mileageKm = data.bikeMileageKm;
       }
 
-      if (data.bikeCondition === "NEEDS_REPAIR") {
+      if (data.bikeCondition === "NEEDS_REPAIR" || existingRepair) {
         bike.status = "IN_MAINTENANCE";
         bike.currentLocation = "Мастерская СТО (возврат с дефектом)";
         bike.note = data.defectDescription || "Обнаружены дефекты при приемке из аренды";
@@ -587,7 +592,8 @@ export class RentalRepository {
           completedAt: null,
           parts: [],
         };
-        db.repairs.push(repairOrderCreated);
+        if (existingRepair) repairOrderCreated = existingRepair as typeof repairOrderCreated;
+        else db.repairs.push(repairOrderCreated);
       } else {
         bike.status = "AVAILABLE";
         bike.currentLocation = "Центральная база (м. Дмитровская)";

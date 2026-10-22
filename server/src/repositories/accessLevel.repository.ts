@@ -61,6 +61,9 @@ export class AccessLevelRepository {
     if (index === -1) return null;
 
     const existing = db.accessLevels[index];
+    if (id === "lvl-owner" && (data.canManageEmployees === false || data.canSeeProfits === false || Object.values(data.permissions || {}).some((permission) => !permission.visible || !permission.canEdit || !permission.canDelete))) {
+      throw new Error("Системный уровень владельца должен сохранять полный доступ");
+    }
     const updated: AccessLevelRecord = {
       ...existing,
       name: data.name !== undefined ? data.name.trim() : existing.name,

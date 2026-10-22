@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { Payment, PaymentType, PaymentMethod, FinanceSettings, ExpenseItem, Rental, User, Client } from '../types';
 import { api } from '../services/api';
@@ -141,6 +142,8 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
       .catch((err) => toast.error('Ошибка загрузки финансов: ' + err.message))
       .finally(() => setIsLoading(false));
   };
+
+  useCrmRefresh(loadData);
 
   useEffect(() => {
     loadData();

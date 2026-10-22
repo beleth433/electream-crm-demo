@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { Bike, BikeModel, BikeStatus, Battery } from '../types';
 import { api } from '../services/api';
@@ -233,6 +234,8 @@ export const BikesPage: React.FC = () => {
       .finally(() => setIsLoading(false));
   };
 
+  useCrmRefresh(loadData);
+
   useEffect(() => {
     loadData();
   }, [statusFilter]);
@@ -467,6 +470,8 @@ export const BikesPage: React.FC = () => {
             { id: 'IN_MAINTENANCE', label: 'На ремонте' },
             { id: 'FOR_SALE', label: 'На продаже' },
             { id: 'DECOMMISSIONED', label: 'Списанные' },
+            { id: 'SOLD', label: 'Проданные' },
+            { id: 'BOUGHT_OUT', label: 'Выкупленные' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1320,6 +1325,8 @@ export const BikesPage: React.FC = () => {
                 <option value="IN_MAINTENANCE">IN_MAINTENANCE (На СТО)</option>
                 <option value="FOR_SALE">FOR_SALE (На продажу)</option>
                 <option value="DECOMMISSIONED">DECOMMISSIONED (Списан)</option>
+                <option value="SOLD" disabled>Продан через магазин</option>
+                <option value="BOUGHT_OUT" disabled>Выкуплен клиентом</option>
               </select>
             </div>
             <div className="flex flex-col justify-between">

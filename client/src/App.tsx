@@ -112,7 +112,7 @@ const MainLayout: React.FC = () => {
   const { theme } = useTheme();
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
-      const saved = localStorage.getItem('crm_auth_user');
+      const saved = localStorage.getItem('crm_auth_token') ? localStorage.getItem('crm_auth_user') : null;
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -120,13 +120,22 @@ const MainLayout: React.FC = () => {
   });
 
   const handleLogout = () => {
+    api.logout().catch(() => {});
     if (currentUser?.id) {
       api.sendPresenceLogout(currentUser.id).catch(() => {});
     }
     localStorage.removeItem('crm_auth_token');
     localStorage.removeItem('crm_auth_user');
     setCurrentUser(null);
+    queryClient.clear();
   };
+  useEffect(() => {
+    const expired = () => { handleLogout(); toast.info('Сессия завершена. Войдите заново.'); };
+    const changed = () => { ['dashboardStats', 'batteryStats', 'partOrders', 'financeSettings', 'articles'].forEach((key) => queryClient.invalidateQueries({ queryKey: [key] })); };
+    window.addEventListener('crm:session-expired', expired);
+    window.addEventListener('crm:data-changed', changed);
+    return () => { window.removeEventListener('crm:session-expired', expired); window.removeEventListener('crm:data-changed', changed); };
+  }, [currentUser?.id]);
 
   const [currentTab, setCurrentTab] = useState<string>(getInitialTab);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -222,6 +231,7 @@ const MainLayout: React.FC = () => {
   // Fetch Dashboard Stats query
   const { data: stats, refetch: refetchStats } = useQuery({
     queryKey: ['dashboardStats'],
+    enabled: Boolean(currentUser),
     queryFn: api.getDashboardStats,
     refetchInterval: 10000,
   });
@@ -280,7 +290,7 @@ const MainLayout: React.FC = () => {
   }, [serverUserProfile, currentUser]);
 
   useEffect(() => {
-    if (profileError && currentUser) {
+    if (profileError && currentUser && [401, 404].includes((profileError as any).status)) {
       toast.error('Сессия пользователя недействительна. Пожалуйста, выполните вход.');
       handleLogout();
     }
@@ -289,6 +299,7 @@ const MainLayout: React.FC = () => {
   // Fetch Finance Settings (Payment Details for QR)
   const { data: financeSettings } = useQuery({
     queryKey: ['financeSettings'],
+    enabled: Boolean(currentUser),
     queryFn: api.getFinanceSettings,
     refetchInterval: 30000,
   });
@@ -296,6 +307,7 @@ const MainLayout: React.FC = () => {
   // Polling Online Users (Heartbeat & Presence Tracker)
   const { data: onlineUsers = [] } = useQuery<PresenceUser[]>({
     queryKey: ['onlineUsers'],
+    enabled: Boolean(currentUser),
     queryFn: api.getOnlineUsers,
     refetchInterval: 8000,
   });
@@ -340,6 +352,7 @@ const MainLayout: React.FC = () => {
   // Polling Chat Messages for in-app toasts, sound chime and unread badge
   const { data: chatMessages = [], refetch: refetchChat } = useQuery<ChatMessage[]>({
     queryKey: ['chatMessages'],
+    enabled: Boolean(currentUser),
     queryFn: () => api.getChatMessages(50),
     refetchInterval: 3500,
   });
@@ -496,7 +509,7 @@ const MainLayout: React.FC = () => {
       case 'rentals':
         return 'Управление арендой и выкупом';
       case 'shop':
-        return 'Магазин и кассовый терминал (POS)';
+        return 'Магазин и касса';
       case 'bikes':
         return 'Парк электровелосипедов';
       case 'batteries':

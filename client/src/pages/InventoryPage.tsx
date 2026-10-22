@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Part, PartOrder, PartCategoryItem, PartOrderCategoryItem, PaymentMethod, User as AppUser } from '../types';
 import { api } from '../services/api';
@@ -737,6 +738,8 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
       toast.error(err.message || 'Ошибка удаления заявки');
     }
   };
+
+  useCrmRefresh(loadData);
 
   useEffect(() => {
     loadData();

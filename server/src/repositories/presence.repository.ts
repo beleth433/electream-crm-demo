@@ -1,4 +1,5 @@
 import { getDb, saveDb, PresenceRecord } from './db.js';
+import { getCurrentUser } from '../context/userContext.js';
 
 // Consider users active if heartbeat received within 45 seconds
 const INACTIVITY_TIMEOUT_MS = 45 * 1000;
@@ -24,6 +25,8 @@ export class PresenceRepository {
     deviceInfo?: string;
   }): PresenceRecord[] {
     const db = getDb();
+    const current = getCurrentUser();
+    if (current) data = { ...data, userId: current.id, userName: current.fullName, userRole: current.role, roleTitle: current.roleTitle };
     if (!db.presence) {
       db.presence = [];
     }
@@ -63,6 +66,7 @@ export class PresenceRepository {
   }
 
   public static logout(userId: string): boolean {
+    userId = getCurrentUser()?.id || userId;
     const db = getDb();
     if (!db.presence) return false;
     const initialLen = db.presence.length;

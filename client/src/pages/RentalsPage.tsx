@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { Rental, RentalStatus, Tariff, BikeModel, BatteryModel, TariffBuyoutBatteryItem } from '../types';
 import { api } from '../services/api';
@@ -133,6 +134,8 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
       .catch((err) => toast.error('Ошибка загрузки аренд: ' + err.message))
       .finally(() => setIsLoading(false));
   };
+
+  useCrmRefresh(() => { loadRentals(); loadTariffs(); });
 
   useEffect(() => {
     loadRentals();

@@ -293,6 +293,7 @@ export interface Client {
   retailOrdersCount?: number;
   retailOrdersSpent?: number;
   retailOrders?: RetailOrder[];
+  repairs?: RepairOrder[];
   isCourier?: boolean;
   isRetailBuyer?: boolean;
 }

@@ -1,4 +1,4 @@
-import { getDb, saveDb, AuditLogRecord } from "./db.js";
+import { getDb, getSystemTime, saveDb, AuditLogRecord } from "./db.js";
 import { getCurrentUser } from "../context/userContext.js";
 
 export interface UnifiedHistoryItem {
@@ -46,7 +46,7 @@ export class HistoryRepository {
       badgeText: entry.badgeText,
       badgeColor: entry.badgeColor,
       entityId: entry.entityId,
-      createdAt: new Date().toISOString(),
+      createdAt: getSystemTime().toISOString(),
     };
 
     db.auditLogs.unshift(log);
@@ -70,9 +70,6 @@ export class HistoryRepository {
     // 1. Explicit audit logs
     (db.auditLogs || []).forEach((log) => {
       let actor = log.actorName || "Администратор";
-      if (actor.includes("Ковалев") || actor.includes("Смирнов")) {
-        actor = "BXLETH (Руководитель парка)";
-      }
       items.push({
         id: log.id,
         category: log.category,
@@ -341,7 +338,7 @@ export class HistoryRepository {
 
     // Filter by days
     if (filters?.days && filters.days > 0) {
-      const cutoff = new Date(Date.now() - filters.days * 86400000).getTime();
+      const cutoff = getSystemTime().getTime() - filters.days * 86400000;
       result = result.filter((item) => new Date(item.timestamp).getTime() >= cutoff);
     }
 

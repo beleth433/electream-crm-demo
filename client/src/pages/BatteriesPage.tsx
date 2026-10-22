@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { Battery, BatteryModel, BatteryStats, BatteryStatus, Bike, BatteryChemistry } from '../types';
 import { api } from '../services/api';
@@ -189,6 +190,8 @@ export const BatteriesPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  useCrmRefresh(loadData);
 
   useEffect(() => {
     loadData();

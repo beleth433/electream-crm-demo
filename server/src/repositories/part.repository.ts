@@ -233,6 +233,7 @@ export class PartRepository {
     if (index === -1) {
       throw new Error("Запчасть не найдена");
     }
+    if (db.repairs.some((repair) => repair.parts.some((part) => part.partId === id)) || db.partOrders?.some((order) => order.partId === id) || db.retailOrders.some((order) => order.items.some((item) => item.itemType === "PART" && item.itemId === id))) throw new Error("Запчасть используется в заказ-нарядах, закупках или чеках");
 
     const removed = db.parts.splice(index, 1)[0];
     return removed;

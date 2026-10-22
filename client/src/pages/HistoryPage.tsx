@@ -1,3 +1,4 @@
+import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { HistoryItem } from '../types';
 import { api } from '../services/api';
@@ -47,6 +48,8 @@ export const HistoryPage: React.FC = () => {
       .catch((err) => toast.error('Ошибка загрузки истории действий: ' + err.message))
       .finally(() => setIsLoading(false));
   };
+
+  useCrmRefresh(loadHistory);
 
   useEffect(() => {
     loadHistory();

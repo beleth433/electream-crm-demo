@@ -204,7 +204,8 @@ export class FinanceRepository {
   }
 
   static getSettings() {
-    return getSettings();
+    const { authSigningKey, ...settings } = getSettings();
+    return settings;
   }
 
   static updateSettings(data: {
@@ -213,7 +214,8 @@ export class FinanceRepository {
     fixedExpenseItems?: Array<{ id?: string; name: string; amount: number }>;
     paymentDetails?: any;
   }) {
-    return updateSettings(data);
+    const { authSigningKey, ...settings } = updateSettings(data);
+    return settings;
   }
 
 

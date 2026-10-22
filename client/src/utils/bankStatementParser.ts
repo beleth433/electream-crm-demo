@@ -13,6 +13,7 @@ export function parseBankDate(value: string | number): string {
 }
 
 export interface ParsedBankTransaction {
+  externalReference?: string;
   id: string;
   date: string;
   amount: number;

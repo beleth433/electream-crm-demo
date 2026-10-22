@@ -1,17 +1,19 @@
 import React from 'react';
-import { RetailOrder } from '../types';
+import { RetailOrder, PaymentDetails } from '../types';
 import { Printer, X, ShieldCheck, ShoppingBag, CheckCircle } from 'lucide-react';
 
 interface PrintableSaleReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: RetailOrder | null;
+  paymentDetails?: PaymentDetails;
 }
 
 export const PrintableSaleReceiptModal: React.FC<PrintableSaleReceiptModalProps> = ({
   isOpen,
   onClose,
   order,
+  paymentDetails,
 }) => {
   if (!isOpen || !order) return null;
 
@@ -66,14 +68,14 @@ export const PrintableSaleReceiptModal: React.FC<PrintableSaleReceiptModalProps>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-base text-emerald-600 dark:text-emerald-400 tracking-tight">
-                  COURIER E-BIKE HUB & SERVICE
+                  {paymentDetails?.recipientName || 'ELECTREAM PRO SAMOKAT'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
                 Сервисный центр и магазин электровелосипедов для служб доставки
               </p>
               <p className="text-[10px] text-slate-400">
-                Москва, ул. Новодмитровская, 5А • Тел: +7 (495) 120-55-90 • ebike-crm.ru
+                {paymentDetails?.inn && `ИНН: ${paymentDetails.inn}`}{paymentDetails?.phoneNumber && ` · Тел.: ${paymentDetails.phoneNumber}`}
               </p>
             </div>
             <div className="text-right">

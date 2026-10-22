@@ -29108,12 +29108,12 @@ var require_helpers = __commonJS({
       return typeof maybeResponse === "object" && maybeResponse !== null && "status" in maybeResponse && "ok" in maybeResponse && "json" in maybeResponse && typeof maybeResponse.json === "function";
     };
     exports2.looksLikeFetchResponse = looksLikeFetchResponse;
-    var setItemAsync = async (storage2, key, data) => {
-      await storage2.setItem(key, JSON.stringify(data));
+    var setItemAsync = async (storage, key, data) => {
+      await storage.setItem(key, JSON.stringify(data));
     };
     exports2.setItemAsync = setItemAsync;
-    var getItemAsync = async (storage2, key) => {
-      const value = await storage2.getItem(key);
+    var getItemAsync = async (storage, key) => {
+      const value = await storage.getItem(key);
       if (!value) {
         return null;
       }
@@ -29124,8 +29124,8 @@ var require_helpers = __commonJS({
       }
     };
     exports2.getItemAsync = getItemAsync;
-    var removeItemAsync = async (storage2, key) => {
-      await storage2.removeItem(key);
+    var removeItemAsync = async (storage, key) => {
+      await storage.removeItem(key);
     };
     exports2.removeItemAsync = removeItemAsync;
     var Deferred = class _Deferred {
@@ -29242,59 +29242,59 @@ var require_helpers = __commonJS({
     var pkceVerifierSlotKey = (storageKey, flowId) => `${storageKey}-flow-${flowId}-code-verifier`;
     exports2.pkceVerifierSlotKey = pkceVerifierSlotKey;
     var pkceFlowIndexKey = (storageKey) => `${storageKey}-flows-code-verifier`;
-    async function getPKCEFlowIndex(storage2, storageKey) {
-      const index = await (0, exports2.getItemAsync)(storage2, pkceFlowIndexKey(storageKey));
+    async function getPKCEFlowIndex(storage, storageKey) {
+      const index = await (0, exports2.getItemAsync)(storage, pkceFlowIndexKey(storageKey));
       return Array.isArray(index) ? index.filter((id) => validatePKCEFlowId(id) !== null) : [];
     }
-    async function storePKCEVerifier(storage2, storageKey, flowId, verifier, onEvictFlow) {
-      await (0, exports2.setItemAsync)(storage2, (0, exports2.pkceVerifierSlotKey)(storageKey, flowId), verifier);
-      const index = (await getPKCEFlowIndex(storage2, storageKey)).filter((id) => id !== flowId);
+    async function storePKCEVerifier(storage, storageKey, flowId, verifier, onEvictFlow) {
+      await (0, exports2.setItemAsync)(storage, (0, exports2.pkceVerifierSlotKey)(storageKey, flowId), verifier);
+      const index = (await getPKCEFlowIndex(storage, storageKey)).filter((id) => id !== flowId);
       index.push(flowId);
       while (index.length > constants_1.PKCE_MAX_CONCURRENT_FLOWS) {
         const evicted = index.shift();
-        await (0, exports2.removeItemAsync)(storage2, (0, exports2.pkceVerifierSlotKey)(storageKey, evicted));
+        await (0, exports2.removeItemAsync)(storage, (0, exports2.pkceVerifierSlotKey)(storageKey, evicted));
         onEvictFlow === null || onEvictFlow === void 0 ? void 0 : onEvictFlow(evicted);
       }
-      await (0, exports2.setItemAsync)(storage2, pkceFlowIndexKey(storageKey), index);
-      await (0, exports2.setItemAsync)(storage2, `${storageKey}-code-verifier`, verifier);
+      await (0, exports2.setItemAsync)(storage, pkceFlowIndexKey(storageKey), index);
+      await (0, exports2.setItemAsync)(storage, `${storageKey}-code-verifier`, verifier);
     }
-    async function retrievePKCEVerifier(storage2, storageKey, flowId) {
+    async function retrievePKCEVerifier(storage, storageKey, flowId) {
       if (flowId) {
-        const verifier2 = await (0, exports2.getItemAsync)(storage2, (0, exports2.pkceVerifierSlotKey)(storageKey, flowId));
+        const verifier2 = await (0, exports2.getItemAsync)(storage, (0, exports2.pkceVerifierSlotKey)(storageKey, flowId));
         return { verifier: typeof verifier2 === "string" ? verifier2 : null, flowId };
       }
-      const verifier = await (0, exports2.getItemAsync)(storage2, `${storageKey}-code-verifier`);
+      const verifier = await (0, exports2.getItemAsync)(storage, `${storageKey}-code-verifier`);
       return { verifier: typeof verifier === "string" ? verifier : null, flowId: null };
     }
-    async function removePKCEVerifier(storage2, storageKey, flowId) {
+    async function removePKCEVerifier(storage, storageKey, flowId) {
       const legacyKey = `${storageKey}-code-verifier`;
       if (!flowId) {
-        await (0, exports2.removeItemAsync)(storage2, legacyKey);
+        await (0, exports2.removeItemAsync)(storage, legacyKey);
         return;
       }
       const slotKey = (0, exports2.pkceVerifierSlotKey)(storageKey, flowId);
-      const slotValue = await (0, exports2.getItemAsync)(storage2, slotKey);
-      await (0, exports2.removeItemAsync)(storage2, slotKey);
-      const index = await getPKCEFlowIndex(storage2, storageKey);
+      const slotValue = await (0, exports2.getItemAsync)(storage, slotKey);
+      await (0, exports2.removeItemAsync)(storage, slotKey);
+      const index = await getPKCEFlowIndex(storage, storageKey);
       const remaining = index.filter((id) => id !== flowId);
       if (remaining.length !== index.length) {
         if (remaining.length > 0) {
-          await (0, exports2.setItemAsync)(storage2, pkceFlowIndexKey(storageKey), remaining);
+          await (0, exports2.setItemAsync)(storage, pkceFlowIndexKey(storageKey), remaining);
         } else {
-          await (0, exports2.removeItemAsync)(storage2, pkceFlowIndexKey(storageKey));
+          await (0, exports2.removeItemAsync)(storage, pkceFlowIndexKey(storageKey));
         }
       }
-      if (slotValue != null && slotValue === await (0, exports2.getItemAsync)(storage2, legacyKey)) {
-        await (0, exports2.removeItemAsync)(storage2, legacyKey);
+      if (slotValue != null && slotValue === await (0, exports2.getItemAsync)(storage, legacyKey)) {
+        await (0, exports2.removeItemAsync)(storage, legacyKey);
       }
     }
-    async function removeAllPKCEVerifiers(storage2, storageKey) {
-      const index = await getPKCEFlowIndex(storage2, storageKey);
+    async function removeAllPKCEVerifiers(storage, storageKey) {
+      const index = await getPKCEFlowIndex(storage, storageKey);
       for (const flowId of index) {
-        await (0, exports2.removeItemAsync)(storage2, (0, exports2.pkceVerifierSlotKey)(storageKey, flowId));
+        await (0, exports2.removeItemAsync)(storage, (0, exports2.pkceVerifierSlotKey)(storageKey, flowId));
       }
-      await (0, exports2.removeItemAsync)(storage2, pkceFlowIndexKey(storageKey));
-      await (0, exports2.removeItemAsync)(storage2, `${storageKey}-code-verifier`);
+      await (0, exports2.removeItemAsync)(storage, pkceFlowIndexKey(storageKey));
+      await (0, exports2.removeItemAsync)(storage, `${storageKey}-code-verifier`);
     }
     function appendFlowIdToRedirectTo(redirectTo, flowId) {
       const hashIndex = redirectTo.indexOf("#");
@@ -29309,14 +29309,14 @@ var require_helpers = __commonJS({
       const separator = base.includes("?") ? "&" : "?";
       return `${base}${separator}${constants_1.PKCE_FLOW_ID_PARAM}=${encodeURIComponent(flowId)}${fragment}`;
     }
-    async function getCodeChallengeAndMethod(storage2, storageKey, isPasswordRecovery = false, onEvictFlow) {
+    async function getCodeChallengeAndMethod(storage, storageKey, isPasswordRecovery = false, onEvictFlow) {
       const codeVerifier = generatePKCEVerifier();
       let storedCodeVerifier = codeVerifier;
       if (isPasswordRecovery) {
         storedCodeVerifier += "/recovery";
       }
       const flowId = generatePKCEFlowId();
-      await storePKCEVerifier(storage2, storageKey, flowId, storedCodeVerifier, onEvictFlow);
+      await storePKCEVerifier(storage, storageKey, flowId, storedCodeVerifier, onEvictFlow);
       const codeChallenge = await generatePKCEChallenge(codeVerifier);
       const codeChallengeMethod = codeVerifier === codeChallenge ? "plain" : "s256";
       return [codeChallenge, codeChallengeMethod, flowId];
@@ -36779,8 +36779,8 @@ var require_GoTrueClient = __commonJS({
               throw new errors_1.AuthInvalidJwtError(e instanceof Error ? e.message : "JWT validation failed");
             }
           }
-          const signingKey = !header.alg || header.alg.startsWith("HS") || !header.kid || !("crypto" in globalThis && "subtle" in globalThis.crypto) ? null : await this.fetchJwk(header.kid, (options === null || options === void 0 ? void 0 : options.keys) ? { keys: options.keys } : options === null || options === void 0 ? void 0 : options.jwks);
-          if (!signingKey) {
+          const signingKey2 = !header.alg || header.alg.startsWith("HS") || !header.kid || !("crypto" in globalThis && "subtle" in globalThis.crypto) ? null : await this.fetchJwk(header.kid, (options === null || options === void 0 ? void 0 : options.keys) ? { keys: options.keys } : options === null || options === void 0 ? void 0 : options.jwks);
+          if (!signingKey2) {
             const { error } = await this.getUser(token);
             if (error) {
               throw error;
@@ -36795,7 +36795,7 @@ var require_GoTrueClient = __commonJS({
             };
           }
           const algorithm = (0, helpers_1.getAlgorithm)(header.alg);
-          const publicKey = await crypto.subtle.importKey("jwk", signingKey, algorithm, true, [
+          const publicKey = await crypto.subtle.importKey("jwk", signingKey2, algorithm, true, [
             "verify"
           ]);
           const isValid2 = await crypto.subtle.verify(algorithm, publicKey, signature, (0, base64url_1.stringToUint8Array)(`${rawHeader}.${rawPayload}`));
@@ -38380,7 +38380,7 @@ var require_utils4 = __commonJS({
     var nodeCrypto = require("crypto");
     module2.exports = {
       postgresMd5PasswordHash,
-      randomBytes,
+      randomBytes: randomBytes2,
       deriveKey,
       sha256,
       hashByName,
@@ -38390,7 +38390,7 @@ var require_utils4 = __commonJS({
     var webCrypto = nodeCrypto.webcrypto || globalThis.crypto;
     var subtleCrypto = webCrypto.subtle;
     var textEncoder = new TextEncoder();
-    function randomBytes(length) {
+    function randomBytes2(length) {
       return webCrypto.getRandomValues(Buffer.alloc(length));
     }
     async function md5(string) {
@@ -46571,7 +46571,7 @@ var require_make_middleware = __commonJS({
         if (!is(req, ["multipart"])) return next();
         var options = setup();
         var limits = options.limits;
-        var storage2 = options.storage;
+        var storage = options.storage;
         var fileFilter = options.fileFilter;
         var fileStrategy = options.fileStrategy;
         var preservePath = options.preservePath;
@@ -46605,7 +46605,7 @@ var require_make_middleware = __commonJS({
           errorOccured = true;
           pendingWrites.onceZero(function() {
             function remove2(file, cb) {
-              storage2._removeFile(req, file, cb);
+              storage._removeFile(req, file, cb);
             }
             removeUploadedFiles(uploadedFiles, remove2, function(err, storageErrors) {
               if (err) return done(err);
@@ -46662,7 +46662,7 @@ var require_make_middleware = __commonJS({
               aborting = true;
               abortWithCode("LIMIT_FILE_SIZE", fieldname);
             });
-            storage2._handleFile(req, file, function(err2, info) {
+            storage._handleFile(req, file, function(err2, info) {
               if (aborting) {
                 appender.removePlaceholder(placeholder);
                 uploadedFiles.push(extend(file, info));
@@ -57789,7 +57789,7 @@ var SupabaseClient = class {
     var _await$this$_getSessi;
     return (_await$this$_getSessi = await _this2._getSessionToken()) !== null && _await$this$_getSessi !== void 0 ? _await$this$_getSessi : _this2.supabaseKey;
   }
-  _initSupabaseAuthClient({ autoRefreshToken, persistSession, detectSessionInUrl, storage: storage2, userStorage: userStorage2, storageKey, flowType, lock, debug, throwOnError, experimental, lockAcquireTimeout, skipAutoInitialize }, headers, fetch$1) {
+  _initSupabaseAuthClient({ autoRefreshToken, persistSession, detectSessionInUrl, storage, userStorage: userStorage2, storageKey, flowType, lock, debug, throwOnError, experimental, lockAcquireTimeout, skipAutoInitialize }, headers, fetch$1) {
     const authHeaders = {
       Authorization: `Bearer ${this.supabaseKey}`,
       apikey: `${this.supabaseKey}`
@@ -57801,7 +57801,7 @@ var SupabaseClient = class {
       autoRefreshToken,
       persistSession,
       detectSessionInUrl,
-      storage: storage2,
+      storage,
       userStorage: userStorage2,
       flowType,
       lock,
@@ -57936,6 +57936,10 @@ var SupabaseAdapter = class {
     this.detectMode();
   }
   detectMode() {
+    if (process.env.CRM_STORAGE_MODE === "LOCAL_FILE") {
+      this.mode = "LOCAL_FILE";
+      return this.mode;
+    }
     const dbUrl = getCleanDatabaseUrl();
     const { url: supabaseUrl, key: supabaseKey } = getCleanSupabaseCredentials();
     if (dbUrl && (dbUrl.startsWith("postgres://") || dbUrl.startsWith("postgresql://"))) {
@@ -58090,17 +58094,17 @@ var SupabaseAdapter = class {
     try {
       if (this.mode === "SUPABASE_POSTGRES" && this.pgPool) {
         const checkRes = await this.pgPool.query(
-          "SELECT updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
+          "SELECT updated_at::text AS updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
         );
         if (checkRes.rows.length === 0) return null;
-        const cloudUpdatedAt = checkRes.rows[0].updated_at ? new Date(checkRes.rows[0].updated_at).toISOString() : null;
+        const cloudUpdatedAt = checkRes.rows[0].updated_at ? String(checkRes.rows[0].updated_at) : null;
         if (!cloudUpdatedAt) return null;
         if (!this.lastSyncedAt || cloudUpdatedAt !== this.lastSyncedAt) {
           const fullRes = await this.pgPool.query(
-            "SELECT data, updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
+            "SELECT data, updated_at::text AS updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
           );
           if (fullRes.rows.length > 0 && fullRes.rows[0].data) {
-            this.lastSyncedAt = fullRes.rows[0].updated_at ? new Date(fullRes.rows[0].updated_at).toISOString() : cloudUpdatedAt;
+            this.lastSyncedAt = fullRes.rows[0].updated_at ? String(fullRes.rows[0].updated_at) : cloudUpdatedAt;
             console.log(`[Storage] \u{1F504} \u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u044B \u0441\u0432\u0435\u0436\u0438\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0432 Supabase (\u0432\u0435\u0440\u0441\u0438\u044F: ${this.lastSyncedAt}), \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0438\u0440\u0443\u0435\u043C.`);
             return fullRes.rows[0].data;
           }
@@ -58131,10 +58135,10 @@ var SupabaseAdapter = class {
     try {
       if (this.mode === "SUPABASE_POSTGRES" && this.pgPool) {
         const res = await this.pgPool.query(
-          "SELECT data, updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
+          "SELECT data, updated_at::text AS updated_at FROM crm_store WHERE id = 'main' LIMIT 1"
         );
         if (res.rows.length > 0 && res.rows[0].data) {
-          this.lastSyncedAt = new Date(res.rows[0].updated_at || Date.now()).toISOString();
+          this.lastSyncedAt = String(res.rows[0].updated_at);
           console.log(`[Storage] \u{1F4E5} \u0414\u0430\u043D\u043D\u044B\u0435 \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u044B \u0438\u0437 Supabase PostgreSQL (\u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u043D\u043E: ${this.lastSyncedAt})`);
           return res.rows[0].data;
         }
@@ -58158,16 +58162,18 @@ var SupabaseAdapter = class {
     return null;
   }
   async saveToCloud(store) {
-    if (!this.isConnected || this.mode === "LOCAL_FILE") {
+    if (this.mode === "LOCAL_FILE") {
       return;
     }
+    if (!this.isConnected) throw new Error(this.lastError || "\u041E\u0431\u043B\u0430\u0447\u043D\u043E\u0435 \u0445\u0440\u0430\u043D\u0438\u043B\u0438\u0449\u0435 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E");
+    const snapshot = JSON.parse(JSON.stringify(store));
     this.savePromiseChain = this.savePromiseChain.catch(() => {
     }).then(async () => {
       try {
         if (this.mode === "SUPABASE_POSTGRES" && this.pgPool) {
-          await this.saveToPostgres(store);
+          await this.saveToPostgres(snapshot);
         } else if (this.mode === "SUPABASE_REST" && this.supabaseClient) {
-          await this.saveToRest(store);
+          await this.saveToRest(snapshot);
         }
         this.lastError = null;
       } catch (err) {
@@ -58182,43 +58188,63 @@ var SupabaseAdapter = class {
   async saveToPostgres(store) {
     if (!this.pgPool) return;
     const jsonString = JSON.stringify(store);
-    const res = await this.pgPool.query(
-      `
-      INSERT INTO crm_store (id, data, updated_at)
-      VALUES ('main', $1::jsonb, NOW())
-      ON CONFLICT (id) DO UPDATE SET
-        data = EXCLUDED.data,
-        updated_at = NOW()
-      RETURNING updated_at;
-      `,
-      [jsonString]
-    );
+    const res = this.lastSyncedAt ? await this.pgPool.query("UPDATE crm_store SET data = $1::jsonb, updated_at = clock_timestamp() WHERE id = 'main' AND updated_at = $2::timestamptz RETURNING updated_at::text AS updated_at", [jsonString, this.lastSyncedAt]) : await this.pgPool.query("INSERT INTO crm_store (id, data, updated_at) VALUES ('main', $1::jsonb, clock_timestamp()) ON CONFLICT (id) DO NOTHING RETURNING updated_at::text AS updated_at", [jsonString]);
+    if (res.rows.length === 0) await this.throwWriteConflict();
     if (res.rows.length > 0 && res.rows[0].updated_at) {
-      this.lastSyncedAt = new Date(res.rows[0].updated_at).toISOString();
+      this.lastSyncedAt = String(res.rows[0].updated_at);
     }
   }
   async saveToRest(store) {
     if (!this.supabaseClient) return;
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
-    const { data, error } = await this.supabaseClient.from("crm_store").upsert({
-      id: "main",
-      data: store,
-      updated_at: nowIso
-    }).select("updated_at").maybeSingle();
+    const table = this.supabaseClient.from("crm_store");
+    const request = this.lastSyncedAt ? table.update({ data: store, updated_at: nowIso }).eq("id", "main").eq("updated_at", this.lastSyncedAt) : table.insert({ id: "main", data: store, updated_at: nowIso });
+    const { data, error } = await request.select("updated_at").maybeSingle();
     if (error) {
+      if (error.code === "23505") await this.throwWriteConflict();
       throw new Error(error.message);
     }
+    if (!data) await this.throwWriteConflict();
     if (data && data.updated_at) {
       this.lastSyncedAt = data.updated_at;
     } else {
       this.lastSyncedAt = nowIso;
     }
   }
+  async throwWriteConflict() {
+    const error = new Error("\u0414\u0430\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u044B \u0434\u0440\u0443\u0433\u0438\u043C \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u043E\u043C. \u041E\u0431\u043D\u043E\u0432\u0438\u0442\u0435 \u0440\u0430\u0437\u0434\u0435\u043B \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435.");
+    error.code = "CRM_STORE_CONFLICT";
+    error.cloudData = await this.loadFromCloud();
+    throw error;
+  }
   async flush() {
     if (this.savePromiseChain) {
-      await this.savePromiseChain.catch(() => {
-      });
+      await this.savePromiseChain;
     }
+  }
+  documentStorage() {
+    if (!this.supabaseClient) {
+      const { url, key } = getCleanSupabaseCredentials();
+      if (!url || !key) throw new Error("\u0414\u043B\u044F \u043E\u0431\u043B\u0430\u0447\u043D\u043E\u0433\u043E \u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u043E\u0432 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u0442\u0435 SUPABASE_URL \u0438 \u0441\u0435\u0440\u0432\u0435\u0440\u043D\u044B\u0439 \u043A\u043B\u044E\u0447 Supabase");
+      this.supabaseClient = createClient(url, key);
+    }
+    return { client: this.supabaseClient, bucket: process.env.SUPABASE_STORAGE_BUCKET || "crm-documents" };
+  }
+  async uploadDocument(filename, buffer, contentType) {
+    const { client, bucket } = this.documentStorage();
+    const existing = await client.storage.getBucket(bucket);
+    if (existing.error) {
+      const created = await client.storage.createBucket(bucket, { public: false });
+      if (created.error && !created.error.message.includes("already exists")) throw new Error(created.error.message);
+    }
+    const { error } = await client.storage.from(bucket).upload(filename, buffer, { contentType, upsert: false });
+    if (error) throw new Error(error.message);
+  }
+  async documentDownloadUrl(filename) {
+    const { client, bucket } = this.documentStorage();
+    const { data, error } = await client.storage.from(bucket).createSignedUrl(filename, 60);
+    if (error) throw new Error(error.message);
+    return data.signedUrl;
   }
 };
 var supabaseAdapter = new SupabaseAdapter();
@@ -58533,7 +58559,7 @@ function sanitizeLoadedDb(parsed) {
       (l) => l.entityId !== "usr-twizzy" && !l.title?.toLowerCase().includes("twizzy") && l.entityId !== "usr-bogdan" && l.entityId !== "usr-vladik" && !l.title?.toLowerCase().includes("bogdan") && !l.title?.toLowerCase().includes("vladik")
     ).map((l) => {
       let actorName = l.actorName || "\u0410\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440";
-      if (actorName.includes("\u041A\u043E\u0432\u0430\u043B\u0435\u0432") || actorName.includes("\u0421\u043C\u0438\u0440\u043D\u043E\u0432")) {
+      if ((actorName.includes("\u041A\u043E\u0432\u0430\u043B\u0435\u0432") || actorName.includes("\u0421\u043C\u0438\u0440\u043D\u043E\u0432")) && !existingUsers.some((user) => actorName.includes(user.fullName))) {
         actorName = "BXLETH (\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C \u043F\u0430\u0440\u043A\u0430)";
       }
       return {
@@ -58583,32 +58609,42 @@ function loadFromDisk() {
 rawDb = loadFromDisk();
 var isCloudInitialized = false;
 var hasPendingChanges = false;
+var changeVersion = 0;
+var cloudInitialization = null;
 var initCloudDb = async () => {
   if (isCloudInitialized) return;
-  isCloudInitialized = true;
-  try {
-    const cloudData = await supabaseAdapter.init(() => rawDb);
-    if (cloudData) {
-      const sanitized = sanitizeLoadedDb(cloudData);
-      Object.assign(rawDb, sanitized);
-      try {
-        if (import_fs.default.existsSync(DATA_DIR)) {
-          import_fs.default.writeFileSync(DB_FILE, JSON.stringify(rawDb, null, 2), "utf-8");
+  if (cloudInitialization) return cloudInitialization;
+  cloudInitialization = (async () => {
+    try {
+      const cloudData = await supabaseAdapter.init(() => rawDb);
+      if (cloudData) {
+        const sanitized = sanitizeLoadedDb(cloudData);
+        Object.assign(rawDb, sanitized);
+        try {
+          if (import_fs.default.existsSync(DATA_DIR)) {
+            import_fs.default.writeFileSync(DB_FILE, JSON.stringify(rawDb, null, 2), "utf-8");
+          }
+        } catch (e) {
         }
-      } catch (e) {
       }
+      isCloudInitialized = true;
+    } catch (err) {
+      console.error("[CRM DB] \u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043D\u0438\u0446\u0438\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u0438 \u043E\u0431\u043B\u0430\u0447\u043D\u043E\u0439 \u0411\u0414:", err.message);
+      throw err;
+    } finally {
+      cloudInitialization = null;
     }
-  } catch (err) {
-    console.error("[CRM DB] \u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043D\u0438\u0446\u0438\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u0438 \u043E\u0431\u043B\u0430\u0447\u043D\u043E\u0439 \u0411\u0414:", err.message);
-  }
+  })();
+  return cloudInitialization;
 };
 var checkAndSyncCloudDb = async (force = false) => {
   if (hasPendingChanges) {
     return false;
   }
   try {
+    const version3 = changeVersion;
     const cloudData = await supabaseAdapter.syncIfOutdated(force);
-    if (cloudData) {
+    if (cloudData && !hasPendingChanges && version3 === changeVersion) {
       const sanitized = sanitizeLoadedDb(cloudData);
       Object.assign(rawDb, sanitized);
       return true;
@@ -58630,9 +58666,20 @@ var flushDb = async (force = false) => {
     return;
   }
   saveDbToDiskSafe();
-  hasPendingChanges = false;
-  await supabaseAdapter.saveToCloud(rawDb);
-  await supabaseAdapter.flush();
+  const version3 = changeVersion;
+  const snapshot = JSON.parse(JSON.stringify(rawDb));
+  try {
+    await supabaseAdapter.saveToCloud(snapshot);
+    await supabaseAdapter.flush();
+  } catch (error) {
+    if (error.code === "CRM_STORE_CONFLICT" && error.cloudData && version3 === changeVersion) {
+      Object.assign(rawDb, sanitizeLoadedDb(error.cloudData));
+      hasPendingChanges = false;
+      saveDbToDiskSafe();
+    }
+    throw error;
+  }
+  if (version3 === changeVersion) hasPendingChanges = false;
 };
 function saveDbToDiskSafe() {
   try {
@@ -58666,13 +58713,14 @@ function withDbTransaction(operation) {
 }
 var saveDb = (immediate = false) => {
   hasPendingChanges = true;
+  changeVersion++;
   if (transactionDepth > 0) return;
   saveDbToDiskSafe();
   if (immediate) {
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = null;
-    supabaseAdapter.saveToCloud(rawDb).catch((err) => {
-      console.error("[CRM DB] \u041E\u0448\u0438\u0431\u043A\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u0432 Supabase:", err);
+    flushDb().catch((err) => {
+      console.error("[CRM DB] \u041E\u0448\u0438\u0431\u043A\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u0432 Supabase:", err.message);
     });
     return;
   }
@@ -58681,8 +58729,9 @@ var saveDb = (immediate = false) => {
   }
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(() => {
-    supabaseAdapter.saveToCloud(rawDb).catch((err) => {
-      console.error("[CRM DB] \u041E\u0448\u0438\u0431\u043A\u0430 \u0444\u043E\u043D\u043E\u0432\u043E\u0439 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438 Supabase:", err);
+    saveTimeout = null;
+    flushDb().catch((err) => {
+      console.error("[CRM DB] \u041E\u0448\u0438\u0431\u043A\u0430 \u0444\u043E\u043D\u043E\u0432\u043E\u0439 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438 Supabase:", err.message);
     });
   }, 50);
 };
@@ -58802,6 +58851,7 @@ var addSystemDays = (days) => {
 };
 var isTimeSimulated = () => simulatedDate !== null;
 var clearDb = () => {
+  const authSigningKey = rawDb.settings?.authSigningKey;
   simulatedDate = null;
   rawDb.rentals = [];
   rawDb.repairs = [];
@@ -58817,10 +58867,12 @@ var clearDb = () => {
   rawDb.batteryModels = [];
   rawDb.outfitTemplates = [];
   rawDb.tariffs = [];
-  rawDb.employees = [];
+  rawDb.partOrders = [];
+  rawDb.auditLogs = [];
   rawDb.articles = [];
   rawDb.loyaltyTiers = JSON.parse(JSON.stringify(INITIAL_LOYALTY_TIERS));
   rawDb.settings = {
+    authSigningKey,
     monthlyFixedExpenses: 0,
     fixedExpensesDescription: "",
     fixedExpenseItems: [],
@@ -58832,9 +58884,49 @@ var resetDb = () => {
   clearDb();
 };
 
+// src/services/session.service.ts
+var import_node_crypto = require("node:crypto");
+function hashPassword(password) {
+  const salt = (0, import_node_crypto.randomBytes)(16).toString("hex");
+  return `scrypt:${salt}:${(0, import_node_crypto.scryptSync)(password, salt, 64).toString("hex")}`;
+}
+function verifyPassword(password, stored) {
+  if (!stored.startsWith("scrypt:")) return password === stored;
+  const [, salt, hash] = stored.split(":");
+  const expected = Buffer.from(hash || "", "hex");
+  const actual = (0, import_node_crypto.scryptSync)(password, salt, 64);
+  return actual.length === expected.length && (0, import_node_crypto.timingSafeEqual)(actual, expected);
+}
+function signingKey() {
+  const db2 = getDb();
+  if (!db2.settings) db2.settings = { monthlyFixedExpenses: 0 };
+  if (!db2.settings.authSigningKey) db2.settings.authSigningKey = (0, import_node_crypto.randomBytes)(32).toString("hex");
+  return process.env.SESSION_SECRET || db2.settings.authSigningKey;
+}
+function fingerprint(user) {
+  return (0, import_node_crypto.createHmac)("sha256", signingKey()).update(user.passwordHash).digest("hex");
+}
+function issueSession(user, kind = "session") {
+  const payload = Buffer.from(JSON.stringify({ userId: user.id, kind, expiresAt: Date.now() + (kind === "device" ? 90 : 30) * 864e5, fingerprint: fingerprint(user) })).toString("base64url");
+  return `${payload}.${(0, import_node_crypto.createHmac)("sha256", signingKey()).update(payload).digest("base64url")}`;
+}
+function authenticateSession(token, kind = "session") {
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature) throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u043D\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u0430. \u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
+  const expected = (0, import_node_crypto.createHmac)("sha256", signingKey()).update(payload).digest();
+  const actual = Buffer.from(signature, "base64url");
+  if (expected.length !== actual.length || !(0, import_node_crypto.timingSafeEqual)(expected, actual)) throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u043D\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u0430. \u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
+  const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+  const user = getDb().users.find((candidate) => candidate.id === parsed.userId);
+  if (parsed.kind !== kind || !Number.isFinite(parsed.expiresAt) || parsed.expiresAt < Date.now() || !user || user.isActive === false || parsed.fingerprint !== fingerprint(user)) {
+    throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u0438\u0441\u0442\u0435\u043A\u043B\u0430 \u0438\u043B\u0438 \u0434\u043E\u0441\u0442\u0443\u043F \u043E\u0442\u043E\u0437\u0432\u0430\u043D. \u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
+  }
+  return user;
+}
+
 // src/services/auth.service.ts
 var AuthService = class {
-  static login(identifier, password) {
+  static login(identifier, password, rememberDevice = false) {
     const db2 = getDb();
     const clean = (identifier || "").trim().toLowerCase();
     const user = db2.users.find(
@@ -58850,16 +58942,18 @@ var AuthService = class {
       throw new Error("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043F\u0430\u0440\u043E\u043B\u044C \u0434\u043B\u044F \u0432\u0445\u043E\u0434\u0430 \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0443.");
     }
     const p = password.trim();
-    const valid = p === user.passwordHash;
+    const valid = verifyPassword(p, user.passwordHash);
     if (!valid) {
       throw new Error("\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u0432\u0432\u043E\u0434\u0430 \u0438\u043B\u0438 \u043E\u0431\u0440\u0430\u0442\u0438\u0442\u0435\u0441\u044C \u043A \u0440\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044E.");
     }
+    if (!user.passwordHash.startsWith("scrypt:")) user.passwordHash = hashPassword(p);
     user.lastLoginAt = (/* @__PURE__ */ new Date()).toISOString();
     const accessLevel = (db2.accessLevels || []).find((l) => l.id === user.accessLevelId) || (db2.accessLevels || []).find(
       (l) => l.id === (user.role === "ADMIN" ? "lvl-owner" : user.role === "MECHANIC" ? "lvl-master" : "lvl-manager")
     ) || (db2.accessLevels || [])[0];
     return {
-      token: `jwt_session_${user.id}_${Date.now()}`,
+      token: issueSession(user),
+      trustedDeviceToken: rememberDevice ? issueSession(user, "device") : void 0,
       user: {
         id: user.id,
         login: user.login || user.username || user.email.split("@")[0],
@@ -58874,6 +58968,10 @@ var AuthService = class {
         isActive: Boolean(user.isActive)
       }
     };
+  }
+  static trustedLogin(token) {
+    const user = authenticateSession(token, "device");
+    return { token: issueSession(user), user: this.getMe(user.id) };
   }
   static getMe(userId) {
     const db2 = getDb();
@@ -62952,7 +63050,8 @@ var NEVER = INVALID;
 // src/dtos/schemas.dto.ts
 var LoginDto = external_exports.object({
   email: external_exports.string().min(2, "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043B\u043E\u0433\u0438\u043D \u0438\u043B\u0438 email"),
-  password: external_exports.string().min(1, "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043F\u0430\u0440\u043E\u043B\u044C \u0434\u043B\u044F \u0432\u0445\u043E\u0434\u0430")
+  password: external_exports.string().min(1, "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043F\u0430\u0440\u043E\u043B\u044C \u0434\u043B\u044F \u0432\u0445\u043E\u0434\u0430"),
+  rememberDevice: external_exports.boolean().optional()
 });
 var BikeCreateDto = external_exports.object({
   inventoryNumber: external_exports.string().min(2, "\u0418\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D"),
@@ -62960,7 +63059,7 @@ var BikeCreateDto = external_exports.object({
   batteryId: external_exports.string().optional().nullable(),
   frameNumber: external_exports.string().optional().nullable(),
   motorNumber: external_exports.string().optional().nullable(),
-  status: external_exports.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED"]).optional(),
+  status: external_exports.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED", "SOLD", "BOUGHT_OUT"]).optional(),
   currentLocation: external_exports.string().optional(),
   mileageKm: external_exports.number().min(0).optional(),
   note: external_exports.string().optional(),
@@ -62973,7 +63072,7 @@ var BikeUpdateDto = external_exports.object({
   batteryId: external_exports.string().optional().nullable(),
   frameNumber: external_exports.string().optional().nullable(),
   motorNumber: external_exports.string().optional().nullable(),
-  status: external_exports.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED"]).optional(),
+  status: external_exports.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED", "SOLD", "BOUGHT_OUT"]).optional(),
   currentLocation: external_exports.string().optional(),
   mileageKm: external_exports.number().min(0).optional(),
   note: external_exports.string().optional(),
@@ -63239,20 +63338,42 @@ var ArticleUpdateDto = external_exports.object({
   pinned: external_exports.boolean().optional()
 });
 
+// src/context/userContext.ts
+var import_async_hooks = require("async_hooks");
+var userStorage = new import_async_hooks.AsyncLocalStorage();
+function getCurrentUser() {
+  return userStorage.getStore();
+}
+
 // src/controllers/auth.controller.ts
 var AuthController = class {
   static login(req, res) {
     try {
       const parsed = LoginDto.parse(req.body);
-      const result = AuthService.login(parsed.email, parsed.password);
+      const result = AuthService.login(parsed.email, parsed.password, parsed.rememberDevice);
+      res.cookie("crm_session", result.token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 30 * 864e5 });
       return res.json(result);
     } catch (err) {
       return res.status(400).json({ error: err.message || "\u041E\u0448\u0438\u0431\u043A\u0430 \u0430\u0432\u0442\u043E\u0440\u0438\u0437\u0430\u0446\u0438\u0438" });
     }
   }
+  static trustedLogin(req, res) {
+    try {
+      const result = AuthService.trustedLogin(String(req.body.token || ""));
+      res.cookie("crm_session", result.token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 30 * 864e5 });
+      return res.json(result);
+    } catch (error) {
+      return res.status(401).json({ error: error.message });
+    }
+  }
+  static logout(req, res) {
+    res.clearCookie("crm_session");
+    return res.json({ success: true });
+  }
   static getMe(req, res) {
     try {
-      const userId = req.query.userId || req.headers["x-user-id"];
+      const userId = getCurrentUser()?.id;
+      if (!userId) return res.status(401).json({ error: "\u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0443" });
       const user = AuthService.getMe(userId);
       return res.json(user);
     } catch (err) {
@@ -63540,6 +63661,7 @@ var BatteryRepository = class {
   }
   static deleteBatteryModel(id) {
     const db2 = getDb();
+    if (db2.tariffs.some((tariff) => tariff.includedBatteries?.some((battery) => battery.batteryModelId === id))) throw new Error("\u041C\u043E\u0434\u0435\u043B\u044C \u0410\u041A\u0411 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u0432 \u0442\u0430\u0440\u0438\u0444\u0430\u0445 \u0432\u044B\u043A\u0443\u043F\u0430");
     const index = db2.batteryModels.findIndex((m) => m.id === id);
     if (index === -1) {
       throw new Error("\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
@@ -63707,6 +63829,7 @@ var BatteryRepository = class {
       throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     }
     const existing = db2.batteries[index];
+    if (["SOLD", "DECOMMISSIONED"].includes(existing.status) && data.status && data.status !== existing.status) throw new Error("\u0410\u041A\u0411 \u0432\u044B\u0431\u044B\u043B \u0438\u0437 \u043F\u0430\u0440\u043A\u0430; \u0435\u0433\u043E \u043D\u0435\u043B\u044C\u0437\u044F \u0432\u0435\u0440\u043D\u0443\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435\u043C \u0441\u0442\u0430\u0442\u0443\u0441\u0430");
     if (data.status && data.status !== existing.status) {
       if (data.status === "INSTALLED" && !existing.installedBikeId || data.status === "ISSUED_SPARE" && !existing.issuedBikeId) {
         throw new Error("\u0414\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438 \u0438\u043B\u0438 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0438 \u0410\u041A\u0411 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u043A\u0443 \u043A \u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434\u0443 \u0438\u043B\u0438 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443");
@@ -63765,6 +63888,7 @@ var BatteryRepository = class {
       throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     }
     const battery = db2.batteries[index];
+    if (db2.rentals.some((r) => r.batteryIds?.includes(id)) || db2.repairs.some((r) => r.batteryId === id) || db2.retailOrders.some((order) => order.items.some((item) => item.itemType === "BATTERY" && item.itemId === id))) throw new Error("\u0410\u041A\u0411 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u0432 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430\u0445, \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0430\u0445 \u0438\u043B\u0438 \u0447\u0435\u043A\u0430\u0445. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0434\u043B\u044F \u0438\u0441\u0442\u043E\u0440\u0438\u0438");
     if (battery.installedBikeId) {
       const bike = db2.bikes.find((b) => b.id === battery.installedBikeId);
       throw new Error(
@@ -64009,6 +64133,7 @@ var BikeRepository = class {
       const client = activeRental ? db2.clients.find((c) => c.id === activeRental.clientId) : null;
       return {
         ...bike,
+        currentLocation: activeRental && bike.status === "RENTED" ? `\u0412 \u0430\u0440\u0435\u043D\u0434\u0435 \u0443 ${client?.fullName || "\u043A\u043B\u0438\u0435\u043D\u0442\u0430"}` : bike.currentLocation,
         model,
         battery: battery ? {
           id: battery.id,
@@ -64131,6 +64256,7 @@ var BikeRepository = class {
       throw new Error("\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     }
     const bikesWithModel = db2.bikes.filter((b) => b.modelId === id);
+    if (db2.tariffs.some((tariff) => tariff.bikeModelId === id)) throw new Error("\u041C\u043E\u0434\u0435\u043B\u044C \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u0432 \u0442\u0430\u0440\u0438\u0444\u0430\u0445; \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u0435 \u0438\u043B\u0438 \u0443\u0434\u0430\u043B\u0438\u0442\u0435 \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0448\u0430\u0431\u043B\u043E\u043D\u044B");
     if (bikesWithModel.length > 0) {
       throw new Error(
         `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0448\u0430\u0431\u043B\u043E\u043D "${db2.models[index].name}": \u0432 \u043F\u0430\u0440\u043A\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u043E ${bikesWithModel.length} \u0431\u0430\u0439\u043A\u043E\u0432 \u044D\u0442\u043E\u0439 \u043C\u043E\u0434\u0435\u043B\u0438 (${bikesWithModel.map((b) => b.inventoryNumber).join(", ")})`
@@ -64186,6 +64312,7 @@ var BikeRepository = class {
     const index = db2.bikes.findIndex((b) => b.id === id);
     if (index === -1) return null;
     const bike = db2.bikes[index];
+    if (["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status) && data.status && data.status !== bike.status) throw new Error("\u0422\u0435\u0445\u043D\u0438\u043A\u0430 \u0432\u044B\u0431\u044B\u043B\u0430 \u0438\u0437 \u043F\u0430\u0440\u043A\u0430; \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u043D\u0435 \u0434\u043E\u043B\u0436\u043D\u043E \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0442\u044C \u0435\u0451 \u0432 \u0430\u0440\u0435\u043D\u0434\u0443");
     if (data.inventoryNumber && db2.bikes.some((b) => b.id !== id && b.inventoryNumber.toLowerCase() === data.inventoryNumber.trim().toLowerCase())) throw new Error("\u0418\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u0437\u0430\u043D\u044F\u0442");
     if (data.modelId && !db2.models.some((m) => m.id === data.modelId)) throw new Error("\u041C\u043E\u0434\u0435\u043B\u044C \u0431\u0430\u0439\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
     if (data.status && data.status !== bike.status && activeRentalForBike(id) && data.status !== "RENTED" && data.status !== "IN_MAINTENANCE") throw new Error("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0439 \u0434\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B");
@@ -64217,6 +64344,7 @@ var BikeRepository = class {
     if (index === -1) {
       throw new Error("\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     }
+    if (db2.rentals.some((r) => r.bikeId === id) || db2.repairs.some((r) => r.bikeId === id) || db2.reviews.some((r) => r.bikeId === id) || db2.retailOrders.some((order) => order.items.some((item) => item.itemType === "BIKE" && item.itemId === id))) throw new Error("\u0411\u0430\u0439\u043A \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u0432 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430\u0445, \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0430\u0445 \u0438\u043B\u0438 \u0447\u0435\u043A\u0430\u0445. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u0435\u0433\u043E \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0434\u043B\u044F \u0438\u0441\u0442\u043E\u0440\u0438\u0438");
     const activeRental = db2.rentals.find(
       (r) => r.bikeId === id && (r.status === "ACTIVE" || r.status === "OVERDUE")
     );
@@ -64686,6 +64814,7 @@ var ClientRepository = class {
     if (index === -1) {
       throw new Error("\u041A\u0443\u0440\u044C\u0435\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     }
+    if (db2.rentals.some((r) => r.clientId === id) || db2.repairs.some((r) => r.clientId === id) || db2.retailOrders.some((order) => order.clientId === id) || db2.payments.some((p) => p.clientId === id)) throw new Error("\u0423 \u043A\u043B\u0438\u0435\u043D\u0442\u0430 \u0435\u0441\u0442\u044C \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u044B. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u0434\u043B\u044F \u0438\u0441\u0442\u043E\u0440\u0438\u0438 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439");
     const activeRental = db2.rentals.find(
       (r) => r.clientId === id && (r.status === "ACTIVE" || r.status === "OVERDUE")
     );
@@ -64822,13 +64951,6 @@ var ClientController = class {
   }
 };
 
-// src/context/userContext.ts
-var import_async_hooks = require("async_hooks");
-var userStorage = new import_async_hooks.AsyncLocalStorage();
-function getCurrentUser() {
-  return userStorage.getStore();
-}
-
 // src/repositories/rental.repository.ts
 var RentalRepository = class {
   static refreshOverdueStatuses() {
@@ -64853,6 +64975,7 @@ var RentalRepository = class {
       const fullTariff = tariff ? { ...tariff, bikeModel: tariffBikeModel } : null;
       const outfits = db2.outfits.filter((o) => r.outfitIds.includes(o.id));
       const payments = db2.payments.filter((p) => p.rentalId === r.id);
+      const manager = db2.users.find((user) => user.id === r.managerId);
       const batteries = db2.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
       const buyoutPayments = payments.filter((p) => p.type === "RENTAL" || p.type === "BUYOUT");
       const totalPaidForBuyout = buyoutPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -64866,6 +64989,7 @@ var RentalRepository = class {
         tariff: fullTariff,
         outfits,
         payments,
+        manager,
         totalPaidForBuyout,
         totalBuyoutPrice,
         remainingBuyoutAmount
@@ -65028,7 +65152,9 @@ var RentalRepository = class {
     }
     const isRentToOwn = tariff.type === "RENT_TO_OWN";
     const paymentIntervalDays = data.paymentIntervalDays ?? tariff.paymentIntervalDays ?? (isRentToOwn ? 7 : tariff.durationDays);
-    const totalBuyoutPrice = data.totalBuyoutPrice ?? tariff.totalBuyoutPrice ?? (isRentToOwn ? tariff.price : void 0);
+    const model = db2.models.find((item) => item.id === bike.modelId);
+    const fallbackKitPrice = (model?.baseBuyoutPrice || model?.salePrice || 6e4) + batteries.reduce((sum, battery) => sum + (battery.salePrice || db2.batteryModels.find((item) => item.id === battery.modelId)?.salePrice || 25e3), 0);
+    const totalBuyoutPrice = data.totalBuyoutPrice ?? tariff.totalBuyoutPrice ?? (isRentToOwn ? fallbackKitPrice : void 0);
     const installmentPayment = data.installmentPayment ?? tariff.installmentPayment ?? (isRentToOwn ? tariff.price : void 0);
     const discount = ClientRepository.computeClientLoyalty(client).loyaltyTier.discountRentalPercent;
     const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? installmentPayment ?? tariff.price : Math.round(tariff.price * (1 - discount / 100) * 100) / 100);
@@ -65052,7 +65178,7 @@ var RentalRepository = class {
       clientId: data.clientId,
       bikeId: data.bikeId,
       tariffId: data.tariffId,
-      managerId: data.managerId || getCurrentUser()?.id || db2.users.find((u) => u.role === "MANAGER" || u.role === "ADMIN")?.id || db2.users[0]?.id || "usr-admin",
+      managerId: getCurrentUser()?.id || data.managerId || db2.users.find((u) => u.role === "MANAGER" || u.role === "ADMIN")?.id || db2.users[0]?.id || "usr-admin",
       status: nextPaymentDue < now ? "OVERDUE" : "ACTIVE",
       type: tariff.type,
       startedAt: startDate.toISOString(),
@@ -65231,10 +65357,11 @@ var RentalRepository = class {
     const now = getSystemTime();
     let repairOrderCreated = null;
     if (bike && !isBoughtOut) {
+      const existingRepair = db2.repairs.find((repair) => repair.bikeId === bike.id && repair.status !== "COMPLETED" && repair.status !== "CANCELLED");
       if (data.bikeMileageKm && data.bikeMileageKm > bike.mileageKm) {
         bike.mileageKm = data.bikeMileageKm;
       }
-      if (data.bikeCondition === "NEEDS_REPAIR") {
+      if (data.bikeCondition === "NEEDS_REPAIR" || existingRepair) {
         bike.status = "IN_MAINTENANCE";
         bike.currentLocation = "\u041C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0430\u044F \u0421\u0422\u041E (\u0432\u043E\u0437\u0432\u0440\u0430\u0442 \u0441 \u0434\u0435\u0444\u0435\u043A\u0442\u043E\u043C)";
         bike.note = data.defectDescription || "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u044B \u0434\u0435\u0444\u0435\u043A\u0442\u044B \u043F\u0440\u0438 \u043F\u0440\u0438\u0435\u043C\u043A\u0435 \u0438\u0437 \u0430\u0440\u0435\u043D\u0434\u044B";
@@ -65258,7 +65385,8 @@ var RentalRepository = class {
           completedAt: null,
           parts: []
         };
-        db2.repairs.push(repairOrderCreated);
+        if (existingRepair) repairOrderCreated = existingRepair;
+        else db2.repairs.push(repairOrderCreated);
       } else {
         bike.status = "AVAILABLE";
         bike.currentLocation = "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F \u0431\u0430\u0437\u0430 (\u043C. \u0414\u043C\u0438\u0442\u0440\u043E\u0432\u0441\u043A\u0430\u044F)";
@@ -65497,7 +65625,7 @@ var HistoryRepository = class {
       badgeText: entry.badgeText,
       badgeColor: entry.badgeColor,
       entityId: entry.entityId,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+      createdAt: getSystemTime().toISOString()
     };
     db2.auditLogs.unshift(log);
     if (db2.auditLogs.length > 1e3) {
@@ -65511,9 +65639,6 @@ var HistoryRepository = class {
     const items = [];
     (db2.auditLogs || []).forEach((log) => {
       let actor = log.actorName || "\u0410\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440";
-      if (actor.includes("\u041A\u043E\u0432\u0430\u043B\u0435\u0432") || actor.includes("\u0421\u043C\u0438\u0440\u043D\u043E\u0432")) {
-        actor = "BXLETH (\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C \u043F\u0430\u0440\u043A\u0430)";
-      }
       items.push({
         id: log.id,
         category: log.category,
@@ -65739,7 +65864,7 @@ var HistoryRepository = class {
     });
     let result = Array.from(map.values());
     if (filters?.days && filters.days > 0) {
-      const cutoff = new Date(Date.now() - filters.days * 864e5).getTime();
+      const cutoff = getSystemTime().getTime() - filters.days * 864e5;
       result = result.filter((item) => new Date(item.timestamp).getTime() >= cutoff);
     }
     if (filters?.category && filters.category !== "ALL") {
@@ -65967,6 +66092,7 @@ var RepairRepository = class {
     const db2 = getDb();
     const repair = db2.repairs.find((r) => r.id === id);
     if (!repair) return null;
+    if (!["DIAGNOSTICS", "WAITING_PARTS", "IN_PROGRESS", "COMPLETED", "CANCELLED"].includes(status)) throw new Error("\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439 \u0441\u0442\u0430\u0442\u0443\u0441 \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0430");
     if (status === repair.status) return this.getById(id);
     if (repair.status === "COMPLETED" || repair.status === "CANCELLED") throw new Error("\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043D\u043D\u044B\u0439 \u0438\u043B\u0438 \u043E\u0442\u043C\u0435\u043D\u0451\u043D\u043D\u044B\u0439 \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u043D\u0435\u043B\u044C\u0437\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u043E");
     if (status === "COMPLETED") return this.complete(id, {});
@@ -66350,6 +66476,7 @@ var PartRepository = class {
     if (index === -1) {
       throw new Error("\u0417\u0430\u043F\u0447\u0430\u0441\u0442\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
     }
+    if (db2.repairs.some((repair) => repair.parts.some((part) => part.partId === id)) || db2.partOrders?.some((order) => order.partId === id) || db2.retailOrders.some((order) => order.items.some((item) => item.itemType === "PART" && item.itemId === id))) throw new Error("\u0417\u0430\u043F\u0447\u0430\u0441\u0442\u044C \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u0432 \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0430\u0445, \u0437\u0430\u043A\u0443\u043F\u043A\u0430\u0445 \u0438\u043B\u0438 \u0447\u0435\u043A\u0430\u0445");
     const removed = db2.parts.splice(index, 1)[0];
     return removed;
   }
@@ -67171,10 +67298,12 @@ var FinanceRepository = class {
     return deletedPayment;
   }
   static getSettings() {
-    return getSettings();
+    const { authSigningKey, ...settings } = getSettings();
+    return settings;
   }
   static updateSettings(data) {
-    return updateSettings(data);
+    const { authSigningKey, ...settings } = updateSettings(data);
+    return settings;
   }
   static getSummary() {
     return calculateFinancials();
@@ -67306,6 +67435,8 @@ var ReviewRepository = class {
   }
   static create(data) {
     const db2 = getDb();
+    if (!db2.clients.some((client) => client.id === data.clientId)) throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (!db2.bikes.some((bike) => bike.id === data.bikeId)) throw new Error("\u0411\u0430\u0439\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     if (data.rating < 1 || data.rating > 5) {
       throw new Error("\u0420\u0435\u0439\u0442\u0438\u043D\u0433 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043E\u0442 1 \u0434\u043E 5 \u0437\u0432\u0435\u0437\u0434");
     }
@@ -67361,44 +67492,53 @@ var ReviewController = class {
 var import_multer = __toESM(require_multer());
 var import_path2 = __toESM(require("path"));
 var import_fs2 = __toESM(require("fs"));
+var import_node_crypto2 = require("node:crypto");
 var isVercel2 = Boolean(process.env.VERCEL);
-var uploadsDir = isVercel2 ? import_path2.default.resolve("/tmp", "uploads") : import_path2.default.resolve(process.cwd(), "uploads");
+var uploadsDir = process.env.CRM_UPLOADS_DIR ? import_path2.default.resolve(process.env.CRM_UPLOADS_DIR) : isVercel2 ? import_path2.default.resolve("/tmp", "uploads") : import_path2.default.resolve(process.cwd(), "uploads");
 try {
   if (!import_fs2.default.existsSync(uploadsDir)) {
     import_fs2.default.mkdirSync(uploadsDir, { recursive: true });
   }
 } catch (err) {
 }
-var storage = import_multer.default.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = import_path2.default.extname(file.originalname);
-    const uniqueName = `doc_${Date.now()}_${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, uniqueName);
+var uploadMiddleware = (0, import_multer.default)({
+  storage: import_multer.default.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  // 10MB
+  fileFilter: (req, file, callback) => {
+    if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(file.mimetype)) return callback(new Error("\u0414\u043E\u043F\u0443\u0441\u0442\u0438\u043C\u044B \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F JPEG, PNG, WebP \u0438 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u044B PDF"));
+    callback(null, true);
   }
 });
-var uploadMiddleware = (0, import_multer.default)({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }
-  // 10MB
-});
 var UploadController = class {
-  static handleUpload(req, res) {
+  static async handleUpload(req, res) {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "\u0424\u0430\u0439\u043B \u043D\u0435 \u0431\u044B\u043B \u043F\u0435\u0440\u0435\u0434\u0430\u043D" });
       }
-      const fileUrl = `/uploads/${req.file.filename}`;
+      const extensions = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "application/pdf": ".pdf" };
+      const filename = `doc_${(0, import_node_crypto2.randomUUID)()}${extensions[req.file.mimetype]}`;
+      const cloud = isVercel2 || supabaseAdapter.getStatus().mode !== "LOCAL_FILE";
+      if (cloud) await supabaseAdapter.uploadDocument(filename, req.file.buffer, req.file.mimetype);
+      else await import_fs2.default.promises.writeFile(import_path2.default.join(uploadsDir, filename), req.file.buffer);
+      const fileUrl = cloud ? `/uploads/cloud/${filename}` : `/uploads/${filename}`;
       return res.status(201).json({
         url: fileUrl,
-        filename: req.file.filename,
+        filename,
         originalName: req.file.originalname,
         size: req.file.size
       });
     } catch (err) {
       return res.status(500).json({ error: err.message });
+    }
+  }
+  static async downloadCloud(req, res) {
+    try {
+      const filename = req.params.filename;
+      if (!/^doc_[a-f0-9-]+\.(jpg|png|webp|pdf)$/i.test(filename)) return res.status(400).json({ error: "\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u043E\u0435 \u0438\u043C\u044F \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u0430" });
+      return res.redirect(await supabaseAdapter.documentDownloadUrl(filename));
+    } catch (error) {
+      return res.status(404).json({ error: error.message });
     }
   }
 };
@@ -68333,6 +68473,9 @@ var AccessLevelRepository = class {
     const index = db2.accessLevels.findIndex((lvl) => lvl.id === id);
     if (index === -1) return null;
     const existing = db2.accessLevels[index];
+    if (id === "lvl-owner" && (data.canManageEmployees === false || data.canSeeProfits === false || Object.values(data.permissions || {}).some((permission) => !permission.visible || !permission.canEdit || !permission.canDelete))) {
+      throw new Error("\u0421\u0438\u0441\u0442\u0435\u043C\u043D\u044B\u0439 \u0443\u0440\u043E\u0432\u0435\u043D\u044C \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430 \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u044C \u043F\u043E\u043B\u043D\u044B\u0439 \u0434\u043E\u0441\u0442\u0443\u043F");
+    }
     const updated = {
       ...existing,
       name: data.name !== void 0 ? data.name.trim() : existing.name,
@@ -68455,10 +68598,10 @@ var UserController = class {
       const accessLevels = db2.accessLevels || [];
       const employees = db2.employees || [];
       const payments = (db2.payments || []).filter((p) => p.type === "SALARY_PAYMENT");
-      const currentMonth = (/* @__PURE__ */ new Date()).toISOString().slice(0, 7);
+      const currentMonth = getSystemTime().toISOString().slice(0, 7);
       const users = (db2.users || []).map((u) => {
         const lvl = accessLevels.find((l) => l.id === u.accessLevelId) || null;
-        const emp = employees.find(
+        const emp = employees.find((employee) => employee.id === u.employeeId) || employees.find(
           (e) => u.phone && e.phone === u.phone || e.fullName.toLowerCase() === u.fullName.toLowerCase()
         ) || null;
         const empPayments = emp ? payments.filter((p) => p.employeeId === emp.id) : [];
@@ -68476,7 +68619,6 @@ var UserController = class {
           accessLevel: lvl,
           isActive: u.isActive !== false,
           lastLoginAt: u.lastLoginAt || null,
-          password: u.passwordHash || "1234",
           employeeId: emp?.id || null,
           salaryAmount: emp ? typeof emp.salaryAmount === "number" ? emp.salaryAmount : 0 : 0,
           salaryType: emp?.salaryType ?? "MONTHLY",
@@ -68515,7 +68657,7 @@ var UserController = class {
         login: cleanLogin,
         username: cleanLogin,
         email: `${cleanLogin}@ebike-crm.ru`,
-        passwordHash: password.trim(),
+        passwordHash: hashPassword(password.trim()),
         fullName: fullName.trim(),
         phone: phone?.trim() || null,
         role: chosenRole,
@@ -68535,7 +68677,7 @@ var UserController = class {
           email: newUser.email,
           role: newUser.roleTitle || "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A",
           salaryType: salaryType || "MONTHLY",
-          salaryAmount: Number(salaryAmount) || 5e4,
+          salaryAmount: salaryAmount !== void 0 ? Math.max(0, Number(salaryAmount) || 0) : 0,
           status: "ACTIVE",
           hiredAt: (/* @__PURE__ */ new Date()).toISOString().slice(0, 10),
           notes: `\u0423\u0447\u0435\u0442\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C: @${newUser.login}`
@@ -68545,6 +68687,7 @@ var UserController = class {
         matchedEmp.salaryAmount = Number(salaryAmount);
         if (salaryType) matchedEmp.salaryType = salaryType;
       }
+      newUser.employeeId = matchedEmp.id;
       saveDb();
       await HistoryRepository.logAction({
         category: "SYSTEM",
@@ -68569,7 +68712,7 @@ var UserController = class {
         accessLevel: lvl,
         isActive: newUser.isActive,
         employeeId: matchedEmp?.id || null,
-        salaryAmount: matchedEmp?.salaryAmount || 5e4,
+        salaryAmount: matchedEmp?.salaryAmount ?? 0,
         salaryType: matchedEmp?.salaryType || "MONTHLY",
         thisMonthPaid: 0
       });
@@ -68585,6 +68728,9 @@ var UserController = class {
         return res.status(404).json({ error: "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D" });
       }
       const { fullName, login, phone, roleTitle, role, accessLevelId, isActive, password, salaryAmount, salaryType } = req.body;
+      const matchedEmp = db2.employees.find((employee) => employee.id === user.employeeId) || db2.employees.find((employee) => user.phone && normalizePhone(employee.phone) === normalizePhone(user.phone) || employee.fullName.toLowerCase() === user.fullName.toLowerCase());
+      if (matchedEmp) user.employeeId = matchedEmp.id;
+      if (user.id === "usr-bxleth" && (isActive === false || accessLevelId && accessLevelId !== "lvl-owner" || role && role !== "ADMIN")) return res.status(403).json({ error: "\u041D\u0435\u043B\u044C\u0437\u044F \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0438\u043B\u0438 \u043F\u043E\u043D\u0438\u0437\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430" });
       if (login !== void 0 && login.trim()) {
         const cleanLogin = login.trim().toLowerCase();
         const exists = (db2.users || []).find(
@@ -68605,10 +68751,7 @@ var UserController = class {
       }
       if (accessLevelId !== void 0) user.accessLevelId = accessLevelId;
       if (isActive !== void 0) user.isActive = Boolean(isActive);
-      if (password && password.trim()) user.passwordHash = password.trim();
-      const matchedEmp = (db2.employees || []).find(
-        (e) => user.phone && e.phone === user.phone || e.fullName.toLowerCase() === user.fullName.toLowerCase()
-      );
+      if (password && password.trim()) user.passwordHash = hashPassword(password.trim());
       if (matchedEmp) {
         if (fullName !== void 0) matchedEmp.fullName = user.fullName;
         if (phone !== void 0) matchedEmp.phone = user.phone || "";
@@ -68640,7 +68783,6 @@ var UserController = class {
         accessLevelId: user.accessLevelId,
         accessLevel: lvl,
         isActive: user.isActive,
-        password: user.passwordHash || "1234",
         employeeId: matchedEmp?.id || null,
         salaryAmount: matchedEmp ? typeof matchedEmp.salaryAmount === "number" ? matchedEmp.salaryAmount : 0 : 0,
         salaryType: matchedEmp?.salaryType || "MONTHLY"
@@ -68661,11 +68803,11 @@ var UserController = class {
         return res.status(403).json({ error: "\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0443\u0447\u0435\u0442\u043D\u0443\u044E \u0437\u0430\u043F\u0438\u0441\u044C \u0440\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044F \u0438\u043B\u0438 \u0433\u043B\u0430\u0432\u043D\u043E\u0433\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0430" });
       }
       db2.users.splice(index, 1);
-      const empIndex = (db2.employees || []).findIndex(
+      const empIndex = db2.employees.findIndex((employee) => employee.id === target.employeeId) !== -1 ? db2.employees.findIndex((employee) => employee.id === target.employeeId) : (db2.employees || []).findIndex(
         (e) => target.phone && e.phone === target.phone || e.fullName.toLowerCase() === target.fullName.toLowerCase()
       );
       if (empIndex !== -1) {
-        db2.employees.splice(empIndex, 1);
+        db2.employees[empIndex].status = "DISMISSED";
       }
       saveDb();
       await HistoryRepository.logAction({
@@ -68697,9 +68839,9 @@ var ChatRepository = class {
     }
     const newMessage = {
       id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      senderId: data.senderId,
-      senderName: data.senderName,
-      senderRole: data.senderRole || "USER",
+      senderId: getCurrentUser()?.id || data.senderId,
+      senderName: getCurrentUser()?.fullName || data.senderName,
+      senderRole: getCurrentUser()?.roleTitle || data.senderRole || "USER",
       text: data.text.trim(),
       createdAt: (/* @__PURE__ */ new Date()).toISOString()
     };
@@ -68781,6 +68923,8 @@ var PresenceRepository = class {
   }
   static heartbeat(data) {
     const db2 = getDb();
+    const current = getCurrentUser();
+    if (current) data = { ...data, userId: current.id, userName: current.fullName, userRole: current.role, roleTitle: current.roleTitle };
     if (!db2.presence) {
       db2.presence = [];
     }
@@ -68814,6 +68958,7 @@ var PresenceRepository = class {
     return this.getOnline();
   }
   static logout(userId) {
+    userId = getCurrentUser()?.id || userId;
     const db2 = getDb();
     if (!db2.presence) return false;
     const initialLen = db2.presence.length;
@@ -68968,7 +69113,7 @@ var OutfitRepository = class {
     const db2 = getDb();
     let list = db2.outfits.map((o) => {
       const activeRental = db2.rentals.find(
-        (r) => r.outfitIds.includes(o.id) && (r.status === "ACTIVE" || r.status === "OVERDUE")
+        (r) => r.outfitIds.includes(o.id) && (r.status === "ACTIVE" || r.status === "OVERDUE" || r.status === "PROBLEM" || r.status === "BOUGHT_OUT" && !r.depositRefunded && o.status === "ISSUED")
       );
       const client = activeRental ? db2.clients.find((c) => c.id === activeRental.clientId) : null;
       const categoryObj = db2.outfitCategories.find((c) => c.id === o.category || c.name === o.category);
@@ -69044,6 +69189,8 @@ var OutfitRepository = class {
     const db2 = getDb();
     const outfit = db2.outfits.find((o) => o.id === id);
     if (!outfit) return null;
+    if (outfit.status === "SOLD" && status !== "SOLD") throw new Error("\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u043F\u0440\u043E\u0434\u0430\u043D\u0430 \u0438 \u0432\u044B\u0431\u044B\u043B\u0430 \u0438\u0437 \u0441\u043A\u043B\u0430\u0434\u0430");
+    if (status !== "ISSUED" && db2.rentals.some((r) => r.outfitIds.includes(id) && (r.status === "ACTIVE" || r.status === "OVERDUE" || r.status === "PROBLEM"))) throw new Error("\u0414\u043B\u044F \u0432\u043E\u0437\u0432\u0440\u0430\u0442\u0430 \u0432\u044B\u0434\u0430\u043D\u043D\u043E\u0439 \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0438 \u043E\u0444\u043E\u0440\u043C\u0438\u0442\u0435 \u043F\u0440\u0438\u0451\u043C\u043A\u0443 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443");
     outfit.status = status;
     saveDb();
     return outfit;
@@ -69054,6 +69201,7 @@ var OutfitRepository = class {
     if (index === -1) {
       throw new Error("\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
     }
+    if (db2.rentals.some((r) => r.outfitIds.includes(id)) || db2.retailOrders.some((order) => order.items.some((item) => item.itemType === "OUTFIT" && item.itemId === id))) throw new Error("\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F \u0432 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430\u0445 \u0438\u043B\u0438 \u0447\u0435\u043A\u0430\u0445. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0434\u043B\u044F \u0438\u0441\u0442\u043E\u0440\u0438\u0438");
     const activeRental = db2.rentals.find(
       (r) => r.outfitIds.includes(id) && (r.status === "ACTIVE" || r.status === "OVERDUE")
     );
@@ -69325,7 +69473,8 @@ var ShopRepository = class {
       const model = db2.models.find((m) => m.id === b.modelId);
       const battery = b.batteryId ? db2.batteries.find((bt) => bt.id === b.batteryId) : null;
       const retailPrice = b.salePrice || model?.salePrice || (b.status === "FOR_SALE" ? 45e3 : 55e3);
-      const costPrice = b.purchasePrice || model?.purchasePrice || Math.round(retailPrice * 0.7);
+      const batteryModel = db2.batteryModels.find((item) => item.id === battery?.modelId);
+      const costPrice = (b.purchasePrice || model?.purchasePrice || Math.round(retailPrice * 0.7)) + (battery ? battery.purchasePrice || batteryModel?.purchasePrice || 16e3 : 0);
       return {
         id: b.id,
         inventoryNumber: b.inventoryNumber,
@@ -69421,7 +69570,9 @@ var ShopRepository = class {
         const model = db2.models.find((m) => m.id === bike.modelId);
         const defaultPrice = bike.salePrice || model?.salePrice || (bike.status === "FOR_SALE" ? 45e3 : 55e3);
         const price = item.price !== void 0 ? Number(item.price) : defaultPrice;
-        const costPrice = bike.purchasePrice || model?.purchasePrice || Math.round(price * 0.7);
+        const installedBattery = db2.batteries.find((battery) => battery.id === bike.batteryId);
+        const installedBatteryModel = db2.batteryModels.find((item2) => item2.id === installedBattery?.modelId);
+        const costPrice = (bike.purchasePrice || model?.purchasePrice || Math.round(price * 0.7)) + (installedBattery ? installedBattery.purchasePrice || installedBatteryModel?.purchasePrice || 16e3 : 0);
         bike.status = "SOLD";
         bike.note = `\u041F\u0440\u043E\u0434\u0430\u043D \u0432 \u0440\u043E\u0437\u043D\u0438\u0446\u0443 \u043F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044E: ${data.customerName || "\u0413\u043E\u0441\u0442\u044C"}`;
         bike.updatedAt = getSystemTime().toISOString();
@@ -69523,6 +69674,7 @@ var ShopRepository = class {
       }
     }
     const orderNumber = data.orderNumber && data.orderNumber.trim() ? data.orderNumber.trim() : `ORD-${Date.now().toString().slice(-6)}`;
+    if (db2.retailOrders.some((order2) => order2.orderNumber.toLowerCase() === orderNumber.toLowerCase())) throw new Error("\u041D\u043E\u043C\u0435\u0440 \u0447\u0435\u043A\u0430 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442");
     const profit = totalAmount - totalCost;
     let resolvedClientId = data.clientId || null;
     let customerFullName = data.customerName?.trim() || "\u0420\u043E\u0437\u043D\u0438\u0447\u043D\u044B\u0439 \u043F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C";
@@ -69599,7 +69751,7 @@ var ShopRepository = class {
       category: "PAYMENT",
       action: "SHOP_SALE",
       title: `\u0420\u043E\u0437\u043D\u0438\u0447\u043D\u0430\u044F \u043F\u0440\u043E\u0434\u0430\u0436\u0430: \u0427\u0435\u043A ${order.orderNumber} \u043D\u0430 \u0441\u0443\u043C\u043C\u0443 ${order.totalAmount.toLocaleString("ru-RU")} \u20BD`,
-      details: `\u041F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C: ${order.customerName}. \u041E\u043F\u043B\u0430\u0442\u0430: ${order.paymentMethod}. \u0422\u043E\u0432\u0430\u0440\u043E\u0432: ${order.items.length} \u0448\u0442. \u041F\u0440\u0438\u0431\u044B\u043B\u044C: +${order.profit.toLocaleString("ru-RU")} \u20BD`,
+      details: `\u041F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C: ${order.customerName}. \u041E\u043F\u043B\u0430\u0442\u0430: ${order.paymentMethod}. \u0422\u043E\u0432\u0430\u0440\u043E\u0432: ${order.items.length} \u0448\u0442.`,
       amount: order.totalAmount,
       badgeText: "\u041C\u0430\u0433\u0430\u0437\u0438\u043D",
       badgeColor: "teal",
@@ -69633,7 +69785,7 @@ var ShopController = class {
   }
   static async createOrder(req, res) {
     try {
-      const { customerType, customerName, customerPhone, clientId, items, paymentMethod, notes } = req.body;
+      const { customerType, customerName, customerPhone, clientId, items, paymentMethod, notes, orderNumber } = req.body;
       if (!items || items.length === 0) {
         return res.status(400).json({ error: "\u041A\u043E\u0440\u0437\u0438\u043D\u0430 \u043F\u0443\u0441\u0442\u0430" });
       }
@@ -69644,7 +69796,8 @@ var ShopController = class {
         clientId,
         items,
         paymentMethod: paymentMethod || "CASH",
-        notes
+        notes,
+        orderNumber
       });
       res.status(201).json({
         success: true,
@@ -69677,11 +69830,55 @@ var ShopController = class {
   }
 };
 
+// src/middleware/auth.ts
+function authenticateApi(req, res, next) {
+  try {
+    const cookie = req.headers.cookie?.split(";").map((value) => value.trim()).find((value) => value.startsWith("crm_session="))?.slice("crm_session=".length);
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "") || (cookie ? decodeURIComponent(cookie) : "");
+    const user = authenticateSession(token);
+    const db2 = getDb();
+    const level = db2.accessLevels.find((item) => item.id === user.accessLevelId) || db2.accessLevels.find((item) => item.id === (user.role === "ADMIN" ? "lvl-owner" : user.role === "MECHANIC" ? "lvl-master" : "lvl-manager"));
+    const visible = (module3) => level?.permissions[module3]?.visible !== false;
+    const edit = (module3) => level?.permissions[module3]?.canEdit !== false;
+    const remove2 = (module3) => level?.permissions[module3]?.canDelete !== false;
+    const route = req.path;
+    const root = route.split("/")[1];
+    const module2 = { dashboard: "dashboard", bikes: "bikes", batteries: "batteries", outfits: "outfits", clients: "clients", rentals: "rentals", repairs: "repairs", parts: "inventory", payments: "finance", users: "employees", employees: "employees", "access-levels": "employees", articles: "info", history: "history", loyalty: "loyalty", shop: "shop", reviews: "clients" }[root];
+    const readDependencies = { clients: ["rentals", "repairs", "shop", "loyalty"], bikes: ["rentals", "repairs", "shop"], batteries: ["rentals", "repairs", "bikes"], outfits: ["rentals", "shop"], parts: ["repairs"], rentals: ["clients"], loyalty: ["clients", "rentals", "shop", "repairs"] };
+    const isRead = req.method === "GET";
+    const allowedReference = isRead && (readDependencies[root] || []).some(visible);
+    const globalRead = isRead && (root === "dashboard" || route === "/payments/settings" || route === "/system/state");
+    if ((root === "users" || root === "employees" || root === "access-levels") && level?.canManageEmployees !== true) return res.status(403).json({ error: "\u041D\u0435\u0442 \u043F\u0440\u0430\u0432 \u043D\u0430 \u0443\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0430\u043C\u0438" });
+    if (root === "system" && route !== "/system/state" && level?.id !== "lvl-owner") return res.status(403).json({ error: "\u0421\u0438\u0441\u0442\u0435\u043C\u043D\u044B\u0435 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0443" });
+    const createRelatedClient = !isRead && req.method === "POST" && route === "/clients" && ["rentals", "shop", "repairs"].some((item) => visible(item) && edit(item));
+    if (module2 && !globalRead && !allowedReference && !createRelatedClient && (!visible(module2) || !isRead && !(req.method === "DELETE" ? remove2(module2) : edit(module2)))) return res.status(403).json({ error: "\u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u043E \u043F\u0440\u0430\u0432 \u0434\u043B\u044F \u044D\u0442\u043E\u0439 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438" });
+    const originalJson = res.json.bind(res);
+    res.json = (body) => {
+      const sanitized = JSON.parse(JSON.stringify(body, (key, value) => {
+        if (key === "passwordHash" || key === "password" || key === "authSigningKey") return void 0;
+        if (level?.canSeeProfits !== true && ["netMargin", "profit"].includes(key)) return void 0;
+        if (!visible("clients") && ["passportSerial", "passportNumber", "migrationCard", "patentNumber", "documentPhotoUrls"].includes(key)) return void 0;
+        return value;
+      }));
+      return originalJson(sanitized);
+    };
+    const roleTitle = user.roleTitle || (user.role === "ADMIN" ? "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C" : user.role === "MECHANIC" ? "\u041C\u0430\u0441\u0442\u0435\u0440" : "\u041C\u0435\u043D\u0435\u0434\u0436\u0435\u0440");
+    const current = { id: user.id, fullName: user.fullName, role: user.role, roleTitle, displayName: `${user.fullName} (${roleTitle})` };
+    req.currentUser = current;
+    userStorage.run(current, next);
+  } catch (error) {
+    return res.status(401).json({ error: error.message || "\u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0443" });
+  }
+}
+
 // src/routes/api.routes.ts
 var router = (0, import_express.Router)();
 var accessLevelCtrl = new AccessLevelController();
 var userCtrl = new UserController();
 router.post("/auth/login", AuthController.login);
+router.post("/auth/trusted-login", AuthController.trustedLogin);
+router.use(authenticateApi);
+router.post("/auth/logout", AuthController.logout);
 router.get("/auth/me", AuthController.getMe);
 router.get("/dashboard/stats", DashboardController.getStats);
 router.get("/batteries/stats", BatteryController.getStats);
@@ -69842,42 +70039,6 @@ app.use(
 );
 app.use(import_express2.default.json({ limit: "20mb" }));
 app.use(import_express2.default.urlencoded({ extended: true, limit: "20mb" }));
-app.use((req, res, next) => {
-  const userId = req.headers["x-user-id"];
-  const userNameHeader = req.headers["x-user-name"];
-  const userRole = req.headers["x-user-role"];
-  let userName;
-  if (userNameHeader) {
-    try {
-      userName = decodeURIComponent(userNameHeader);
-    } catch {
-      userName = userNameHeader;
-    }
-  }
-  let userCtx;
-  if (userId || userName) {
-    try {
-      const db2 = getDb();
-      const userFromDb = userId ? db2.users?.find((u) => u.id === userId) : void 0;
-      const resolvedName = userName || userFromDb?.fullName || "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A";
-      const roleTitle = userFromDb?.roleTitle || (userRole === "ADMIN" ? "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C" : userRole === "MECHANIC" ? "\u041C\u0430\u0441\u0442\u0435\u0440" : "\u041C\u0435\u043D\u0435\u0434\u0436\u0435\u0440");
-      userCtx = {
-        id: userId || userFromDb?.id || "usr-current",
-        fullName: resolvedName,
-        role: userRole || userFromDb?.role || "ADMIN",
-        roleTitle,
-        displayName: `${resolvedName} (${roleTitle})`
-      };
-      req.currentUser = userCtx;
-    } catch {
-    }
-  }
-  if (userCtx) {
-    userStorage.run(userCtx, () => next());
-  } else {
-    next();
-  }
-});
 app.get(["/health", "/api/health"], (req, res) => {
   res.json({ status: "ok", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
 });
@@ -69905,6 +70066,29 @@ app.use((req, res, next) => {
   res.setHeader("Expires", "0");
   next();
 });
+var requestQueue = Promise.resolve();
+app.use(async (req, res, next) => {
+  const previous = requestQueue;
+  let release;
+  requestQueue = new Promise((resolve) => {
+    release = resolve;
+  });
+  await previous;
+  if (res.destroyed) {
+    release();
+    return;
+  }
+  let finished = false;
+  const finish = () => {
+    if (!finished) {
+      finished = true;
+      release();
+    }
+  };
+  res.once("finish", finish);
+  res.once("close", finish);
+  next();
+});
 app.use(async (req, res, next) => {
   if (req.path.includes("health") || req.path.includes("diagnostics")) {
     return next();
@@ -69927,7 +70111,10 @@ app.use(async (req, res, next) => {
       try {
         await flushDb(true);
       } catch (err) {
-        console.error("[Storage Middleware] Flush error:", err);
+        console.error("[Storage Middleware] Flush error:", err.message);
+        res.status(err.code === "CRM_STORE_CONFLICT" ? 409 : 503);
+        originalSend(JSON.stringify({ error: err.code === "CRM_STORE_CONFLICT" ? err.message : "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435 \u0432 \u043E\u0431\u043B\u0430\u043A\u043E. \u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C \u0432 \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E\u043C \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0438; \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u043E\u0441\u043B\u0435 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u0438\u044F \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F." }));
+        return;
       }
       cb();
     };
@@ -69943,14 +70130,15 @@ app.use(async (req, res, next) => {
   }
   next();
 });
-var uploadsDir2 = process.env.VERCEL ? import_path3.default.resolve("/tmp", "uploads") : import_path3.default.resolve(process.cwd(), "uploads");
+var uploadsDir2 = process.env.CRM_UPLOADS_DIR ? import_path3.default.resolve(process.env.CRM_UPLOADS_DIR) : process.env.VERCEL ? import_path3.default.resolve("/tmp", "uploads") : import_path3.default.resolve(process.cwd(), "uploads");
 try {
   if (!import_fs4.default.existsSync(uploadsDir2)) {
     import_fs4.default.mkdirSync(uploadsDir2, { recursive: true });
   }
 } catch (e) {
 }
-app.use("/uploads", import_express2.default.static(uploadsDir2));
+app.get("/uploads/cloud/:filename", authenticateApi, UploadController.downloadCloud);
+app.use("/uploads", authenticateApi, import_express2.default.static(uploadsDir2));
 app.use("/api", api_routes_default);
 app.use("/", api_routes_default);
 app.use((req, res) => {

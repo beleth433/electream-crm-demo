@@ -423,6 +423,7 @@ export function KpiCard({ label, value, delta, good = "up", period, trend, class
           {period && <span className="text-muted-foreground">{period}</span>}
         </p>
       )}
+      {delta === undefined && period && <p className="text-[12px] text-muted-foreground">{period}</p>}
     </div>
   );
 }

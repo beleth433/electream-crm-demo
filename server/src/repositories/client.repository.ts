@@ -304,6 +304,7 @@ export class ClientRepository {
     if (index === -1) {
       throw new Error("Курьер не найден");
     }
+    if (db.rentals.some((r) => r.clientId === id) || db.repairs.some((r) => r.clientId === id) || db.retailOrders.some((order) => order.clientId === id) || db.payments.some((p) => p.clientId === id)) throw new Error("У клиента есть связанные документы. Сохраните профиль для истории операций");
 
     const activeRental = db.rentals.find(
       (r) => r.clientId === id && (r.status === "ACTIVE" || r.status === "OVERDUE")
