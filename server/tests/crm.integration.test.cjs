@@ -133,6 +133,104 @@ test('return with defects creates a repair linked to the original customer', () 
   assert.equal(db.outfits[0].status, 'IN_STOCK');
 });
 
+test('loyalty uses actual income once, excludes deposits and does not count future days', () => {
+  const rental = issue();
+  repairs.create({ itemType: 'EXTERNAL_DEVICE', clientId: 'client', faultType: 'CLIENT_FAULT', description: 'Расчёт ремонта', laborCost: 5000 });
+  finance.create({ clientId: 'client', type: 'REPAIR', amount: 100, method: 'CASH' });
+  const client = clients.getById('client');
+  assert.equal(client.totalSpent, 800);
+  assert.equal(client.totalRentalDays, 0);
+  store.setSystemTime('2026-10-25T12:00:00Z');
+  assert.equal(clients.getById('client').totalRentalDays, 3);
+  completeReturn(rental.id);
+  store.setSystemTime('2026-11-01T12:00:00Z');
+  assert.equal(clients.getById('client').totalRentalDays, 3);
+});
+
+test('shop and workshop use the same normalized customer phone', async () => {
+  const order = await shop.createOrder({ customerType: 'EXTERNAL', customerName: 'Иван Иванов', customerPhone: '8 999 123 45 67', paymentMethod: 'CASH', items: [{ itemType: 'PART', itemId: 'part1', quantity: 1 }] });
+  const repair = repairs.create({ itemType: 'EXTERNAL_DEVICE', clientName: 'Иван Иванов', clientPhone: '8 999 123 45 67', faultType: 'CLIENT_FAULT', description: 'Ремонт', laborCost: 300 });
+  repairs.complete(repair.id, { paymentMethod: 'CASH' });
+  assert.equal(order.clientId, 'client');
+  assert.equal(repair.clientId, 'client');
+  assert.equal(db.clients.length, 1);
+  assert.equal(clients.getById('client').totalSpent, 500);
+});
+
+test('finance and dashboard agree on profit, retail COGS and procurement expenses', async () => {
+  finance.create({ type: 'FINE', amount: 50, method: 'CASH' });
+  await shop.createOrder({ customerType: 'GUEST', customerName: 'Покупатель', paymentMethod: 'CASH', items: [{ itemType: 'PART', itemId: 'part1', quantity: 1 }] });
+  const order = parts.createOrder({ partName: 'Колодки', partId: 'part1', quantity: 1, estimatedPrice: 100 });
+  parts.updateOrderStatus(order.id, 'ORDERED');
+  const summary = finance.getSummary();
+  assert.equal(summary.netMargin, 150);
+  assert.equal(summary.totalRevenue, 250);
+  assert.equal(summary.retailSales, 200);
+  assert.equal(summary.retailCogs, 100);
+  assert.equal(summary.partPurchaseExpenses, 100);
+  assert.equal(stats.getDashboardStats().financials.netMargin, summary.netMargin);
+  assert.equal(stats.getDashboardStats().financials.totalRevenue, summary.totalRevenue);
+});
+
+test('historical repair COGS stays fixed when a later procurement changes the part price', () => {
+  const repair = repairs.create({ bikeId: 'bike', faultType: 'COMPANY_EXPENSE', description: 'Ремонт' });
+  assert.equal(finance.getSummary().totalPartsCost, 0);
+  repairs.complete(repair.id, { partsUsed: [{ partId: 'part1', quantity: 1 }] });
+  db.parts[0].purchasePrice = 1000;
+  assert.equal(finance.getSummary().totalPartsCost, 100);
+});
+
+test('procurement receipt is idempotent and status edits synchronize its cash operation', () => {
+  const order = parts.createOrder({ partName: 'Колодки', partId: 'part1', quantity: 2, estimatedPrice: 100 });
+  parts.updateOrder(order.id, { status: 'ORDERED', actualCost: 300 });
+  assert.equal(db.payments.find((p) => p.orderId === order.id).amount, 300);
+  parts.updateOrderStatus(order.id, 'RECEIVED');
+  assert.equal(db.parts[0].quantity, 7);
+  parts.updateOrderStatus(order.id, 'RECEIVED');
+  assert.equal(db.parts[0].quantity, 7);
+  assert.throws(() => parts.updateOrder(order.id, { quantity: 5 }), /уже оприходована/);
+  assert.throws(() => parts.updateOrderStatus(order.id, 'ORDERED'), /Недопустимый/);
+});
+
+test('editing a procurement payment updates the original order', () => {
+  const order = parts.createOrder({ partName: 'Колодки', partId: 'part1', quantity: 2, estimatedPrice: 100 });
+  parts.updateOrderStatus(order.id, 'ORDERED');
+  const payment = db.payments.find((p) => p.orderId === order.id);
+  finance.update(payment.id, { amount: 300, method: 'CASH' });
+  assert.equal(db.partOrders[0].actualCost, 300);
+  assert.equal(db.partOrders[0].paymentMethod, 'CASH');
+  finance.delete(payment.id);
+  assert.equal(db.partOrders[0].paymentId, null);
+  assert.equal(db.partOrders[0].actualCost, 0);
+});
+
+test('monthly analytics assigns income to its payment month and includes all directions', () => {
+  finance.create({ type: 'RENTAL', amount: 500, method: 'CASH', createdAt: '2026-09-15T12:00:00Z' });
+  finance.create({ type: 'RETAIL_SALE', amount: 300, method: 'CASH', createdAt: '2026-10-15T12:00:00Z' });
+  const result = stats.getDashboardStats();
+  assert.equal(result.revenueByMonth.find((m) => m.key === '2026-09').total, 500);
+  assert.equal(result.revenueByMonth.find((m) => m.key === '2026-10').retail, 300);
+});
+
+test('manual rental payment updates its schedule and appears once in the cash register', () => {
+  const rental = issue();
+  const payment = finance.create({ rentalId: rental.id, type: 'RENTAL', amount: 700, method: 'CASH' });
+  assert.equal(payment.clientId, 'client');
+  assert.equal(rentals.getById(rental.id).nextPaymentDue, '2026-11-05T12:00:00.000Z');
+  assert.equal(db.payments.filter((p) => p.type === 'RENTAL').length, 2);
+});
+
+test('bank import preserves the payment date and repeated import does not add money or days', () => {
+  const rental = issue();
+  const request = { amount: 700, method: 'BANK_TRANSFER', createdAt: '2026-10-21T12:00:00Z', externalReference: 'bank:sample:0' };
+  rentals.renew(rental.id, request);
+  const due = rentals.getById(rental.id).nextPaymentDue;
+  rentals.renew(rental.id, request);
+  assert.equal(db.payments.filter((p) => p.externalReference === request.externalReference).length, 1);
+  assert.equal(db.payments.find((p) => p.externalReference === request.externalReference).createdAt, '2026-10-21T12:00:00.000Z');
+  assert.equal(rentals.getById(rental.id).nextPaymentDue, due);
+});
+
 after(async () => {
   await store.flushDb(true);
   assert.ok(testDir.startsWith(path.join(os.tmpdir(), 'ebike-crm-integration-')));

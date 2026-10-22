@@ -1,5 +1,8 @@
 import { getDb, getSystemTime, isTimeSimulated } from "./db.js";
 
+import { calculateFinancials } from "./financials.js";
+import { isRevenuePayment } from "./financials.js";
+
 export class StatsRepository {
   static getDashboardStats() {
     const db = getDb();
@@ -7,7 +10,7 @@ export class StatsRepository {
 
     // 1. Fleet counts
     const totalBikes = db.bikes.length;
-    const activeParkBikes = db.bikes.filter((b) => b.status !== "DECOMMISSIONED" && b.status !== "SOLD").length;
+    const activeParkBikes = db.bikes.filter((b) => b.status !== "DECOMMISSIONED" && b.status !== "SOLD" && b.status !== "BOUGHT_OUT").length;
     const rentedBikes = db.bikes.filter((b) => b.status === "RENTED").length;
     const availableBikes = db.bikes.filter((b) => b.status === "AVAILABLE").length;
     const maintenanceBikes = db.bikes.filter((b) => b.status === "IN_MAINTENANCE").length;
@@ -61,72 +64,23 @@ export class StatsRepository {
     const lowStockParts = db.parts.filter((p) => p.quantity <= p.minQuantity);
     const lowStockPartsCount = lowStockParts.length;
 
-    // 5. Financial metrics
-    // Revenue = sum(RENTAL) + sum(BUYOUT) + sum(REPAIR for client fault) + sum(OUTFIT_SALE) + sum(RETAIL_SALE)
-    const rentalRevenue = db.payments
-      .filter((p) => p.type === "RENTAL")
-      .reduce((sum, p) => sum + p.amount, 0);
+    const financialSummary = calculateFinancials();
+    const { totalRevenue, salaryExpenses, totalPartsCost, retailCogs, fixedExpenses, monthlyFixedExpenses, netMargin, activeDepositsHeld } = financialSummary;
+    const { rentalPayments: rentalRevenue, buyoutPayments: buyoutRevenue, repairPayments: clientRepairRevenue, outfitSales: outfitRevenue, retailSales: retailRevenue } = financialSummary;
+    const settings = getDb().settings!;
 
-    const buyoutRevenue = db.payments
-      .filter((p) => p.type === "BUYOUT")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const clientRepairRevenue = db.payments
-      .filter((p) => p.type === "REPAIR")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const outfitRevenue = db.payments
-      .filter((p) => p.type === "OUTFIT_SALE")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const retailRevenue = db.payments
-      .filter((p) => p.type === "RETAIL_SALE")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const totalRevenue = rentalRevenue + buyoutRevenue + clientRepairRevenue + outfitRevenue + retailRevenue;
-
-    // Parts cost = sum(quantity used * purchasePrice of part) across completed/in-progress repairs + retail cost
-    let totalPartsCost = 0;
-    db.repairs.forEach((rp) => {
-      rp.parts.forEach((pu) => {
-        const part = db.parts.find((p) => p.id === pu.partId);
-        const unitCost = part ? part.purchasePrice : 0;
-        totalPartsCost += pu.quantity * unitCost;
-      });
+    const revenueByMonth = Array.from({ length: 12 }, (_, index) => {
+      const monthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11 + index, 1));
+      const key = monthDate.toISOString().slice(0, 7);
+      const payments = db.payments.filter((payment) => payment.createdAt.slice(0, 7) === key && isRevenuePayment(payment));
+      const sum = (type: string) => payments.filter((payment) => payment.type === type).reduce((total, payment) => total + payment.amount, 0);
+      return { key, month: monthDate.toLocaleDateString("ru-RU", { month: "short", timeZone: "UTC" }), rental: sum("RENTAL"), buyout: sum("BUYOUT"), repair: sum("REPAIR"), retail: sum("RETAIL_SALE"), outfit: sum("OUTFIT_SALE"), fines: sum("FINE"), total: payments.reduce((total, payment) => total + payment.amount, 0) };
     });
-
-    // Retail orders cost of goods sold (COGS)
-    let retailCogs = 0;
-    db.retailOrders.forEach((o) => {
-      retailCogs += o.totalCost;
-    });
-
-    // Salary payouts from payments
-    const salaryExpenses = db.payments
-      .filter((p) => p.type === "SALARY_PAYMENT")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    // Fixed overhead costs (Rent of service hub, base overhead + salary payouts)
-    const settings = db.settings || { monthlyFixedExpenses: 0, fixedExpensesDescription: "" };
-    const monthlyFixedExpenses = settings.monthlyFixedExpenses ?? 0;
-    const fixedExpenses = monthlyFixedExpenses + salaryExpenses;
-
-    // Net margin = Revenue - Parts Cost - Retail COGS - Fixed Expenses
-    const netMargin = totalRevenue - totalPartsCost - retailCogs - fixedExpenses;
-
-    // Active deposits held
-    const totalDepositsCollected = db.payments
-      .filter((p) => p.type === "DEPOSIT")
-      .reduce((sum, p) => sum + p.amount, 0);
-    const totalDepositsRefunded = db.payments
-      .filter((p) => p.type === "DEPOSIT_REFUND")
-      .reduce((sum, p) => sum + p.amount, 0);
-    const activeDepositsHeld = totalDepositsCollected - totalDepositsRefunded;
 
     // Real models breakdown
     const modelsBreakdown = db.models.map((m) => {
       const modelBikes = db.bikes.filter(
-        (b) => b.modelId === m.id && b.status !== "DECOMMISSIONED" && b.status !== "SOLD"
+        (b) => b.modelId === m.id && b.status !== "DECOMMISSIONED" && b.status !== "SOLD" && b.status !== "BOUGHT_OUT"
       );
       const rented = modelBikes.filter((b) => b.status === "RENTED").length;
       const available = modelBikes.filter((b) => b.status === "AVAILABLE").length;
@@ -146,6 +100,7 @@ export class StatsRepository {
     }).filter((m) => m.total > 0 || db.models.length <= 6);
 
     return {
+      revenueByMonth,
       fleet: {
         totalBikes,
         activeParkBikes,
@@ -171,6 +126,8 @@ export class StatsRepository {
         lowStockParts,
       },
       financials: {
+        fines: financialSummary.fines,
+        partPurchaseExpenses: financialSummary.partPurchaseExpenses,
         totalRevenue,
         rentalRevenue,
         buyoutRevenue,
@@ -187,7 +144,7 @@ export class StatsRepository {
         netMargin,
         activeDepositsHeld,
       },
-      recentPayments: db.payments.slice(0, 10),
+      recentPayments: [...db.payments].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10),
       totalClients: db.clients.length,
       employeesCount: db.employees.length,
       retailOrdersCount: db.retailOrders.length,

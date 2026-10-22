@@ -1,24 +1,31 @@
-import { getDb, getSettings, updateSettings, PaymentType, PaymentMethod, saveDb } from "./db.js";
+import { getDb, getSystemTime, getSettings, updateSettings, PaymentType, PaymentMethod, PaymentRecord, saveDb, withDbTransaction } from "./db.js";
+import { getCurrentUser } from "../context/userContext.js";
+import { HistoryRepository } from "./history.repository.js";
+import { RentalRepository } from "./rental.repository.js";
+import { isOpenRental } from "./relations.js";
+
+import { calculateFinancials } from "./financials.js";
 
 export class FinanceRepository {
   static getAll(filters?: { type?: PaymentType; method?: PaymentMethod; rentalId?: string }) {
     const db = getDb();
     let list = db.payments.map((p) => {
       const rental = p.rentalId ? db.rentals.find((r) => r.id === p.rentalId) : null;
-      const order = p.orderId ? db.retailOrders.find((ro) => ro.id === p.orderId) : null;
+      const order = p.orderId ? db.retailOrders.find((ro) => ro.id === p.orderId) || db.partOrders?.find((po) => po.id === p.orderId) : null;
       const repair = (p as any).repairOrderId ? db.repairs.find((rep) => rep.id === (p as any).repairOrderId) : null;
+      const retailOrder = p.orderId ? db.retailOrders.find((ro) => ro.id === p.orderId) : null;
       const client = (p as any).clientId
         ? db.clients.find((c) => c.id === (p as any).clientId)
         : rental
         ? db.clients.find((c) => c.id === rental.clientId)
-        : order?.clientId
-        ? db.clients.find((c) => c.id === order.clientId)
+        : retailOrder?.clientId
+        ? db.clients.find((c) => c.id === retailOrder.clientId)
         : repair?.clientId
         ? db.clients.find((c) => c.id === repair.clientId)
         : null;
       const bike = rental ? db.bikes.find((b) => b.id === rental.bikeId) : null;
 
-      const customerName = client?.fullName || order?.customerName || repair?.clientName || null;
+      const customerName = client?.fullName || retailOrder?.customerName || repair?.clientName || null;
 
       return {
         ...p,
@@ -35,8 +42,8 @@ export class FinanceRepository {
         order: order
           ? {
               id: order.id,
-              orderNumber: order.orderNumber,
-              customerName: order.customerName,
+              orderNumber: "orderNumber" in order ? order.orderNumber : order.partName,
+              customerName: retailOrder?.customerName || null,
             }
           : null,
         repair: repair
@@ -62,11 +69,43 @@ export class FinanceRepository {
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  static create(data: {
+  static create(data: Parameters<typeof FinanceRepository.createInternal>[0]) {
+    return withDbTransaction(() => this.createInternal(data));
+  }
+
+  private static validateLinks(data: Partial<PaymentRecord>) {
+    const db = getDb();
+    if (data.rentalId && !db.rentals.some((r) => r.id === data.rentalId)) throw new Error("Договор не найден");
+    if (data.clientId && !db.clients.some((c) => c.id === data.clientId)) throw new Error("Клиент не найден");
+    if (data.repairOrderId && !db.repairs.some((r) => r.id === data.repairOrderId)) throw new Error("Заказ-наряд не найден");
+    if (data.orderId && !db.retailOrders.some((o) => o.id === data.orderId) && !db.partOrders?.some((o) => o.id === data.orderId)) throw new Error("Чек или заявка не найдены");
+    if (data.employeeId && !db.employees.some((e) => e.id === data.employeeId)) throw new Error("Сотрудник не найден");
+    const linkedClientId = db.rentals.find((r) => r.id === data.rentalId)?.clientId || db.retailOrders.find((o) => o.id === data.orderId)?.clientId || db.repairs.find((r) => r.id === data.repairOrderId)?.clientId;
+    if (linkedClientId && data.clientId && linkedClientId !== data.clientId) throw new Error("Клиент не соответствует связанному документу");
+    return linkedClientId;
+  }
+
+  private static syncLinkedPayment(payment: PaymentRecord) {
+    const db = getDb();
+    const procurement = db.partOrders?.find((order) => order.id === payment.orderId || order.paymentId === payment.id);
+    if (procurement && payment.type === "PART_PURCHASE") {
+      procurement.actualCost = payment.amount;
+      procurement.paymentMethod = payment.method;
+      procurement.paymentId = payment.id;
+    }
+    const rental = db.rentals.find((r) => r.id === payment.rentalId);
+    if (rental && rental.type === "RENT_TO_OWN" && isOpenRental(rental)) {
+      const total = db.payments.filter((p) => p.rentalId === rental.id && (p.type === "BUYOUT" || p.type === "RENTAL")).reduce((sum, p) => sum + p.amount, 0);
+      if (rental.totalBuyoutPrice && total >= rental.totalBuyoutPrice) RentalRepository.finalizeBuyout(rental.id);
+    }
+  }
+
+  private static createInternal(data: {
     rentalId?: string;
     clientId?: string;
     orderId?: string;
     repairOrderId?: string;
+    employeeId?: string;
     type: PaymentType;
     amount: number;
     method: PaymentMethod;
@@ -74,31 +113,49 @@ export class FinanceRepository {
     createdAt?: string;
   }) {
     const db = getDb();
+    const linkedClientId = this.validateLinks(data);
     const rental = data.rentalId ? db.rentals.find((r) => r.id === data.rentalId) : null;
-    const resolvedClientId = data.clientId || rental?.clientId || null;
+    const resolvedClientId = data.clientId || linkedClientId || rental?.clientId || null;
+    if (rental && (data.type === "RENTAL" || data.type === "BUYOUT")) {
+      const result = RentalRepository.renew(rental.id, { amount: data.amount, method: data.method, createdAt: data.createdAt, notes: data.description });
+      const payment = db.payments.filter((p) => p.rentalId === result!.id).at(-1)!;
+      if (data.description) payment.description = data.description;
+      return payment;
+    }
 
     const newPayment = {
-      id: `pay-${Date.now()}`,
+      id: `pay-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       rentalId: data.rentalId || null,
       clientId: resolvedClientId,
       orderId: data.orderId || null,
       repairOrderId: data.repairOrderId || null,
+      employeeId: data.employeeId || null,
+      cashierId: getCurrentUser()?.id || null,
       type: data.type,
       amount: data.amount,
       method: data.method,
       description: data.description || null,
-      createdAt: data.createdAt || new Date().toISOString(),
+      createdAt: data.createdAt || getSystemTime().toISOString(),
     };
 
     db.payments.push(newPayment);
+    this.syncLinkedPayment(newPayment);
     saveDb(true);
     return newPayment;
   }
 
-  static update(
+  static update(id: string, data: Partial<Pick<PaymentRecord, "rentalId" | "clientId" | "orderId" | "repairOrderId" | "employeeId" | "type" | "amount" | "method" | "description" | "createdAt">>) {
+    return withDbTransaction(() => this.updateInternal(id, data));
+  }
+
+  private static updateInternal(
     id: string,
     data: {
       rentalId?: string | null;
+      clientId?: string | null;
+      orderId?: string | null;
+      repairOrderId?: string | null;
+      employeeId?: string | null;
       type?: PaymentType;
       amount?: number;
       method?: PaymentMethod;
@@ -109,6 +166,9 @@ export class FinanceRepository {
     const db = getDb();
     const payment = db.payments.find((p) => p.id === id);
     if (!payment) throw new Error("Платеж не найден");
+    const candidate = { ...payment, ...data };
+    if (data.rentalId !== undefined && data.clientId === undefined) candidate.clientId = db.rentals.find((r) => r.id === data.rentalId)?.clientId || null;
+    const clientId = this.validateLinks(candidate);
 
     if (data.amount !== undefined) payment.amount = data.amount;
     if (data.type !== undefined) payment.type = data.type;
@@ -116,6 +176,12 @@ export class FinanceRepository {
     if (data.description !== undefined) payment.description = data.description || null;
     if (data.rentalId !== undefined) payment.rentalId = data.rentalId || null;
     if (data.createdAt !== undefined) payment.createdAt = data.createdAt;
+    if (data.clientId !== undefined || data.rentalId !== undefined) payment.clientId = data.clientId ?? clientId ?? null;
+    if (data.orderId !== undefined) payment.orderId = data.orderId;
+    if (data.repairOrderId !== undefined) payment.repairOrderId = data.repairOrderId;
+    if (data.employeeId !== undefined) payment.employeeId = data.employeeId;
+    this.syncLinkedPayment(payment);
+    HistoryRepository.logAction({ category: "PAYMENT", action: "PAYMENT_UPDATE", title: "Исправлена кассовая операция", entityId: payment.id, amount: payment.amount });
 
     saveDb();
     return payment;
@@ -127,6 +193,12 @@ export class FinanceRepository {
     if (idx === -1) throw new Error("Платеж не найден");
 
     const [deletedPayment] = db.payments.splice(idx, 1);
+    const procurement = db.partOrders?.find((order) => order.paymentId === id || order.id === deletedPayment.orderId);
+    if (procurement) {
+      procurement.paymentId = null;
+      procurement.actualCost = 0;
+    }
+    HistoryRepository.logAction({ category: "PAYMENT", action: "PAYMENT_DELETE", title: "Удалена кассовая операция", details: deletedPayment.description || undefined, entityId: id, amount: deletedPayment.amount });
     saveDb();
     return deletedPayment;
   }
@@ -146,86 +218,6 @@ export class FinanceRepository {
 
 
   static getSummary() {
-    const db = getDb();
-    const settings = getSettings();
-    const monthlyFixedExpenses = settings.monthlyFixedExpenses ?? 0;
-
-    const rentalPayments = db.payments
-      .filter((p) => p.type === "RENTAL")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const buyoutPayments = db.payments
-      .filter((p) => p.type === "BUYOUT")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const repairPayments = db.payments
-      .filter((p) => p.type === "REPAIR")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const outfitSales = db.payments
-      .filter((p) => p.type === "OUTFIT_SALE")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const retailSales = db.payments
-      .filter((p) => p.type === "RETAIL_SALE")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const fines = db.payments
-      .filter((p) => p.type === "FINE")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const totalRevenue = rentalPayments + buyoutPayments + repairPayments + outfitSales + retailSales + fines;
-
-    const salaryExpenses = db.payments
-      .filter((p) => p.type === "SALARY_PAYMENT")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const partPurchaseExpenses = db.payments
-      .filter((p) => p.type === "PART_PURCHASE")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    let totalPartsCost = 0;
-    db.repairs.forEach((rp) => {
-      rp.parts.forEach((pu) => {
-        const part = db.parts.find((p) => p.id === pu.partId);
-        const unitCost = part ? part.purchasePrice : 0;
-        totalPartsCost += pu.quantity * unitCost;
-      });
-    });
-
-    const fixedExpenses = monthlyFixedExpenses + salaryExpenses;
-    const netMargin = totalRevenue - totalPartsCost - fixedExpenses - partPurchaseExpenses;
-
-    const depositsCollected = db.payments
-      .filter((p) => p.type === "DEPOSIT")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const depositsRefunded = db.payments
-      .filter((p) => p.type === "DEPOSIT_REFUND")
-      .reduce((sum, p) => sum + p.amount, 0);
-
-    const activeDepositsHeld = depositsCollected - depositsRefunded;
-
-    return {
-      totalRevenue,
-      rentalPayments,
-      buyoutPayments,
-      repairPayments,
-      outfitSales,
-      fines,
-      salaryExpenses,
-      partPurchaseExpenses,
-      totalPartsCost,
-      monthlyFixedExpenses,
-      fixedExpensesDescription: settings.fixedExpensesDescription || "Аренда сервисного хаба и накладные расходы",
-      fixedExpenseItems: settings.fixedExpenseItems || [],
-      fixedExpenses,
-      netMargin,
-      depositsCollected,
-      depositsRefunded,
-      activeDepositsHeld,
-    };
+    return calculateFinancials();
   }
 }
-
-

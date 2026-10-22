@@ -150,7 +150,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
     const intervalDays = rental.paymentIntervalDays || rental.tariff?.paymentIntervalDays || 7;
     const instPayment = rental.installmentPayment || rental.tariff?.installmentPayment || rental.tariff?.price || 6000;
     setRenewalDays(isRentToOwn ? intervalDays : (rental.tariff?.durationDays || 7));
-    setRenewalAmount(isRentToOwn ? instPayment : (rental.tariff?.price || 6000));
+    setRenewalAmount(isRentToOwn ? Math.min(instPayment, rental.remainingBuyoutAmount ?? instPayment) : (rental.tariff?.price || 6000));
     setIsBuyoutFinal(false);
   };
 
@@ -164,7 +164,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
         isBuyoutFinal,
       });
       if (isBuyoutFinal || (renewingRental.type === 'RENT_TO_OWN' && renewingRental.remainingBuyoutAmount !== undefined && renewalAmount >= renewingRental.remainingBuyoutAmount)) {
-        toast.success(`🎉 Договор ${renewingRental.rentalNumber} полностью выкуплен! Байк переведен в статус "Продан".`);
+        toast.success(`🎉 Договор ${renewingRental.rentalNumber} полностью выкуплен! Байк переведен в статус "Выкуплен".`);
       } else {
         toast.success(`Договор ${renewingRental.rentalNumber} успешно ${renewingRental.type === 'RENT_TO_OWN' ? 'пополнен платежом по выкупу' : `продлен на ${renewalDays} дн.`}!`);
       }

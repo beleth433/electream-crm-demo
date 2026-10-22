@@ -63055,6 +63055,8 @@ var RentalCreateDto = external_exports.object({
   telegram: external_exports.string().optional()
 });
 var RentalRenewDto = external_exports.object({
+  createdAt: external_exports.string().datetime({ offset: true }).optional(),
+  externalReference: external_exports.string().max(512).optional(),
   durationDays: external_exports.number().positive().optional(),
   amount: external_exports.number().positive().optional(),
   method: external_exports.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),
@@ -63174,6 +63176,10 @@ var PartOrderStatusDto = external_exports.object({
 });
 var PaymentCreateDto = external_exports.object({
   rentalId: external_exports.string().optional(),
+  clientId: external_exports.string().optional().nullable(),
+  repairOrderId: external_exports.string().optional().nullable(),
+  employeeId: external_exports.string().optional().nullable(),
+  createdAt: external_exports.string().datetime({ offset: true }).optional(),
   orderId: external_exports.string().optional().nullable(),
   type: external_exports.enum(["RENTAL", "DEPOSIT", "DEPOSIT_REFUND", "REPAIR", "OUTFIT_SALE", "FINE", "SALARY_PAYMENT", "RETAIL_SALE", "BUYOUT", "PART_PURCHASE"]),
   amount: external_exports.number().positive("\u0421\u0443\u043C\u043C\u0430 \u0434\u043E\u043B\u0436\u043D\u0430 \u0431\u044B\u0442\u044C \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439"),
@@ -63182,12 +63188,15 @@ var PaymentCreateDto = external_exports.object({
 });
 var PaymentUpdateDto = external_exports.object({
   rentalId: external_exports.string().optional().nullable(),
+  clientId: external_exports.string().optional().nullable(),
+  repairOrderId: external_exports.string().optional().nullable(),
+  employeeId: external_exports.string().optional().nullable(),
   orderId: external_exports.string().optional().nullable(),
   type: external_exports.enum(["RENTAL", "DEPOSIT", "DEPOSIT_REFUND", "REPAIR", "OUTFIT_SALE", "FINE", "SALARY_PAYMENT", "RETAIL_SALE", "BUYOUT", "PART_PURCHASE"]).optional(),
   amount: external_exports.number().positive("\u0421\u0443\u043C\u043C\u0430 \u0434\u043E\u043B\u0436\u043D\u0430 \u0431\u044B\u0442\u044C \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439").optional(),
   method: external_exports.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).optional(),
   description: external_exports.string().optional().nullable(),
-  createdAt: external_exports.string().optional()
+  createdAt: external_exports.string().datetime({ offset: true }).optional()
 });
 var ExpenseItemDto = external_exports.object({
   id: external_exports.string().optional(),
@@ -63252,13 +63261,46 @@ var AuthController = class {
   }
 };
 
+// src/repositories/financials.ts
+var isRevenuePayment = (payment) => ["RENTAL", "BUYOUT", "REPAIR", "OUTFIT_SALE", "RETAIL_SALE", "FINE"].includes(payment.type);
+function calculateFinancials() {
+  const db2 = getDb();
+  const settings = getSettings();
+  const sum = (type) => db2.payments.filter((p) => p.type === type).reduce((total, p) => total + p.amount, 0);
+  const rentalPayments = sum("RENTAL");
+  const buyoutPayments = sum("BUYOUT");
+  const repairPayments = sum("REPAIR");
+  const outfitSales = sum("OUTFIT_SALE");
+  const retailSales = sum("RETAIL_SALE");
+  const fines = sum("FINE");
+  const totalRevenue = rentalPayments + buyoutPayments + repairPayments + outfitSales + retailSales + fines;
+  const salaryExpenses = sum("SALARY_PAYMENT");
+  const partPurchaseExpenses = sum("PART_PURCHASE");
+  const totalPartsCost = db2.repairs.filter((repair) => repair.status === "COMPLETED").reduce((total, repair) => total + repair.parts.reduce((cost, usage) => {
+    const unitCost = usage.purchasePrice ?? db2.parts.find((part) => part.id === usage.partId)?.purchasePrice ?? 0;
+    return cost + usage.quantity * unitCost;
+  }, 0), 0);
+  const retailCogs = db2.retailOrders.reduce((total, order) => total + order.totalCost, 0);
+  const monthlyFixedExpenses = settings.monthlyFixedExpenses ?? 0;
+  const fixedExpenses = monthlyFixedExpenses + salaryExpenses;
+  const netMargin = totalRevenue - totalPartsCost - retailCogs - fixedExpenses;
+  const depositsCollected = sum("DEPOSIT");
+  const depositsRefunded = sum("DEPOSIT_REFUND");
+  const activeDepositsHeld = db2.rentals.filter((rental) => !rental.depositRefunded).reduce((total, rental) => {
+    const collected = db2.payments.filter((p) => p.rentalId === rental.id && p.type === "DEPOSIT").reduce((value, p) => value + p.amount, 0);
+    const refunded = db2.payments.filter((p) => p.rentalId === rental.id && p.type === "DEPOSIT_REFUND").reduce((value, p) => value + p.amount, 0);
+    return total + Math.max(0, collected - refunded);
+  }, 0);
+  return { totalRevenue, rentalPayments, buyoutPayments, repairPayments, outfitSales, retailSales, fines, salaryExpenses, partPurchaseExpenses, totalPartsCost, retailCogs, monthlyFixedExpenses, fixedExpenses, netMargin, depositsCollected, depositsRefunded, activeDepositsHeld, fixedExpensesDescription: settings.fixedExpensesDescription || "\u0410\u0440\u0435\u043D\u0434\u0430 \u0441\u0435\u0440\u0432\u0438\u0441\u043D\u043E\u0433\u043E \u0445\u0430\u0431\u0430 \u0438 \u043D\u0430\u043A\u043B\u0430\u0434\u043D\u044B\u0435 \u0440\u0430\u0441\u0445\u043E\u0434\u044B", fixedExpenseItems: settings.fixedExpenseItems || [] };
+}
+
 // src/repositories/stats.repository.ts
 var StatsRepository = class {
   static getDashboardStats() {
     const db2 = getDb();
     const now = getSystemTime();
     const totalBikes = db2.bikes.length;
-    const activeParkBikes = db2.bikes.filter((b) => b.status !== "DECOMMISSIONED" && b.status !== "SOLD").length;
+    const activeParkBikes = db2.bikes.filter((b) => b.status !== "DECOMMISSIONED" && b.status !== "SOLD" && b.status !== "BOUGHT_OUT").length;
     const rentedBikes = db2.bikes.filter((b) => b.status === "RENTED").length;
     const availableBikes = db2.bikes.filter((b) => b.status === "AVAILABLE").length;
     const maintenanceBikes = db2.bikes.filter((b) => b.status === "IN_MAINTENANCE").length;
@@ -63300,35 +63342,20 @@ var StatsRepository = class {
     ).length;
     const lowStockParts = db2.parts.filter((p) => p.quantity <= p.minQuantity);
     const lowStockPartsCount = lowStockParts.length;
-    const rentalRevenue = db2.payments.filter((p) => p.type === "RENTAL").reduce((sum, p) => sum + p.amount, 0);
-    const buyoutRevenue = db2.payments.filter((p) => p.type === "BUYOUT").reduce((sum, p) => sum + p.amount, 0);
-    const clientRepairRevenue = db2.payments.filter((p) => p.type === "REPAIR").reduce((sum, p) => sum + p.amount, 0);
-    const outfitRevenue = db2.payments.filter((p) => p.type === "OUTFIT_SALE").reduce((sum, p) => sum + p.amount, 0);
-    const retailRevenue = db2.payments.filter((p) => p.type === "RETAIL_SALE").reduce((sum, p) => sum + p.amount, 0);
-    const totalRevenue = rentalRevenue + buyoutRevenue + clientRepairRevenue + outfitRevenue + retailRevenue;
-    let totalPartsCost = 0;
-    db2.repairs.forEach((rp) => {
-      rp.parts.forEach((pu) => {
-        const part = db2.parts.find((p) => p.id === pu.partId);
-        const unitCost = part ? part.purchasePrice : 0;
-        totalPartsCost += pu.quantity * unitCost;
-      });
+    const financialSummary = calculateFinancials();
+    const { totalRevenue, salaryExpenses, totalPartsCost, retailCogs, fixedExpenses, monthlyFixedExpenses, netMargin, activeDepositsHeld } = financialSummary;
+    const { rentalPayments: rentalRevenue, buyoutPayments: buyoutRevenue, repairPayments: clientRepairRevenue, outfitSales: outfitRevenue, retailSales: retailRevenue } = financialSummary;
+    const settings = getDb().settings;
+    const revenueByMonth = Array.from({ length: 12 }, (_, index) => {
+      const monthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11 + index, 1));
+      const key = monthDate.toISOString().slice(0, 7);
+      const payments = db2.payments.filter((payment) => payment.createdAt.slice(0, 7) === key && isRevenuePayment(payment));
+      const sum = (type) => payments.filter((payment) => payment.type === type).reduce((total, payment) => total + payment.amount, 0);
+      return { key, month: monthDate.toLocaleDateString("ru-RU", { month: "short", timeZone: "UTC" }), rental: sum("RENTAL"), buyout: sum("BUYOUT"), repair: sum("REPAIR"), retail: sum("RETAIL_SALE"), outfit: sum("OUTFIT_SALE"), fines: sum("FINE"), total: payments.reduce((total, payment) => total + payment.amount, 0) };
     });
-    let retailCogs = 0;
-    db2.retailOrders.forEach((o) => {
-      retailCogs += o.totalCost;
-    });
-    const salaryExpenses = db2.payments.filter((p) => p.type === "SALARY_PAYMENT").reduce((sum, p) => sum + p.amount, 0);
-    const settings = db2.settings || { monthlyFixedExpenses: 0, fixedExpensesDescription: "" };
-    const monthlyFixedExpenses = settings.monthlyFixedExpenses ?? 0;
-    const fixedExpenses = monthlyFixedExpenses + salaryExpenses;
-    const netMargin = totalRevenue - totalPartsCost - retailCogs - fixedExpenses;
-    const totalDepositsCollected = db2.payments.filter((p) => p.type === "DEPOSIT").reduce((sum, p) => sum + p.amount, 0);
-    const totalDepositsRefunded = db2.payments.filter((p) => p.type === "DEPOSIT_REFUND").reduce((sum, p) => sum + p.amount, 0);
-    const activeDepositsHeld = totalDepositsCollected - totalDepositsRefunded;
     const modelsBreakdown = db2.models.map((m) => {
       const modelBikes = db2.bikes.filter(
-        (b) => b.modelId === m.id && b.status !== "DECOMMISSIONED" && b.status !== "SOLD"
+        (b) => b.modelId === m.id && b.status !== "DECOMMISSIONED" && b.status !== "SOLD" && b.status !== "BOUGHT_OUT"
       );
       const rented = modelBikes.filter((b) => b.status === "RENTED").length;
       const available = modelBikes.filter((b) => b.status === "AVAILABLE").length;
@@ -63347,6 +63374,7 @@ var StatsRepository = class {
       };
     }).filter((m) => m.total > 0 || db2.models.length <= 6);
     return {
+      revenueByMonth,
       fleet: {
         totalBikes,
         activeParkBikes,
@@ -63372,6 +63400,8 @@ var StatsRepository = class {
         lowStockParts
       },
       financials: {
+        fines: financialSummary.fines,
+        partPurchaseExpenses: financialSummary.partPurchaseExpenses,
         totalRevenue,
         rentalRevenue,
         buyoutRevenue,
@@ -63388,7 +63418,7 @@ var StatsRepository = class {
         netMargin,
         activeDepositsHeld
       },
-      recentPayments: db2.payments.slice(0, 10),
+      recentPayments: [...db2.payments].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10),
       totalClients: db2.clients.length,
       employeesCount: db2.employees.length,
       retailOrdersCount: db2.retailOrders.length,
@@ -64452,42 +64482,27 @@ var ClientRepository = class {
     const clientRentals = db2.rentals.filter((r) => r.clientId === client.id);
     let totalRentalDays = 0;
     for (const r of clientRentals) {
-      if (r.startedAt && r.expiresAt) {
+      if (r.status === "DRAFT" || r.status === "RESERVED") continue;
+      if (r.startedAt) {
         const start = new Date(r.startedAt).getTime();
-        const end = new Date(r.expiresAt).getTime();
+        const finished = r.status === "CLOSED" || r.status === "BOUGHT_OUT";
+        const end = Math.min(getSystemTime().getTime(), finished ? new Date(r.closedAt || r.updatedAt || r.expiresAt).getTime() : getSystemTime().getTime());
         if (!isNaN(start) && !isNaN(end) && end > start) {
-          totalRentalDays += Math.max(1, Math.round((end - start) / (1e3 * 3600 * 24)));
-          continue;
+          totalRentalDays += Math.floor((end - start) / 864e5);
         }
       }
-      const trf = db2.tariffs.find((t) => t.id === r.tariffId);
-      totalRentalDays += trf?.durationDays || 1;
     }
     const rentalIds = new Set(clientRentals.map((r) => r.id));
-    const rentalPayments = (db2.payments || []).filter((p) => p.rentalId && rentalIds.has(p.rentalId) && (p.type === "RENTAL" || p.type === "BUYOUT" || p.type === "FINE")).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-    const calculatedRentalSpent = clientRentals.reduce((sum, r) => {
-      const trf = db2.tariffs.find((t) => t.id === r.tariffId);
-      return sum + (trf?.price || 0);
-    }, 0);
-    const rentalSpent = Math.max(rentalPayments, calculatedRentalSpent);
-    const cleanPhone = client.phone ? client.phone.replace(/\D/g, "") : "";
+    const cleanPhone = normalizePhone(client.phone);
     const clientRetailOrders = (db2.retailOrders || []).filter(
-      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone
+      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone
     );
-    const retailSpent = clientRetailOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
     const clientRepairs = (db2.repairs || []).filter(
-      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && rep.clientPhone.replace(/\D/g, "") === cleanPhone
+      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && normalizePhone(rep.clientPhone) === cleanPhone
     );
     const repairIds = new Set(clientRepairs.map((rep) => rep.id));
-    const repairPayments = (db2.payments || []).filter((p) => p.repairOrderId && repairIds.has(p.repairOrderId) || p.clientId === client.id && p.type === "REPAIR").reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-    const repairSpent = Math.max(
-      repairPayments,
-      clientRepairs.filter((rep) => rep.faultType === "CLIENT_FAULT" || rep.itemType === "EXTERNAL_DEVICE").reduce((sum, rep) => sum + (Number(rep.totalCost || (rep.partsCost || 0) + (rep.laborCost || 0)) || 0), 0)
-    );
-    const otherPayments = (db2.payments || []).filter(
-      (p) => p.clientId === client.id && !p.rentalId && !p.orderId && !p.repairOrderId && p.type !== "SALARY_PAYMENT" && p.type !== "PART_PURCHASE" && p.type !== "DEPOSIT_REFUND"
-    ).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-    const totalSpent = rentalSpent + retailSpent + repairSpent + otherPayments;
+    const retailIds = new Set(clientRetailOrders.map((order) => order.id));
+    const totalSpent = db2.payments.filter((payment) => isRevenuePayment(payment) && (payment.clientId === client.id || payment.rentalId && rentalIds.has(payment.rentalId) || payment.orderId && retailIds.has(payment.orderId) || payment.repairOrderId && repairIds.has(payment.repairOrderId))).reduce((sum, payment) => sum + payment.amount, 0);
     const { tier, mode } = LoyaltyRepository.determineTier(
       totalRentalDays,
       totalSpent,
@@ -64503,13 +64518,13 @@ var ClientRepository = class {
   static getAll(filters) {
     const db2 = getDb();
     let list = db2.clients.map((c) => {
-      const cleanPhone = c.phone ? c.phone.replace(/\D/g, "") : "";
+      const cleanPhone = normalizePhone(c.phone);
       const activeRental = db2.rentals.find(
         (r) => r.clientId === c.id && (r.status === "ACTIVE" || r.status === "OVERDUE")
       );
       const totalRentals = db2.rentals.filter((r) => r.clientId === c.id).length;
       const clientOrders = (db2.retailOrders || []).filter(
-        (ro) => ro.clientId === c.id || cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone
+        (ro) => ro.clientId === c.id || cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone
       );
       const retailOrdersCount = clientOrders.length;
       const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
@@ -64569,15 +64584,15 @@ var ClientRepository = class {
       const bike = db2.bikes.find((b) => b.id === rv.bikeId);
       return { ...rv, bike };
     });
-    const cleanPhone = client.phone ? client.phone.replace(/\D/g, "") : "";
+    const cleanPhone = normalizePhone(client.phone);
     const clientOrders = (db2.retailOrders || []).filter(
-      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone
+      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone
     ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     clientOrders.forEach((ro) => {
       if (!ro.clientId) ro.clientId = client.id;
     });
     const clientRepairs = (db2.repairs || []).filter(
-      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && rep.clientPhone.replace(/\D/g, "") === cleanPhone
+      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && normalizePhone(rep.clientPhone) === cleanPhone
     ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const retailOrdersCount = clientOrders.length;
     const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
@@ -64601,13 +64616,13 @@ var ClientRepository = class {
   }
   static getByPhone(phone) {
     const db2 = getDb();
-    const cleanPhone = phone.replace(/\D/g, "");
-    return db2.clients.find((c) => c.phone.replace(/\D/g, "") === cleanPhone) || null;
+    const cleanPhone = normalizePhone(phone);
+    return db2.clients.find((c) => normalizePhone(c.phone) === cleanPhone) || null;
   }
   static create(data) {
     const db2 = getDb();
-    const cleanPhone = data.phone.replace(/\D/g, "");
-    if (db2.clients.some((c) => c.phone.replace(/\D/g, "") === cleanPhone)) {
+    const cleanPhone = normalizePhone(data.phone);
+    if (db2.clients.some((c) => normalizePhone(c.phone) === cleanPhone)) {
       throw new Error(`\u041A\u043B\u0438\u0435\u043D\u0442 \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u043C ${data.phone} \u0443\u0436\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D`);
     }
     const newClient = {
@@ -64636,6 +64651,9 @@ var ClientRepository = class {
     const db2 = getDb();
     const index = db2.clients.findIndex((c) => c.id === id);
     if (index === -1) return null;
+    if (data.phone && db2.clients.some((client) => client.id !== id && normalizePhone(client.phone) === normalizePhone(data.phone))) {
+      throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u0441 \u044D\u0442\u0438\u043C \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u043C \u0443\u0436\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D");
+    }
     db2.clients[index] = {
       ...db2.clients[index],
       ...data
@@ -65109,6 +65127,7 @@ var RentalRepository = class {
     const db2 = getDb();
     const rental = db2.rentals.find((r) => r.id === id);
     if (!rental) throw new Error("\u0410\u0440\u0435\u043D\u0434\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+    if (data.externalReference && db2.payments.some((p) => p.externalReference === data.externalReference)) return this.getById(id);
     if (rental.status === "CLOSED" || rental.status === "BOUGHT_OUT") {
       throw new Error("\u041D\u0435\u043B\u044C\u0437\u044F \u043F\u0440\u043E\u0434\u043B\u0438\u0442\u044C \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u043D\u044B\u0439 \u0438\u043B\u0438 \u0432\u044B\u043A\u0443\u043F\u043B\u0435\u043D\u043D\u044B\u0439 \u0434\u043E\u0433\u043E\u0432\u043E\u0440");
     }
@@ -65122,20 +65141,23 @@ var RentalRepository = class {
     if (!Number.isFinite(amount) || amount <= 0) throw new Error("\u0421\u0443\u043C\u043C\u0430 \u043F\u043B\u0430\u0442\u0435\u0436\u0430 \u0434\u043E\u043B\u0436\u043D\u0430 \u0431\u044B\u0442\u044C \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439");
     if (data.isBuyoutFinal && (!isRentToOwn || paid + amount < target)) throw new Error("\u0414\u043B\u044F \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u0432\u044B\u043A\u0443\u043F\u0430 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E \u043F\u043E\u0433\u0430\u0441\u0438\u0442\u044C \u043E\u0441\u0442\u0430\u0442\u043E\u043A \u0434\u043E\u043B\u0433\u0430");
     const now = getSystemTime();
+    const paymentDate = data.createdAt ? new Date(data.createdAt) : now;
+    if (isNaN(paymentDate.getTime())) throw new Error("\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u0430\u044F \u0434\u0430\u0442\u0430 \u043F\u043B\u0430\u0442\u0435\u0436\u0430");
     const currentDue = new Date(rental.nextPaymentDue || rental.expiresAt);
-    const baseDate = currentDue > now ? currentDue : now;
+    const baseDate = currentDue > paymentDate ? currentDue : paymentDate;
     const newNextDue = new Date(baseDate.getTime() + durationDays * 864e5);
     const paymentType = isRentToOwn ? "BUYOUT" : "RENTAL";
     db2.payments.push({
       id: `pay-${Date.now()}`,
       rentalId: rental.id,
       cashierId: getCurrentUser()?.id || rental.managerId,
+      externalReference: data.externalReference,
       clientId: rental.clientId,
       type: paymentType,
       amount,
       method: data.method,
       description: isRentToOwn ? data.isBuyoutFinal ? `\u0424\u0438\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0432\u044B\u043A\u0443\u043F\u043D\u043E\u0439 \u043F\u043B\u0430\u0442\u0451\u0436 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}` : `\u041E\u0447\u0435\u0440\u0435\u0434\u043D\u043E\u0439 \u043F\u043B\u0430\u0442\u0451\u0436 \u043F\u043E \u0432\u044B\u043A\u0443\u043F\u0443 (${durationDays} \u0434\u043D.) \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}` : `\u041F\u0440\u043E\u0434\u043B\u0435\u043D\u0438\u0435 \u0430\u0440\u0435\u043D\u0434\u044B \u043D\u0430 ${durationDays} \u0434\u043D. \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`,
-      createdAt: now.toISOString()
+      createdAt: paymentDate.toISOString()
     });
     const allBuyoutPayments = db2.payments.filter((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT"));
     const totalPaid = allBuyoutPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -65162,7 +65184,7 @@ var RentalRepository = class {
     if (!isRentToOwn) {
       rental.expiresAt = newNextDue.toISOString();
     }
-    rental.status = "ACTIVE";
+    rental.status = newNextDue < now ? "OVERDUE" : "ACTIVE";
     rental.updatedAt = now.toISOString();
     if (data.notes) {
       rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u041F\u0440\u043E\u0434\u043B\u0435\u043D\u0438\u0435 ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
@@ -66498,10 +66520,20 @@ var PartRepository = class {
     return newOrder;
   }
   static updateOrder(id, data) {
+    return withDbTransaction(() => this.updateOrderInternal(id, data));
+  }
+  static updateOrderInternal(id, data) {
     const db2 = getDb();
     if (!db2.partOrders) db2.partOrders = [];
     const index = db2.partOrders.findIndex((o) => o.id === id);
     if (index === -1) throw new Error("\u0417\u0430\u044F\u0432\u043A\u0430 \u043D\u0430 \u0437\u0430\u043A\u0443\u043F\u043A\u0443 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+    const currentOrder = db2.partOrders[index];
+    if (currentOrder.receivedAt && (data.quantity !== void 0 && data.quantity !== currentOrder.quantity || data.partId !== void 0 && data.partId !== currentOrder.partId)) {
+      throw new Error("\u041F\u043E\u043B\u0443\u0447\u0435\u043D\u043D\u0430\u044F \u043F\u0430\u0440\u0442\u0438\u044F \u0443\u0436\u0435 \u043E\u043F\u0440\u0438\u0445\u043E\u0434\u043E\u0432\u0430\u043D\u0430; \u043A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u043E \u0438 \u043D\u043E\u043C\u0435\u043D\u043A\u043B\u0430\u0442\u0443\u0440\u0443 \u043D\u0435\u043B\u044C\u0437\u044F \u043C\u0435\u043D\u044F\u0442\u044C \u0432 \u0437\u0430\u044F\u0432\u043A\u0435");
+    }
+    const targetStatus = data.status;
+    const requestedData = { ...data };
+    delete requestedData.status;
     let categoryName = db2.partOrders[index].categoryName;
     if (data.categoryId) {
       const cat = db2.partOrderCategories?.find((c) => c.id === data.categoryId);
@@ -66511,18 +66543,41 @@ var PartRepository = class {
     }
     db2.partOrders[index] = {
       ...db2.partOrders[index],
-      ...data,
+      ...requestedData,
       categoryName: data.categoryName !== void 0 ? data.categoryName : categoryName
     };
+    if (targetStatus && targetStatus !== currentOrder.status) this.updateOrderStatus(id, targetStatus, { actualCost: data.actualCost, paymentMethod: data.paymentMethod || void 0 });
+    else if (currentOrder.status === "ORDERED" && (data.actualCost !== void 0 || data.quantity !== void 0 || data.estimatedPrice !== void 0)) {
+      this.updateOrderStatus(id, "ORDERED", { actualCost: data.actualCost, paymentMethod: data.paymentMethod || void 0 });
+    }
     saveDb(true);
     return db2.partOrders[index];
   }
   static updateOrderStatus(id, status, options) {
+    return withDbTransaction(() => this.updateOrderStatusInternal(id, status, options));
+  }
+  static updateOrderStatusInternal(id, status, options) {
     const db2 = getDb();
     if (!db2.partOrders) db2.partOrders = [];
     const order = db2.partOrders.find((o) => o.id === id);
     if (!order) throw new Error("\u0417\u0430\u044F\u0432\u043A\u0430 \u043D\u0430 \u0437\u0430\u043A\u0443\u043F\u043A\u0443 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
     const previousStatus = order.status;
+    if (status === previousStatus && status !== "ORDERED") return order;
+    const transitions = {
+      REQUESTED: ["ORDERED", "CANCELLED"],
+      ORDERED: ["REQUESTED", "RECEIVED", "CANCELLED"],
+      RECEIVED: ["ARCHIVED"],
+      ARCHIVED: [],
+      CANCELLED: ["REQUESTED"]
+    };
+    if (status !== previousStatus && !transitions[previousStatus].includes(status)) throw new Error("\u041D\u0435\u0434\u043E\u043F\u0443\u0441\u0442\u0438\u043C\u044B\u0439 \u043F\u0435\u0440\u0435\u0445\u043E\u0434 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0437\u0430\u043A\u0443\u043F\u043A\u0438");
+    if (status === "RECEIVED" && options?.addToStock !== false && !options?.createPartData) {
+      const part = db2.parts.find((p) => order.partId ? p.id === order.partId : p.name.toLowerCase() === order.partName.toLowerCase());
+      if (!part) throw new Error("\u0414\u043B\u044F \u043F\u0440\u0438\u0451\u043C\u043A\u0438 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044E\u0449\u0443\u044E \u0434\u0435\u0442\u0430\u043B\u044C \u0438\u043B\u0438 \u0441\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u043D\u043E\u0432\u0443\u044E \u043D\u043E\u043C\u0435\u043D\u043A\u043B\u0430\u0442\u0443\u0440\u0443");
+    }
+    if (status === "RECEIVED" && options?.createPartData?.sku && db2.parts.some((p) => p.sku.toLowerCase() === options.createPartData.sku.trim().toLowerCase())) {
+      throw new Error("\u0417\u0430\u043F\u0447\u0430\u0441\u0442\u044C \u0441 \u044D\u0442\u0438\u043C \u0430\u0440\u0442\u0438\u043A\u0443\u043B\u043E\u043C \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442");
+    }
     order.status = status;
     if (options?.actualCost !== void 0) {
       order.actualCost = options.actualCost;
@@ -66534,8 +66589,11 @@ var PartRepository = class {
       if (!order.orderedAt) {
         order.orderedAt = (/* @__PURE__ */ new Date()).toISOString();
       }
-      const expenseAmount = order.actualCost !== void 0 && order.actualCost > 0 ? order.actualCost : (Number(order.estimatedPrice) || 0) * (Number(order.quantity) || 1);
-      if (expenseAmount > 0) {
+      const expenseAmount = order.actualCost !== void 0 ? order.actualCost : (Number(order.estimatedPrice) || 0) * (Number(order.quantity) || 1);
+      if (expenseAmount === 0) {
+        db2.payments = db2.payments.filter((p) => p.orderId !== order.id && p.id !== order.paymentId);
+        order.paymentId = null;
+      } else if (expenseAmount > 0) {
         if (!db2.payments) db2.payments = [];
         const method = options?.paymentMethod || order.paymentMethod || "CARD";
         const existingPayment = db2.payments.find(
@@ -66600,6 +66658,8 @@ var PartRepository = class {
           }
         }
       }
+      order.orderedAt = null;
+      order.actualCost = void 0;
     } else if (status === "RECEIVED") {
       order.receivedAt = (/* @__PURE__ */ new Date()).toISOString();
       if (options?.createPartData) {
@@ -66641,7 +66701,7 @@ var PartRepository = class {
           if (part) {
             part.quantity += order.quantity;
             if (order.actualCost && order.actualCost > 0) {
-              part.purchasePrice = Math.round(order.actualCost / order.quantity);
+              part.purchasePrice = order.actualCost / order.quantity;
             }
           }
         } else {
@@ -66974,11 +67034,12 @@ var FinanceRepository = class {
     const db2 = getDb();
     let list = db2.payments.map((p) => {
       const rental = p.rentalId ? db2.rentals.find((r) => r.id === p.rentalId) : null;
-      const order = p.orderId ? db2.retailOrders.find((ro) => ro.id === p.orderId) : null;
+      const order = p.orderId ? db2.retailOrders.find((ro) => ro.id === p.orderId) || db2.partOrders?.find((po) => po.id === p.orderId) : null;
       const repair = p.repairOrderId ? db2.repairs.find((rep) => rep.id === p.repairOrderId) : null;
-      const client = p.clientId ? db2.clients.find((c) => c.id === p.clientId) : rental ? db2.clients.find((c) => c.id === rental.clientId) : order?.clientId ? db2.clients.find((c) => c.id === order.clientId) : repair?.clientId ? db2.clients.find((c) => c.id === repair.clientId) : null;
+      const retailOrder = p.orderId ? db2.retailOrders.find((ro) => ro.id === p.orderId) : null;
+      const client = p.clientId ? db2.clients.find((c) => c.id === p.clientId) : rental ? db2.clients.find((c) => c.id === rental.clientId) : retailOrder?.clientId ? db2.clients.find((c) => c.id === retailOrder.clientId) : repair?.clientId ? db2.clients.find((c) => c.id === repair.clientId) : null;
       const bike = rental ? db2.bikes.find((b) => b.id === rental.bikeId) : null;
-      const customerName = client?.fullName || order?.customerName || repair?.clientName || null;
+      const customerName = client?.fullName || retailOrder?.customerName || repair?.clientName || null;
       return {
         ...p,
         clientId: client?.id || p.clientId || null,
@@ -66991,8 +67052,8 @@ var FinanceRepository = class {
         } : null,
         order: order ? {
           id: order.id,
-          orderNumber: order.orderNumber,
-          customerName: order.customerName
+          orderNumber: "orderNumber" in order ? order.orderNumber : order.partName,
+          customerName: retailOrder?.customerName || null
         } : null,
         repair: repair ? {
           id: repair.id,
@@ -67013,35 +67074,85 @@ var FinanceRepository = class {
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
   static create(data) {
+    return withDbTransaction(() => this.createInternal(data));
+  }
+  static validateLinks(data) {
     const db2 = getDb();
+    if (data.rentalId && !db2.rentals.some((r) => r.id === data.rentalId)) throw new Error("\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (data.clientId && !db2.clients.some((c) => c.id === data.clientId)) throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (data.repairOrderId && !db2.repairs.some((r) => r.id === data.repairOrderId)) throw new Error("\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (data.orderId && !db2.retailOrders.some((o) => o.id === data.orderId) && !db2.partOrders?.some((o) => o.id === data.orderId)) throw new Error("\u0427\u0435\u043A \u0438\u043B\u0438 \u0437\u0430\u044F\u0432\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B");
+    if (data.employeeId && !db2.employees.some((e) => e.id === data.employeeId)) throw new Error("\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    const linkedClientId = db2.rentals.find((r) => r.id === data.rentalId)?.clientId || db2.retailOrders.find((o) => o.id === data.orderId)?.clientId || db2.repairs.find((r) => r.id === data.repairOrderId)?.clientId;
+    if (linkedClientId && data.clientId && linkedClientId !== data.clientId) throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u0441\u043E\u043E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u043E\u043C\u0443 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u0443");
+    return linkedClientId;
+  }
+  static syncLinkedPayment(payment) {
+    const db2 = getDb();
+    const procurement = db2.partOrders?.find((order) => order.id === payment.orderId || order.paymentId === payment.id);
+    if (procurement && payment.type === "PART_PURCHASE") {
+      procurement.actualCost = payment.amount;
+      procurement.paymentMethod = payment.method;
+      procurement.paymentId = payment.id;
+    }
+    const rental = db2.rentals.find((r) => r.id === payment.rentalId);
+    if (rental && rental.type === "RENT_TO_OWN" && isOpenRental(rental)) {
+      const total = db2.payments.filter((p) => p.rentalId === rental.id && (p.type === "BUYOUT" || p.type === "RENTAL")).reduce((sum, p) => sum + p.amount, 0);
+      if (rental.totalBuyoutPrice && total >= rental.totalBuyoutPrice) RentalRepository.finalizeBuyout(rental.id);
+    }
+  }
+  static createInternal(data) {
+    const db2 = getDb();
+    const linkedClientId = this.validateLinks(data);
     const rental = data.rentalId ? db2.rentals.find((r) => r.id === data.rentalId) : null;
-    const resolvedClientId = data.clientId || rental?.clientId || null;
+    const resolvedClientId = data.clientId || linkedClientId || rental?.clientId || null;
+    if (rental && (data.type === "RENTAL" || data.type === "BUYOUT")) {
+      const result = RentalRepository.renew(rental.id, { amount: data.amount, method: data.method, createdAt: data.createdAt, notes: data.description });
+      const payment = db2.payments.filter((p) => p.rentalId === result.id).at(-1);
+      if (data.description) payment.description = data.description;
+      return payment;
+    }
     const newPayment = {
-      id: `pay-${Date.now()}`,
+      id: `pay-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       rentalId: data.rentalId || null,
       clientId: resolvedClientId,
       orderId: data.orderId || null,
       repairOrderId: data.repairOrderId || null,
+      employeeId: data.employeeId || null,
+      cashierId: getCurrentUser()?.id || null,
       type: data.type,
       amount: data.amount,
       method: data.method,
       description: data.description || null,
-      createdAt: data.createdAt || (/* @__PURE__ */ new Date()).toISOString()
+      createdAt: data.createdAt || getSystemTime().toISOString()
     };
     db2.payments.push(newPayment);
+    this.syncLinkedPayment(newPayment);
     saveDb(true);
     return newPayment;
   }
   static update(id, data) {
+    return withDbTransaction(() => this.updateInternal(id, data));
+  }
+  static updateInternal(id, data) {
     const db2 = getDb();
     const payment = db2.payments.find((p) => p.id === id);
     if (!payment) throw new Error("\u041F\u043B\u0430\u0442\u0435\u0436 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    const candidate = { ...payment, ...data };
+    if (data.rentalId !== void 0 && data.clientId === void 0) candidate.clientId = db2.rentals.find((r) => r.id === data.rentalId)?.clientId || null;
+    const clientId = this.validateLinks(candidate);
     if (data.amount !== void 0) payment.amount = data.amount;
     if (data.type !== void 0) payment.type = data.type;
     if (data.method !== void 0) payment.method = data.method;
     if (data.description !== void 0) payment.description = data.description || null;
     if (data.rentalId !== void 0) payment.rentalId = data.rentalId || null;
     if (data.createdAt !== void 0) payment.createdAt = data.createdAt;
+    if (data.clientId !== void 0 || data.rentalId !== void 0) payment.clientId = data.clientId ?? clientId ?? null;
+    if (data.orderId !== void 0) payment.orderId = data.orderId;
+    if (data.repairOrderId !== void 0) payment.repairOrderId = data.repairOrderId;
+    if (data.employeeId !== void 0) payment.employeeId = data.employeeId;
+    this.syncLinkedPayment(payment);
+    HistoryRepository.logAction({ category: "PAYMENT", action: "PAYMENT_UPDATE", title: "\u0418\u0441\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0430 \u043A\u0430\u0441\u0441\u043E\u0432\u0430\u044F \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044F", entityId: payment.id, amount: payment.amount });
     saveDb();
     return payment;
   }
@@ -67050,6 +67161,12 @@ var FinanceRepository = class {
     const idx = db2.payments.findIndex((p) => p.id === id);
     if (idx === -1) throw new Error("\u041F\u043B\u0430\u0442\u0435\u0436 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     const [deletedPayment] = db2.payments.splice(idx, 1);
+    const procurement = db2.partOrders?.find((order) => order.paymentId === id || order.id === deletedPayment.orderId);
+    if (procurement) {
+      procurement.paymentId = null;
+      procurement.actualCost = 0;
+    }
+    HistoryRepository.logAction({ category: "PAYMENT", action: "PAYMENT_DELETE", title: "\u0423\u0434\u0430\u043B\u0435\u043D\u0430 \u043A\u0430\u0441\u0441\u043E\u0432\u0430\u044F \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044F", details: deletedPayment.description || void 0, entityId: id, amount: deletedPayment.amount });
     saveDb();
     return deletedPayment;
   }
@@ -67060,50 +67177,7 @@ var FinanceRepository = class {
     return updateSettings(data);
   }
   static getSummary() {
-    const db2 = getDb();
-    const settings = getSettings();
-    const monthlyFixedExpenses = settings.monthlyFixedExpenses ?? 0;
-    const rentalPayments = db2.payments.filter((p) => p.type === "RENTAL").reduce((sum, p) => sum + p.amount, 0);
-    const buyoutPayments = db2.payments.filter((p) => p.type === "BUYOUT").reduce((sum, p) => sum + p.amount, 0);
-    const repairPayments = db2.payments.filter((p) => p.type === "REPAIR").reduce((sum, p) => sum + p.amount, 0);
-    const outfitSales = db2.payments.filter((p) => p.type === "OUTFIT_SALE").reduce((sum, p) => sum + p.amount, 0);
-    const retailSales = db2.payments.filter((p) => p.type === "RETAIL_SALE").reduce((sum, p) => sum + p.amount, 0);
-    const fines = db2.payments.filter((p) => p.type === "FINE").reduce((sum, p) => sum + p.amount, 0);
-    const totalRevenue = rentalPayments + buyoutPayments + repairPayments + outfitSales + retailSales + fines;
-    const salaryExpenses = db2.payments.filter((p) => p.type === "SALARY_PAYMENT").reduce((sum, p) => sum + p.amount, 0);
-    const partPurchaseExpenses = db2.payments.filter((p) => p.type === "PART_PURCHASE").reduce((sum, p) => sum + p.amount, 0);
-    let totalPartsCost = 0;
-    db2.repairs.forEach((rp) => {
-      rp.parts.forEach((pu) => {
-        const part = db2.parts.find((p) => p.id === pu.partId);
-        const unitCost = part ? part.purchasePrice : 0;
-        totalPartsCost += pu.quantity * unitCost;
-      });
-    });
-    const fixedExpenses = monthlyFixedExpenses + salaryExpenses;
-    const netMargin = totalRevenue - totalPartsCost - fixedExpenses - partPurchaseExpenses;
-    const depositsCollected = db2.payments.filter((p) => p.type === "DEPOSIT").reduce((sum, p) => sum + p.amount, 0);
-    const depositsRefunded = db2.payments.filter((p) => p.type === "DEPOSIT_REFUND").reduce((sum, p) => sum + p.amount, 0);
-    const activeDepositsHeld = depositsCollected - depositsRefunded;
-    return {
-      totalRevenue,
-      rentalPayments,
-      buyoutPayments,
-      repairPayments,
-      outfitSales,
-      fines,
-      salaryExpenses,
-      partPurchaseExpenses,
-      totalPartsCost,
-      monthlyFixedExpenses,
-      fixedExpensesDescription: settings.fixedExpensesDescription || "\u0410\u0440\u0435\u043D\u0434\u0430 \u0441\u0435\u0440\u0432\u0438\u0441\u043D\u043E\u0433\u043E \u0445\u0430\u0431\u0430 \u0438 \u043D\u0430\u043A\u043B\u0430\u0434\u043D\u044B\u0435 \u0440\u0430\u0441\u0445\u043E\u0434\u044B",
-      fixedExpenseItems: settings.fixedExpenseItems || [],
-      fixedExpenses,
-      netMargin,
-      depositsCollected,
-      depositsRefunded,
-      activeDepositsHeld
-    };
+    return calculateFinancials();
   }
 };
 

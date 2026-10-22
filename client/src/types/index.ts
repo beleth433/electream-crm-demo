@@ -590,6 +590,7 @@ export interface ShopCatalog {
 }
 
 export interface DashboardStats {
+  revenueByMonth?: Array<{ key: string; month: string; rental: number; buyout: number; repair: number; retail: number; outfit: number; fines: number; total: number }>;
   fleet: {
     totalBikes: number;
     activeParkBikes: number;
@@ -626,6 +627,8 @@ export interface DashboardStats {
     lowStockParts: Part[];
   };
   financials: {
+    fines?: number;
+    partPurchaseExpenses?: number;
     totalRevenue: number;
     rentalRevenue: number;
     buyoutRevenue?: number;

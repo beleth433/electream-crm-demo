@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Payment, PaymentType, PaymentMethod, FinanceSettings, ExpenseItem, Rental, User } from '../types';
+import { Payment, PaymentType, PaymentMethod, FinanceSettings, ExpenseItem, Rental, User, Client } from '../types';
 import { api } from '../services/api';
 import { Modal } from '../components/Modal';
 import { BankStatementImportModal } from '../components/BankStatementImportModal';
@@ -31,6 +31,9 @@ interface FinancePageProps {
 export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [rentals, setRentals] = useState<Rental[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [paymentRentalId, setPaymentRentalId] = useState('');
+  const [paymentClientId, setPaymentClientId] = useState('');
   const [summary, setSummary] = useState<any>(null);
   const [settings, setSettings] = useState<FinanceSettings>({
     monthlyFixedExpenses: 0,
@@ -124,11 +127,13 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
       api.getFinanceSummary(),
       api.getFinanceSettings(),
       api.getRentals(),
+      api.getClients(),
     ])
-      .then(([payRes, sumRes, setRes, rentRes]) => {
+      .then(([payRes, sumRes, setRes, rentRes, clientRes]) => {
         setPayments(payRes);
         setSummary(sumRes);
         setRentals(rentRes);
+        setClients(clientRes);
         if (setRes) {
           setSettings(setRes);
         }
@@ -147,9 +152,13 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
       await api.createPayment({
         ...paymentForm,
         amount: Number(paymentForm.amount),
+        rentalId: paymentRentalId || undefined,
+        clientId: paymentClientId || undefined,
       });
       toast.success('Платеж успешно зарегистрирован в кассе!');
       setIsAddModalOpen(false);
+      setPaymentRentalId('');
+      setPaymentClientId('');
       setPaymentForm({
         type: 'RENTAL',
         amount: 1000,
@@ -712,7 +721,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
             <label className="block text-slate-500 mb-1 font-semibold">Тип операции *</label>
             <select
               value={paymentForm.type}
-              onChange={(e) => setPaymentForm({ ...paymentForm, type: e.target.value as any })}
+              onChange={(e) => { setPaymentForm({ ...paymentForm, type: e.target.value as any }); setPaymentRentalId(''); setPaymentClientId(''); }}
               className="w-full h-11 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-base sm:text-xs text-slate-900 dark:text-white"
             >
               <option value="RENTAL">Оплата аренды (RENTAL)</option>
@@ -723,6 +732,21 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
               <option value="OUTFIT_SALE">Продажа экипировки / аксессуара (OUTFIT_SALE)</option>
               <option value="FINE">Штраф за нарушение условий (FINE)</option>
             </select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block text-slate-500 font-semibold">Клиент
+              <select value={paymentClientId} onChange={(e) => { setPaymentClientId(e.target.value); setPaymentRentalId(''); }} className="w-full h-11 px-3 rounded-xl border bg-white dark:bg-slate-900 text-base sm:text-sm">
+                <option value="">Без привязки к клиенту</option>
+                {clients.map((client) => <option key={client.id} value={client.id}>{client.fullName} · {client.phone}</option>)}
+              </select>
+            </label>
+            {['RENTAL', 'BUYOUT', 'DEPOSIT', 'FINE'].includes(paymentForm.type) && <label className="block text-slate-500 font-semibold">Договор
+              <select value={paymentRentalId} onChange={(e) => { const rental = rentals.find((r) => r.id === e.target.value); setPaymentRentalId(e.target.value); setPaymentClientId(rental?.clientId || ''); }} className="w-full h-11 px-3 rounded-xl border bg-white dark:bg-slate-900 text-base sm:text-sm">
+                <option value="">Без привязки к договору</option>
+                {rentals.filter((r) => !['CLOSED', 'BOUGHT_OUT'].includes(r.status) && (!paymentClientId || r.clientId === paymentClientId)).map((r) => <option key={r.id} value={r.id}>{r.rentalNumber} · {r.client?.fullName}</option>)}
+              </select>
+            </label>}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

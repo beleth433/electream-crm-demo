@@ -1,4 +1,4 @@
-import { getDb, saveDb, PartRecord, PartOrderRecord, PartOrderStatus, PartOrderPriority, PaymentType, PaymentMethod } from "./db.js";
+import { getDb, getSystemTime, saveDb, withDbTransaction, PartRecord, PartOrderRecord, PartOrderStatus, PartOrderPriority, PaymentType, PaymentMethod } from "./db.js";
 import { HistoryRepository } from "./history.repository.js";
 
 export class PartRepository {
@@ -452,10 +452,21 @@ export class PartRepository {
   }
 
   static updateOrder(id: string, data: Partial<PartOrderRecord>) {
+    return withDbTransaction(() => this.updateOrderInternal(id, data));
+  }
+
+  private static updateOrderInternal(id: string, data: Partial<PartOrderRecord>) {
     const db = getDb();
     if (!db.partOrders) db.partOrders = [];
     const index = db.partOrders.findIndex((o) => o.id === id);
     if (index === -1) throw new Error("Заявка на закупку не найдена");
+    const currentOrder = db.partOrders[index];
+    if (currentOrder.receivedAt && ((data.quantity !== undefined && data.quantity !== currentOrder.quantity) || (data.partId !== undefined && data.partId !== currentOrder.partId))) {
+      throw new Error("Полученная партия уже оприходована; количество и номенклатуру нельзя менять в заявке");
+    }
+    const targetStatus = data.status;
+    const requestedData = { ...data };
+    delete requestedData.status;
 
     let categoryName = db.partOrders[index].categoryName;
     if (data.categoryId) {
@@ -467,14 +478,22 @@ export class PartRepository {
 
     db.partOrders[index] = {
       ...db.partOrders[index],
-      ...data,
+      ...requestedData,
       categoryName: data.categoryName !== undefined ? data.categoryName : categoryName,
     };
+    if (targetStatus && targetStatus !== currentOrder.status) this.updateOrderStatus(id, targetStatus, { actualCost: data.actualCost, paymentMethod: data.paymentMethod || undefined });
+    else if (currentOrder.status === "ORDERED" && (data.actualCost !== undefined || data.quantity !== undefined || data.estimatedPrice !== undefined)) {
+      this.updateOrderStatus(id, "ORDERED", { actualCost: data.actualCost, paymentMethod: data.paymentMethod || undefined });
+    }
     saveDb(true);
     return db.partOrders[index];
   }
 
-  static updateOrderStatus(
+  static updateOrderStatus(id: string, status: PartOrderStatus, options?: Parameters<typeof PartRepository.updateOrderStatusInternal>[2]) {
+    return withDbTransaction(() => this.updateOrderStatusInternal(id, status, options));
+  }
+
+  private static updateOrderStatusInternal(
     id: string,
     status: PartOrderStatus,
     options?: {
@@ -498,6 +517,19 @@ export class PartRepository {
     if (!order) throw new Error("Заявка на закупку не найдена");
 
     const previousStatus = order.status;
+    if (status === previousStatus && status !== "ORDERED") return order;
+    const transitions: Record<PartOrderStatus, PartOrderStatus[]> = {
+      REQUESTED: ["ORDERED", "CANCELLED"], ORDERED: ["REQUESTED", "RECEIVED", "CANCELLED"],
+      RECEIVED: ["ARCHIVED"], ARCHIVED: [], CANCELLED: ["REQUESTED"],
+    };
+    if (status !== previousStatus && !transitions[previousStatus].includes(status)) throw new Error("Недопустимый переход статуса закупки");
+    if (status === "RECEIVED" && options?.addToStock !== false && !options?.createPartData) {
+      const part = db.parts.find((p) => order.partId ? p.id === order.partId : p.name.toLowerCase() === order.partName.toLowerCase());
+      if (!part) throw new Error("Для приёмки выберите существующую деталь или создайте новую номенклатуру");
+    }
+    if (status === "RECEIVED" && options?.createPartData?.sku && db.parts.some((p) => p.sku.toLowerCase() === options.createPartData!.sku!.trim().toLowerCase())) {
+      throw new Error("Запчасть с этим артикулом уже существует");
+    }
     order.status = status;
 
     if (options?.actualCost !== undefined) {
@@ -514,11 +546,14 @@ export class PartRepository {
 
       // 1. Calculate expense amount
       const expenseAmount =
-        order.actualCost !== undefined && order.actualCost > 0
+        order.actualCost !== undefined
           ? order.actualCost
           : (Number(order.estimatedPrice) || 0) * (Number(order.quantity) || 1);
 
-      if (expenseAmount > 0) {
+      if (expenseAmount === 0) {
+        db.payments = db.payments.filter((p) => p.orderId !== order.id && p.id !== order.paymentId);
+        order.paymentId = null;
+      } else if (expenseAmount > 0) {
         if (!db.payments) db.payments = [];
         const method: PaymentMethod = options?.paymentMethod || order.paymentMethod || "CARD";
         const existingPayment = db.payments.find(
@@ -584,6 +619,8 @@ export class PartRepository {
           }
         }
       }
+      order.orderedAt = null;
+      order.actualCost = undefined;
     } else if (status === "RECEIVED") {
       order.receivedAt = new Date().toISOString();
 
@@ -638,7 +675,7 @@ export class PartRepository {
           if (part) {
             part.quantity += order.quantity;
             if (order.actualCost && order.actualCost > 0) {
-              part.purchasePrice = Math.round(order.actualCost / order.quantity);
+              part.purchasePrice = order.actualCost / order.quantity;
             }
           }
         } else {

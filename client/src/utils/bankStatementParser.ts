@@ -1,6 +1,17 @@
 import * as XLSX from 'xlsx';
 import { Rental } from '../types';
 
+export function parseBankDate(value: string | number): string {
+  if (typeof value === 'number') {
+    const excelEpoch = Date.UTC(1899, 11, 30);
+    return new Date(excelEpoch + value * 86400000).toISOString();
+  }
+  const russianDate = value.trim().match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+  const date = russianDate ? new Date(`${russianDate[3]}-${russianDate[2]}-${russianDate[1]}T12:00:00Z`) : new Date(value);
+  if (isNaN(date.getTime())) throw new Error(`Не удалось распознать дату платежа: ${value}`);
+  return date.toISOString();
+}
+
 export interface ParsedBankTransaction {
   id: string;
   date: string;
@@ -31,6 +42,7 @@ export function parse1CTxtStatement(text: string): Array<{
   }> = [];
 
   const lines = text.split(/\r?\n/);
+  const ownAccounts = new Set(lines.filter((line) => line.trim().startsWith('РасчСчет=')).map((line) => line.split('=')[1].trim()));
   let inDoc = false;
   let docType = '';
   let currentDoc: Record<string, string> = {};
@@ -61,12 +73,13 @@ export function parse1CTxtStatement(text: string): Array<{
           currentDoc['НазначениеПлатежа1'] ||
           '';
 
-        const date = currentDoc['Дата'] || new Date().toISOString();
+        const date = currentDoc['ДатаПоступило'] || currentDoc['Дата'] || new Date().toISOString();
+        const isOutgoing = Boolean(currentDoc['ДатаСписано']) || (ownAccounts.size > 0 && ownAccounts.has(currentDoc['ПлательщикРасчСчет']) && !ownAccounts.has(currentDoc['ПолучательРасчСчет']));
 
         // Фильтруем только положительные входящие суммы
-        if (amount > 0) {
+        if (amount > 0 && !isOutgoing) {
           transactions.push({
-            date,
+            date: parseBankDate(date),
             amount,
             payerName,
             purpose,
@@ -141,7 +154,7 @@ export function parseExcelStatement(data: ArrayBuffer): Array<{
 
         if (!isNaN(amount) && amount > 0) {
           transactions.push({
-            date: String(itemRow[dateCol] || new Date().toISOString()),
+            date: parseBankDate(itemRow[dateCol] || new Date().toISOString()),
             amount,
             payerName: payerCol !== -1 ? String(itemRow[payerCol] || '').trim() : '',
             purpose: purposeCol !== -1 ? String(itemRow[purposeCol] || '').trim() : '',

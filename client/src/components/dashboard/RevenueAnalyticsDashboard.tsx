@@ -49,20 +49,22 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
 }) => {
   const [range, setRange] = useState<keyof typeof RANGES>('6m');
 
-  const currentDateStr = new Date().toLocaleDateString('ru-RU', {
+  const currentDateStr = new Date(stats?.systemTime?.currentDate || Date.now()).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
 
-  const months = RANGES[range];
+  const revenueData = (stats?.revenueByMonth || []).slice(range === '6m' ? -6 : -12);
+  const months = revenueData.map((row) => row.month);
+  const currentMonth = revenueData[revenueData.length - 1];
 
   // 100% Real Data from CRM Database
-  const totalRevenue = stats?.financials?.totalRevenue ?? 0;
-  const rentalRevenue = stats?.financials?.rentalRevenue ?? 0;
-  const repairRevenue = stats?.financials?.clientRepairRevenue ?? 0;
+  const totalRevenue = currentMonth?.total ?? 0;
+  const rentalRevenue = currentMonth?.rental ?? 0;
+  const repairRevenue = currentMonth?.repair ?? 0;
   const depositsHeld = stats?.financials?.activeDepositsHeld ?? 0;
-  const buyoutRevenue = stats?.financials?.buyoutRevenue ?? Math.max(0, totalRevenue - rentalRevenue - repairRevenue);
+  const buyoutRevenue = currentMonth?.buyout ?? 0;
 
   const totalBikes = stats?.fleet?.activeParkBikes ?? 0;
   const rentedBikes = stats?.fleet?.rentedBikes ?? 0;
@@ -73,17 +75,6 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
   // Real Fleet Models from DB
   const fleetModels = stats?.modelsBreakdown || [];
 
-  // Group real revenue by selected months (current month gets real current figures)
-  const revenueData = months.map((m, i) => {
-    const isCurrentMonth = i === months.length - 1;
-    return {
-      month: m,
-      rental: isCurrentMonth ? rentalRevenue : 0,
-      buyout: isCurrentMonth ? buyoutRevenue : 0,
-      total: isCurrentMonth ? rentalRevenue + buyoutRevenue : 0,
-    };
-  });
-
   // Fleet data by real models
   const fleetSeries = fleetModels.length > 0
     ? fleetModels.map((model, idx) => ({
@@ -93,18 +84,17 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
       }))
     : [{ key: 'bikes', label: 'Электровелосипеды на линии', slot: 1 as const }];
 
-  const fleetData = months.map((m, i) => {
-    const isCurrentMonth = i === months.length - 1;
-    const row: Record<string, any> = { month: m };
+  const fleetData = [(() => {
+    const row: Record<string, any> = { month: 'Сейчас' };
     if (fleetModels.length > 0) {
       fleetModels.forEach((model) => {
-        row[model.modelId] = isCurrentMonth ? model.rented : 0;
+        row[model.modelId] = model.rented;
       });
     } else {
-      row.bikes = isCurrentMonth ? rentedBikes : 0;
+      row.bikes = rentedBikes;
     }
     return row;
-  });
+  })()];
 
   // Donut chart: real cash flow streams
   const donutData = [
@@ -124,10 +114,11 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
       slot: 3 as const,
     },
     {
-      label: 'Залоги и депозиты на удержании',
-      value: depositsHeld,
+      label: 'Магазин и экипировка',
+      value: (currentMonth?.retail || 0) + (currentMonth?.outfit || 0),
       slot: 4 as const,
     },
+    { label: 'Штрафы', value: currentMonth?.fines || 0, slot: 5 as const },
   ].filter((d) => d.value > 0);
 
   // If completely empty, show 0 slice
@@ -245,13 +236,13 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
         {/* Chart 2: BarCompare - Real Fleet Utilization */}
         <ChartCard
           title="Занятость парка по моделям"
-          subtitle="Количество байков на линии на конец месяца"
+          subtitle="Текущее количество байков на линии"
           className="border-slate-200 dark:border-emerald-500/20 shadow-xs"
         >
           <BarCompare
             data={fleetData}
             xKey="month"
-            description={`Распределение парка по моделям за ${months[0]} – ${months[months.length - 1]}`}
+            description="Текущая занятость парка по моделям"
             series={fleetSeries}
           />
         </ChartCard>

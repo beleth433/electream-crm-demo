@@ -235,7 +235,7 @@ export const api = {
     patentNumber?: string;
     telegram?: string;
   }) => fetchJson<Rental>('/rentals', { method: 'POST', body: JSON.stringify(data) }),
-  renewRental: (id: string, data: { durationDays?: number; amount?: number; method: string; notes?: string; isBuyoutFinal?: boolean }) =>
+  renewRental: (id: string, data: { durationDays?: number; amount?: number; method: string; notes?: string; isBuyoutFinal?: boolean; createdAt?: string; externalReference?: string }) =>
     fetchJson<Rental>(`/rentals/${id}/renew`, { method: 'POST', body: JSON.stringify(data) }),
   closeRental: (
     id: string,
@@ -393,6 +393,9 @@ export const api = {
       buyoutPayments: number;
       repairPayments: number;
       outfitSales: number;
+      retailSales: number;
+      retailCogs: number;
+      partPurchaseExpenses: number;
       fines: number;
       salaryExpenses?: number;
       totalPartsCost?: number;

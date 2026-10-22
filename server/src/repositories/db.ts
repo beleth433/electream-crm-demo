@@ -349,6 +349,7 @@ export interface PaymentRecord {
   clientId?: string | null;
   repairOrderId?: string | null;
   cashierId?: string | null;
+  externalReference?: string | null;
   type: PaymentType;
   amount: number;
   method: PaymentMethod;

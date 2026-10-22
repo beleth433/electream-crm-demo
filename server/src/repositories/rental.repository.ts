@@ -411,10 +411,11 @@ export class RentalRepository {
     return withDbTransaction(() => this.renewInternal(id, data));
   }
 
-  private static renewInternal(id: string, data: { durationDays?: number; amount?: number; method: PaymentMethod; notes?: string; isBuyoutFinal?: boolean }) {
+  private static renewInternal(id: string, data: { durationDays?: number; amount?: number; method: PaymentMethod; notes?: string; isBuyoutFinal?: boolean; createdAt?: string; externalReference?: string }) {
     const db = getDb();
     const rental = db.rentals.find((r) => r.id === id);
     if (!rental) throw new Error("Аренда не найдена");
+    if (data.externalReference && db.payments.some((p) => p.externalReference === data.externalReference)) return this.getById(id);
     if (rental.status === "CLOSED" || rental.status === "BOUGHT_OUT") {
       throw new Error("Нельзя продлить завершенный или выкупленный договор");
     }
@@ -430,8 +431,10 @@ export class RentalRepository {
     if (data.isBuyoutFinal && (!isRentToOwn || paid + amount < target)) throw new Error("Для завершения выкупа необходимо погасить остаток долга");
 
     const now = getSystemTime();
+    const paymentDate = data.createdAt ? new Date(data.createdAt) : now;
+    if (isNaN(paymentDate.getTime())) throw new Error("Некорректная дата платежа");
     const currentDue = new Date(rental.nextPaymentDue || rental.expiresAt);
-    const baseDate = currentDue > now ? currentDue : now;
+    const baseDate = currentDue > paymentDate ? currentDue : paymentDate;
     const newNextDue = new Date(baseDate.getTime() + durationDays * 86400000);
 
     // Record renewal / buyout payment
@@ -440,6 +443,7 @@ export class RentalRepository {
       id: `pay-${Date.now()}`,
       rentalId: rental.id,
       cashierId: getCurrentUser()?.id || rental.managerId,
+      externalReference: data.externalReference,
         clientId: rental.clientId,
         type: paymentType as any,
       amount,
@@ -447,7 +451,7 @@ export class RentalRepository {
       description: isRentToOwn
         ? (data.isBuyoutFinal ? `Финальный выкупной платёж по договору ${rental.rentalNumber}` : `Очередной платёж по выкупу (${durationDays} дн.) по договору ${rental.rentalNumber}`)
         : `Продление аренды на ${durationDays} дн. по договору ${rental.rentalNumber}`,
-      createdAt: now.toISOString(),
+      createdAt: paymentDate.toISOString(),
     });
 
     // Check if fully bought out
@@ -480,7 +484,7 @@ export class RentalRepository {
     if (!isRentToOwn) {
       rental.expiresAt = newNextDue.toISOString();
     }
-    rental.status = "ACTIVE";
+    rental.status = newNextDue < now ? "OVERDUE" : "ACTIVE";
     rental.updatedAt = now.toISOString();
     if (data.notes) {
       rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[Продление ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;

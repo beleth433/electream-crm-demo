@@ -114,6 +114,8 @@ export const RentalCreateDto = z.object({
 });
 
 export const RentalRenewDto = z.object({
+  createdAt: z.string().datetime({ offset: true }).optional(),
+  externalReference: z.string().max(512).optional(),
   durationDays: z.number().positive().optional(),
   amount: z.number().positive().optional(),
   method: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),
@@ -252,6 +254,10 @@ export const PartOrderStatusDto = z.object({
 
 export const PaymentCreateDto = z.object({
   rentalId: z.string().optional(),
+  clientId: z.string().optional().nullable(),
+  repairOrderId: z.string().optional().nullable(),
+  employeeId: z.string().optional().nullable(),
+  createdAt: z.string().datetime({ offset: true }).optional(),
   orderId: z.string().optional().nullable(),
   type: z.enum(["RENTAL", "DEPOSIT", "DEPOSIT_REFUND", "REPAIR", "OUTFIT_SALE", "FINE", "SALARY_PAYMENT", "RETAIL_SALE", "BUYOUT", "PART_PURCHASE"]),
   amount: z.number().positive("Сумма должна быть положительной"),
@@ -261,12 +267,15 @@ export const PaymentCreateDto = z.object({
 
 export const PaymentUpdateDto = z.object({
   rentalId: z.string().optional().nullable(),
+  clientId: z.string().optional().nullable(),
+  repairOrderId: z.string().optional().nullable(),
+  employeeId: z.string().optional().nullable(),
   orderId: z.string().optional().nullable(),
   type: z.enum(["RENTAL", "DEPOSIT", "DEPOSIT_REFUND", "REPAIR", "OUTFIT_SALE", "FINE", "SALARY_PAYMENT", "RETAIL_SALE", "BUYOUT", "PART_PURCHASE"]).optional(),
   amount: z.number().positive("Сумма должна быть положительной").optional(),
   method: z.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).optional(),
   description: z.string().optional().nullable(),
-  createdAt: z.string().optional(),
+  createdAt: z.string().datetime({ offset: true }).optional(),
 });
 
 export const ExpenseItemDto = z.object({

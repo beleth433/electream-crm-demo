@@ -1,80 +1,55 @@
-import { getDb, ClientStatus, ClientRecord, ClientType, saveDb } from "./db.js";
+import { getDb, getSystemTime, ClientStatus, ClientRecord, ClientType, saveDb } from "./db.js";
 import { LoyaltyRepository } from "./loyalty.repository.js";
+import { normalizePhone } from "./relations.js";
+import { isRevenuePayment } from "./financials.js";
 
 export class ClientRepository {
   static computeClientLoyalty(client: ClientRecord) {
     const db = getDb();
     const clientRentals = db.rentals.filter((r) => r.clientId === client.id);
 
-    // 1. Calculate total rental days
+    // Count elapsed rental days, never future days or draft reservations.
     let totalRentalDays = 0;
     for (const r of clientRentals) {
-      if (r.startedAt && r.expiresAt) {
+      if (r.status === "DRAFT" || r.status === "RESERVED") continue;
+      if (r.startedAt) {
         const start = new Date(r.startedAt).getTime();
-        const end = new Date(r.expiresAt).getTime();
+        const finished = r.status === "CLOSED" || r.status === "BOUGHT_OUT";
+        const end = Math.min(getSystemTime().getTime(), finished ? new Date(r.closedAt || r.updatedAt || r.expiresAt).getTime() : getSystemTime().getTime());
         if (!isNaN(start) && !isNaN(end) && end > start) {
-          totalRentalDays += Math.max(1, Math.round((end - start) / (1000 * 3600 * 24)));
-          continue;
+          totalRentalDays += Math.floor((end - start) / 86400000);
         }
       }
-      const trf = db.tariffs.find((t) => t.id === r.tariffId);
-      totalRentalDays += trf?.durationDays || 1;
     }
 
     // 2. Calculate total spent across all CRM modules:
     // a) Rentals spent (actual payments or tariff calculations)
     const rentalIds = new Set(clientRentals.map((r) => r.id));
-    const rentalPayments = (db.payments || [])
-      .filter((p) => p.rentalId && rentalIds.has(p.rentalId) && (p.type === "RENTAL" || p.type === "BUYOUT" || p.type === "FINE"))
-      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-
-    const calculatedRentalSpent = clientRentals.reduce((sum, r) => {
-      const trf = db.tariffs.find((t) => t.id === r.tariffId);
-      return sum + (trf?.price || 0);
-    }, 0);
-    const rentalSpent = Math.max(rentalPayments, calculatedRentalSpent);
-
     // b) Retail Store spent: all orders by this client (by clientId or phone match)
-    const cleanPhone = client.phone ? client.phone.replace(/\D/g, "") : "";
+    const cleanPhone = normalizePhone(client.phone);
     const clientRetailOrders = (db.retailOrders || []).filter(
       (ro) =>
         ro.clientId === client.id ||
-        (cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone)
+        (cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone)
     );
-    const retailSpent = clientRetailOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
+
 
     // c) Repairs spent (СТО repairs: CLIENT_FAULT or external device)
     const clientRepairs = (db.repairs || []).filter(
       (rep) =>
         rep.clientId === client.id ||
-        (cleanPhone.length >= 6 && rep.clientPhone && rep.clientPhone.replace(/\D/g, "") === cleanPhone)
+        (cleanPhone.length >= 6 && rep.clientPhone && normalizePhone(rep.clientPhone) === cleanPhone)
     );
     const repairIds = new Set(clientRepairs.map((rep) => rep.id));
-    const repairPayments = (db.payments || [])
-      .filter((p) => (p.repairOrderId && repairIds.has(p.repairOrderId)) || (p.clientId === client.id && p.type === "REPAIR"))
-      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-    const repairSpent = Math.max(
-      repairPayments,
-      clientRepairs
-        .filter((rep) => rep.faultType === "CLIENT_FAULT" || rep.itemType === "EXTERNAL_DEVICE")
-        .reduce((sum, rep) => sum + (Number(rep.totalCost || (rep.partsCost || 0) + (rep.laborCost || 0)) || 0), 0)
-    );
-
-    // d) Other direct payments from this client
-    const otherPayments = (db.payments || [])
-      .filter(
-        (p) =>
-          p.clientId === client.id &&
-          !p.rentalId &&
-          !p.orderId &&
-          !p.repairOrderId &&
-          p.type !== "SALARY_PAYMENT" &&
-          p.type !== "PART_PURCHASE" &&
-          p.type !== "DEPOSIT_REFUND"
-      )
-      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-
-    const totalSpent = rentalSpent + retailSpent + repairSpent + otherPayments;
+    // A payment contributes once, resolved through any of its CRM links.
+    // Quotes, deposits and future installments are not customer spending.
+    const retailIds = new Set(clientRetailOrders.map((order) => order.id));
+    const totalSpent = db.payments.filter((payment) => isRevenuePayment(payment) && (
+      payment.clientId === client.id ||
+      (payment.rentalId && rentalIds.has(payment.rentalId)) ||
+      (payment.orderId && retailIds.has(payment.orderId)) ||
+      (payment.repairOrderId && repairIds.has(payment.repairOrderId))
+    )).reduce((sum, payment) => sum + payment.amount, 0);
 
     // 3. Dynamic Loyalty Tier Determination via LoyaltyRepository
     const { tier, mode } = LoyaltyRepository.determineTier(
@@ -99,7 +74,7 @@ export class ClientRepository {
   }) {
     const db = getDb();
     let list = db.clients.map((c) => {
-      const cleanPhone = c.phone ? c.phone.replace(/\D/g, "") : "";
+      const cleanPhone = normalizePhone(c.phone);
       const activeRental = db.rentals.find(
         (r) => r.clientId === c.id && (r.status === "ACTIVE" || r.status === "OVERDUE")
       );
@@ -107,7 +82,7 @@ export class ClientRepository {
       const clientOrders = (db.retailOrders || []).filter(
         (ro) =>
           ro.clientId === c.id ||
-          (cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone)
+          (cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone)
       );
       const retailOrdersCount = clientOrders.length;
       const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
@@ -185,12 +160,12 @@ export class ClientRepository {
         return { ...rv, bike };
       });
 
-    const cleanPhone = client.phone ? client.phone.replace(/\D/g, "") : "";
+    const cleanPhone = normalizePhone(client.phone);
     const clientOrders = (db.retailOrders || [])
       .filter(
         (ro) =>
           ro.clientId === client.id ||
-          (cleanPhone.length >= 6 && ro.customerPhone && ro.customerPhone.replace(/\D/g, "") === cleanPhone)
+          (cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone)
       )
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -203,7 +178,7 @@ export class ClientRepository {
       .filter(
         (rep) =>
           rep.clientId === client.id ||
-          (cleanPhone.length >= 6 && rep.clientPhone && rep.clientPhone.replace(/\D/g, "") === cleanPhone)
+          (cleanPhone.length >= 6 && rep.clientPhone && normalizePhone(rep.clientPhone) === cleanPhone)
       )
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
@@ -232,8 +207,8 @@ export class ClientRepository {
 
   static getByPhone(phone: string) {
     const db = getDb();
-    const cleanPhone = phone.replace(/\D/g, "");
-    return db.clients.find((c) => c.phone.replace(/\D/g, "") === cleanPhone) || null;
+    const cleanPhone = normalizePhone(phone);
+    return db.clients.find((c) => normalizePhone(c.phone) === cleanPhone) || null;
   }
 
   static create(data: {
@@ -254,8 +229,8 @@ export class ClientRepository {
     const db = getDb();
 
     // Check unique phone
-    const cleanPhone = data.phone.replace(/\D/g, "");
-    if (db.clients.some((c) => c.phone.replace(/\D/g, "") === cleanPhone)) {
+    const cleanPhone = normalizePhone(data.phone);
+    if (db.clients.some((c) => normalizePhone(c.phone) === cleanPhone)) {
       throw new Error(`Клиент с телефоном ${data.phone} уже зарегистрирован`);
     }
 
@@ -287,6 +262,9 @@ export class ClientRepository {
     const db = getDb();
     const index = db.clients.findIndex((c) => c.id === id);
     if (index === -1) return null;
+    if (data.phone && db.clients.some((client) => client.id !== id && normalizePhone(client.phone) === normalizePhone(data.phone))) {
+      throw new Error("Клиент с этим телефоном уже зарегистрирован");
+    }
 
     db.clients[index] = {
       ...db.clients[index],

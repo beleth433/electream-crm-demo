@@ -65,6 +65,8 @@ export class RentalService {
       method: PaymentMethod;
       notes?: string;
       isBuyoutFinal?: boolean;
+      createdAt?: string;
+      externalReference?: string;
     }
   ) {
     return RentalRepository.renew(id, data);

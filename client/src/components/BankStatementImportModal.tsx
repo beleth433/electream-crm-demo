@@ -116,6 +116,7 @@ export const BankStatementImportModal: React.FC<BankStatementImportModalProps> =
 
     setIsApplying(true);
     let successCount = 0;
+    const successfulIds = new Set<string>();
 
     for (const tx of toProcess) {
       try {
@@ -123,25 +124,35 @@ export const BankStatementImportModal: React.FC<BankStatementImportModalProps> =
         if (!rental) continue;
 
         const isRentToOwn = rental.type === 'RENT_TO_OWN';
-        const durationDays = rental.paymentIntervalDays || rental.tariff?.paymentIntervalDays || 7;
+        const durationDays = rental.paymentIntervalDays || rental.tariff?.paymentIntervalDays || rental.tariff?.durationDays || 7;
+        const signature = JSON.stringify([tx.date, tx.amount, tx.payerName, tx.purpose]);
+        const ordinal = transactions.filter((entry) => JSON.stringify([entry.date, entry.amount, entry.payerName, entry.purpose]) === signature).findIndex((entry) => entry.id === tx.id);
+        const bytes = new TextEncoder().encode(signature);
+        const digest = await crypto.subtle.digest('SHA-256', bytes);
+        const reference = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 
         await api.renewRental(rental.id, {
           amount: tx.amount,
           durationDays,
           method: 'BANK_TRANSFER',
+          createdAt: new Date(tx.date).toISOString(),
+          externalReference: `bank:${reference}:${ordinal}`,
           notes: `Автоматический импорт из банковской выписки. Плательщик: ${tx.payerName || 'Не указан'}. Назначение: ${tx.purpose || ''}`,
         });
 
         successCount++;
+        successfulIds.add(tx.id);
       } catch (err) {
         console.error('Ошибка проведения платежа:', err);
       }
     }
 
     setIsApplying(false);
-    toast.success(`Успешно проведено и разнесено ${successCount} платежей! Договоры продлены.`);
+    setTransactions((items) => items.filter((item) => !successfulIds.has(item.id)));
+    if (successCount === toProcess.length) toast.success(`Успешно проведено ${successCount} платежей.`);
+    else toast.warning(`Проведено ${successCount} из ${toProcess.length} платежей. Необработанные платежи остались в списке.`);
     onSuccess();
-    onClose();
+    if (successCount === toProcess.length) onClose();
   };
 
   return (
