@@ -123,7 +123,7 @@ export class HistoryRepository {
           action: "RENTAL_CLOSE",
           title: `${r.status === "BOUGHT_OUT" ? "🎉 Договор выкуплен" : "Возврат техники по договору"} ${r.rentalNumber}`,
           details: `Курьер: ${clientName}, Байк: ${bikeNum}. Договор закрыт.`,
-          timestamp: r.updatedAt || r.expiresAt || new Date().toISOString(),
+          timestamp: r.closedAt || r.updatedAt || r.expiresAt || new Date().toISOString(),
           actor,
           badgeText: r.status === "BOUGHT_OUT" ? "Выкуплен" : "Возврат",
           badgeColor: r.status === "BOUGHT_OUT" ? "purple" : "emerald",

@@ -27,7 +27,7 @@ import {
 } from "../data/initialData.js";
 
 export type UserRole = "ADMIN" | "MANAGER" | "MECHANIC";
-export type BikeStatus = "AVAILABLE" | "RENTED" | "IN_MAINTENANCE" | "FOR_SALE" | "DECOMMISSIONED" | "SOLD";
+export type BikeStatus = "AVAILABLE" | "RENTED" | "IN_MAINTENANCE" | "FOR_SALE" | "DECOMMISSIONED" | "SOLD" | "BOUGHT_OUT";
 export type BatteryStatus =
   | "AVAILABLE"       // Свободен на складе базы
   | "INSTALLED"       // Установлен в электровелосипед
@@ -306,6 +306,7 @@ export interface RentalRecord {
   notes?: string | null;
   outfitIds: string[];
   batteryIds?: string[];
+  closedAt?: string | null;
   totalBuyoutPrice?: number;
   paymentIntervalDays?: number;
   installmentPayment?: number;
@@ -336,6 +337,7 @@ export interface RepairOrderRecord {
     partId: string;
     quantity: number;
     priceCharged: number;
+    purchasePrice?: number;
   }>;
 }
 
@@ -346,6 +348,7 @@ export interface PaymentRecord {
   orderId?: string | null;
   clientId?: string | null;
   repairOrderId?: string | null;
+  cashierId?: string | null;
   type: PaymentType;
   amount: number;
   method: PaymentMethod;
@@ -475,7 +478,7 @@ export interface DBStore {
 }
 
 const isVercel = Boolean(process.env.VERCEL);
-const DATA_DIR = isVercel
+const DATA_DIR = process.env.CRM_DATA_DIR ? path.resolve(process.env.CRM_DATA_DIR) : isVercel
   ? path.resolve("/tmp", "data")
   : typeof __dirname !== "undefined"
   ? path.resolve(__dirname, "../../data")
@@ -791,9 +794,33 @@ function saveDbToDiskSafe() {
 }
 
 let saveTimeout: NodeJS.Timeout | null = null;
+let transactionDepth = 0;
+
+// Repository operations are synchronous: commit all related entities together,
+// and never persist an intermediate or rejected operation through the proxy.
+export function withDbTransaction<T>(operation: () => T): T {
+  const snapshot = JSON.stringify(rawDb);
+  const wasPending = hasPendingChanges;
+  transactionDepth++;
+  try {
+    const result = operation();
+    if (result && typeof (result as any).then === "function") {
+      throw new Error("Database transaction must be synchronous");
+    }
+    transactionDepth--;
+    if (transactionDepth === 0 && hasPendingChanges) saveDb();
+    return result;
+  } catch (error) {
+    Object.assign(rawDb, JSON.parse(snapshot));
+    hasPendingChanges = wasPending;
+    transactionDepth--;
+    throw error;
+  }
+}
 
 export const saveDb = (immediate = false) => {
   hasPendingChanges = true;
+  if (transactionDepth > 0) return;
   saveDbToDiskSafe();
 
   if (immediate) {

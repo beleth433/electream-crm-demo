@@ -743,6 +743,9 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                           </>
                         )}
 
+                        {r.status === 'BOUGHT_OUT' && !r.depositRefunded && (
+                          <button onClick={() => onOpenCloseModal(r)} className="min-h-[44px] px-3 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-xs font-bold">Экипировка и залог</button>
+                        )}
                         {isClosed && (
                           <button
                             onClick={() => handleDeleteRental(r)}
@@ -920,6 +923,9 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
                     <span>Акт</span>
                   </button>
 
+                  {r.status === 'BOUGHT_OUT' && !r.depositRefunded && (
+                    <button onClick={() => onOpenCloseModal(r)} className="min-h-[44px] px-3 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 text-sm font-bold">Экипировка и залог</button>
+                  )}
                   {!isClosed && (
                     <>
                       <button

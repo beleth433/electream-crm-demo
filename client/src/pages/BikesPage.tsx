@@ -107,7 +107,6 @@ export const BikesPage: React.FC = () => {
       await api.updateBike(editingBike.id, {
         ...editBikeForm,
         purchasePrice: Number(editBikeForm.purchasePrice),
-        salePrice: 0,
         mileageKm: Number(editBikeForm.mileageKm),
         frameNumber: editBikeForm.frameNumber.trim() || null,
         motorNumber: editBikeForm.motorNumber.trim() || null,

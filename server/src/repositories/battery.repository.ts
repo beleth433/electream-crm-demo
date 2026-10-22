@@ -1,4 +1,5 @@
 import { getDb, BatteryRecord, BatteryStatus, BatteryModelRecord, BatteryChemistry, saveDb } from "./db.js";
+import { activeRentalForBike, activeRentalForBattery, isOpenRental } from "./relations.js";
 
 export class BatteryRepository {
   // Battery Model Templates CRUD
@@ -306,6 +307,21 @@ export class BatteryRepository {
     if (index === -1) {
       throw new Error("Аккумулятор не найден");
     }
+    const existing = db.batteries[index];
+    if (data.status && data.status !== existing.status) {
+      if ((data.status === "INSTALLED" && !existing.installedBikeId) || (data.status === "ISSUED_SPARE" && !existing.issuedBikeId)) {
+        throw new Error("Для выдачи или установки АКБ используйте привязку к велосипеду или договору");
+      }
+      if (data.status !== "INSTALLED" && data.status !== "ISSUED_SPARE") {
+        if (existing.installedBikeId) {
+          const bike = db.bikes.find((b) => b.id === existing.installedBikeId);
+          if (bike?.batteryId === id) bike.batteryId = null;
+        }
+        existing.installedBikeId = null;
+        existing.issuedBikeId = null;
+        for (const rental of db.rentals.filter(isOpenRental)) rental.batteryIds = rental.batteryIds?.filter((batteryId) => batteryId !== id);
+      }
+    }
 
     if (data.serialNumber && data.serialNumber !== db.batteries[index].serialNumber) {
       const cleanSerial = data.serialNumber.trim();
@@ -340,6 +356,8 @@ export class BatteryRepository {
     if (data.notes !== undefined) db.batteries[index].notes = data.notes;
     if (data.purchasePrice !== undefined) db.batteries[index].purchasePrice = Number(data.purchasePrice);
     if (data.salePrice !== undefined) db.batteries[index].salePrice = Number(data.salePrice);
+    if (data.cycleCount !== undefined) db.batteries[index].cycleCount = Math.max(0, Number(data.cycleCount));
+    if (data.healthPercent !== undefined) db.batteries[index].healthPercent = Math.min(100, Math.max(0, Number(data.healthPercent)));
 
     db.batteries[index].updatedAt = new Date().toISOString();
     saveDb();
@@ -383,13 +401,18 @@ export class BatteryRepository {
     const db = getDb();
     const bike = db.bikes.find((b) => b.id === bikeId);
     if (!bike) throw new Error("Электровелосипед не найден");
+    if (["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status)) throw new Error("Нельзя установить АКБ на технику, выбывшую из парка");
 
     const newBattery = db.batteries.find((b) => b.id === batteryId);
     if (!newBattery) throw new Error("Аккумулятор не найден");
 
-    if (newBattery.status === "DECOMMISSIONED" || newBattery.status === "SOLD") {
+    if (newBattery.status === "DECOMMISSIONED" || newBattery.status === "SOLD" || newBattery.status === "IN_MAINTENANCE") {
       throw new Error(`Невозможно установить списанный или проданный АКБ (${newBattery.status})`);
     }
+    const sourceRental = activeRentalForBattery(batteryId);
+    const targetRental = activeRentalForBike(bikeId);
+    if (sourceRental && sourceRental.id !== targetRental?.id) throw new Error("АКБ закреплён за другим действующим договором");
+    const oldBatteryId = bike.batteryId;
 
     // 1. If bike already had a battery, detach the old battery
     if (bike.batteryId && bike.batteryId !== batteryId) {
@@ -413,10 +436,15 @@ export class BatteryRepository {
     // 3. Attach new battery to bike
     newBattery.installedBikeId = bike.id;
     newBattery.status = "INSTALLED";
+    newBattery.issuedBikeId = null;
     newBattery.updatedAt = new Date().toISOString();
 
     bike.batteryId = newBattery.id;
     bike.updatedAt = new Date().toISOString();
+    if (targetRental) {
+      targetRental.batteryIds = [...new Set([...(targetRental.batteryIds || []).filter((id) => id !== oldBatteryId), newBattery.id])];
+      targetRental.updatedAt = new Date().toISOString();
+    }
 
     saveDb();
     return {
@@ -432,6 +460,7 @@ export class BatteryRepository {
     const db = getDb();
     const battery = db.batteries.find((b) => b.id === batteryId);
     if (!battery) throw new Error("Аккумулятор не найден");
+    if (battery.status === "SOLD" || battery.status === "DECOMMISSIONED") throw new Error("АКБ выбыл из парка и не может быть возвращён на склад");
 
     const now = new Date().toISOString();
 
@@ -478,6 +507,7 @@ export class BatteryRepository {
     const db = getDb();
     const bike = db.bikes.find((b) => b.id === bikeId);
     if (!bike) throw new Error("Электровелосипед не найден");
+    if (["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status)) throw new Error("Техника выбыла из парка");
 
     const now = new Date().toISOString();
     let detachedBattery: BatteryRecord | null = null;
@@ -538,9 +568,12 @@ export class BatteryRepository {
     const db = getDb();
     const oldBat = db.batteries.find((b) => b.id === oldBatteryId);
     if (!oldBat) throw new Error("Текущий аккумулятор не найден");
+    if (["SOLD", "DECOMMISSIONED"].includes(oldBat.status)) throw new Error("Текущий АКБ выбыл из парка");
 
     const newBat = db.batteries.find((b) => b.id === newBatteryId);
     if (!newBat) throw new Error("Новый аккумулятор не найден");
+    if (oldBat.id === newBat.id) throw new Error("Для замены выберите другой аккумулятор");
+    if (newBat.installedBikeId || newBat.issuedBikeId || activeRentalForBattery(newBat.id)) throw new Error("Новый АКБ уже закреплён за техникой или договором");
 
     if (newBat.status !== "AVAILABLE") {
       throw new Error(`Выбранный аккумулятор ${newBat.serialNumber} недоступен (статус: ${newBat.status})`);

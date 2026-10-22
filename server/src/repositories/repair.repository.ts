@@ -1,6 +1,8 @@
 import { HistoryRepository } from './history.repository.js';
-import { getDb, RepairStatus, RepairFaultType, PaymentMethod, RepairOrderRecord, saveDb } from "./db.js";
+import { getDb, getSystemTime, withDbTransaction, RepairStatus, RepairFaultType, PaymentMethod, RepairOrderRecord, saveDb } from "./db.js";
 import { getCurrentUser } from "../context/userContext.js";
+import { activeRentalForBike, activeRentalForBattery, normalizePhone, nextNumber } from "./relations.js";
+import { ClientRepository } from "./client.repository.js";
 
 export class RepairRepository {
   static getAll(filters?: { status?: RepairStatus; faultType?: RepairFaultType; bikeId?: string; batteryId?: string; itemType?: "BIKE" | "BATTERY" | "EXTERNAL_DEVICE" }) {
@@ -80,7 +82,11 @@ export class RepairRepository {
     };
   }
 
-  static create(data: {
+  static create(data: Parameters<typeof RepairRepository.createInternal>[0]) {
+    return withDbTransaction(() => this.createInternal(data));
+  }
+
+  private static createInternal(data: {
     itemType?: "BIKE" | "BATTERY" | "EXTERNAL_DEVICE";
     bikeId?: string | null;
     batteryId?: string | null;
@@ -96,10 +102,15 @@ export class RepairRepository {
     parts?: Array<{ partId: string; quantity: number }>;
   }) {
     const db = getDb();
-    const now = new Date();
+    const now = getSystemTime();
     const orderNumber = data.orderNumber && data.orderNumber.trim()
       ? data.orderNumber.trim()
-      : `ЗН-${now.getFullYear()}-${(db.repairs.length + 1).toString().padStart(3, "0")}`;
+      : nextNumber(`ЗН-${now.getFullYear()}`, db.repairs.map((r) => r.orderNumber));
+    if (db.repairs.some((r) => r.orderNumber.toLowerCase() === orderNumber.toLowerCase())) throw new Error("Номер заказ-наряда уже существует");
+    const itemId = data.batteryId || data.bikeId;
+    if (itemId && db.repairs.some((r) => (r.bikeId === itemId || r.batteryId === itemId) && r.status !== "COMPLETED" && r.status !== "CANCELLED")) {
+      throw new Error("Для этой техники уже открыт заказ-наряд");
+    }
 
     const isExternal = data.itemType === "EXTERNAL_DEVICE" || (!data.bikeId && !data.batteryId);
     const isBattery = !isExternal && (data.itemType === "BATTERY" || Boolean(data.batteryId));
@@ -116,6 +127,7 @@ export class RepairRepository {
       }
       const battery = db.batteries.find((b) => b.id === data.batteryId);
       if (!battery) throw new Error("Аккумулятор не найден");
+      if (battery.status === "SOLD" || battery.status === "DECOMMISSIONED") throw new Error("АКБ выбыл из парка");
 
       // Detach from bike if mounted
       if (battery.installedBikeId) {
@@ -136,6 +148,7 @@ export class RepairRepository {
       }
       const bike = db.bikes.find((b) => b.id === data.bikeId);
       if (!bike) throw new Error("Байк не найден");
+      if (bike.status === "SOLD" || bike.status === "BOUGHT_OUT" || bike.status === "DECOMMISSIONED") throw new Error("Байк выбыл из парка; оформите ремонт сторонней техники");
 
       bike.status = "IN_MAINTENANCE";
       bike.currentLocation = "Мастерская СТО";
@@ -170,18 +183,16 @@ export class RepairRepository {
     let resolvedClientPhone = data.clientPhone?.trim() || null;
 
     if (!resolvedClientId && resolvedClientPhone) {
-      const clean = resolvedClientPhone.replace(/\D/g, "");
-      const found = db.clients.find((c) => c.phone.replace(/\D/g, "") === clean);
+      const clean = normalizePhone(resolvedClientPhone);
+      const found = db.clients.find((c) => normalizePhone(c.phone) === clean);
       if (found) {
         resolvedClientId = found.id;
         if (!resolvedClientName) resolvedClientName = found.fullName;
       }
     }
 
-    if (!resolvedClientId && resolvedBikeId) {
-      const activeRental = db.rentals.find(
-        (r) => r.bikeId === resolvedBikeId && (r.status === "ACTIVE" || r.status === "OVERDUE")
-      );
+    if (!resolvedClientId && (resolvedBikeId || resolvedBatteryId)) {
+      const activeRental = resolvedBikeId ? activeRentalForBike(resolvedBikeId) : activeRentalForBattery(resolvedBatteryId!);
       if (activeRental) {
         resolvedClientId = activeRental.clientId;
         const found = db.clients.find((c) => c.id === activeRental.clientId);
@@ -190,6 +201,16 @@ export class RepairRepository {
           if (!resolvedClientPhone) resolvedClientPhone = found.phone;
         }
       }
+    }
+    if (resolvedClientId) {
+      const found = db.clients.find((c) => c.id === resolvedClientId);
+      if (!found) throw new Error("Клиент не найден");
+      resolvedClientName = found.fullName;
+      resolvedClientPhone = found.phone;
+    } else if (isExternal && resolvedClientPhone) {
+      const created = ClientRepository.create({ fullName: resolvedClientName || `Клиент СТО ${resolvedClientPhone}`, phone: resolvedClientPhone, clientType: "RETAIL" });
+      resolvedClientId = created!.id;
+      resolvedClientName = created!.fullName;
     }
 
     const newRepair: RepairOrderRecord = {
@@ -229,13 +250,41 @@ export class RepairRepository {
     const db = getDb();
     const repair = db.repairs.find((r) => r.id === id);
     if (!repair) return null;
+    if (status === repair.status) return this.getById(id);
+    if (repair.status === "COMPLETED" || repair.status === "CANCELLED") throw new Error("Завершённый или отменённый заказ-наряд нельзя открыть повторно");
+    if (status === "COMPLETED") return this.complete(id, {});
 
     repair.status = status;
+    if (status === "CANCELLED") this.restoreItem(repair);
     saveDb();
     return this.getById(id);
   }
 
-  static complete(
+  private static restoreItem(repair: RepairOrderRecord) {
+    const db = getDb();
+    const now = getSystemTime().toISOString();
+    const bike = db.bikes.find((b) => b.id === repair.bikeId);
+    if (bike && !["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status)) {
+      const rental = activeRentalForBike(bike.id);
+      const client = db.clients.find((c) => c.id === rental?.clientId);
+      bike.status = rental ? "RENTED" : "AVAILABLE";
+      bike.currentLocation = rental ? `В аренде у ${client?.fullName || "клиента"}` : "Центральная база (м. Дмитровская)";
+      bike.updatedAt = now;
+    }
+    const battery = db.batteries.find((b) => b.id === repair.batteryId);
+    if (battery && !["SOLD", "DECOMMISSIONED"].includes(battery.status)) {
+      const rental = activeRentalForBattery(battery.id);
+      battery.status = rental ? "ISSUED_SPARE" : "AVAILABLE";
+      battery.issuedBikeId = rental?.bikeId || null;
+      battery.updatedAt = now;
+    }
+  }
+
+  static complete(id: string, data: Parameters<typeof RepairRepository.completeInternal>[1]) {
+    return withDbTransaction(() => this.completeInternal(id, data));
+  }
+
+  private static completeInternal(
     id: string,
     data: {
       laborCost?: number;
@@ -247,18 +296,19 @@ export class RepairRepository {
     const db = getDb();
     const repair = db.repairs.find((r) => r.id === id);
     if (!repair) throw new Error("Заказ-наряд не найден");
-    if (repair.status === "COMPLETED") throw new Error("Заказ-наряд уже завершен");
+    if (repair.status === "COMPLETED" || repair.status === "CANCELLED") throw new Error("Заказ-наряд уже завершён или отменён");
 
     const bike = repair.bikeId ? db.bikes.find((b) => b.id === repair.bikeId) : null;
     const battery = repair.batteryId ? db.batteries.find((b) => b.id === repair.batteryId) : null;
-    const now = new Date();
+    const now = getSystemTime();
 
     // 1. Transactionally verify and deduct parts inventory
     const finalPartsToDeduct = data.partsUsed || repair.parts;
     let computedPartsCost = 0;
-    const finalPartsList: Array<{ partId: string; quantity: number; priceCharged: number }> = [];
+    const finalPartsList: RepairOrderRecord["parts"] = [];
 
     for (const p of finalPartsToDeduct) {
+      if (!Number.isFinite(p.quantity) || p.quantity <= 0) throw new Error("Количество детали должно быть положительным");
       const part = db.parts.find((item) => item.id === p.partId);
       if (!part) {
         throw new Error(`Деталь с ID ${p.partId} не найдена на складе`);
@@ -270,12 +320,13 @@ export class RepairRepository {
       // Deduct stock
       part.quantity -= p.quantity;
 
-      const price = repair.faultType === "CLIENT_FAULT" ? part.clientPrice : part.purchasePrice;
+      const price = repair.faultType === "CLIENT_FAULT" || repair.itemType === "EXTERNAL_DEVICE" ? part.clientPrice : part.purchasePrice;
       computedPartsCost += price * p.quantity;
       finalPartsList.push({
         partId: p.partId,
         quantity: p.quantity,
         priceCharged: price,
+        purchasePrice: part.purchasePrice,
       });
     }
 
@@ -293,16 +344,14 @@ export class RepairRepository {
       repair.description += `\n[Мастер ${now.toLocaleDateString("ru-RU")}]: ${data.mechanicNotes}`;
     }
 
-    // 3. Transition Item status back to AVAILABLE
+    // 3. Restore the assignment to an ongoing rental, if any.
+    this.restoreItem(repair);
     if (bike) {
-      bike.status = "AVAILABLE";
-      bike.currentLocation = "Центральная база (м. Дмитровская)";
       bike.note = `Отремонтирован по заказ-наряду ${repair.orderNumber}`;
       bike.updatedAt = now.toISOString();
     }
 
     if (battery) {
-      battery.status = "AVAILABLE";
       battery.notes = battery.notes
         ? `${battery.notes} | Обслужен по ЗН ${repair.orderNumber}`
         : `Обслужен по ЗН ${repair.orderNumber}`;
@@ -310,7 +359,7 @@ export class RepairRepository {
     }
 
     // 4. If CLIENT_FAULT and payment method provided, record payment
-    if (repair.faultType === "CLIENT_FAULT" && totalCost > 0 && data.paymentMethod) {
+    if ((repair.faultType === "CLIENT_FAULT" || repair.itemType === "EXTERNAL_DEVICE") && totalCost > 0 && data.paymentMethod) {
       const paymentDesc = repair.itemType === "EXTERNAL_DEVICE"
         ? `Оплата ремонта сторонней техники "${repair.customItemName || 'клиента'}" (Заказ-наряд ${repair.orderNumber})`
         : `Оплата ремонта по вине курьера (Заказ-наряд ${repair.orderNumber})`;
@@ -320,6 +369,7 @@ export class RepairRepository {
         rentalId: null,
         clientId: repair.clientId,
         repairOrderId: repair.id,
+        cashierId: getCurrentUser()?.id || repair.mechanicId,
         type: "REPAIR",
         amount: totalCost,
         method: data.paymentMethod,

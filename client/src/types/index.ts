@@ -6,7 +6,8 @@ export type BikeStatus =
   | "IN_MAINTENANCE"
   | "FOR_SALE"
   | "DECOMMISSIONED"
-  | "SOLD";
+  | "SOLD"
+  | "BOUGHT_OUT";
 
 export type RentalStatus =
   | "DRAFT"
@@ -340,6 +341,7 @@ export interface Rental {
   outfitIds: string[];
   outfits?: Outfit[];
   batteryIds?: string[];
+  closedAt?: string | null;
   batteries?: Battery[];
   payments?: Payment[];
   totalBuyoutPrice?: number;

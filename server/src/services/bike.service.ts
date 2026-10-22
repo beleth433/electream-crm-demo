@@ -39,8 +39,8 @@ export class BikeService {
     inventoryNumber: string;
     modelId: string;
     batteryId?: string | null;
-    frameNumber?: string;
-    motorNumber?: string;
+    frameNumber?: string | null;
+    motorNumber?: string | null;
     status?: BikeStatus;
     currentLocation?: string;
     mileageKm?: number;

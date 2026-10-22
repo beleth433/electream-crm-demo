@@ -1,4 +1,6 @@
 import { getDb, BikeStatus, BikeRecord, saveDb } from "./db.js";
+import { BatteryRepository } from "./battery.repository.js";
+import { activeRentalForBike } from "./relations.js";
 
 export class BikeRepository {
   static getAll(filters?: { status?: BikeStatus; modelId?: string; search?: string }) {
@@ -198,8 +200,8 @@ export class BikeRepository {
     inventoryNumber: string;
     modelId: string;
     batteryId?: string | null;
-    frameNumber?: string;
-    motorNumber?: string;
+    frameNumber?: string | null;
+    motorNumber?: string | null;
     status?: BikeStatus;
     currentLocation?: string;
     mileageKm?: number;
@@ -213,6 +215,11 @@ export class BikeRepository {
     }
 
     const model = db.models.find((m) => m.id === data.modelId);
+    if (!model) throw new Error("Модель байка не найдена");
+    if (data.batteryId) {
+      const battery = db.batteries.find((b) => b.id === data.batteryId);
+      if (!battery || battery.status !== "AVAILABLE" || battery.installedBikeId || battery.issuedBikeId) throw new Error("Выбранный АКБ недоступен для установки");
+    }
     const purchasePrice =
       data.purchasePrice !== undefined ? Number(data.purchasePrice) : (model?.purchasePrice ?? 0);
     const salePrice =
@@ -255,6 +262,14 @@ export class BikeRepository {
     const db = getDb();
     const index = db.bikes.findIndex((b) => b.id === id);
     if (index === -1) return null;
+    const bike = db.bikes[index];
+    if (data.inventoryNumber && db.bikes.some((b) => b.id !== id && b.inventoryNumber.toLowerCase() === data.inventoryNumber!.trim().toLowerCase())) throw new Error("Инвентарный номер уже занят");
+    if (data.modelId && !db.models.some((m) => m.id === data.modelId)) throw new Error("Модель байка не найдена");
+    if (data.status && data.status !== bike.status && activeRentalForBike(id) && data.status !== "RENTED" && data.status !== "IN_MAINTENANCE") throw new Error("Сначала завершите действующий договор аренды");
+    if (data.batteryId !== undefined && data.batteryId !== bike.batteryId) {
+      if (data.batteryId) BatteryRepository.attachToBike(data.batteryId, id);
+      else BatteryRepository.detachFromBike(id);
+    }
 
     db.bikes[index] = {
       ...db.bikes[index],
@@ -295,12 +310,12 @@ export class BikeRepository {
     const removed = db.bikes.splice(index, 1)[0];
 
     // Detach any battery that was on this bike so it returns to AVAILABLE on base
-    const attachedBattery = db.batteries.find(
+    const attachedBatteries = db.batteries.filter(
       (b) => b.installedBikeId === id || (removed.batteryId && b.id === removed.batteryId)
     );
-    if (attachedBattery) {
+    for (const attachedBattery of attachedBatteries) {
       attachedBattery.installedBikeId = null;
-      attachedBattery.status = "AVAILABLE";
+      if (attachedBattery.status === "INSTALLED") attachedBattery.status = "AVAILABLE";
       attachedBattery.updatedAt = new Date().toISOString();
     }
 

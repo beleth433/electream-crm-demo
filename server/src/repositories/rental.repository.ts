@@ -1,5 +1,9 @@
-import { getDb, getSystemTime, saveDb, RentalStatus, RentalType, PaymentMethod, OutfitStatus, BikeStatus, TariffBuyoutBatteryItem } from "./db.js";
+import { getDb, getSystemTime, saveDb, withDbTransaction, RentalStatus, RentalType, PaymentMethod, OutfitStatus, BikeStatus, TariffBuyoutBatteryItem } from "./db.js";
 import { getCurrentUser } from "../context/userContext.js";
+import { activeRentalForBike, activeRentalForBattery, isOpenRental, nextNumber } from "./relations.js";
+import { HistoryRepository } from "./history.repository.js";
+import { ClientRepository } from "./client.repository.js";
+
 
 export class RentalRepository {
   private static refreshOverdueStatuses() {
@@ -192,7 +196,11 @@ export class RentalRepository {
     return { success: true, message: "Шаблон тарифа удален" };
   }
 
-  static create(data: {
+  static create(data: Parameters<typeof RentalRepository.createInternal>[0]) {
+    return withDbTransaction(() => this.createInternal(data));
+  }
+
+  private static createInternal(data: {
     clientId: string;
     bikeId: string;
     tariffId: string;
@@ -240,22 +248,34 @@ export class RentalRepository {
     if (bike.status !== "AVAILABLE") {
       throw new Error(`Байк ${bike.inventoryNumber} недоступен для выдачи (текущий статус: ${bike.status})`);
     }
+    if (activeRentalForBike(bike.id)) throw new Error("Байк уже закреплён за действующим договором");
 
     // 3. Verify Tariff
     const tariff = db.tariffs.find((t) => t.id === data.tariffId);
     if (!tariff) throw new Error("Тариф не найден");
+    if (!tariff.isActive) throw new Error("Тариф отключён");
+    if (tariff.bikeModelId && tariff.bikeModelId !== bike.modelId) throw new Error("Тариф не подходит для выбранной модели");
 
     // 4. Verify Outfits
     const outfits = db.outfits.filter((o) => data.outfitIds.includes(o.id));
+    if (outfits.length !== new Set(data.outfitIds).size) throw new Error("Выбранная экипировка не найдена");
+    if (outfits.some((o) => db.rentals.some((r) => isOpenRental(r) && r.outfitIds.includes(o.id)))) {
+      throw new Error("Экипировка уже закреплена за действующим договором");
+    }
     const unavailableOutfit = outfits.find((o) => o.status !== "IN_STOCK");
     if (unavailableOutfit) {
       throw new Error(`Экипировка "${unavailableOutfit.name}" недоступна на складе (статус: ${unavailableOutfit.status})`);
     }
 
     // 5. Verify Batteries
-    const requestedBatteryIds = data.batteryIds || [];
+    const requestedBatteryIds = [...new Set([...(data.batteryIds || []), ...(bike.batteryId ? [bike.batteryId] : [])])];
     const batteries = db.batteries.filter((b) => requestedBatteryIds.includes(b.id));
+    if (batteries.length !== requestedBatteryIds.length) throw new Error("Выбранный аккумулятор не найден");
     for (const b of batteries) {
+      if (activeRentalForBattery(b.id)) throw new Error(`Аккумулятор ${b.serialNumber} уже выдан по другому договору`);
+      if (b.status === "SOLD" || b.status === "DECOMMISSIONED" || b.status === "IN_MAINTENANCE") {
+        throw new Error(`Аккумулятор ${b.serialNumber} недоступен для выдачи`);
+      }
       if (b.status !== "AVAILABLE" && b.installedBikeId !== bike.id && b.id !== bike.batteryId) {
         throw new Error(`Аккумулятор ${b.serialNumber} недоступен для выдачи (текущий статус: ${b.status})`);
       }
@@ -265,7 +285,8 @@ export class RentalRepository {
     const paymentIntervalDays = data.paymentIntervalDays ?? tariff.paymentIntervalDays ?? (isRentToOwn ? 7 : tariff.durationDays);
     const totalBuyoutPrice = data.totalBuyoutPrice ?? tariff.totalBuyoutPrice ?? (isRentToOwn ? tariff.price : undefined);
     const installmentPayment = data.installmentPayment ?? tariff.installmentPayment ?? (isRentToOwn ? tariff.price : undefined);
-    const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? (installmentPayment ?? tariff.price) : tariff.price);
+    const discount = ClientRepository.computeClientLoyalty(client).loyaltyTier.discountRentalPercent;
+    const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? (installmentPayment ?? tariff.price) : Math.round(tariff.price * (1 - discount / 100) * 100) / 100);
 
     const now = getSystemTime();
     let startDate = now;
@@ -276,14 +297,15 @@ export class RentalRepository {
       }
     }
 
+    const effectiveDurationDays = data.durationDays && data.durationDays > 0 ? data.durationDays : tariff.durationDays;
     const nextPaymentDue = isRentToOwn
       ? new Date(startDate.getTime() + paymentIntervalDays * 86400000)
-      : new Date(startDate.getTime() + tariff.durationDays * 86400000);
-    const effectiveDurationDays = data.durationDays && data.durationDays > 0 ? data.durationDays : tariff.durationDays;
+      : new Date(startDate.getTime() + effectiveDurationDays * 86400000);
     const expiresAt = new Date(startDate.getTime() + effectiveDurationDays * 86400000);
     const rentalNumber = data.rentalNumber && data.rentalNumber.trim()
       ? data.rentalNumber.trim()
-      : `RNT-${startDate.getFullYear()}-${(db.rentals.length + 1).toString().padStart(3, "0")}`;
+      : nextNumber(`RNT-${startDate.getFullYear()}`, db.rentals.map((r) => r.rentalNumber));
+    if (db.rentals.some((r) => r.rentalNumber.toLowerCase() === rentalNumber.toLowerCase())) throw new Error("Номер договора уже существует");
     const depositAmount = data.customDeposit !== undefined ? data.customDeposit : tariff.depositRequired;
 
     // 6. Create Rental record
@@ -355,6 +377,7 @@ export class RentalRepository {
         id: `pay-${Date.now()}-1`,
         rentalId: rental.id,
         clientId: rental.clientId,
+        cashierId: getCurrentUser()?.id || rental.managerId,
         type: isRentToOwn ? "BUYOUT" : "RENTAL",
         amount: firstPaymentAmount,
         method: data.paymentMethod,
@@ -372,6 +395,7 @@ export class RentalRepository {
         rentalId: rental.id,
         clientId: rental.clientId,
         type: "DEPOSIT",
+        cashierId: getCurrentUser()?.id || rental.managerId,
         amount: depositAmount,
         method: data.paymentMethod,
         description: `Обеспечительный залог по договору ${rental.rentalNumber}`,
@@ -379,10 +403,15 @@ export class RentalRepository {
       });
     }
 
+    if (isRentToOwn && totalBuyoutPrice && firstPaymentAmount >= totalBuyoutPrice) this.finalizeBuyout(rental.id);
     return this.getById(rental.id);
   }
 
-  static renew(id: string, data: { durationDays?: number; amount?: number; method: PaymentMethod; notes?: string; isBuyoutFinal?: boolean }) {
+  static renew(id: string, data: Parameters<typeof RentalRepository.renewInternal>[1]) {
+    return withDbTransaction(() => this.renewInternal(id, data));
+  }
+
+  private static renewInternal(id: string, data: { durationDays?: number; amount?: number; method: PaymentMethod; notes?: string; isBuyoutFinal?: boolean }) {
     const db = getDb();
     const rental = db.rentals.find((r) => r.id === id);
     if (!rental) throw new Error("Аренда не найдена");
@@ -393,7 +422,12 @@ export class RentalRepository {
     const tariff = db.tariffs.find((t) => t.id === rental.tariffId);
     const isRentToOwn = rental.type === "RENT_TO_OWN";
     const durationDays = data.durationDays || rental.paymentIntervalDays || tariff?.paymentIntervalDays || tariff?.durationDays || 7;
-    const amount = data.amount ?? (isRentToOwn ? (rental.installmentPayment ?? tariff?.installmentPayment ?? tariff?.price ?? 6000) : (tariff?.price ?? 6000));
+    const paid = db.payments.filter((p) => p.rentalId === id && (p.type === "RENTAL" || p.type === "BUYOUT")).reduce((sum, p) => sum + p.amount, 0);
+    const target = rental.totalBuyoutPrice ?? tariff?.totalBuyoutPrice ?? tariff?.price ?? 0;
+    const defaultAmount = isRentToOwn ? Math.min(rental.installmentPayment ?? tariff?.installmentPayment ?? tariff?.price ?? 6000, Math.max(0, target - paid)) : (tariff?.price ?? 6000);
+    const amount = data.amount ?? defaultAmount;
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("Сумма платежа должна быть положительной");
+    if (data.isBuyoutFinal && (!isRentToOwn || paid + amount < target)) throw new Error("Для завершения выкупа необходимо погасить остаток долга");
 
     const now = getSystemTime();
     const currentDue = new Date(rental.nextPaymentDue || rental.expiresAt);
@@ -405,6 +439,7 @@ export class RentalRepository {
     db.payments.push({
       id: `pay-${Date.now()}`,
       rentalId: rental.id,
+      cashierId: getCurrentUser()?.id || rental.managerId,
         clientId: rental.clientId,
         type: paymentType as any,
       amount,
@@ -422,7 +457,7 @@ export class RentalRepository {
     const isFullyPaid = isRentToOwn && targetPrice > 0 && totalPaid >= targetPrice;
 
     if (data.isBuyoutFinal || isFullyPaid) {
-      rental.status = "BOUGHT_OUT";
+      this.finalizeBuyout(rental.id);
       rental.updatedAt = now.toISOString();
       if (data.notes) {
         rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[Выкуп ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
@@ -434,7 +469,7 @@ export class RentalRepository {
       const bike = db.bikes.find((b) => b.id === rental.bikeId);
       const client = db.clients.find((c) => c.id === rental.clientId);
       if (bike) {
-        bike.status = "SOLD";
+        bike.status = "BOUGHT_OUT";
         bike.currentLocation = `Выкуплен клиентом ${client?.fullName || ""} (договор ${rental.rentalNumber})`;
         bike.updatedAt = now.toISOString();
       }
@@ -454,7 +489,35 @@ export class RentalRepository {
     return this.getById(rental.id);
   }
 
-  static close(
+  static finalizeBuyout(id: string) {
+    const db = getDb();
+    const rental = db.rentals.find((r) => r.id === id);
+    if (!rental || rental.type !== "RENT_TO_OWN") return;
+    const now = getSystemTime().toISOString();
+    rental.status = "BOUGHT_OUT";
+    rental.closedAt = now;
+    rental.updatedAt = now;
+    const bike = db.bikes.find((b) => b.id === rental.bikeId);
+    if (bike) {
+      bike.status = "BOUGHT_OUT";
+      bike.currentLocation = `Выкуплен по договору ${rental.rentalNumber}`;
+      bike.updatedAt = now;
+    }
+    for (const battery of db.batteries) {
+      if (rental.batteryIds?.includes(battery.id) || battery.id === bike?.batteryId || battery.installedBikeId === rental.bikeId || battery.issuedBikeId === rental.bikeId) {
+        battery.status = "SOLD";
+        battery.issuedBikeId = null;
+        battery.notes = `Выкуплен в составе комплекта по договору ${rental.rentalNumber}`;
+        battery.updatedAt = now;
+      }
+    }
+  }
+
+  static close(id: string, data: Parameters<typeof RentalRepository.closeInternal>[1]) {
+    return withDbTransaction(() => this.closeInternal(id, data));
+  }
+
+  private static closeInternal(
     id: string,
     data: {
       bikeCondition: "OK" | "NEEDS_REPAIR";
@@ -473,15 +536,19 @@ export class RentalRepository {
     const db = getDb();
     const rental = db.rentals.find((r) => r.id === id);
     if (!rental) throw new Error("Аренда не найдена");
-    if (rental.status === "CLOSED") throw new Error("Договор уже закрыт");
+    const isBoughtOut = rental.status === "BOUGHT_OUT";
+    if (rental.status === "CLOSED" || (isBoughtOut && rental.depositRefunded)) throw new Error("Договор уже завершён и расчёты закрыты");
+    if (new Set(data.outfitReturns.map((o) => o.outfitId)).size !== data.outfitReturns.length || data.outfitReturns.some((o) => !rental.outfitIds.includes(o.outfitId))) {
+      throw new Error("В возврате указана повторная экипировка или предмет другого договора");
+    }
 
     const bike = db.bikes.find((b) => b.id === rental.bikeId);
     const client = db.clients.find((c) => c.id === rental.clientId);
-    const now = new Date();
+    const now = getSystemTime();
 
     // 1. Process Bike Return
     let repairOrderCreated = null;
-    if (bike) {
+    if (bike && !isBoughtOut) {
       if (data.bikeMileageKm && data.bikeMileageKm > bike.mileageKm) {
         bike.mileageKm = data.bikeMileageKm;
       }
@@ -492,11 +559,15 @@ export class RentalRepository {
         bike.note = data.defectDescription || "Обнаружены дефекты при приемке из аренды";
 
         // Auto-create RepairOrder
-        const orderNumber = `REP-${now.getFullYear()}-${(db.repairs.length + 1).toString().padStart(3, "0")}`;
+        const orderNumber = nextNumber(`REP-${now.getFullYear()}`, db.repairs.map((r) => r.orderNumber));
         repairOrderCreated = {
           id: `rep-${Date.now()}`,
           orderNumber,
           bikeId: bike.id,
+          clientId: rental.clientId,
+          clientName: client?.fullName || null,
+          clientPhone: client?.phone || null,
+          itemType: "BIKE" as const,
           mechanicId:
             getCurrentUser()?.id ||
             db.users.find((u) => u.role === "MECHANIC")?.id ||
@@ -522,23 +593,24 @@ export class RentalRepository {
 
     // 2. Process Outfits Return & Deductions
     let totalDeduction = 0;
-    data.outfitReturns.forEach((item) => {
+    const returns = rental.outfitIds.map((outfitId) => data.outfitReturns.find((item) => item.outfitId === outfitId) || { outfitId, condition: "OK" as const, deductionAmount: 0 });
+    returns.forEach((item) => {
       const outfit = db.outfits.find((o) => o.id === item.outfitId);
       if (outfit) {
         if (item.condition === "OK") {
           outfit.status = "IN_STOCK";
         } else if (item.condition === "DAMAGED") {
           outfit.status = "DAMAGED";
-          totalDeduction += item.deductionAmount || 500;
+          totalDeduction += item.deductionAmount ?? 500;
         } else if (item.condition === "LOST") {
           outfit.status = "LOST";
-          totalDeduction += item.deductionAmount || outfit.depositValue;
+          totalDeduction += item.deductionAmount ?? outfit.depositValue;
         }
       }
     });
 
     // 3. Deposit Refund Settlement
-    const initialDeposit = rental.depositAmount || 0;
+    const initialDeposit = rental.depositRefunded ? 0 : rental.depositAmount || 0;
     const netRefund = Math.max(0, initialDeposit - totalDeduction);
 
     if (netRefund > 0) {
@@ -547,6 +619,7 @@ export class RentalRepository {
         rentalId: rental.id,
         clientId: rental.clientId,
         type: "DEPOSIT_REFUND",
+        cashierId: getCurrentUser()?.id || rental.managerId,
         amount: netRefund,
         method: data.refundMethod || "CASH",
         description: `Возврат залога по договору ${rental.rentalNumber} (удержано ${totalDeduction} руб.)`,
@@ -556,14 +629,16 @@ export class RentalRepository {
     }
 
     // 4. Update Rental status
-    rental.status = rental.type === "RENT_TO_OWN" ? "BOUGHT_OUT" : "CLOSED";
+    rental.status = isBoughtOut ? "BOUGHT_OUT" : "CLOSED";
+    rental.closedAt = rental.closedAt || now.toISOString();
+    rental.depositRefunded = true;
     rental.updatedAt = now.toISOString();
     if (data.notes) {
       rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[Закрытие ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
     }
 
     // 5. Return spare batteries to AVAILABLE
-    if (rental.batteryIds && rental.batteryIds.length > 0) {
+    if (!isBoughtOut && rental.batteryIds && rental.batteryIds.length > 0) {
       rental.batteryIds.forEach((bId) => {
         const bat = db.batteries.find((b) => b.id === bId);
         if (bat && bat.status === "ISSUED_SPARE") {

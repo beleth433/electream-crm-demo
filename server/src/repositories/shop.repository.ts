@@ -8,7 +8,10 @@ import {
   PaymentRecord,
   PaymentMethod,
   saveDb,
+  withDbTransaction,
 } from './db.js';
+import { activeRentalForBike, activeRentalForBattery, normalizePhone } from './relations.js';
+import { getCurrentUser } from '../context/userContext.js';
 
 export interface CreateOrderDto {
   customerType: 'GUEST' | 'CLIENT' | 'EXTERNAL';
@@ -123,6 +126,10 @@ export class ShopRepository {
   }
 
   async createOrder(data: CreateOrderDto) {
+    return withDbTransaction(() => this.createOrderInternal(data));
+  }
+
+  private createOrderInternal(data: CreateOrderDto) {
     const db = getDb();
 
     if (!data.items || data.items.length === 0) {
@@ -134,12 +141,16 @@ export class ShopRepository {
     let totalCost = 0;
 
     for (const item of data.items) {
-      const qty = Number(item.quantity) || 1;
-      if (qty <= 0) continue;
+      const qty = Number(item.quantity);
+      if (!Number.isFinite(qty) || qty <= 0 || !Number.isInteger(qty)) throw new Error('Количество товара должно быть целым положительным числом');
+      if (item.itemType !== 'PART' && qty !== 1) throw new Error('Поштучная техника и экипировка продаются по одному экземпляру');
+      if (item.price !== undefined && (!Number.isFinite(Number(item.price)) || Number(item.price) < 0)) throw new Error('Цена товара должна быть неотрицательной');
+      if (!['BIKE', 'BATTERY', 'PART', 'OUTFIT'].includes(item.itemType)) throw new Error('Неизвестный тип товара');
 
       if (item.itemType === 'BIKE') {
         const bike = db.bikes.find((b) => b.id === item.itemId);
         if (!bike) throw new Error(`Велосипед с ID ${item.itemId} не найден`);
+        if (activeRentalForBike(bike.id)) throw new Error('Байк закреплён за действующим договором');
         if (bike.status !== 'AVAILABLE' && bike.status !== 'FOR_SALE') {
           throw new Error(
             `Байк ${bike.inventoryNumber} не может быть продан (текущий статус: ${bike.status})`
@@ -180,6 +191,7 @@ export class ShopRepository {
       } else if (item.itemType === 'BATTERY') {
         const battery = db.batteries.find((b) => b.id === item.itemId);
         if (!battery) throw new Error(`Аккумулятор с ID ${item.itemId} не найден`);
+        if (activeRentalForBattery(battery.id)) throw new Error('Аккумулятор закреплён за действующим договором');
         if (battery.status !== 'AVAILABLE' || battery.installedBikeId) {
           throw new Error(
             `Аккумулятор ${battery.serialNumber} недоступен для продажи (статус: ${battery.status}${battery.installedBikeId ? ', установлен на байк' : ''})`
@@ -286,9 +298,9 @@ export class ShopRepository {
     const customerPhone = data.customerPhone?.trim() || null;
 
     if (!resolvedClientId && customerPhone) {
-      const cleanPhone = customerPhone.replace(/\D/g, '');
+      const cleanPhone = normalizePhone(customerPhone);
       if (cleanPhone.length >= 6) {
-        const existing = db.clients.find((c) => c.phone.replace(/\D/g, '') === cleanPhone);
+        const existing = db.clients.find((c) => normalizePhone(c.phone) === cleanPhone);
         if (existing) {
           resolvedClientId = existing.id;
           if (
@@ -332,6 +344,7 @@ export class ShopRepository {
       }
     } else if (resolvedClientId) {
       const existing = db.clients.find((c) => c.id === resolvedClientId);
+      if (!existing) throw new Error('Покупатель не найден');
       if (existing) {
         customerFullName = existing.fullName;
       }
@@ -361,6 +374,7 @@ export class ShopRepository {
       orderId: order.id,
       clientId: resolvedClientId,
       type: 'RETAIL_SALE',
+      cashierId: getCurrentUser()?.id || null,
       amount: totalAmount,
       method: data.paymentMethod || 'CASH',
       description: `Розничная продажа (Чек ${order.orderNumber}): ${order.customerName}`,

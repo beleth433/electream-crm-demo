@@ -37,6 +37,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ type, status, classNam
         label = 'Продан (Магазин)';
         colorClasses = 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/50 dark:text-teal-300 dark:border-teal-800';
         break;
+      case 'BOUGHT_OUT':
+        label = 'Выкуплен';
+        colorClasses = 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800';
+        break;
     }
   } else if (type === 'rental') {
     switch (status as RentalStatus) {

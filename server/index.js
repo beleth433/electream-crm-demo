@@ -58398,7 +58398,7 @@ var INITIAL_LOYALTY_TIERS = [
 
 // src/repositories/db.ts
 var isVercel = Boolean(process.env.VERCEL);
-var DATA_DIR = isVercel ? import_path.default.resolve("/tmp", "data") : typeof __dirname !== "undefined" ? import_path.default.resolve(__dirname, "../../data") : import_path.default.resolve(process.cwd(), "data");
+var DATA_DIR = process.env.CRM_DATA_DIR ? import_path.default.resolve(process.env.CRM_DATA_DIR) : isVercel ? import_path.default.resolve("/tmp", "data") : typeof __dirname !== "undefined" ? import_path.default.resolve(__dirname, "../../data") : import_path.default.resolve(process.cwd(), "data");
 var DB_FILE = import_path.default.join(DATA_DIR, "crm_db.json");
 try {
   if (!import_fs.default.existsSync(DATA_DIR)) {
@@ -58644,8 +58644,29 @@ function saveDbToDiskSafe() {
   }
 }
 var saveTimeout = null;
+var transactionDepth = 0;
+function withDbTransaction(operation) {
+  const snapshot = JSON.stringify(rawDb);
+  const wasPending = hasPendingChanges;
+  transactionDepth++;
+  try {
+    const result = operation();
+    if (result && typeof result.then === "function") {
+      throw new Error("Database transaction must be synchronous");
+    }
+    transactionDepth--;
+    if (transactionDepth === 0 && hasPendingChanges) saveDb();
+    return result;
+  } catch (error) {
+    Object.assign(rawDb, JSON.parse(snapshot));
+    hasPendingChanges = wasPending;
+    transactionDepth--;
+    throw error;
+  }
+}
 var saveDb = (immediate = false) => {
   hasPendingChanges = true;
+  if (transactionDepth > 0) return;
   saveDbToDiskSafe();
   if (immediate) {
     if (saveTimeout) clearTimeout(saveTimeout);
@@ -62937,8 +62958,8 @@ var BikeCreateDto = external_exports.object({
   inventoryNumber: external_exports.string().min(2, "\u0418\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D"),
   modelId: external_exports.string().min(1, "\u041C\u043E\u0434\u0435\u043B\u044C \u0431\u0430\u0439\u043A\u0430 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u0430"),
   batteryId: external_exports.string().optional().nullable(),
-  frameNumber: external_exports.string().optional(),
-  motorNumber: external_exports.string().optional(),
+  frameNumber: external_exports.string().optional().nullable(),
+  motorNumber: external_exports.string().optional().nullable(),
   status: external_exports.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED"]).optional(),
   currentLocation: external_exports.string().optional(),
   mileageKm: external_exports.number().min(0).optional(),
@@ -62950,8 +62971,8 @@ var BikeUpdateDto = external_exports.object({
   inventoryNumber: external_exports.string().optional(),
   modelId: external_exports.string().optional(),
   batteryId: external_exports.string().optional().nullable(),
-  frameNumber: external_exports.string().optional(),
-  motorNumber: external_exports.string().optional(),
+  frameNumber: external_exports.string().optional().nullable(),
+  motorNumber: external_exports.string().optional().nullable(),
   status: external_exports.enum(["AVAILABLE", "RENTED", "IN_MAINTENANCE", "FOR_SALE", "DECOMMISSIONED"]).optional(),
   currentLocation: external_exports.string().optional(),
   mileageKm: external_exports.number().min(0).optional(),
@@ -63018,7 +63039,7 @@ var RentalCreateDto = external_exports.object({
   batteryIds: external_exports.array(external_exports.string()).optional().default([]),
   paymentMethod: external_exports.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),
   rentalNumber: external_exports.string().optional(),
-  customDeposit: external_exports.number().optional(),
+  customDeposit: external_exports.number().min(0).optional(),
   durationDays: external_exports.number().int().positive().optional(),
   startDate: external_exports.string().optional(),
   totalBuyoutPrice: external_exports.number().min(0).optional(),
@@ -63049,7 +63070,7 @@ var RentalCloseDto = external_exports.object({
     external_exports.object({
       outfitId: external_exports.string(),
       condition: external_exports.enum(["OK", "DAMAGED", "LOST"]),
-      deductionAmount: external_exports.number().optional()
+      deductionAmount: external_exports.number().min(0).optional()
     })
   ).default([]),
   refundMethod: external_exports.enum(["CASH", "CARD", "SBP", "BANK_TRANSFER"]).default("CASH"),
@@ -63398,6 +63419,553 @@ var DashboardController = class {
   }
 };
 
+// src/repositories/relations.ts
+var isOpenRental = (rental) => rental.status === "ACTIVE" || rental.status === "OVERDUE" || rental.status === "PROBLEM";
+var activeRentalForBike = (bikeId) => getDb().rentals.find((rental) => rental.bikeId === bikeId && isOpenRental(rental));
+var activeRentalForBattery = (batteryId) => {
+  const db2 = getDb();
+  const battery = db2.batteries.find((item) => item.id === batteryId);
+  return db2.rentals.find((rental) => isOpenRental(rental) && (rental.batteryIds?.includes(batteryId) || rental.bikeId === battery?.installedBikeId || rental.bikeId === battery?.issuedBikeId || db2.bikes.some((bike) => bike.id === rental.bikeId && bike.batteryId === batteryId)));
+};
+function normalizePhone(phone) {
+  const digits = (phone || "").replace(/\D/g, "");
+  return digits.length === 11 && digits.startsWith("8") ? `7${digits.slice(1)}` : digits;
+}
+function nextNumber(prefix, existing) {
+  const max = existing.reduce((value, number) => {
+    if (!number.startsWith(`${prefix}-`)) return value;
+    const suffix = Number(number.slice(prefix.length + 1));
+    return Number.isInteger(suffix) ? Math.max(value, suffix) : value;
+  }, 0);
+  return `${prefix}-${String(max + 1).padStart(3, "0")}`;
+}
+
+// src/repositories/battery.repository.ts
+var BatteryRepository = class {
+  // Battery Model Templates CRUD
+  static getBatteryModels() {
+    const db2 = getDb();
+    return db2.batteryModels.map((m) => {
+      const batteriesCount = db2.batteries.filter((b) => b.modelId === m.id).length;
+      return {
+        ...m,
+        batteriesCount
+      };
+    });
+  }
+  static createBatteryModel(data) {
+    const db2 = getDb();
+    if (!data.name || !data.name.trim()) {
+      throw new Error("\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u043C\u043E\u0434\u0435\u043B\u0438 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0434\u043B\u044F \u0437\u0430\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F");
+    }
+    const cleanName = data.name.trim();
+    if (db2.batteryModels.some((m) => m.name.toLowerCase() === cleanName.toLowerCase())) {
+      throw new Error(`\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 "${cleanName}" \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442`);
+    }
+    const newModel = {
+      id: `bat-mdl-${Date.now()}`,
+      name: cleanName,
+      voltage: Number(data.voltage) || 60,
+      capacityAh: Number(data.capacityAh) || 20,
+      chemistry: data.chemistry === "LiFePO4" ? "LiFePO4" : "Li-ion",
+      description: data.description || null,
+      purchasePrice: data.purchasePrice !== void 0 ? Number(data.purchasePrice) : void 0,
+      salePrice: data.salePrice !== void 0 ? Number(data.salePrice) : void 0
+    };
+    db2.batteryModels.push(newModel);
+    saveDb();
+    return {
+      ...newModel,
+      batteriesCount: 0
+    };
+  }
+  static updateBatteryModel(id, data) {
+    const db2 = getDb();
+    const model = db2.batteryModels.find((m) => m.id === id);
+    if (!model) {
+      throw new Error("\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    }
+    if (data.name !== void 0) {
+      const cleanName = data.name.trim();
+      const duplicate = db2.batteryModels.find(
+        (m) => m.id !== id && m.name.toLowerCase() === cleanName.toLowerCase()
+      );
+      if (duplicate) {
+        throw new Error(`\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 "${cleanName}" \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442`);
+      }
+      model.name = cleanName;
+    }
+    if (data.voltage !== void 0) model.voltage = Number(data.voltage);
+    if (data.capacityAh !== void 0) model.capacityAh = Number(data.capacityAh);
+    if (data.chemistry !== void 0) model.chemistry = data.chemistry;
+    if (data.description !== void 0) model.description = data.description;
+    if (data.purchasePrice !== void 0) model.purchasePrice = Number(data.purchasePrice);
+    if (data.salePrice !== void 0) model.salePrice = Number(data.salePrice);
+    saveDb();
+    const batteriesCount = db2.batteries.filter((b) => b.modelId === model.id).length;
+    return {
+      ...model,
+      batteriesCount
+    };
+  }
+  static deleteBatteryModel(id) {
+    const db2 = getDb();
+    const index = db2.batteryModels.findIndex((m) => m.id === id);
+    if (index === -1) {
+      throw new Error("\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    }
+    const batteriesWithModel = db2.batteries.filter((b) => b.modelId === id);
+    if (batteriesWithModel.length > 0) {
+      throw new Error(
+        `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0448\u0430\u0431\u043B\u043E\u043D "${db2.batteryModels[index].name}": \u0432 \u043F\u0430\u0440\u043A\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u043E ${batteriesWithModel.length} \u0431\u0430\u0442\u0430\u0440\u0435\u0439 \u044D\u0442\u043E\u0439 \u043C\u043E\u0434\u0435\u043B\u0438 (${batteriesWithModel.map((b) => b.serialNumber).join(", ")})`
+      );
+    }
+    const removed = db2.batteryModels.splice(index, 1)[0];
+    saveDb();
+    return removed;
+  }
+  static enrichBattery(bat, db2) {
+    const bike = bat.installedBikeId ? db2.bikes.find((b) => b.id === bat.installedBikeId) : null;
+    const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
+    const batModel = bat.modelId ? db2.batteryModels.find((m) => m.id === bat.modelId) : null;
+    const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+    const activeRental = activeRentals.find(
+      (r) => r.batteryIds && r.batteryIds.includes(bat.id) || bat.installedBikeId && r.bikeId === bat.installedBikeId || bat.issuedBikeId && r.bikeId === bat.issuedBikeId
+    );
+    let currentRental = null;
+    if (activeRental) {
+      const client = db2.clients.find((c) => c.id === activeRental.clientId);
+      const rentalBike = activeRental.bikeId ? db2.bikes.find((b) => b.id === activeRental.bikeId) : null;
+      currentRental = {
+        id: activeRental.id,
+        rentalNumber: activeRental.rentalNumber,
+        clientId: activeRental.clientId,
+        clientName: client?.fullName || "\u041A\u0443\u0440\u044C\u0435\u0440",
+        clientPhone: client?.phone || null,
+        bikeId: activeRental.bikeId || null,
+        bikeInventoryNumber: rentalBike?.inventoryNumber || null,
+        isSpare: bat.status === "ISSUED_SPARE" || (activeRental.bikeId ? bat.installedBikeId !== activeRental.bikeId : false)
+      };
+    }
+    const targetIssuedBikeId = bat.issuedBikeId || (bat.status === "ISSUED_SPARE" && activeRental ? activeRental.bikeId : null);
+    const issuedBikeRecord = targetIssuedBikeId ? db2.bikes.find((b) => b.id === targetIssuedBikeId) : null;
+    const issuedBikeModel = issuedBikeRecord ? db2.models.find((m) => m.id === issuedBikeRecord.modelId) : null;
+    const issuedBike = issuedBikeRecord ? {
+      id: issuedBikeRecord.id,
+      inventoryNumber: issuedBikeRecord.inventoryNumber,
+      status: issuedBikeRecord.status,
+      modelName: issuedBikeModel?.name,
+      currentLocation: issuedBikeRecord.currentLocation
+    } : null;
+    return {
+      ...bat,
+      modelName: batModel?.name || bat.modelName,
+      installedBike: bike ? {
+        id: bike.id,
+        inventoryNumber: bike.inventoryNumber,
+        status: bike.status,
+        modelName: bikeModel?.name,
+        currentLocation: bike.currentLocation
+      } : null,
+      issuedBike,
+      currentRental
+    };
+  }
+  static getAll(filters) {
+    const db2 = getDb();
+    let list = db2.batteries.map((bat) => this.enrichBattery(bat, db2));
+    if (filters?.status) {
+      list = list.filter((b) => b.status === filters.status);
+    }
+    if (filters?.voltage) {
+      list = list.filter((b) => b.voltage === Number(filters.voltage));
+    }
+    if (filters?.modelId) {
+      list = list.filter((b) => b.modelId === filters.modelId);
+    }
+    if (filters?.bikeId) {
+      list = list.filter((b) => b.installedBikeId === filters.bikeId);
+    }
+    if (filters?.search) {
+      const q = filters.search.toLowerCase().trim();
+      list = list.filter(
+        (b) => b.serialNumber.toLowerCase().includes(q) || b.modelName && b.modelName.toLowerCase().includes(q) || b.notes && b.notes.toLowerCase().includes(q) || b.installedBike && b.installedBike.inventoryNumber.toLowerCase().includes(q) || b.issuedBike && b.issuedBike.inventoryNumber.toLowerCase().includes(q) || b.currentRental && b.currentRental.clientName.toLowerCase().includes(q) || b.currentRental && b.currentRental.rentalNumber.toLowerCase().includes(q)
+      );
+    }
+    return list.sort((a, b) => a.serialNumber.localeCompare(b.serialNumber, void 0, { numeric: true }));
+  }
+  static getById(id) {
+    const db2 = getDb();
+    const bat = db2.batteries.find((b) => b.id === id);
+    if (!bat) return null;
+    return this.enrichBattery(bat, db2);
+  }
+  static getStats() {
+    const db2 = getDb();
+    const all = db2.batteries;
+    const total = all.length;
+    const available = all.filter((b) => b.status === "AVAILABLE").length;
+    const installed = all.filter((b) => b.status === "INSTALLED").length;
+    const issuedSpare = all.filter((b) => b.status === "ISSUED_SPARE").length;
+    const inMaintenance = all.filter((b) => b.status === "IN_MAINTENANCE").length;
+    const decommissioned = all.filter((b) => b.status === "DECOMMISSIONED").length;
+    return {
+      total,
+      available,
+      installed,
+      issuedSpare,
+      inMaintenance,
+      decommissioned
+    };
+  }
+  static create(data) {
+    const db2 = getDb();
+    const cleanSerial = data.serialNumber?.trim();
+    if (!cleanSerial) {
+      throw new Error("\u0421\u0435\u0440\u0438\u0439\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D");
+    }
+    if (db2.batteries.some((b) => b.serialNumber.toLowerCase() === cleanSerial.toLowerCase())) {
+      throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u0441 \u0441\u0435\u0440\u0438\u0439\u043D\u044B\u043C \u043D\u043E\u043C\u0435\u0440\u043E\u043C ${cleanSerial} \u0443\u0436\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0435`);
+    }
+    let modelName = null;
+    let voltage = Number(data.voltage) || 60;
+    let capacityAh = Number(data.capacityAh) || 20;
+    let chemistry = data.chemistry || "Li-ion";
+    let purchasePrice = data.purchasePrice !== void 0 ? Number(data.purchasePrice) : 0;
+    let salePrice = data.salePrice !== void 0 ? Number(data.salePrice) : 0;
+    if (data.modelId) {
+      const batModel = db2.batteryModels.find((m) => m.id === data.modelId);
+      if (batModel) {
+        modelName = batModel.name;
+        voltage = batModel.voltage;
+        capacityAh = batModel.capacityAh;
+        if (batModel.chemistry) {
+          chemistry = batModel.chemistry;
+        }
+        if (data.purchasePrice === void 0 && batModel.purchasePrice !== void 0) {
+          purchasePrice = batModel.purchasePrice;
+        }
+        if (data.salePrice === void 0 && batModel.salePrice !== void 0) {
+          salePrice = batModel.salePrice;
+        }
+      }
+    }
+    const newBattery = {
+      id: `bat-${Date.now()}`,
+      serialNumber: cleanSerial,
+      modelId: data.modelId || null,
+      modelName,
+      voltage,
+      capacityAh,
+      chemistry,
+      status: data.status || "AVAILABLE",
+      installedBikeId: null,
+      notes: data.notes || null,
+      purchasePrice,
+      salePrice,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    db2.batteries.push(newBattery);
+    saveDb();
+    return this.getById(newBattery.id);
+  }
+  static update(id, data) {
+    const db2 = getDb();
+    const index = db2.batteries.findIndex((b) => b.id === id);
+    if (index === -1) {
+      throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    }
+    const existing = db2.batteries[index];
+    if (data.status && data.status !== existing.status) {
+      if (data.status === "INSTALLED" && !existing.installedBikeId || data.status === "ISSUED_SPARE" && !existing.issuedBikeId) {
+        throw new Error("\u0414\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438 \u0438\u043B\u0438 \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0438 \u0410\u041A\u0411 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u043A\u0443 \u043A \u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434\u0443 \u0438\u043B\u0438 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443");
+      }
+      if (data.status !== "INSTALLED" && data.status !== "ISSUED_SPARE") {
+        if (existing.installedBikeId) {
+          const bike = db2.bikes.find((b) => b.id === existing.installedBikeId);
+          if (bike?.batteryId === id) bike.batteryId = null;
+        }
+        existing.installedBikeId = null;
+        existing.issuedBikeId = null;
+        for (const rental of db2.rentals.filter(isOpenRental)) rental.batteryIds = rental.batteryIds?.filter((batteryId) => batteryId !== id);
+      }
+    }
+    if (data.serialNumber && data.serialNumber !== db2.batteries[index].serialNumber) {
+      const cleanSerial = data.serialNumber.trim();
+      const duplicate = db2.batteries.find(
+        (b) => b.id !== id && b.serialNumber.toLowerCase() === cleanSerial.toLowerCase()
+      );
+      if (duplicate) {
+        throw new Error(`\u0421\u0435\u0440\u0438\u0439\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440 ${cleanSerial} \u0443\u0436\u0435 \u0437\u0430\u043D\u044F\u0442 \u0434\u0440\u0443\u0433\u0438\u043C \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u043E\u043C`);
+      }
+      db2.batteries[index].serialNumber = cleanSerial;
+    }
+    if (data.modelId !== void 0) {
+      db2.batteries[index].modelId = data.modelId;
+      if (data.modelId) {
+        const batModel = db2.batteryModels.find((m) => m.id === data.modelId);
+        if (batModel) {
+          db2.batteries[index].modelName = batModel.name;
+          db2.batteries[index].voltage = batModel.voltage;
+          db2.batteries[index].capacityAh = batModel.capacityAh;
+          if (batModel.chemistry) {
+            db2.batteries[index].chemistry = batModel.chemistry;
+          }
+        }
+      }
+    }
+    if (data.voltage !== void 0) db2.batteries[index].voltage = Number(data.voltage);
+    if (data.capacityAh !== void 0) db2.batteries[index].capacityAh = Number(data.capacityAh);
+    if (data.chemistry !== void 0) db2.batteries[index].chemistry = data.chemistry;
+    if (data.status !== void 0) db2.batteries[index].status = data.status;
+    if (data.notes !== void 0) db2.batteries[index].notes = data.notes;
+    if (data.purchasePrice !== void 0) db2.batteries[index].purchasePrice = Number(data.purchasePrice);
+    if (data.salePrice !== void 0) db2.batteries[index].salePrice = Number(data.salePrice);
+    if (data.cycleCount !== void 0) db2.batteries[index].cycleCount = Math.max(0, Number(data.cycleCount));
+    if (data.healthPercent !== void 0) db2.batteries[index].healthPercent = Math.min(100, Math.max(0, Number(data.healthPercent)));
+    db2.batteries[index].updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    saveDb();
+    return this.getById(id);
+  }
+  static delete(id) {
+    const db2 = getDb();
+    const index = db2.batteries.findIndex((b) => b.id === id);
+    if (index === -1) {
+      throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    }
+    const battery = db2.batteries[index];
+    if (battery.installedBikeId) {
+      const bike = db2.bikes.find((b) => b.id === battery.installedBikeId);
+      throw new Error(
+        `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0410\u041A\u0411 ${battery.serialNumber}: \u043E\u043D \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u043D\u0430 \u0431\u0430\u0439\u043A\u0435 ${bike ? bike.inventoryNumber : battery.installedBikeId}. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043D\u0438\u043C\u0438\u0442\u0435 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u0441 \u0431\u0430\u0439\u043A\u0430.`
+      );
+    }
+    const bikeUsingBattery = db2.bikes.find((b) => b.batteryId === id);
+    if (bikeUsingBattery) {
+      throw new Error(
+        `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0410\u041A\u0411 ${battery.serialNumber}: \u043E\u043D \u0447\u0438\u0441\u043B\u0438\u0442\u0441\u044F \u0437\u0430 \u0431\u0430\u0439\u043A\u043E\u043C ${bikeUsingBattery.inventoryNumber}.`
+      );
+    }
+    if (battery.status === "ISSUED_SPARE") {
+      throw new Error(
+        `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0410\u041A\u0411 ${battery.serialNumber}: \u043E\u043D \u0432\u044B\u0434\u0430\u043D \u043A\u0443\u0440\u044C\u0435\u0440\u0443 \u043A\u0430\u043A \u0434\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439.`
+      );
+    }
+    const removed = db2.batteries.splice(index, 1)[0];
+    saveDb();
+    return removed;
+  }
+  static attachToBike(batteryId, bikeId) {
+    const db2 = getDb();
+    const bike = db2.bikes.find((b) => b.id === bikeId);
+    if (!bike) throw new Error("\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status)) throw new Error("\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0410\u041A\u0411 \u043D\u0430 \u0442\u0435\u0445\u043D\u0438\u043A\u0443, \u0432\u044B\u0431\u044B\u0432\u0448\u0443\u044E \u0438\u0437 \u043F\u0430\u0440\u043A\u0430");
+    const newBattery = db2.batteries.find((b) => b.id === batteryId);
+    if (!newBattery) throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (newBattery.status === "DECOMMISSIONED" || newBattery.status === "SOLD" || newBattery.status === "IN_MAINTENANCE") {
+      throw new Error(`\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0441\u043F\u0438\u0441\u0430\u043D\u043D\u044B\u0439 \u0438\u043B\u0438 \u043F\u0440\u043E\u0434\u0430\u043D\u043D\u044B\u0439 \u0410\u041A\u0411 (${newBattery.status})`);
+    }
+    const sourceRental = activeRentalForBattery(batteryId);
+    const targetRental = activeRentalForBike(bikeId);
+    if (sourceRental && sourceRental.id !== targetRental?.id) throw new Error("\u0410\u041A\u0411 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 \u0434\u0440\u0443\u0433\u0438\u043C \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
+    const oldBatteryId = bike.batteryId;
+    if (bike.batteryId && bike.batteryId !== batteryId) {
+      const oldBattery = db2.batteries.find((b) => b.id === bike.batteryId);
+      if (oldBattery) {
+        oldBattery.installedBikeId = null;
+        oldBattery.status = "AVAILABLE";
+        oldBattery.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+      }
+    }
+    if (newBattery.installedBikeId && newBattery.installedBikeId !== bikeId) {
+      const previousBike = db2.bikes.find((b) => b.id === newBattery.installedBikeId);
+      if (previousBike) {
+        previousBike.batteryId = null;
+        previousBike.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+      }
+    }
+    newBattery.installedBikeId = bike.id;
+    newBattery.status = "INSTALLED";
+    newBattery.issuedBikeId = null;
+    newBattery.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    bike.batteryId = newBattery.id;
+    bike.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    if (targetRental) {
+      targetRental.batteryIds = [.../* @__PURE__ */ new Set([...(targetRental.batteryIds || []).filter((id) => id !== oldBatteryId), newBattery.id])];
+      targetRental.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+    }
+    saveDb();
+    return {
+      battery: this.getById(newBattery.id),
+      bike: {
+        ...bike,
+        battery: newBattery
+      }
+    };
+  }
+  static returnToWarehouse(batteryId) {
+    const db2 = getDb();
+    const battery = db2.batteries.find((b) => b.id === batteryId);
+    if (!battery) throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (battery.status === "SOLD" || battery.status === "DECOMMISSIONED") throw new Error("\u0410\u041A\u0411 \u0432\u044B\u0431\u044B\u043B \u0438\u0437 \u043F\u0430\u0440\u043A\u0430 \u0438 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0431\u044B\u0442\u044C \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0451\u043D \u043D\u0430 \u0441\u043A\u043B\u0430\u0434");
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    if (battery.installedBikeId) {
+      const bike = db2.bikes.find((b) => b.id === battery.installedBikeId);
+      if (bike) {
+        bike.batteryId = null;
+        bike.updatedAt = now;
+      }
+      battery.installedBikeId = null;
+    }
+    const bikeHolding = db2.bikes.find((b) => b.batteryId === batteryId);
+    if (bikeHolding) {
+      bikeHolding.batteryId = null;
+      bikeHolding.updatedAt = now;
+    }
+    const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+    for (const r of activeRentals) {
+      if (r.batteryIds && r.batteryIds.includes(batteryId)) {
+        r.batteryIds = r.batteryIds.filter((id) => id !== batteryId);
+        r.updatedAt = now;
+      }
+    }
+    battery.status = "AVAILABLE";
+    battery.issuedBikeId = null;
+    battery.installedBikeId = null;
+    battery.updatedAt = now;
+    saveDb();
+    return {
+      success: true,
+      message: `\u0410\u041A\u0411 ${battery.serialNumber} \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0435\u043D \u043D\u0430 \u0441\u043A\u043B\u0430\u0434`,
+      battery: this.getById(battery.id)
+    };
+  }
+  static detachFromBike(bikeId) {
+    const db2 = getDb();
+    const bike = db2.bikes.find((b) => b.id === bikeId);
+    if (!bike) throw new Error("\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status)) throw new Error("\u0422\u0435\u0445\u043D\u0438\u043A\u0430 \u0432\u044B\u0431\u044B\u043B\u0430 \u0438\u0437 \u043F\u0430\u0440\u043A\u0430");
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    let detachedBattery = null;
+    const targetBatteryId = bike.batteryId;
+    if (targetBatteryId) {
+      const battery = db2.batteries.find((b) => b.id === targetBatteryId);
+      if (battery) {
+        battery.installedBikeId = null;
+        battery.issuedBikeId = null;
+        battery.status = "AVAILABLE";
+        battery.updatedAt = now;
+        detachedBattery = battery;
+      }
+      bike.batteryId = null;
+      bike.updatedAt = now;
+    } else {
+      const orphanBattery = db2.batteries.find((b) => b.installedBikeId === bikeId);
+      if (orphanBattery) {
+        orphanBattery.installedBikeId = null;
+        orphanBattery.issuedBikeId = null;
+        orphanBattery.status = "AVAILABLE";
+        orphanBattery.updatedAt = now;
+        detachedBattery = orphanBattery;
+      }
+    }
+    if (detachedBattery) {
+      const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+      const rental = activeRentals.find((r) => r.bikeId === bikeId);
+      if (rental && rental.batteryIds) {
+        rental.batteryIds = rental.batteryIds.filter((id) => id !== detachedBattery.id);
+        rental.updatedAt = now;
+      }
+    }
+    saveDb();
+    return {
+      bike: {
+        ...bike,
+        battery: null
+      },
+      battery: detachedBattery ? this.getById(detachedBattery.id) : null
+    };
+  }
+  static swapBatteryGeneral({
+    oldBatteryId,
+    newBatteryId,
+    sendOldToCharging = false
+  }) {
+    const db2 = getDb();
+    const oldBat = db2.batteries.find((b) => b.id === oldBatteryId);
+    if (!oldBat) throw new Error("\u0422\u0435\u043A\u0443\u0449\u0438\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (["SOLD", "DECOMMISSIONED"].includes(oldBat.status)) throw new Error("\u0422\u0435\u043A\u0443\u0449\u0438\u0439 \u0410\u041A\u0411 \u0432\u044B\u0431\u044B\u043B \u0438\u0437 \u043F\u0430\u0440\u043A\u0430");
+    const newBat = db2.batteries.find((b) => b.id === newBatteryId);
+    if (!newBat) throw new Error("\u041D\u043E\u0432\u044B\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (oldBat.id === newBat.id) throw new Error("\u0414\u043B\u044F \u0437\u0430\u043C\u0435\u043D\u044B \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0434\u0440\u0443\u0433\u043E\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440");
+    if (newBat.installedBikeId || newBat.issuedBikeId || activeRentalForBattery(newBat.id)) throw new Error("\u041D\u043E\u0432\u044B\u0439 \u0410\u041A\u0411 \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 \u0442\u0435\u0445\u043D\u0438\u043A\u043E\u0439 \u0438\u043B\u0438 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
+    if (newBat.status !== "AVAILABLE") {
+      throw new Error(`\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${newBat.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D (\u0441\u0442\u0430\u0442\u0443\u0441: ${newBat.status})`);
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+    const rental = activeRentals.find(
+      (r) => r.batteryIds && r.batteryIds.includes(oldBat.id) || oldBat.installedBikeId && r.bikeId === oldBat.installedBikeId || oldBat.issuedBikeId && r.bikeId === oldBat.issuedBikeId
+    );
+    if (oldBat.status === "ISSUED_SPARE" || !oldBat.installedBikeId && rental) {
+      newBat.status = "ISSUED_SPARE";
+      newBat.issuedBikeId = oldBat.issuedBikeId || (rental ? rental.bikeId : null);
+      newBat.installedBikeId = null;
+      newBat.updatedAt = now;
+      if (rental) {
+        if (!rental.batteryIds) rental.batteryIds = [];
+        rental.batteryIds = rental.batteryIds.map((id) => id === oldBat.id ? newBat.id : id);
+        if (!rental.batteryIds.includes(newBat.id)) {
+          rental.batteryIds.push(newBat.id);
+        }
+        rental.updatedAt = now;
+      }
+      oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
+      oldBat.issuedBikeId = null;
+      oldBat.installedBikeId = null;
+      oldBat.updatedAt = now;
+    } else if (oldBat.installedBikeId) {
+      const bike = db2.bikes.find((b) => b.id === oldBat.installedBikeId);
+      if (bike) {
+        bike.batteryId = newBat.id;
+        bike.updatedAt = now;
+      }
+      newBat.status = "INSTALLED";
+      newBat.installedBikeId = oldBat.installedBikeId;
+      newBat.issuedBikeId = null;
+      newBat.updatedAt = now;
+      if (rental) {
+        if (!rental.batteryIds) rental.batteryIds = [];
+        rental.batteryIds = rental.batteryIds.map((id) => id === oldBat.id ? newBat.id : id);
+        if (!rental.batteryIds.includes(newBat.id)) {
+          rental.batteryIds.push(newBat.id);
+        }
+        rental.updatedAt = now;
+      }
+      oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
+      oldBat.installedBikeId = null;
+      oldBat.issuedBikeId = null;
+      oldBat.updatedAt = now;
+    } else {
+      newBat.status = "AVAILABLE";
+      newBat.updatedAt = now;
+      oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
+      oldBat.updatedAt = now;
+    }
+    saveDb();
+    return {
+      success: true,
+      message: `\u0417\u0430\u043C\u0435\u043D\u0430 \u0410\u041A\u0411 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0430: ${oldBat.serialNumber} \u2794 ${newBat.serialNumber}`,
+      oldBattery: this.getById(oldBat.id),
+      newBattery: this.getById(newBat.id)
+    };
+  }
+  static swapBattery(bikeId, newBatteryId) {
+    return this.attachToBike(newBatteryId, bikeId);
+  }
+};
+
 // src/repositories/bike.repository.ts
 var BikeRepository = class {
   static getAll(filters) {
@@ -63548,6 +64116,11 @@ var BikeRepository = class {
       throw new Error(`\u0411\u0430\u0439\u043A \u0441 \u0438\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u043D\u044B\u043C \u043D\u043E\u043C\u0435\u0440\u043E\u043C ${data.inventoryNumber} \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442`);
     }
     const model = db2.models.find((m) => m.id === data.modelId);
+    if (!model) throw new Error("\u041C\u043E\u0434\u0435\u043B\u044C \u0431\u0430\u0439\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+    if (data.batteryId) {
+      const battery = db2.batteries.find((b) => b.id === data.batteryId);
+      if (!battery || battery.status !== "AVAILABLE" || battery.installedBikeId || battery.issuedBikeId) throw new Error("\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0410\u041A\u0411 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0438");
+    }
     const purchasePrice = data.purchasePrice !== void 0 ? Number(data.purchasePrice) : model?.purchasePrice ?? 0;
     const salePrice = data.salePrice !== void 0 ? Number(data.salePrice) : model?.salePrice ?? 0;
     const newBike = {
@@ -63582,6 +64155,14 @@ var BikeRepository = class {
     const db2 = getDb();
     const index = db2.bikes.findIndex((b) => b.id === id);
     if (index === -1) return null;
+    const bike = db2.bikes[index];
+    if (data.inventoryNumber && db2.bikes.some((b) => b.id !== id && b.inventoryNumber.toLowerCase() === data.inventoryNumber.trim().toLowerCase())) throw new Error("\u0418\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440 \u0443\u0436\u0435 \u0437\u0430\u043D\u044F\u0442");
+    if (data.modelId && !db2.models.some((m) => m.id === data.modelId)) throw new Error("\u041C\u043E\u0434\u0435\u043B\u044C \u0431\u0430\u0439\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+    if (data.status && data.status !== bike.status && activeRentalForBike(id) && data.status !== "RENTED" && data.status !== "IN_MAINTENANCE") throw new Error("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0439 \u0434\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B");
+    if (data.batteryId !== void 0 && data.batteryId !== bike.batteryId) {
+      if (data.batteryId) BatteryRepository.attachToBike(data.batteryId, id);
+      else BatteryRepository.detachFromBike(id);
+    }
     db2.bikes[index] = {
       ...db2.bikes[index],
       ...data,
@@ -63613,12 +64194,12 @@ var BikeRepository = class {
       throw new Error(`\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0431\u0430\u0439\u043A, \u0442\u0430\u043A \u043A\u0430\u043A \u043E\u043D \u043D\u0430\u0445\u043E\u0434\u0438\u0442\u0441\u044F \u0432 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0439 \u0430\u0440\u0435\u043D\u0434\u0435 (${activeRental.rentalNumber})`);
     }
     const removed = db2.bikes.splice(index, 1)[0];
-    const attachedBattery = db2.batteries.find(
+    const attachedBatteries = db2.batteries.filter(
       (b) => b.installedBikeId === id || removed.batteryId && b.id === removed.batteryId
     );
-    if (attachedBattery) {
+    for (const attachedBattery of attachedBatteries) {
       attachedBattery.installedBikeId = null;
-      attachedBattery.status = "AVAILABLE";
+      if (attachedBattery.status === "INSTALLED") attachedBattery.status = "AVAILABLE";
       attachedBattery.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
     }
     saveDb();
@@ -64380,6 +64961,9 @@ var RentalRepository = class {
     return { success: true, message: "\u0428\u0430\u0431\u043B\u043E\u043D \u0442\u0430\u0440\u0438\u0444\u0430 \u0443\u0434\u0430\u043B\u0435\u043D" };
   }
   static create(data) {
+    return withDbTransaction(() => this.createInternal(data));
+  }
+  static createInternal(data) {
     const db2 = getDb();
     const client = db2.clients.find((c) => c.id === data.clientId);
     if (!client) throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
@@ -64398,16 +64982,28 @@ var RentalRepository = class {
     if (bike.status !== "AVAILABLE") {
       throw new Error(`\u0411\u0430\u0439\u043A ${bike.inventoryNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438 (\u0442\u0435\u043A\u0443\u0449\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441: ${bike.status})`);
     }
+    if (activeRentalForBike(bike.id)) throw new Error("\u0411\u0430\u0439\u043A \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
     const tariff = db2.tariffs.find((t) => t.id === data.tariffId);
     if (!tariff) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (!tariff.isActive) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D");
+    if (tariff.bikeModelId && tariff.bikeModelId !== bike.modelId) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043F\u043E\u0434\u0445\u043E\u0434\u0438\u0442 \u0434\u043B\u044F \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439 \u043C\u043E\u0434\u0435\u043B\u0438");
     const outfits = db2.outfits.filter((o) => data.outfitIds.includes(o.id));
+    if (outfits.length !== new Set(data.outfitIds).size) throw new Error("\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u0430\u044F \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+    if (outfits.some((o) => db2.rentals.some((r) => isOpenRental(r) && r.outfitIds.includes(o.id)))) {
+      throw new Error("\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0430 \u0437\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
+    }
     const unavailableOutfit = outfits.find((o) => o.status !== "IN_STOCK");
     if (unavailableOutfit) {
       throw new Error(`\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 "${unavailableOutfit.name}" \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u043D\u0430 \u0441\u043A\u043B\u0430\u0434\u0435 (\u0441\u0442\u0430\u0442\u0443\u0441: ${unavailableOutfit.status})`);
     }
-    const requestedBatteryIds = data.batteryIds || [];
+    const requestedBatteryIds = [.../* @__PURE__ */ new Set([...data.batteryIds || [], ...bike.batteryId ? [bike.batteryId] : []])];
     const batteries = db2.batteries.filter((b) => requestedBatteryIds.includes(b.id));
+    if (batteries.length !== requestedBatteryIds.length) throw new Error("\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     for (const b of batteries) {
+      if (activeRentalForBattery(b.id)) throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${b.serialNumber} \u0443\u0436\u0435 \u0432\u044B\u0434\u0430\u043D \u043F\u043E \u0434\u0440\u0443\u0433\u043E\u043C\u0443 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443`);
+      if (b.status === "SOLD" || b.status === "DECOMMISSIONED" || b.status === "IN_MAINTENANCE") {
+        throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${b.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438`);
+      }
       if (b.status !== "AVAILABLE" && b.installedBikeId !== bike.id && b.id !== bike.batteryId) {
         throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${b.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438 (\u0442\u0435\u043A\u0443\u0449\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441: ${b.status})`);
       }
@@ -64416,7 +65012,8 @@ var RentalRepository = class {
     const paymentIntervalDays = data.paymentIntervalDays ?? tariff.paymentIntervalDays ?? (isRentToOwn ? 7 : tariff.durationDays);
     const totalBuyoutPrice = data.totalBuyoutPrice ?? tariff.totalBuyoutPrice ?? (isRentToOwn ? tariff.price : void 0);
     const installmentPayment = data.installmentPayment ?? tariff.installmentPayment ?? (isRentToOwn ? tariff.price : void 0);
-    const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? installmentPayment ?? tariff.price : tariff.price);
+    const discount = ClientRepository.computeClientLoyalty(client).loyaltyTier.discountRentalPercent;
+    const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? installmentPayment ?? tariff.price : Math.round(tariff.price * (1 - discount / 100) * 100) / 100);
     const now = getSystemTime();
     let startDate = now;
     if (data.startDate) {
@@ -64425,10 +65022,11 @@ var RentalRepository = class {
         startDate = parsedStart;
       }
     }
-    const nextPaymentDue = isRentToOwn ? new Date(startDate.getTime() + paymentIntervalDays * 864e5) : new Date(startDate.getTime() + tariff.durationDays * 864e5);
     const effectiveDurationDays = data.durationDays && data.durationDays > 0 ? data.durationDays : tariff.durationDays;
+    const nextPaymentDue = isRentToOwn ? new Date(startDate.getTime() + paymentIntervalDays * 864e5) : new Date(startDate.getTime() + effectiveDurationDays * 864e5);
     const expiresAt = new Date(startDate.getTime() + effectiveDurationDays * 864e5);
-    const rentalNumber = data.rentalNumber && data.rentalNumber.trim() ? data.rentalNumber.trim() : `RNT-${startDate.getFullYear()}-${(db2.rentals.length + 1).toString().padStart(3, "0")}`;
+    const rentalNumber = data.rentalNumber && data.rentalNumber.trim() ? data.rentalNumber.trim() : nextNumber(`RNT-${startDate.getFullYear()}`, db2.rentals.map((r) => r.rentalNumber));
+    if (db2.rentals.some((r) => r.rentalNumber.toLowerCase() === rentalNumber.toLowerCase())) throw new Error("\u041D\u043E\u043C\u0435\u0440 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442");
     const depositAmount = data.customDeposit !== void 0 ? data.customDeposit : tariff.depositRequired;
     const rental = {
       id: `rnt-${Date.now()}`,
@@ -64480,6 +65078,7 @@ var RentalRepository = class {
         id: `pay-${Date.now()}-1`,
         rentalId: rental.id,
         clientId: rental.clientId,
+        cashierId: getCurrentUser()?.id || rental.managerId,
         type: isRentToOwn ? "BUYOUT" : "RENTAL",
         amount: firstPaymentAmount,
         method: data.paymentMethod,
@@ -64493,15 +65092,20 @@ var RentalRepository = class {
         rentalId: rental.id,
         clientId: rental.clientId,
         type: "DEPOSIT",
+        cashierId: getCurrentUser()?.id || rental.managerId,
         amount: depositAmount,
         method: data.paymentMethod,
         description: `\u041E\u0431\u0435\u0441\u043F\u0435\u0447\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u0437\u0430\u043B\u043E\u0433 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`,
         createdAt: startDate.toISOString()
       });
     }
+    if (isRentToOwn && totalBuyoutPrice && firstPaymentAmount >= totalBuyoutPrice) this.finalizeBuyout(rental.id);
     return this.getById(rental.id);
   }
   static renew(id, data) {
+    return withDbTransaction(() => this.renewInternal(id, data));
+  }
+  static renewInternal(id, data) {
     const db2 = getDb();
     const rental = db2.rentals.find((r) => r.id === id);
     if (!rental) throw new Error("\u0410\u0440\u0435\u043D\u0434\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
@@ -64511,7 +65115,12 @@ var RentalRepository = class {
     const tariff = db2.tariffs.find((t) => t.id === rental.tariffId);
     const isRentToOwn = rental.type === "RENT_TO_OWN";
     const durationDays = data.durationDays || rental.paymentIntervalDays || tariff?.paymentIntervalDays || tariff?.durationDays || 7;
-    const amount = data.amount ?? (isRentToOwn ? rental.installmentPayment ?? tariff?.installmentPayment ?? tariff?.price ?? 6e3 : tariff?.price ?? 6e3);
+    const paid = db2.payments.filter((p) => p.rentalId === id && (p.type === "RENTAL" || p.type === "BUYOUT")).reduce((sum, p) => sum + p.amount, 0);
+    const target = rental.totalBuyoutPrice ?? tariff?.totalBuyoutPrice ?? tariff?.price ?? 0;
+    const defaultAmount = isRentToOwn ? Math.min(rental.installmentPayment ?? tariff?.installmentPayment ?? tariff?.price ?? 6e3, Math.max(0, target - paid)) : tariff?.price ?? 6e3;
+    const amount = data.amount ?? defaultAmount;
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("\u0421\u0443\u043C\u043C\u0430 \u043F\u043B\u0430\u0442\u0435\u0436\u0430 \u0434\u043E\u043B\u0436\u043D\u0430 \u0431\u044B\u0442\u044C \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439");
+    if (data.isBuyoutFinal && (!isRentToOwn || paid + amount < target)) throw new Error("\u0414\u043B\u044F \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u0432\u044B\u043A\u0443\u043F\u0430 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E \u043F\u043E\u0433\u0430\u0441\u0438\u0442\u044C \u043E\u0441\u0442\u0430\u0442\u043E\u043A \u0434\u043E\u043B\u0433\u0430");
     const now = getSystemTime();
     const currentDue = new Date(rental.nextPaymentDue || rental.expiresAt);
     const baseDate = currentDue > now ? currentDue : now;
@@ -64520,6 +65129,7 @@ var RentalRepository = class {
     db2.payments.push({
       id: `pay-${Date.now()}`,
       rentalId: rental.id,
+      cashierId: getCurrentUser()?.id || rental.managerId,
       clientId: rental.clientId,
       type: paymentType,
       amount,
@@ -64532,7 +65142,7 @@ var RentalRepository = class {
     const targetPrice = rental.totalBuyoutPrice || tariff?.totalBuyoutPrice || tariff?.price || 0;
     const isFullyPaid = isRentToOwn && targetPrice > 0 && totalPaid >= targetPrice;
     if (data.isBuyoutFinal || isFullyPaid) {
-      rental.status = "BOUGHT_OUT";
+      this.finalizeBuyout(rental.id);
       rental.updatedAt = now.toISOString();
       if (data.notes) {
         rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u0412\u044B\u043A\u0443\u043F ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
@@ -64542,7 +65152,7 @@ var RentalRepository = class {
       const bike = db2.bikes.find((b) => b.id === rental.bikeId);
       const client = db2.clients.find((c) => c.id === rental.clientId);
       if (bike) {
-        bike.status = "SOLD";
+        bike.status = "BOUGHT_OUT";
         bike.currentLocation = `\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u043C ${client?.fullName || ""} (\u0434\u043E\u0433\u043E\u0432\u043E\u0440 ${rental.rentalNumber})`;
         bike.updatedAt = now.toISOString();
       }
@@ -64559,16 +65169,46 @@ var RentalRepository = class {
     }
     return this.getById(rental.id);
   }
+  static finalizeBuyout(id) {
+    const db2 = getDb();
+    const rental = db2.rentals.find((r) => r.id === id);
+    if (!rental || rental.type !== "RENT_TO_OWN") return;
+    const now = getSystemTime().toISOString();
+    rental.status = "BOUGHT_OUT";
+    rental.closedAt = now;
+    rental.updatedAt = now;
+    const bike = db2.bikes.find((b) => b.id === rental.bikeId);
+    if (bike) {
+      bike.status = "BOUGHT_OUT";
+      bike.currentLocation = `\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`;
+      bike.updatedAt = now;
+    }
+    for (const battery of db2.batteries) {
+      if (rental.batteryIds?.includes(battery.id) || battery.id === bike?.batteryId || battery.installedBikeId === rental.bikeId || battery.issuedBikeId === rental.bikeId) {
+        battery.status = "SOLD";
+        battery.issuedBikeId = null;
+        battery.notes = `\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D \u0432 \u0441\u043E\u0441\u0442\u0430\u0432\u0435 \u043A\u043E\u043C\u043F\u043B\u0435\u043A\u0442\u0430 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`;
+        battery.updatedAt = now;
+      }
+    }
+  }
   static close(id, data) {
+    return withDbTransaction(() => this.closeInternal(id, data));
+  }
+  static closeInternal(id, data) {
     const db2 = getDb();
     const rental = db2.rentals.find((r) => r.id === id);
     if (!rental) throw new Error("\u0410\u0440\u0435\u043D\u0434\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
-    if (rental.status === "CLOSED") throw new Error("\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u044B\u0442");
+    const isBoughtOut = rental.status === "BOUGHT_OUT";
+    if (rental.status === "CLOSED" || isBoughtOut && rental.depositRefunded) throw new Error("\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D \u0438 \u0440\u0430\u0441\u0447\u0451\u0442\u044B \u0437\u0430\u043A\u0440\u044B\u0442\u044B");
+    if (new Set(data.outfitReturns.map((o) => o.outfitId)).size !== data.outfitReturns.length || data.outfitReturns.some((o) => !rental.outfitIds.includes(o.outfitId))) {
+      throw new Error("\u0412 \u0432\u043E\u0437\u0432\u0440\u0430\u0442\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u0430 \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u0430\u044F \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u0438\u043B\u0438 \u043F\u0440\u0435\u0434\u043C\u0435\u0442 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430");
+    }
     const bike = db2.bikes.find((b) => b.id === rental.bikeId);
     const client = db2.clients.find((c) => c.id === rental.clientId);
-    const now = /* @__PURE__ */ new Date();
+    const now = getSystemTime();
     let repairOrderCreated = null;
-    if (bike) {
+    if (bike && !isBoughtOut) {
       if (data.bikeMileageKm && data.bikeMileageKm > bike.mileageKm) {
         bike.mileageKm = data.bikeMileageKm;
       }
@@ -64576,11 +65216,15 @@ var RentalRepository = class {
         bike.status = "IN_MAINTENANCE";
         bike.currentLocation = "\u041C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0430\u044F \u0421\u0422\u041E (\u0432\u043E\u0437\u0432\u0440\u0430\u0442 \u0441 \u0434\u0435\u0444\u0435\u043A\u0442\u043E\u043C)";
         bike.note = data.defectDescription || "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u044B \u0434\u0435\u0444\u0435\u043A\u0442\u044B \u043F\u0440\u0438 \u043F\u0440\u0438\u0435\u043C\u043A\u0435 \u0438\u0437 \u0430\u0440\u0435\u043D\u0434\u044B";
-        const orderNumber = `REP-${now.getFullYear()}-${(db2.repairs.length + 1).toString().padStart(3, "0")}`;
+        const orderNumber = nextNumber(`REP-${now.getFullYear()}`, db2.repairs.map((r) => r.orderNumber));
         repairOrderCreated = {
           id: `rep-${Date.now()}`,
           orderNumber,
           bikeId: bike.id,
+          clientId: rental.clientId,
+          clientName: client?.fullName || null,
+          clientPhone: client?.phone || null,
+          itemType: "BIKE",
           mechanicId: getCurrentUser()?.id || db2.users.find((u) => u.role === "MECHANIC")?.id || db2.users[0]?.id || "usr-bxleth",
           status: "DIAGNOSTICS",
           faultType: data.faultType || "CLIENT_FAULT",
@@ -64600,21 +65244,22 @@ var RentalRepository = class {
       bike.updatedAt = now.toISOString();
     }
     let totalDeduction = 0;
-    data.outfitReturns.forEach((item) => {
+    const returns = rental.outfitIds.map((outfitId) => data.outfitReturns.find((item) => item.outfitId === outfitId) || { outfitId, condition: "OK", deductionAmount: 0 });
+    returns.forEach((item) => {
       const outfit = db2.outfits.find((o) => o.id === item.outfitId);
       if (outfit) {
         if (item.condition === "OK") {
           outfit.status = "IN_STOCK";
         } else if (item.condition === "DAMAGED") {
           outfit.status = "DAMAGED";
-          totalDeduction += item.deductionAmount || 500;
+          totalDeduction += item.deductionAmount ?? 500;
         } else if (item.condition === "LOST") {
           outfit.status = "LOST";
-          totalDeduction += item.deductionAmount || outfit.depositValue;
+          totalDeduction += item.deductionAmount ?? outfit.depositValue;
         }
       }
     });
-    const initialDeposit = rental.depositAmount || 0;
+    const initialDeposit = rental.depositRefunded ? 0 : rental.depositAmount || 0;
     const netRefund = Math.max(0, initialDeposit - totalDeduction);
     if (netRefund > 0) {
       db2.payments.push({
@@ -64622,6 +65267,7 @@ var RentalRepository = class {
         rentalId: rental.id,
         clientId: rental.clientId,
         type: "DEPOSIT_REFUND",
+        cashierId: getCurrentUser()?.id || rental.managerId,
         amount: netRefund,
         method: data.refundMethod || "CASH",
         description: `\u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u0437\u0430\u043B\u043E\u0433\u0430 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber} (\u0443\u0434\u0435\u0440\u0436\u0430\u043D\u043E ${totalDeduction} \u0440\u0443\u0431.)`,
@@ -64629,12 +65275,14 @@ var RentalRepository = class {
       });
       rental.depositRefunded = true;
     }
-    rental.status = rental.type === "RENT_TO_OWN" ? "BOUGHT_OUT" : "CLOSED";
+    rental.status = isBoughtOut ? "BOUGHT_OUT" : "CLOSED";
+    rental.closedAt = rental.closedAt || now.toISOString();
+    rental.depositRefunded = true;
     rental.updatedAt = now.toISOString();
     if (data.notes) {
       rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u0417\u0430\u043A\u0440\u044B\u0442\u0438\u0435 ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
     }
-    if (rental.batteryIds && rental.batteryIds.length > 0) {
+    if (!isBoughtOut && rental.batteryIds && rental.batteryIds.length > 0) {
       rental.batteryIds.forEach((bId) => {
         const bat = db2.batteries.find((b) => b.id === bId);
         if (bat && bat.status === "ISSUED_SPARE") {
@@ -64885,7 +65533,7 @@ var HistoryRepository = class {
           action: "RENTAL_CLOSE",
           title: `${r.status === "BOUGHT_OUT" ? "\u{1F389} \u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0432\u044B\u043A\u0443\u043F\u043B\u0435\u043D" : "\u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u0442\u0435\u0445\u043D\u0438\u043A\u0438 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443"} ${r.rentalNumber}`,
           details: `\u041A\u0443\u0440\u044C\u0435\u0440: ${clientName}, \u0411\u0430\u0439\u043A: ${bikeNum}. \u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0437\u0430\u043A\u0440\u044B\u0442.`,
-          timestamp: r.updatedAt || r.expiresAt || (/* @__PURE__ */ new Date()).toISOString(),
+          timestamp: r.closedAt || r.updatedAt || r.expiresAt || (/* @__PURE__ */ new Date()).toISOString(),
           actor,
           badgeText: r.status === "BOUGHT_OUT" ? "\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D" : "\u0412\u043E\u0437\u0432\u0440\u0430\u0442",
           badgeColor: r.status === "BOUGHT_OUT" ? "purple" : "emerald",
@@ -65170,9 +65818,17 @@ var RepairRepository = class {
     };
   }
   static create(data) {
+    return withDbTransaction(() => this.createInternal(data));
+  }
+  static createInternal(data) {
     const db2 = getDb();
-    const now = /* @__PURE__ */ new Date();
-    const orderNumber = data.orderNumber && data.orderNumber.trim() ? data.orderNumber.trim() : `\u0417\u041D-${now.getFullYear()}-${(db2.repairs.length + 1).toString().padStart(3, "0")}`;
+    const now = getSystemTime();
+    const orderNumber = data.orderNumber && data.orderNumber.trim() ? data.orderNumber.trim() : nextNumber(`\u0417\u041D-${now.getFullYear()}`, db2.repairs.map((r) => r.orderNumber));
+    if (db2.repairs.some((r) => r.orderNumber.toLowerCase() === orderNumber.toLowerCase())) throw new Error("\u041D\u043E\u043C\u0435\u0440 \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0430 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442");
+    const itemId = data.batteryId || data.bikeId;
+    if (itemId && db2.repairs.some((r) => (r.bikeId === itemId || r.batteryId === itemId) && r.status !== "COMPLETED" && r.status !== "CANCELLED")) {
+      throw new Error("\u0414\u043B\u044F \u044D\u0442\u043E\u0439 \u0442\u0435\u0445\u043D\u0438\u043A\u0438 \u0443\u0436\u0435 \u043E\u0442\u043A\u0440\u044B\u0442 \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434");
+    }
     const isExternal = data.itemType === "EXTERNAL_DEVICE" || !data.bikeId && !data.batteryId;
     const isBattery = !isExternal && (data.itemType === "BATTERY" || Boolean(data.batteryId));
     let resolvedBikeId = null;
@@ -65186,6 +65842,7 @@ var RepairRepository = class {
       }
       const battery = db2.batteries.find((b) => b.id === data.batteryId);
       if (!battery) throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+      if (battery.status === "SOLD" || battery.status === "DECOMMISSIONED") throw new Error("\u0410\u041A\u0411 \u0432\u044B\u0431\u044B\u043B \u0438\u0437 \u043F\u0430\u0440\u043A\u0430");
       if (battery.installedBikeId) {
         const parentBike = db2.bikes.find((bk) => bk.id === battery.installedBikeId);
         if (parentBike) {
@@ -65203,6 +65860,7 @@ var RepairRepository = class {
       }
       const bike = db2.bikes.find((b) => b.id === data.bikeId);
       if (!bike) throw new Error("\u0411\u0430\u0439\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+      if (bike.status === "SOLD" || bike.status === "BOUGHT_OUT" || bike.status === "DECOMMISSIONED") throw new Error("\u0411\u0430\u0439\u043A \u0432\u044B\u0431\u044B\u043B \u0438\u0437 \u043F\u0430\u0440\u043A\u0430; \u043E\u0444\u043E\u0440\u043C\u0438\u0442\u0435 \u0440\u0435\u043C\u043E\u043D\u0442 \u0441\u0442\u043E\u0440\u043E\u043D\u043D\u0435\u0439 \u0442\u0435\u0445\u043D\u0438\u043A\u0438");
       bike.status = "IN_MAINTENANCE";
       bike.currentLocation = "\u041C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0430\u044F \u0421\u0422\u041E";
       bike.updatedAt = now.toISOString();
@@ -65230,17 +65888,15 @@ var RepairRepository = class {
     let resolvedClientName = data.clientName?.trim() || null;
     let resolvedClientPhone = data.clientPhone?.trim() || null;
     if (!resolvedClientId && resolvedClientPhone) {
-      const clean = resolvedClientPhone.replace(/\D/g, "");
-      const found = db2.clients.find((c) => c.phone.replace(/\D/g, "") === clean);
+      const clean = normalizePhone(resolvedClientPhone);
+      const found = db2.clients.find((c) => normalizePhone(c.phone) === clean);
       if (found) {
         resolvedClientId = found.id;
         if (!resolvedClientName) resolvedClientName = found.fullName;
       }
     }
-    if (!resolvedClientId && resolvedBikeId) {
-      const activeRental = db2.rentals.find(
-        (r) => r.bikeId === resolvedBikeId && (r.status === "ACTIVE" || r.status === "OVERDUE")
-      );
+    if (!resolvedClientId && (resolvedBikeId || resolvedBatteryId)) {
+      const activeRental = resolvedBikeId ? activeRentalForBike(resolvedBikeId) : activeRentalForBattery(resolvedBatteryId);
       if (activeRental) {
         resolvedClientId = activeRental.clientId;
         const found = db2.clients.find((c) => c.id === activeRental.clientId);
@@ -65249,6 +65905,16 @@ var RepairRepository = class {
           if (!resolvedClientPhone) resolvedClientPhone = found.phone;
         }
       }
+    }
+    if (resolvedClientId) {
+      const found = db2.clients.find((c) => c.id === resolvedClientId);
+      if (!found) throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+      resolvedClientName = found.fullName;
+      resolvedClientPhone = found.phone;
+    } else if (isExternal && resolvedClientPhone) {
+      const created = ClientRepository.create({ fullName: resolvedClientName || `\u041A\u043B\u0438\u0435\u043D\u0442 \u0421\u0422\u041E ${resolvedClientPhone}`, phone: resolvedClientPhone, clientType: "RETAIL" });
+      resolvedClientId = created.id;
+      resolvedClientName = created.fullName;
     }
     const newRepair = {
       id: `rep-${Date.now()}`,
@@ -65279,22 +65945,49 @@ var RepairRepository = class {
     const db2 = getDb();
     const repair = db2.repairs.find((r) => r.id === id);
     if (!repair) return null;
+    if (status === repair.status) return this.getById(id);
+    if (repair.status === "COMPLETED" || repair.status === "CANCELLED") throw new Error("\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043D\u043D\u044B\u0439 \u0438\u043B\u0438 \u043E\u0442\u043C\u0435\u043D\u0451\u043D\u043D\u044B\u0439 \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u043D\u0435\u043B\u044C\u0437\u044F \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u043E");
+    if (status === "COMPLETED") return this.complete(id, {});
     repair.status = status;
+    if (status === "CANCELLED") this.restoreItem(repair);
     saveDb();
     return this.getById(id);
   }
+  static restoreItem(repair) {
+    const db2 = getDb();
+    const now = getSystemTime().toISOString();
+    const bike = db2.bikes.find((b) => b.id === repair.bikeId);
+    if (bike && !["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status)) {
+      const rental = activeRentalForBike(bike.id);
+      const client = db2.clients.find((c) => c.id === rental?.clientId);
+      bike.status = rental ? "RENTED" : "AVAILABLE";
+      bike.currentLocation = rental ? `\u0412 \u0430\u0440\u0435\u043D\u0434\u0435 \u0443 ${client?.fullName || "\u043A\u043B\u0438\u0435\u043D\u0442\u0430"}` : "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F \u0431\u0430\u0437\u0430 (\u043C. \u0414\u043C\u0438\u0442\u0440\u043E\u0432\u0441\u043A\u0430\u044F)";
+      bike.updatedAt = now;
+    }
+    const battery = db2.batteries.find((b) => b.id === repair.batteryId);
+    if (battery && !["SOLD", "DECOMMISSIONED"].includes(battery.status)) {
+      const rental = activeRentalForBattery(battery.id);
+      battery.status = rental ? "ISSUED_SPARE" : "AVAILABLE";
+      battery.issuedBikeId = rental?.bikeId || null;
+      battery.updatedAt = now;
+    }
+  }
   static complete(id, data) {
+    return withDbTransaction(() => this.completeInternal(id, data));
+  }
+  static completeInternal(id, data) {
     const db2 = getDb();
     const repair = db2.repairs.find((r) => r.id === id);
     if (!repair) throw new Error("\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    if (repair.status === "COMPLETED") throw new Error("\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D");
+    if (repair.status === "COMPLETED" || repair.status === "CANCELLED") throw new Error("\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D \u0438\u043B\u0438 \u043E\u0442\u043C\u0435\u043D\u0451\u043D");
     const bike = repair.bikeId ? db2.bikes.find((b) => b.id === repair.bikeId) : null;
     const battery = repair.batteryId ? db2.batteries.find((b) => b.id === repair.batteryId) : null;
-    const now = /* @__PURE__ */ new Date();
+    const now = getSystemTime();
     const finalPartsToDeduct = data.partsUsed || repair.parts;
     let computedPartsCost = 0;
     const finalPartsList = [];
     for (const p of finalPartsToDeduct) {
+      if (!Number.isFinite(p.quantity) || p.quantity <= 0) throw new Error("\u041A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u043E \u0434\u0435\u0442\u0430\u043B\u0438 \u0434\u043E\u043B\u0436\u043D\u043E \u0431\u044B\u0442\u044C \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u043C");
       const part = db2.parts.find((item) => item.id === p.partId);
       if (!part) {
         throw new Error(`\u0414\u0435\u0442\u0430\u043B\u044C \u0441 ID ${p.partId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430 \u043D\u0430 \u0441\u043A\u043B\u0430\u0434\u0435`);
@@ -65303,12 +65996,13 @@ var RepairRepository = class {
         throw new Error(`\u041D\u0435\u0434\u043E\u0441\u0442\u0430\u0442\u043E\u0447\u043D\u043E \u0434\u0435\u0442\u0430\u043B\u0438 "${part.name}" \u043D\u0430 \u0441\u043A\u043B\u0430\u0434\u0435. \u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E: ${part.quantity}, \u0437\u0430\u043F\u0440\u043E\u0448\u0435\u043D\u043E: ${p.quantity}`);
       }
       part.quantity -= p.quantity;
-      const price = repair.faultType === "CLIENT_FAULT" ? part.clientPrice : part.purchasePrice;
+      const price = repair.faultType === "CLIENT_FAULT" || repair.itemType === "EXTERNAL_DEVICE" ? part.clientPrice : part.purchasePrice;
       computedPartsCost += price * p.quantity;
       finalPartsList.push({
         partId: p.partId,
         quantity: p.quantity,
-        priceCharged: price
+        priceCharged: price,
+        purchasePrice: part.purchasePrice
       });
     }
     const laborCost = data.laborCost !== void 0 ? data.laborCost : repair.laborCost;
@@ -65323,24 +66017,23 @@ var RepairRepository = class {
       repair.description += `
 [\u041C\u0430\u0441\u0442\u0435\u0440 ${now.toLocaleDateString("ru-RU")}]: ${data.mechanicNotes}`;
     }
+    this.restoreItem(repair);
     if (bike) {
-      bike.status = "AVAILABLE";
-      bike.currentLocation = "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F \u0431\u0430\u0437\u0430 (\u043C. \u0414\u043C\u0438\u0442\u0440\u043E\u0432\u0441\u043A\u0430\u044F)";
       bike.note = `\u041E\u0442\u0440\u0435\u043C\u043E\u043D\u0442\u0438\u0440\u043E\u0432\u0430\u043D \u043F\u043E \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0443 ${repair.orderNumber}`;
       bike.updatedAt = now.toISOString();
     }
     if (battery) {
-      battery.status = "AVAILABLE";
       battery.notes = battery.notes ? `${battery.notes} | \u041E\u0431\u0441\u043B\u0443\u0436\u0435\u043D \u043F\u043E \u0417\u041D ${repair.orderNumber}` : `\u041E\u0431\u0441\u043B\u0443\u0436\u0435\u043D \u043F\u043E \u0417\u041D ${repair.orderNumber}`;
       battery.updatedAt = now.toISOString();
     }
-    if (repair.faultType === "CLIENT_FAULT" && totalCost > 0 && data.paymentMethod) {
+    if ((repair.faultType === "CLIENT_FAULT" || repair.itemType === "EXTERNAL_DEVICE") && totalCost > 0 && data.paymentMethod) {
       const paymentDesc = repair.itemType === "EXTERNAL_DEVICE" ? `\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0435\u043C\u043E\u043D\u0442\u0430 \u0441\u0442\u043E\u0440\u043E\u043D\u043D\u0435\u0439 \u0442\u0435\u0445\u043D\u0438\u043A\u0438 "${repair.customItemName || "\u043A\u043B\u0438\u0435\u043D\u0442\u0430"}" (\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${repair.orderNumber})` : `\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0435\u043C\u043E\u043D\u0442\u0430 \u043F\u043E \u0432\u0438\u043D\u0435 \u043A\u0443\u0440\u044C\u0435\u0440\u0430 (\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${repair.orderNumber})`;
       db2.payments.push({
         id: `pay-${Date.now()}`,
         rentalId: null,
         clientId: repair.clientId,
         repairOrderId: repair.id,
+        cashierId: getCurrentUser()?.id || repair.mechanicId,
         type: "REPAIR",
         amount: totalCost,
         method: data.paymentMethod,
@@ -66899,500 +67592,6 @@ var EmployeeController = class {
     } catch (err) {
       res.status(400).json({ error: err.message || "\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u0440\u043E\u0432\u0435\u0434\u0435\u043D\u0438\u044F \u0432\u044B\u043F\u043B\u0430\u0442\u044B" });
     }
-  }
-};
-
-// src/repositories/battery.repository.ts
-var BatteryRepository = class {
-  // Battery Model Templates CRUD
-  static getBatteryModels() {
-    const db2 = getDb();
-    return db2.batteryModels.map((m) => {
-      const batteriesCount = db2.batteries.filter((b) => b.modelId === m.id).length;
-      return {
-        ...m,
-        batteriesCount
-      };
-    });
-  }
-  static createBatteryModel(data) {
-    const db2 = getDb();
-    if (!data.name || !data.name.trim()) {
-      throw new Error("\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u043C\u043E\u0434\u0435\u043B\u0438 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0434\u043B\u044F \u0437\u0430\u043F\u043E\u043B\u043D\u0435\u043D\u0438\u044F");
-    }
-    const cleanName = data.name.trim();
-    if (db2.batteryModels.some((m) => m.name.toLowerCase() === cleanName.toLowerCase())) {
-      throw new Error(`\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 "${cleanName}" \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442`);
-    }
-    const newModel = {
-      id: `bat-mdl-${Date.now()}`,
-      name: cleanName,
-      voltage: Number(data.voltage) || 60,
-      capacityAh: Number(data.capacityAh) || 20,
-      chemistry: data.chemistry === "LiFePO4" ? "LiFePO4" : "Li-ion",
-      description: data.description || null,
-      purchasePrice: data.purchasePrice !== void 0 ? Number(data.purchasePrice) : void 0,
-      salePrice: data.salePrice !== void 0 ? Number(data.salePrice) : void 0
-    };
-    db2.batteryModels.push(newModel);
-    saveDb();
-    return {
-      ...newModel,
-      batteriesCount: 0
-    };
-  }
-  static updateBatteryModel(id, data) {
-    const db2 = getDb();
-    const model = db2.batteryModels.find((m) => m.id === id);
-    if (!model) {
-      throw new Error("\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    }
-    if (data.name !== void 0) {
-      const cleanName = data.name.trim();
-      const duplicate = db2.batteryModels.find(
-        (m) => m.id !== id && m.name.toLowerCase() === cleanName.toLowerCase()
-      );
-      if (duplicate) {
-        throw new Error(`\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 "${cleanName}" \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442`);
-      }
-      model.name = cleanName;
-    }
-    if (data.voltage !== void 0) model.voltage = Number(data.voltage);
-    if (data.capacityAh !== void 0) model.capacityAh = Number(data.capacityAh);
-    if (data.chemistry !== void 0) model.chemistry = data.chemistry;
-    if (data.description !== void 0) model.description = data.description;
-    if (data.purchasePrice !== void 0) model.purchasePrice = Number(data.purchasePrice);
-    if (data.salePrice !== void 0) model.salePrice = Number(data.salePrice);
-    saveDb();
-    const batteriesCount = db2.batteries.filter((b) => b.modelId === model.id).length;
-    return {
-      ...model,
-      batteriesCount
-    };
-  }
-  static deleteBatteryModel(id) {
-    const db2 = getDb();
-    const index = db2.batteryModels.findIndex((m) => m.id === id);
-    if (index === -1) {
-      throw new Error("\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    }
-    const batteriesWithModel = db2.batteries.filter((b) => b.modelId === id);
-    if (batteriesWithModel.length > 0) {
-      throw new Error(
-        `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0448\u0430\u0431\u043B\u043E\u043D "${db2.batteryModels[index].name}": \u0432 \u043F\u0430\u0440\u043A\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u043E ${batteriesWithModel.length} \u0431\u0430\u0442\u0430\u0440\u0435\u0439 \u044D\u0442\u043E\u0439 \u043C\u043E\u0434\u0435\u043B\u0438 (${batteriesWithModel.map((b) => b.serialNumber).join(", ")})`
-      );
-    }
-    const removed = db2.batteryModels.splice(index, 1)[0];
-    saveDb();
-    return removed;
-  }
-  static enrichBattery(bat, db2) {
-    const bike = bat.installedBikeId ? db2.bikes.find((b) => b.id === bat.installedBikeId) : null;
-    const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
-    const batModel = bat.modelId ? db2.batteryModels.find((m) => m.id === bat.modelId) : null;
-    const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
-    const activeRental = activeRentals.find(
-      (r) => r.batteryIds && r.batteryIds.includes(bat.id) || bat.installedBikeId && r.bikeId === bat.installedBikeId || bat.issuedBikeId && r.bikeId === bat.issuedBikeId
-    );
-    let currentRental = null;
-    if (activeRental) {
-      const client = db2.clients.find((c) => c.id === activeRental.clientId);
-      const rentalBike = activeRental.bikeId ? db2.bikes.find((b) => b.id === activeRental.bikeId) : null;
-      currentRental = {
-        id: activeRental.id,
-        rentalNumber: activeRental.rentalNumber,
-        clientId: activeRental.clientId,
-        clientName: client?.fullName || "\u041A\u0443\u0440\u044C\u0435\u0440",
-        clientPhone: client?.phone || null,
-        bikeId: activeRental.bikeId || null,
-        bikeInventoryNumber: rentalBike?.inventoryNumber || null,
-        isSpare: bat.status === "ISSUED_SPARE" || (activeRental.bikeId ? bat.installedBikeId !== activeRental.bikeId : false)
-      };
-    }
-    const targetIssuedBikeId = bat.issuedBikeId || (bat.status === "ISSUED_SPARE" && activeRental ? activeRental.bikeId : null);
-    const issuedBikeRecord = targetIssuedBikeId ? db2.bikes.find((b) => b.id === targetIssuedBikeId) : null;
-    const issuedBikeModel = issuedBikeRecord ? db2.models.find((m) => m.id === issuedBikeRecord.modelId) : null;
-    const issuedBike = issuedBikeRecord ? {
-      id: issuedBikeRecord.id,
-      inventoryNumber: issuedBikeRecord.inventoryNumber,
-      status: issuedBikeRecord.status,
-      modelName: issuedBikeModel?.name,
-      currentLocation: issuedBikeRecord.currentLocation
-    } : null;
-    return {
-      ...bat,
-      modelName: batModel?.name || bat.modelName,
-      installedBike: bike ? {
-        id: bike.id,
-        inventoryNumber: bike.inventoryNumber,
-        status: bike.status,
-        modelName: bikeModel?.name,
-        currentLocation: bike.currentLocation
-      } : null,
-      issuedBike,
-      currentRental
-    };
-  }
-  static getAll(filters) {
-    const db2 = getDb();
-    let list = db2.batteries.map((bat) => this.enrichBattery(bat, db2));
-    if (filters?.status) {
-      list = list.filter((b) => b.status === filters.status);
-    }
-    if (filters?.voltage) {
-      list = list.filter((b) => b.voltage === Number(filters.voltage));
-    }
-    if (filters?.modelId) {
-      list = list.filter((b) => b.modelId === filters.modelId);
-    }
-    if (filters?.bikeId) {
-      list = list.filter((b) => b.installedBikeId === filters.bikeId);
-    }
-    if (filters?.search) {
-      const q = filters.search.toLowerCase().trim();
-      list = list.filter(
-        (b) => b.serialNumber.toLowerCase().includes(q) || b.modelName && b.modelName.toLowerCase().includes(q) || b.notes && b.notes.toLowerCase().includes(q) || b.installedBike && b.installedBike.inventoryNumber.toLowerCase().includes(q) || b.issuedBike && b.issuedBike.inventoryNumber.toLowerCase().includes(q) || b.currentRental && b.currentRental.clientName.toLowerCase().includes(q) || b.currentRental && b.currentRental.rentalNumber.toLowerCase().includes(q)
-      );
-    }
-    return list.sort((a, b) => a.serialNumber.localeCompare(b.serialNumber, void 0, { numeric: true }));
-  }
-  static getById(id) {
-    const db2 = getDb();
-    const bat = db2.batteries.find((b) => b.id === id);
-    if (!bat) return null;
-    return this.enrichBattery(bat, db2);
-  }
-  static getStats() {
-    const db2 = getDb();
-    const all = db2.batteries;
-    const total = all.length;
-    const available = all.filter((b) => b.status === "AVAILABLE").length;
-    const installed = all.filter((b) => b.status === "INSTALLED").length;
-    const issuedSpare = all.filter((b) => b.status === "ISSUED_SPARE").length;
-    const inMaintenance = all.filter((b) => b.status === "IN_MAINTENANCE").length;
-    const decommissioned = all.filter((b) => b.status === "DECOMMISSIONED").length;
-    return {
-      total,
-      available,
-      installed,
-      issuedSpare,
-      inMaintenance,
-      decommissioned
-    };
-  }
-  static create(data) {
-    const db2 = getDb();
-    const cleanSerial = data.serialNumber?.trim();
-    if (!cleanSerial) {
-      throw new Error("\u0421\u0435\u0440\u0438\u0439\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u0430 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D");
-    }
-    if (db2.batteries.some((b) => b.serialNumber.toLowerCase() === cleanSerial.toLowerCase())) {
-      throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u0441 \u0441\u0435\u0440\u0438\u0439\u043D\u044B\u043C \u043D\u043E\u043C\u0435\u0440\u043E\u043C ${cleanSerial} \u0443\u0436\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0435`);
-    }
-    let modelName = null;
-    let voltage = Number(data.voltage) || 60;
-    let capacityAh = Number(data.capacityAh) || 20;
-    let chemistry = data.chemistry || "Li-ion";
-    let purchasePrice = data.purchasePrice !== void 0 ? Number(data.purchasePrice) : 0;
-    let salePrice = data.salePrice !== void 0 ? Number(data.salePrice) : 0;
-    if (data.modelId) {
-      const batModel = db2.batteryModels.find((m) => m.id === data.modelId);
-      if (batModel) {
-        modelName = batModel.name;
-        voltage = batModel.voltage;
-        capacityAh = batModel.capacityAh;
-        if (batModel.chemistry) {
-          chemistry = batModel.chemistry;
-        }
-        if (data.purchasePrice === void 0 && batModel.purchasePrice !== void 0) {
-          purchasePrice = batModel.purchasePrice;
-        }
-        if (data.salePrice === void 0 && batModel.salePrice !== void 0) {
-          salePrice = batModel.salePrice;
-        }
-      }
-    }
-    const newBattery = {
-      id: `bat-${Date.now()}`,
-      serialNumber: cleanSerial,
-      modelId: data.modelId || null,
-      modelName,
-      voltage,
-      capacityAh,
-      chemistry,
-      status: data.status || "AVAILABLE",
-      installedBikeId: null,
-      notes: data.notes || null,
-      purchasePrice,
-      salePrice,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    db2.batteries.push(newBattery);
-    saveDb();
-    return this.getById(newBattery.id);
-  }
-  static update(id, data) {
-    const db2 = getDb();
-    const index = db2.batteries.findIndex((b) => b.id === id);
-    if (index === -1) {
-      throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    }
-    if (data.serialNumber && data.serialNumber !== db2.batteries[index].serialNumber) {
-      const cleanSerial = data.serialNumber.trim();
-      const duplicate = db2.batteries.find(
-        (b) => b.id !== id && b.serialNumber.toLowerCase() === cleanSerial.toLowerCase()
-      );
-      if (duplicate) {
-        throw new Error(`\u0421\u0435\u0440\u0438\u0439\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440 ${cleanSerial} \u0443\u0436\u0435 \u0437\u0430\u043D\u044F\u0442 \u0434\u0440\u0443\u0433\u0438\u043C \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440\u043E\u043C`);
-      }
-      db2.batteries[index].serialNumber = cleanSerial;
-    }
-    if (data.modelId !== void 0) {
-      db2.batteries[index].modelId = data.modelId;
-      if (data.modelId) {
-        const batModel = db2.batteryModels.find((m) => m.id === data.modelId);
-        if (batModel) {
-          db2.batteries[index].modelName = batModel.name;
-          db2.batteries[index].voltage = batModel.voltage;
-          db2.batteries[index].capacityAh = batModel.capacityAh;
-          if (batModel.chemistry) {
-            db2.batteries[index].chemistry = batModel.chemistry;
-          }
-        }
-      }
-    }
-    if (data.voltage !== void 0) db2.batteries[index].voltage = Number(data.voltage);
-    if (data.capacityAh !== void 0) db2.batteries[index].capacityAh = Number(data.capacityAh);
-    if (data.chemistry !== void 0) db2.batteries[index].chemistry = data.chemistry;
-    if (data.status !== void 0) db2.batteries[index].status = data.status;
-    if (data.notes !== void 0) db2.batteries[index].notes = data.notes;
-    if (data.purchasePrice !== void 0) db2.batteries[index].purchasePrice = Number(data.purchasePrice);
-    if (data.salePrice !== void 0) db2.batteries[index].salePrice = Number(data.salePrice);
-    db2.batteries[index].updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    saveDb();
-    return this.getById(id);
-  }
-  static delete(id) {
-    const db2 = getDb();
-    const index = db2.batteries.findIndex((b) => b.id === id);
-    if (index === -1) {
-      throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    }
-    const battery = db2.batteries[index];
-    if (battery.installedBikeId) {
-      const bike = db2.bikes.find((b) => b.id === battery.installedBikeId);
-      throw new Error(
-        `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0410\u041A\u0411 ${battery.serialNumber}: \u043E\u043D \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u043D\u0430 \u0431\u0430\u0439\u043A\u0435 ${bike ? bike.inventoryNumber : battery.installedBikeId}. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043D\u0438\u043C\u0438\u0442\u0435 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u0441 \u0431\u0430\u0439\u043A\u0430.`
-      );
-    }
-    const bikeUsingBattery = db2.bikes.find((b) => b.batteryId === id);
-    if (bikeUsingBattery) {
-      throw new Error(
-        `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0410\u041A\u0411 ${battery.serialNumber}: \u043E\u043D \u0447\u0438\u0441\u043B\u0438\u0442\u0441\u044F \u0437\u0430 \u0431\u0430\u0439\u043A\u043E\u043C ${bikeUsingBattery.inventoryNumber}.`
-      );
-    }
-    if (battery.status === "ISSUED_SPARE") {
-      throw new Error(
-        `\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0410\u041A\u0411 ${battery.serialNumber}: \u043E\u043D \u0432\u044B\u0434\u0430\u043D \u043A\u0443\u0440\u044C\u0435\u0440\u0443 \u043A\u0430\u043A \u0434\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439.`
-      );
-    }
-    const removed = db2.batteries.splice(index, 1)[0];
-    saveDb();
-    return removed;
-  }
-  static attachToBike(batteryId, bikeId) {
-    const db2 = getDb();
-    const bike = db2.bikes.find((b) => b.id === bikeId);
-    if (!bike) throw new Error("\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    const newBattery = db2.batteries.find((b) => b.id === batteryId);
-    if (!newBattery) throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    if (newBattery.status === "DECOMMISSIONED" || newBattery.status === "SOLD") {
-      throw new Error(`\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u0441\u043F\u0438\u0441\u0430\u043D\u043D\u044B\u0439 \u0438\u043B\u0438 \u043F\u0440\u043E\u0434\u0430\u043D\u043D\u044B\u0439 \u0410\u041A\u0411 (${newBattery.status})`);
-    }
-    if (bike.batteryId && bike.batteryId !== batteryId) {
-      const oldBattery = db2.batteries.find((b) => b.id === bike.batteryId);
-      if (oldBattery) {
-        oldBattery.installedBikeId = null;
-        oldBattery.status = "AVAILABLE";
-        oldBattery.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-      }
-    }
-    if (newBattery.installedBikeId && newBattery.installedBikeId !== bikeId) {
-      const previousBike = db2.bikes.find((b) => b.id === newBattery.installedBikeId);
-      if (previousBike) {
-        previousBike.batteryId = null;
-        previousBike.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-      }
-    }
-    newBattery.installedBikeId = bike.id;
-    newBattery.status = "INSTALLED";
-    newBattery.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    bike.batteryId = newBattery.id;
-    bike.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-    saveDb();
-    return {
-      battery: this.getById(newBattery.id),
-      bike: {
-        ...bike,
-        battery: newBattery
-      }
-    };
-  }
-  static returnToWarehouse(batteryId) {
-    const db2 = getDb();
-    const battery = db2.batteries.find((b) => b.id === batteryId);
-    if (!battery) throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    if (battery.installedBikeId) {
-      const bike = db2.bikes.find((b) => b.id === battery.installedBikeId);
-      if (bike) {
-        bike.batteryId = null;
-        bike.updatedAt = now;
-      }
-      battery.installedBikeId = null;
-    }
-    const bikeHolding = db2.bikes.find((b) => b.batteryId === batteryId);
-    if (bikeHolding) {
-      bikeHolding.batteryId = null;
-      bikeHolding.updatedAt = now;
-    }
-    const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
-    for (const r of activeRentals) {
-      if (r.batteryIds && r.batteryIds.includes(batteryId)) {
-        r.batteryIds = r.batteryIds.filter((id) => id !== batteryId);
-        r.updatedAt = now;
-      }
-    }
-    battery.status = "AVAILABLE";
-    battery.issuedBikeId = null;
-    battery.installedBikeId = null;
-    battery.updatedAt = now;
-    saveDb();
-    return {
-      success: true,
-      message: `\u0410\u041A\u0411 ${battery.serialNumber} \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0435\u043D \u043D\u0430 \u0441\u043A\u043B\u0430\u0434`,
-      battery: this.getById(battery.id)
-    };
-  }
-  static detachFromBike(bikeId) {
-    const db2 = getDb();
-    const bike = db2.bikes.find((b) => b.id === bikeId);
-    if (!bike) throw new Error("\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    let detachedBattery = null;
-    const targetBatteryId = bike.batteryId;
-    if (targetBatteryId) {
-      const battery = db2.batteries.find((b) => b.id === targetBatteryId);
-      if (battery) {
-        battery.installedBikeId = null;
-        battery.issuedBikeId = null;
-        battery.status = "AVAILABLE";
-        battery.updatedAt = now;
-        detachedBattery = battery;
-      }
-      bike.batteryId = null;
-      bike.updatedAt = now;
-    } else {
-      const orphanBattery = db2.batteries.find((b) => b.installedBikeId === bikeId);
-      if (orphanBattery) {
-        orphanBattery.installedBikeId = null;
-        orphanBattery.issuedBikeId = null;
-        orphanBattery.status = "AVAILABLE";
-        orphanBattery.updatedAt = now;
-        detachedBattery = orphanBattery;
-      }
-    }
-    if (detachedBattery) {
-      const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
-      const rental = activeRentals.find((r) => r.bikeId === bikeId);
-      if (rental && rental.batteryIds) {
-        rental.batteryIds = rental.batteryIds.filter((id) => id !== detachedBattery.id);
-        rental.updatedAt = now;
-      }
-    }
-    saveDb();
-    return {
-      bike: {
-        ...bike,
-        battery: null
-      },
-      battery: detachedBattery ? this.getById(detachedBattery.id) : null
-    };
-  }
-  static swapBatteryGeneral({
-    oldBatteryId,
-    newBatteryId,
-    sendOldToCharging = false
-  }) {
-    const db2 = getDb();
-    const oldBat = db2.batteries.find((b) => b.id === oldBatteryId);
-    if (!oldBat) throw new Error("\u0422\u0435\u043A\u0443\u0449\u0438\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    const newBat = db2.batteries.find((b) => b.id === newBatteryId);
-    if (!newBat) throw new Error("\u041D\u043E\u0432\u044B\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    if (newBat.status !== "AVAILABLE") {
-      throw new Error(`\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${newBat.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D (\u0441\u0442\u0430\u0442\u0443\u0441: ${newBat.status})`);
-    }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
-    const rental = activeRentals.find(
-      (r) => r.batteryIds && r.batteryIds.includes(oldBat.id) || oldBat.installedBikeId && r.bikeId === oldBat.installedBikeId || oldBat.issuedBikeId && r.bikeId === oldBat.issuedBikeId
-    );
-    if (oldBat.status === "ISSUED_SPARE" || !oldBat.installedBikeId && rental) {
-      newBat.status = "ISSUED_SPARE";
-      newBat.issuedBikeId = oldBat.issuedBikeId || (rental ? rental.bikeId : null);
-      newBat.installedBikeId = null;
-      newBat.updatedAt = now;
-      if (rental) {
-        if (!rental.batteryIds) rental.batteryIds = [];
-        rental.batteryIds = rental.batteryIds.map((id) => id === oldBat.id ? newBat.id : id);
-        if (!rental.batteryIds.includes(newBat.id)) {
-          rental.batteryIds.push(newBat.id);
-        }
-        rental.updatedAt = now;
-      }
-      oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
-      oldBat.issuedBikeId = null;
-      oldBat.installedBikeId = null;
-      oldBat.updatedAt = now;
-    } else if (oldBat.installedBikeId) {
-      const bike = db2.bikes.find((b) => b.id === oldBat.installedBikeId);
-      if (bike) {
-        bike.batteryId = newBat.id;
-        bike.updatedAt = now;
-      }
-      newBat.status = "INSTALLED";
-      newBat.installedBikeId = oldBat.installedBikeId;
-      newBat.issuedBikeId = null;
-      newBat.updatedAt = now;
-      if (rental) {
-        if (!rental.batteryIds) rental.batteryIds = [];
-        rental.batteryIds = rental.batteryIds.map((id) => id === oldBat.id ? newBat.id : id);
-        if (!rental.batteryIds.includes(newBat.id)) {
-          rental.batteryIds.push(newBat.id);
-        }
-        rental.updatedAt = now;
-      }
-      oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
-      oldBat.installedBikeId = null;
-      oldBat.issuedBikeId = null;
-      oldBat.updatedAt = now;
-    } else {
-      newBat.status = "AVAILABLE";
-      newBat.updatedAt = now;
-      oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
-      oldBat.updatedAt = now;
-    }
-    saveDb();
-    return {
-      success: true,
-      message: `\u0417\u0430\u043C\u0435\u043D\u0430 \u0410\u041A\u0411 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u0430: ${oldBat.serialNumber} \u2794 ${newBat.serialNumber}`,
-      oldBattery: this.getById(oldBat.id),
-      newBattery: this.getById(newBat.id)
-    };
-  }
-  static swapBattery(bikeId, newBatteryId) {
-    return this.attachToBike(newBatteryId, bikeId);
   }
 };
 
@@ -69120,6 +69319,9 @@ var ShopRepository = class {
     };
   }
   async createOrder(data) {
+    return withDbTransaction(() => this.createOrderInternal(data));
+  }
+  createOrderInternal(data) {
     const db2 = getDb();
     if (!data.items || data.items.length === 0) {
       throw new Error("\u041A\u043E\u0440\u0437\u0438\u043D\u0430 \u043F\u0443\u0441\u0442\u0430: \u0434\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u0445\u043E\u0442\u044F \u0431\u044B \u043E\u0434\u0438\u043D \u0442\u043E\u0432\u0430\u0440");
@@ -69128,11 +69330,15 @@ var ShopRepository = class {
     let totalAmount = 0;
     let totalCost = 0;
     for (const item of data.items) {
-      const qty = Number(item.quantity) || 1;
-      if (qty <= 0) continue;
+      const qty = Number(item.quantity);
+      if (!Number.isFinite(qty) || qty <= 0 || !Number.isInteger(qty)) throw new Error("\u041A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u043E \u0442\u043E\u0432\u0430\u0440\u0430 \u0434\u043E\u043B\u0436\u043D\u043E \u0431\u044B\u0442\u044C \u0446\u0435\u043B\u044B\u043C \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u043C \u0447\u0438\u0441\u043B\u043E\u043C");
+      if (item.itemType !== "PART" && qty !== 1) throw new Error("\u041F\u043E\u0448\u0442\u0443\u0447\u043D\u0430\u044F \u0442\u0435\u0445\u043D\u0438\u043A\u0430 \u0438 \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u043F\u0440\u043E\u0434\u0430\u044E\u0442\u0441\u044F \u043F\u043E \u043E\u0434\u043D\u043E\u043C\u0443 \u044D\u043A\u0437\u0435\u043C\u043F\u043B\u044F\u0440\u0443");
+      if (item.price !== void 0 && (!Number.isFinite(Number(item.price)) || Number(item.price) < 0)) throw new Error("\u0426\u0435\u043D\u0430 \u0442\u043E\u0432\u0430\u0440\u0430 \u0434\u043E\u043B\u0436\u043D\u0430 \u0431\u044B\u0442\u044C \u043D\u0435\u043E\u0442\u0440\u0438\u0446\u0430\u0442\u0435\u043B\u044C\u043D\u043E\u0439");
+      if (!["BIKE", "BATTERY", "PART", "OUTFIT"].includes(item.itemType)) throw new Error("\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439 \u0442\u0438\u043F \u0442\u043E\u0432\u0430\u0440\u0430");
       if (item.itemType === "BIKE") {
         const bike = db2.bikes.find((b) => b.id === item.itemId);
         if (!bike) throw new Error(`\u0412\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u0441 ID ${item.itemId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+        if (activeRentalForBike(bike.id)) throw new Error("\u0411\u0430\u0439\u043A \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
         if (bike.status !== "AVAILABLE" && bike.status !== "FOR_SALE") {
           throw new Error(
             `\u0411\u0430\u0439\u043A ${bike.inventoryNumber} \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0431\u044B\u0442\u044C \u043F\u0440\u043E\u0434\u0430\u043D (\u0442\u0435\u043A\u0443\u0449\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441: ${bike.status})`
@@ -69166,6 +69372,7 @@ var ShopRepository = class {
       } else if (item.itemType === "BATTERY") {
         const battery = db2.batteries.find((b) => b.id === item.itemId);
         if (!battery) throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u0441 ID ${item.itemId} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+        if (activeRentalForBattery(battery.id)) throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
         if (battery.status !== "AVAILABLE" || battery.installedBikeId) {
           throw new Error(
             `\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${battery.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u043F\u0440\u043E\u0434\u0430\u0436\u0438 (\u0441\u0442\u0430\u0442\u0443\u0441: ${battery.status}${battery.installedBikeId ? ", \u0443\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D \u043D\u0430 \u0431\u0430\u0439\u043A" : ""})`
@@ -69247,9 +69454,9 @@ var ShopRepository = class {
     let customerFullName = data.customerName?.trim() || "\u0420\u043E\u0437\u043D\u0438\u0447\u043D\u044B\u0439 \u043F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C";
     const customerPhone = data.customerPhone?.trim() || null;
     if (!resolvedClientId && customerPhone) {
-      const cleanPhone = customerPhone.replace(/\D/g, "");
+      const cleanPhone = normalizePhone(customerPhone);
       if (cleanPhone.length >= 6) {
-        const existing = db2.clients.find((c) => c.phone.replace(/\D/g, "") === cleanPhone);
+        const existing = db2.clients.find((c) => normalizePhone(c.phone) === cleanPhone);
         if (existing) {
           resolvedClientId = existing.id;
           if (existing.fullName && (!customerFullName || customerFullName === "\u0420\u043E\u0437\u043D\u0438\u0447\u043D\u044B\u0439 \u043F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C" || customerFullName === "\u041F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C" || customerFullName.includes("\u0413\u043E\u0441\u0442\u044C"))) {
@@ -69281,6 +69488,7 @@ var ShopRepository = class {
       }
     } else if (resolvedClientId) {
       const existing = db2.clients.find((c) => c.id === resolvedClientId);
+      if (!existing) throw new Error("\u041F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
       if (existing) {
         customerFullName = existing.fullName;
       }
@@ -69306,6 +69514,7 @@ var ShopRepository = class {
       orderId: order.id,
       clientId: resolvedClientId,
       type: "RETAIL_SALE",
+      cashierId: getCurrentUser()?.id || null,
       amount: totalAmount,
       method: data.paymentMethod || "CASH",
       description: `\u0420\u043E\u0437\u043D\u0438\u0447\u043D\u0430\u044F \u043F\u0440\u043E\u0434\u0430\u0436\u0430 (\u0427\u0435\u043A ${order.orderNumber}): ${order.customerName}`,

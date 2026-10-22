@@ -19,6 +19,8 @@ enum BikeStatus {
   IN_MAINTENANCE
   FOR_SALE
   DECOMMISSIONED
+  SOLD
+  BOUGHT_OUT
 }
 
 enum RentalStatus {
@@ -191,6 +193,7 @@ model Rental {
   nextPaymentDue  DateTime
   depositAmount   Decimal            @default(0)
   depositRefunded Boolean            @default(false)
+  closedAt        DateTime?
   notes           String?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt

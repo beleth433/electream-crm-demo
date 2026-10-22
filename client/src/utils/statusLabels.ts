@@ -5,6 +5,7 @@ export const BIKE_STATUS_LABELS: Record<string, string> = {
   FOR_SALE: 'На продаже',
   DECOMMISSIONED: 'Списан',
   SOLD: 'Продан',
+  BOUGHT_OUT: 'Выкуплен',
 };
 
 export const BATTERY_STATUS_LABELS: Record<string, string> = {

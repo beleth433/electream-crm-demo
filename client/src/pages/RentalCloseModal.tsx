@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../components/Modal';
 import { Rental } from '../types';
 import { api } from '../services/api';
@@ -26,19 +26,30 @@ export const RentalCloseModal: React.FC<RentalCloseModalProps> = ({
   rental,
   onSuccess,
 }) => {
-  if (!rental) return null;
-
   const [isLoading, setIsLoading] = useState(false);
   const [bikeCondition, setBikeCondition] = useState<'OK' | 'NEEDS_REPAIR'>('OK');
-  const [bikeMileageKm, setBikeMileageKm] = useState<number>(rental.bike?.mileageKm || 0);
+  const [bikeMileageKm, setBikeMileageKm] = useState<number>(0);
   const [defectDescription, setDefectDescription] = useState('');
   const [faultType, setFaultType] = useState<'COMPANY_EXPENSE' | 'CLIENT_FAULT'>('CLIENT_FAULT');
   const [refundMethod, setRefundMethod] = useState<'CASH' | 'CARD' | 'SBP' | 'BANK_TRANSFER'>('CASH');
   const [notes, setNotes] = useState('');
+  const [outfitReturns, setOutfitReturns] = useState<Array<{ outfitId: string; condition: 'OK' | 'DAMAGED' | 'LOST'; deductionAmount: number }>>([]);
+
+  useEffect(() => {
+    if (!isOpen || !rental) return;
+    setBikeCondition('OK');
+    setBikeMileageKm(rental.bike?.mileageKm || 0);
+    setDefectDescription('');
+    setNotes('');
+    setOutfitReturns((rental.outfits || []).map((outfit) => ({ outfitId: outfit.id, condition: 'OK', deductionAmount: 0 })));
+  }, [isOpen, rental?.id]);
+  if (!rental) return null;
+  const isBoughtOut = rental.status === 'BOUGHT_OUT';
 
   // Compute net deposit refund
-  const initialDeposit = rental.depositAmount || 0;
-  const netRefund = initialDeposit;
+  const initialDeposit = rental.depositRefunded ? 0 : rental.depositAmount || 0;
+  const deductions = outfitReturns.reduce((sum, item) => sum + (item.condition === 'OK' ? 0 : item.deductionAmount), 0);
+  const netRefund = Math.max(0, initialDeposit - deductions);
 
   const handleSubmitClose = async () => {
     try {
@@ -49,7 +60,7 @@ export const RentalCloseModal: React.FC<RentalCloseModalProps> = ({
         bikeMileageKm: Number(bikeMileageKm),
         defectDescription: bikeCondition === 'NEEDS_REPAIR' ? defectDescription : undefined,
         faultType: bikeCondition === 'NEEDS_REPAIR' ? faultType : undefined,
-        outfitReturns: [],
+        outfitReturns,
         refundMethod,
         notes,
       });
@@ -59,11 +70,11 @@ export const RentalCloseModal: React.FC<RentalCloseModalProps> = ({
           `Аренда закрыта. Создан заказ-наряд СТО ${res.repairOrder.orderNumber}, байк переведен на ремонт.`
         );
       } else {
-        toast.success(`Аренда ${rental.rentalNumber} закрыта, байк доступен на складе!`);
+        toast.success(isBoughtOut ? 'Экипировка принята, расчёт по залогу завершён.' : `Аренда ${rental.rentalNumber} закрыта, байк доступен на складе!`);
       }
 
-      if (netRefund > 0) {
-        toast.info(`Залог в размере ${netRefund.toLocaleString('ru-RU')} ₽ возвращен курьеру.`);
+      if (res.depositReturned > 0) {
+        toast.info(`Залог в размере ${res.depositReturned.toLocaleString('ru-RU')} ₽ возвращен курьеру.`);
       }
 
       onSuccess();
@@ -79,13 +90,13 @@ export const RentalCloseModal: React.FC<RentalCloseModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Приемка техники и закрытие аренды"
+      title={isBoughtOut ? 'Возврат экипировки и расчёт по залогу' : 'Приемка техники и закрытие аренды'}
       subtitle={`Договор № ${rental.rentalNumber} • Курьер: ${rental.client?.fullName}`}
       maxWidth="2xl"
     >
       <div className="space-y-5 text-xs">
         {/* 1. Bike Return Inspection */}
-        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-3">
+        {!isBoughtOut && <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-sky-500 shrink-0" />
@@ -179,6 +190,26 @@ export const RentalCloseModal: React.FC<RentalCloseModalProps> = ({
           )}
         </div>
 
+        }
+        {outfitReturns.length > 0 && (
+          <div className="space-y-3">
+            <p className="font-bold text-base">Возврат экипировки</p>
+            {outfitReturns.map((item) => (
+              <div key={item.outfitId} className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center">
+                <span>{rental.outfits?.find((outfit) => outfit.id === item.outfitId)?.name}</span>
+                <select aria-label="Состояние экипировки" value={item.condition} className="h-11 text-base sm:text-sm rounded-lg border bg-white dark:bg-slate-900 px-2" onChange={(e) => {
+                  const condition = e.target.value as typeof item.condition;
+                  const deposit = rental.outfits?.find((outfit) => outfit.id === item.outfitId)?.depositValue || 0;
+                  setOutfitReturns((items) => items.map((entry) => entry.outfitId === item.outfitId ? { ...entry, condition, deductionAmount: condition === 'OK' ? 0 : deposit } : entry));
+                }}>
+                  <option value="OK">Без повреждений</option><option value="DAMAGED">Повреждена</option><option value="LOST">Утеряна</option>
+                </select>
+                {item.condition !== 'OK' && <input aria-label="Сумма удержания" type="number" step="any" min="0" value={item.deductionAmount} className="h-11 text-base sm:text-sm rounded-lg border bg-white dark:bg-slate-900 px-2" onChange={(e) => setOutfitReturns((items) => items.map((entry) => entry.outfitId === item.outfitId ? { ...entry, deductionAmount: Math.max(0, Number(e.target.value)) } : entry))} />}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* 2. Deposit Refund Settlement Box */}
         <div className="p-4 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white space-y-2">
           <span className="font-bold text-sky-400">2. Финансовый взаиморасчет по залогу:</span>
@@ -239,8 +270,8 @@ export const RentalCloseModal: React.FC<RentalCloseModalProps> = ({
               'Завершение...'
             ) : (
               <>
-                <span className="hidden sm:inline">Завершить аренду и выплатить залог</span>
-                <span className="sm:hidden">Завершить аренду</span>
+                <span className="hidden sm:inline">{isBoughtOut ? 'Принять экипировку и выплатить залог' : 'Завершить аренду и выплатить залог'}</span>
+                <span className="sm:hidden">{isBoughtOut ? 'Завершить расчёт' : 'Завершить аренду'}</span>
               </>
             )}
           </button>
