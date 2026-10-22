@@ -6,7 +6,18 @@ export const LoginDto = z.object({
   rememberDevice: z.boolean().optional(),
 });
 
+export const BikePhotoDto = z.object({
+  id: z.string().uuid(),
+  url: z.string().regex(/^\/uploads\/(cloud\/)?bike_[a-f0-9-]+\.webp$/i),
+  thumbnailUrl: z.string().regex(/^\/uploads\/(cloud\/)?bike_[a-f0-9-]+_thumb\.webp$/i),
+  width: z.number().int().positive().max(1600),
+  height: z.number().int().positive().max(1600),
+  sizeBytes: z.number().int().positive().max(471040),
+}).refine((photo) => photo.url.endsWith(`bike_${photo.id}.webp`) && photo.thumbnailUrl === photo.url.replace('.webp', '_thumb.webp'), "Некорректные ссылки фотографии");
+export const BikePhotosDto = z.array(BikePhotoDto).max(8, "Можно добавить до 8 фотографий").refine((photos) => new Set(photos.map((photo) => photo.id)).size === photos.length, "Фотографии не должны повторяться");
+
 export const BikeCreateDto = z.object({
+  photos: BikePhotosDto.optional(),
   inventoryNumber: z.string().min(2, "Инвентарный номер обязателен"),
   modelId: z.string().min(1, "Модель байка обязательна"),
   batteryId: z.string().optional().nullable(),
@@ -21,6 +32,7 @@ export const BikeCreateDto = z.object({
 });
 
 export const BikeUpdateDto = z.object({
+  photos: BikePhotosDto.optional(),
   inventoryNumber: z.string().optional(),
   modelId: z.string().optional(),
   batteryId: z.string().optional().nullable(),
@@ -35,6 +47,7 @@ export const BikeUpdateDto = z.object({
 });
 
 export const ClientCreateDto = z.object({
+  registrationAddress: z.string().trim().max(500, "Адрес прописки не более 500 символов").optional().nullable(),
   fullName: z.string().min(3, "ФИО обязательно"),
   phone: z.string().min(10, "Телефон обязателен"),
   telegram: z.string().optional(),
@@ -51,6 +64,7 @@ export const ClientCreateDto = z.object({
 });
 
 export const ClientUpdateDto = z.object({
+  registrationAddress: z.string().trim().max(500, "Адрес прописки не более 500 символов").optional().nullable(),
   fullName: z.string().optional(),
   phone: z.string().optional(),
   telegram: z.string().optional(),
@@ -90,6 +104,7 @@ export const TariffCreateDto = z.object({
 export const TariffUpdateDto = TariffCreateDto.partial();
 
 export const RentalCreateDto = z.object({
+  registrationAddress: z.string().trim().max(500).optional().nullable(),
   clientId: z.string().min(1, "Клиент обязателен"),
   bikeId: z.string().min(1, "Байк обязателен"),
   tariffId: z.string().min(1, "Тариф обязателен"),

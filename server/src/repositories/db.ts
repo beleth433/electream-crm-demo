@@ -166,6 +166,7 @@ export interface BikeModelRecord {
 }
 
 export interface BikeRecord {
+  photos?: BikePhoto[];
   id: string;
   inventoryNumber: string;
   modelId: string;
@@ -180,6 +181,15 @@ export interface BikeRecord {
   salePrice?: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface BikePhoto {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+  width: number;
+  height: number;
+  sizeBytes: number;
 }
 
 export interface OutfitCategoryRecord {
@@ -210,6 +220,7 @@ export interface OutfitRecord {
 }
 
 export interface ClientRecord {
+  registrationAddress?: string | null;
   id: string;
   fullName: string;
   phone: string;

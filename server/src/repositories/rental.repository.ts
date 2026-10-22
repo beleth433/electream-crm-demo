@@ -203,6 +203,7 @@ export class RentalRepository {
   }
 
   private static createInternal(data: {
+    registrationAddress?: string | null;
     clientId: string;
     bikeId: string;
     tariffId: string;
@@ -236,6 +237,7 @@ export class RentalRepository {
     }
 
     // Seamlessly transition or complement courier and passport details
+    if (data.registrationAddress !== undefined) client.registrationAddress = data.registrationAddress?.trim() || null;
     if (data.courierService) client.courierService = data.courierService;
     if (data.passportSerial) client.passportSerial = data.passportSerial;
     if (data.passportNumber) client.passportNumber = data.passportNumber;

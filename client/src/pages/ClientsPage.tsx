@@ -79,6 +79,7 @@ export const ClientsPage: React.FC = () => {
     telegram: '',
     passportSerial: '',
     passportNumber: '',
+    registrationAddress: '',
     citizenship: 'РФ',
     migrationCard: '',
     patentNumber: '',
@@ -95,6 +96,7 @@ export const ClientsPage: React.FC = () => {
     telegram: '',
     passportSerial: '',
     passportNumber: '',
+    registrationAddress: '',
     citizenship: 'РФ',
     migrationCard: '',
     patentNumber: '',
@@ -110,6 +112,7 @@ export const ClientsPage: React.FC = () => {
       telegram: client.telegram || '',
       passportSerial: client.passportSerial || '',
       passportNumber: client.passportNumber || '',
+      registrationAddress: client.registrationAddress || '',
       citizenship: client.citizenship || 'РФ',
       migrationCard: client.migrationCard || '',
       patentNumber: client.patentNumber || '',
@@ -168,6 +171,7 @@ export const ClientsPage: React.FC = () => {
         telegram: '',
         passportSerial: '',
         passportNumber: '',
+        registrationAddress: '',
         citizenship: 'РФ',
         migrationCard: '',
         patentNumber: '',
@@ -864,6 +868,10 @@ export const ClientsPage: React.FC = () => {
             </div>
           </div>
 
+          <label className="block text-slate-500 font-semibold">Прописка
+            <textarea value={newClientForm.registrationAddress} maxLength={500} rows={2} placeholder="Город, улица, дом, корпус, квартира" onChange={(e) => setNewClientForm({ ...newClientForm, registrationAddress: e.target.value })} className="mt-1 w-full min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm" />
+          </label>
+
           {newClientForm.citizenship !== 'РФ' && (
             <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 space-y-2">
               <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300">
@@ -1044,6 +1052,10 @@ export const ClientsPage: React.FC = () => {
             </div>
           </div>
 
+          <label className="block text-slate-500 font-semibold">Прописка
+            <textarea value={editClientForm.registrationAddress} maxLength={500} rows={2} placeholder="Город, улица, дом, корпус, квартира" onChange={(e) => setEditClientForm({ ...editClientForm, registrationAddress: e.target.value })} className="mt-1 w-full min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-sm" />
+          </label>
+
           {editClientForm.citizenship !== 'РФ' && (
             <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 space-y-2">
               <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300">
@@ -1156,6 +1168,7 @@ export const ClientsPage: React.FC = () => {
             </div>
 
             {/* Profile Tabs */}
+            {profileClient.registrationAddress && <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-sm"><span className="block text-slate-500 text-xs mb-1">Прописка</span><p className="whitespace-pre-wrap break-words">{profileClient.registrationAddress}</p></div>}
             <div className="flex flex-wrap border-b border-slate-200 dark:border-slate-800 gap-2">
               <button
                 type="button"

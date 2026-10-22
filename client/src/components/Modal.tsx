@@ -8,6 +8,8 @@ interface ModalProps {
   subtitle?: string;
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
+  mobileFullscreen?: boolean;
+  footer?: React.ReactNode;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -17,6 +19,8 @@ export const Modal: React.FC<ModalProps> = ({
   subtitle,
   children,
   maxWidth = 'lg',
+  mobileFullscreen = false,
+  footer,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,7 +54,7 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center ${mobileFullscreen ? 'p-0 sm:p-4 md:p-6' : 'p-2 sm:p-4 md:p-6'} overflow-y-auto`}>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
@@ -59,7 +63,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Box */}
       <div
-        className={`relative w-full ${widthClasses} bg-white dark:bg-[#0c1511] rounded-2xl shadow-2xl border border-slate-200 dark:border-emerald-500/25 dark:shadow-[0_0_50px_rgba(16,185,129,0.12)] p-4 sm:p-6 transition-all transform max-h-[92vh] flex flex-col z-10`}
+        className={`relative w-full ${widthClasses} bg-white dark:bg-[#0c1511] ${mobileFullscreen ? 'rounded-none h-[100dvh] max-h-[100dvh] sm:rounded-2xl sm:h-auto sm:max-h-[92vh]' : 'rounded-2xl max-h-[92vh]'} shadow-2xl border border-slate-200 dark:border-emerald-500/25 dark:shadow-[0_0_50px_rgba(16,185,129,0.12)] p-4 sm:p-6 transition-all transform flex flex-col z-10`}
       >
         {/* Header */}
         <div className="flex items-start justify-between pb-3 sm:pb-4 border-b border-slate-100 dark:border-emerald-500/15 shrink-0 gap-2">
@@ -86,6 +90,7 @@ export const Modal: React.FC<ModalProps> = ({
         <div className="py-3 sm:py-4 overflow-y-auto grow custom-scrollbar">
           {children}
         </div>
+        {footer && <div className="shrink-0 border-t border-slate-100 dark:border-emerald-500/15 pb-[env(safe-area-inset-bottom)]">{footer}</div>}
       </div>
     </div>
   );

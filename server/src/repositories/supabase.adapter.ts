@@ -518,7 +518,7 @@ class SupabaseAdapter {
       const created = await client.storage.createBucket(bucket, { public: false });
       if (created.error && !created.error.message.includes("already exists")) throw new Error(created.error.message);
     }
-    const { error } = await client.storage.from(bucket).upload(filename, buffer, { contentType, upsert: false });
+    const { error } = await client.storage.from(bucket).upload(filename, buffer, { contentType, upsert: false, cacheControl: filename.startsWith('bike_') ? '86400' : '3600' });
     if (error) throw new Error(error.message);
   }
 
@@ -527,6 +527,12 @@ class SupabaseAdapter {
     const { data, error } = await client.storage.from(bucket).createSignedUrl(filename, 60);
     if (error) throw new Error(error.message);
     return data.signedUrl;
+  }
+
+  public async deleteDocuments(filenames: string[]): Promise<void> {
+    const { client, bucket } = this.documentStorage();
+    const { error } = await client.storage.from(bucket).remove(filenames);
+    if (error) throw new Error(error.message);
   }
 }
 

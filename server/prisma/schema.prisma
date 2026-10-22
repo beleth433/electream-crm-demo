@@ -117,6 +117,7 @@ model BikeModel {
 }
 
 model Bike {
+  photos          Json          @default("[]")
   id              String        @id @default(uuid())
   inventoryNumber String        @unique // e.g. "EV-001"
   modelId         String
@@ -146,6 +147,7 @@ model Outfit {
 }
 
 model Client {
+  registrationAddress String?
   id                String       @id @default(uuid())
   fullName          String
   phone             String       @unique

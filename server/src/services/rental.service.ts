@@ -31,6 +31,7 @@ export class RentalService {
   }
 
   static createRental(data: {
+    registrationAddress?: string | null;
     clientId: string;
     bikeId: string;
     tariffId: string;

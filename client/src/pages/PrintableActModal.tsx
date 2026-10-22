@@ -120,6 +120,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
                 Гражданство: {rental.client?.citizenship || 'РФ'} | Паспорт:{' '}
                 {rental.client?.passportSerial} {rental.client?.passportNumber}
               </p>
+              {rental.client?.registrationAddress && <p>Прописка: {rental.client.registrationAddress}</p>}
               {rental.client?.patentNumber && (
                 <p>Патент / ЕАЭС: {rental.client?.patentNumber}</p>
               )}

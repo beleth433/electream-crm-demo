@@ -54,7 +54,8 @@ export class UploadController {
   static async downloadCloud(req: Request, res: Response) {
     try {
       const filename = req.params.filename;
-      if (!/^doc_[a-f0-9-]+\.(jpg|png|webp|pdf)$/i.test(filename)) return res.status(400).json({ error: "Некорректное имя документа" });
+      if (!/^(doc_[a-f0-9-]+\.(jpg|png|webp|pdf)|bike_[a-f0-9-]+(_thumb)?\.webp)$/i.test(filename)) return res.status(400).json({ error: "Некорректное имя документа" });
+      if (filename.startsWith('bike_')) res.setHeader('Cache-Control', 'private, max-age=30');
       return res.redirect(await supabaseAdapter.documentDownloadUrl(filename));
     } catch (error: any) {
       return res.status(404).json({ error: error.message });

@@ -98,7 +98,7 @@ app.use(async (req, res, next) => {
   try {
     await initCloudDb();
     const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
-    await checkAndSyncCloudDb(isMutation);
+    if (!req.path.startsWith('/uploads/')) await checkAndSyncCloudDb(isMutation);
   } catch (err: any) {
     console.error("[Storage Middleware] Sync error:", err.message);
   }
@@ -151,7 +151,10 @@ try {
   // Graceful fallback for read-only environments
 }
 app.get("/uploads/cloud/:filename", authenticateApi, UploadController.downloadCloud);
-app.use("/uploads", authenticateApi, express.static(uploadsDir));
+app.use("/uploads", authenticateApi, (req, res, next) => {
+  if (/^\/bike_[a-f0-9-]+(_thumb)?\.webp$/i.test(req.path)) res.setHeader('Cache-Control', 'private, max-age=86400, immutable');
+  next();
+}, express.static(uploadsDir));
 
 
 // API Routes (mount on both /api and root to support Vercel rewrites)

@@ -212,6 +212,7 @@ export class ClientRepository {
   }
 
   static create(data: {
+    registrationAddress?: string | null;
     fullName: string;
     phone: string;
     telegram?: string;
@@ -235,6 +236,7 @@ export class ClientRepository {
     }
 
     const newClient: ClientRecord = {
+      registrationAddress: data.registrationAddress?.trim() || null,
       id: `cli-${Date.now()}`,
       fullName: data.fullName,
       phone: data.phone,
@@ -262,6 +264,7 @@ export class ClientRepository {
     const db = getDb();
     const index = db.clients.findIndex((c) => c.id === id);
     if (index === -1) return null;
+    if (data.registrationAddress !== undefined) data = { ...data, registrationAddress: data.registrationAddress?.trim() || null };
     if (data.phone && db.clients.some((client) => client.id !== id && normalizePhone(client.phone) === normalizePhone(data.phone))) {
       throw new Error("Клиент с этим телефоном уже зарегистрирован");
     }

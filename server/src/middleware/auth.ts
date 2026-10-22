@@ -23,7 +23,8 @@ export function authenticateApi(req: Request, res: Response, next: NextFunction)
     if ((root === "users" || root === "employees" || root === "access-levels") && level?.canManageEmployees !== true) return res.status(403).json({ error: "Нет прав на управление сотрудниками" });
     if (root === "system" && route !== "/system/state" && level?.id !== "lvl-owner") return res.status(403).json({ error: "Системные операции доступны владельцу" });
     const createRelatedClient = !isRead && req.method === "POST" && route === "/clients" && ["rentals", "shop", "repairs"].some((item) => visible(item) && edit(item));
-    if (module && !globalRead && !allowedReference && !createRelatedClient && (!visible(module) || (!isRead && !(req.method === "DELETE" ? remove(module) : edit(module))))) return res.status(403).json({ error: "Недостаточно прав для этой операции" });
+    const deleteEntity = req.method === "DELETE" && !route.startsWith('/bikes/photos/');
+    if (module && !globalRead && !allowedReference && !createRelatedClient && (!visible(module) || (!isRead && !(deleteEntity ? remove(module) : edit(module))))) return res.status(403).json({ error: "Недостаточно прав для этой операции" });
 
     // Remove fields that the role cannot inspect while preserving reference data
     // required for repair, checkout and other permitted workflows.
@@ -32,7 +33,7 @@ export function authenticateApi(req: Request, res: Response, next: NextFunction)
       const sanitized = JSON.parse(JSON.stringify(body, (key, value) => {
         if (key === "passwordHash" || key === "password" || key === "authSigningKey") return undefined;
         if (level?.canSeeProfits !== true && ["netMargin", "profit"].includes(key)) return undefined;
-        if (!visible("clients") && ["passportSerial", "passportNumber", "migrationCard", "patentNumber", "documentPhotoUrls"].includes(key)) return undefined;
+        if (!visible("clients") && ["passportSerial", "passportNumber", "registrationAddress", "migrationCard", "patentNumber", "documentPhotoUrls"].includes(key)) return undefined;
         return value;
       }));
       return originalJson(sanitized);

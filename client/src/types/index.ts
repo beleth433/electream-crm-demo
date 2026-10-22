@@ -201,6 +201,7 @@ export interface BatteryStats {
 }
 
 export interface Bike {
+  photos?: BikePhoto[];
   id: string;
   inventoryNumber: string;
   modelId: string;
@@ -225,6 +226,15 @@ export interface Bike {
     clientName?: string;
     clientPhone?: string;
   } | null;
+}
+
+export interface BikePhoto {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+  width: number;
+  height: number;
+  sizeBytes: number;
 }
 
 export interface OutfitCategoryItem {
@@ -263,6 +273,7 @@ export interface Outfit {
 }
 
 export interface Client {
+  registrationAddress?: string | null;
   id: string;
   fullName: string;
   phone: string;

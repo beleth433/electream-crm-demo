@@ -72,6 +72,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     telegram: '',
     passportSerial: '',
     passportNumber: '',
+    registrationAddress: '',
     citizenship: 'РФ',
     migrationCard: '',
     patentNumber: '',
@@ -82,6 +83,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
     courierService: 'Яндекс Еда',
     passportSerial: '',
     passportNumber: '',
+    registrationAddress: '',
     citizenship: 'РФ',
     patentNumber: '',
     telegram: '',
@@ -93,6 +95,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       courierService: client.courierService || 'Яндекс Еда',
       passportSerial: client.passportSerial || '',
       passportNumber: client.passportNumber || '',
+      registrationAddress: client.registrationAddress || '',
       citizenship: client.citizenship || 'РФ',
       patentNumber: client.patentNumber || '',
       telegram: client.telegram || '',
@@ -162,6 +165,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
           telegram: '',
           passportSerial: '',
           passportNumber: '',
+        registrationAddress: '',
           citizenship: 'РФ',
           migrationCard: '',
           patentNumber: '',
@@ -250,7 +254,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
       setIsLoading(true);
       const created = await api.createClient(newClientForm as any);
       toast.success(`Курьер ${created.fullName} успешно зарегистрирован!`);
-      setSelectedClient(created);
+      handleSelectClient(created);
       setIsCreatingClient(false);
       // refresh client list
       const refreshed = await api.getClients();
@@ -625,6 +629,7 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
         courierService: clientExtraDetails.courierService || selectedClient.courierService || undefined,
         passportSerial: clientExtraDetails.passportSerial || selectedClient.passportSerial || undefined,
         passportNumber: clientExtraDetails.passportNumber || selectedClient.passportNumber || undefined,
+        registrationAddress: clientExtraDetails.registrationAddress,
         citizenship: clientExtraDetails.citizenship || selectedClient.citizenship || undefined,
         patentNumber: clientExtraDetails.patentNumber || selectedClient.patentNumber || undefined,
         telegram: clientExtraDetails.telegram || selectedClient.telegram || undefined,
@@ -834,6 +839,10 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                     </button>
                   </div>
 
+                  <label className="block text-sm text-slate-500">Прописка
+                    <textarea maxLength={500} rows={2} value={clientExtraDetails.registrationAddress} onChange={(e) => setClientExtraDetails({ ...clientExtraDetails, registrationAddress: e.target.value })} placeholder="Город, улица, дом, корпус, квартира" className="mt-1 w-full min-h-[44px] px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-base sm:text-sm" />
+                  </label>
+
                   {(!selectedClient.passportNumber || !selectedClient.courierService) && (
                     <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 space-y-2">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-400">
@@ -990,6 +999,10 @@ export const RentalWizardModal: React.FC<RentalWizardModalProps> = ({
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs"
                   />
                 </div>
+
+                <label className="block sm:col-span-2 text-sm text-slate-500">Прописка
+                  <textarea maxLength={500} rows={2} value={newClientForm.registrationAddress} onChange={(e) => setNewClientForm({ ...newClientForm, registrationAddress: e.target.value })} placeholder="Город, улица, дом, корпус, квартира" className="mt-1 w-full min-h-[44px] px-3 py-2 rounded-xl border bg-white dark:bg-slate-900 text-base sm:text-sm" />
+                </label>
 
                 {newClientForm.citizenship !== 'РФ' && (
                   <>

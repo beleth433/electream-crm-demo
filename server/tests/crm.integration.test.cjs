@@ -417,6 +417,61 @@ test('an HTTP storage conflict rolls back the unconfirmed operation and returns 
   supabaseAdapter.saveToCloud = async () => {};
 });
 
+test('registration address survives client creation, updates and rental views', async () => {
+  const { token } = AuthService.login('bxleth', 'admin');
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const response = await fetch(`${apiUrl}/clients`, { method: 'POST', headers, body: JSON.stringify({ fullName: 'Сергей Морозов', phone: '+79992223344', registrationAddress: '  г. Москва, ул. Лесная, д. 10, кв. 5  ' }) });
+  assert.equal(response.status, 201);
+  const customer = await response.json();
+  assert.equal(customer.registrationAddress, 'г. Москва, ул. Лесная, д. 10, кв. 5');
+  const rental = issue({ clientId: customer.id, registrationAddress: 'г. Москва, ул. Лесная, д. 12' });
+  assert.equal(rentals.getById(rental.id).client.registrationAddress, 'г. Москва, ул. Лесная, д. 12');
+  const updated = await fetch(`${apiUrl}/clients/${customer.id}`, { method: 'PATCH', headers, body: JSON.stringify({ registrationAddress: '' }) });
+  assert.equal(updated.status, 200);
+  assert.equal(clients.getById(customer.id).registrationAddress, null);
+  assert.equal(rentals.getById(rental.id).client.registrationAddress, null);
+});
+
+test('optimized bike photos persist as small metadata and unused files can be removed', async () => {
+  const { token } = AuthService.login('bxleth', 'admin');
+  const headers = { Authorization: `Bearer ${token}` };
+  const image = Buffer.from('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA', 'base64');
+  const body = new FormData();
+  body.set('image', new Blob([image], { type: 'image/webp' }), 'bike.webp');
+  body.set('thumbnail', new Blob([image], { type: 'image/webp' }), 'thumb.webp');
+  const upload = await fetch(`${apiUrl}/bikes/photos`, { method: 'POST', headers, body });
+  assert.equal(upload.status, 201);
+  const { photo } = await upload.json();
+  assert.equal(photo.width, 1);
+  assert.equal(photo.height, 1);
+  const imageResponse = await fetch(apiUrl.replace(/\/api$/, '') + photo.thumbnailUrl, { headers });
+  assert.equal(imageResponse.status, 200);
+  assert.ok(imageResponse.headers.get('cache-control').includes('private'));
+  assert.equal(imageResponse.headers.get('content-type'), 'image/webp');
+  const changed = await fetch(`${apiUrl}/bikes/bike`, { method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ photos: [photo] }) });
+  assert.equal(changed.status, 200);
+  assert.equal(bikes.getAll()[0].photos[0].id, photo.id);
+  const stored = JSON.parse(fs.readFileSync(store.DB_FILE, 'utf8'));
+  assert.ok(JSON.stringify(stored.bikes[0].photos).length < 500);
+  assert.equal(JSON.stringify(stored.bikes[0].photos).includes('base64'), false);
+  assert.equal((await fetch(`${apiUrl}/bikes/photos/${photo.id}`, { method: 'DELETE', headers })).status, 409);
+  await fetch(`${apiUrl}/bikes/bike`, { method: 'PATCH', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ photos: [] }) });
+  assert.equal((await fetch(`${apiUrl}/bikes/photos/${photo.id}`, { method: 'DELETE', headers })).status, 200);
+  assert.equal(fs.existsSync(path.join(process.env.CRM_UPLOADS_DIR, `bike_${photo.id}.webp`)), false);
+  assert.equal(fs.existsSync(path.join(process.env.CRM_UPLOADS_DIR, `bike_${photo.id}_thumb.webp`)), false);
+});
+
+test('photo limits reject large images and binary data in the CRM record', () => {
+  const { validateBikePhoto } = require('../dist/services/bikePhoto.service.js');
+  assert.throws(() => validateBikePhoto(Buffer.alloc(401 * 1024)), /слишком большая/);
+  const { BikePhotosDto } = require('../dist/dtos/schemas.dto.js');
+  const id = '11111111-1111-4111-8111-111111111111';
+  const photo = { id, url: `/uploads/bike_${id}.webp`, thumbnailUrl: `/uploads/bike_${id}_thumb.webp`, width: 1600, height: 1200, sizeBytes: 300000 };
+  assert.equal(BikePhotosDto.safeParse([photo]).success, true);
+  assert.equal(BikePhotosDto.safeParse(Array(9).fill(photo)).success, false);
+  assert.equal(BikePhotosDto.safeParse([{ ...photo, url: 'data:image/webp;base64,AAAA' }]).success, false);
+});
+
 after(async () => {
   await store.flushDb(true);
   await new Promise((resolve) => httpServer.close(resolve));

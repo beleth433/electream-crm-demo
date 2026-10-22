@@ -1,4 +1,4 @@
-import { getDb, BikeStatus, BikeRecord, saveDb } from "./db.js";
+import { getDb, BikeStatus, BikeRecord, BikePhoto, saveDb } from "./db.js";
 import { BatteryRepository } from "./battery.repository.js";
 import { activeRentalForBike } from "./relations.js";
 
@@ -199,6 +199,7 @@ export class BikeRepository {
   }
 
   static create(data: {
+    photos?: BikePhoto[];
     inventoryNumber: string;
     modelId: string;
     batteryId?: string | null;
@@ -228,6 +229,7 @@ export class BikeRepository {
       data.salePrice !== undefined ? Number(data.salePrice) : (model?.salePrice ?? 0);
 
     const newBike = {
+      photos: data.photos || [],
       id: `bike-${Date.now()}`,
       inventoryNumber: data.inventoryNumber,
       modelId: data.modelId,

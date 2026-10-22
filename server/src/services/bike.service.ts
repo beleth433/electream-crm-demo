@@ -36,6 +36,7 @@ export class BikeService {
   }
 
   static createBike(data: {
+    photos?: import("../repositories/db.js").BikePhoto[];
     inventoryNumber: string;
     modelId: string;
     batteryId?: string | null;

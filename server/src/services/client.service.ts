@@ -24,6 +24,7 @@ export class ClientService {
   }
 
   static createClient(data: {
+    registrationAddress?: string | null;
     fullName: string;
     phone: string;
     telegram?: string;

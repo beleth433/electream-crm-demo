@@ -28,3 +28,26 @@ test('successful mutations preserve auth headers and notify related CRM views', 
     delete (globalThis as any).localStorage;
   }
 });
+
+test('bike photo drafts upload only on save and clean up new files if the record is rejected', async () => {
+  const { api } = await import('../../client/src/services/api.ts');
+  const { saveBikePhotoDrafts } = await import('../../client/src/components/BikePhotoGallery.tsx');
+  const originalUpload = api.uploadBikePhoto;
+  const originalDelete = api.deleteBikePhoto;
+  const existing = { id: 'existing', url: '/uploads/existing.webp', thumbnailUrl: '/uploads/existing_thumb.webp', width: 10, height: 10, sizeBytes: 100 };
+  const uploaded = { ...existing, id: 'new', url: '/uploads/new.webp' };
+  const draft = { ...existing, id: 'draft', imageFile: new File(['photo'], 'bike.webp', { type: 'image/webp' }), thumbnailFile: new File(['thumb'], 'thumb.webp', { type: 'image/webp' }) };
+  const deleted: string[] = [];
+  api.uploadBikePhoto = async () => uploaded;
+  api.deleteBikePhoto = async (id) => { deleted.push(id); return { success: true }; };
+  try {
+    await assert.rejects(saveBikePhotoDrafts([existing, draft], async () => { throw new Error('invalid bike'); }, [existing]), /invalid bike/);
+    assert.deepEqual(deleted, ['new']);
+    deleted.length = 0;
+    await saveBikePhotoDrafts([draft], async (photos) => {
+      assert.equal(photos[0].id, 'new');
+      assert.equal(JSON.stringify(photos).includes('imageFile'), false);
+    }, [existing]);
+    assert.deepEqual(deleted, ['existing']);
+  } finally { api.uploadBikePhoto = originalUpload; api.deleteBikePhoto = originalDelete; }
+});

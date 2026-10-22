@@ -33,6 +33,7 @@ import {
 } from '../types';
 
 import { notifyCrmChanged } from '../hooks/useCrmRefresh';
+import type { BikePhoto } from '../types';
 const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
 
 function getAuthHeaders(): Record<string, string> {
@@ -94,6 +95,16 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  uploadBikePhoto: async (image: File, thumbnail: File): Promise<BikePhoto> => {
+    const body = new FormData();
+    body.append('image', image);
+    body.append('thumbnail', thumbnail);
+    const response = await fetch(`${API_BASE}/bikes/photos`, { method: 'POST', headers: getAuthHeaders(), body });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Не удалось загрузить фото');
+    return result.photo;
+  },
+  deleteBikePhoto: (id: string) => fetchJson<{ success: boolean }>(`/bikes/photos/${id}`, { method: 'DELETE' }),
   // Auth
   getMe: (userId?: string) =>
     fetchJson<User>(userId ? `/auth/me?userId=${encodeURIComponent(userId)}` : '/auth/me'),
@@ -222,6 +233,7 @@ export const api = {
     fetchJson<{ success: boolean; message?: string }>(`/rentals/tariffs/${id}`, { method: 'DELETE' }),
   getRental: (id: string) => fetchJson<Rental>(`/rentals/${id}`),
   createRental: (data: {
+    registrationAddress?: string | null;
     clientId: string;
     bikeId: string;
     tariffId: string;

@@ -22,6 +22,7 @@ import { OutfitController } from "../controllers/outfit.controller.js";
 import { LoyaltyController } from "../controllers/loyalty.controller.js";
 import { ShopController } from "../controllers/shop.controller.js";
 import { authenticateApi } from "../middleware/auth.js";
+import { BikePhotoController, bikePhotoUpload } from "../controllers/bikePhoto.controller.js";
 
 const router = Router();
 const accessLevelCtrl = new AccessLevelController();
@@ -35,6 +36,8 @@ router.post("/auth/logout", AuthController.logout);
 router.get("/auth/me", AuthController.getMe);
 
 // 2. Dashboard
+router.post("/bikes/photos", bikePhotoUpload, BikePhotoController.upload);
+router.delete("/bikes/photos/:id", BikePhotoController.remove);
 router.get("/dashboard/stats", DashboardController.getStats);
 
 // 3. Batteries (АКБ)
