@@ -145,16 +145,14 @@
 
 /* Print styles for Handover Act */
 @media print {
-  body * {
-    visibility: hidden;
+  body > :not(#printable-act) {
+    display: none !important;
   }
   #printable-act, #printable-act * {
     visibility: visible;
   }
   #printable-act {
-    position: absolute;
-    left: 0;
-    top: 0;
+    position: static;
     width: 100%;
     margin: 0;
     padding: 20px;

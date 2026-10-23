@@ -24,6 +24,7 @@ const CRM_MODULES = [
   { id: 'employees', label: 'Команда и сотрудники (кадры, зарплаты)' },
   { id: 'info', label: 'База знаний («Информация»)' },
   { id: 'history', label: 'Журнал аудита («История»)' },
+  { id: 'documents', label: 'Документы (в пределах доступа к исходным разделам)' },
 ] as const;
 
 export const AccessLevelModal: React.FC<AccessLevelModalProps> = ({

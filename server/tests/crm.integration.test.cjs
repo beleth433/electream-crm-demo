@@ -472,6 +472,165 @@ test('photo limits reject large images and binary data in the CRM record', () =>
   assert.equal(BikePhotosDto.safeParse([{ ...photo, url: 'data:image/webp;base64,AAAA' }]).success, false);
 });
 
+test('document snapshots preserve issuance data and survive changes to related cards', () => {
+  db.clients[0].registrationAddress = 'г. Москва, ул. Лесная, д. 10';
+  db.settings.paymentDetails = { recipientName: 'ИП Иванов', inn: '123456789012' };
+  const rental = issue({ firstPaymentAmount: 650, durationDays: 10 });
+  const handover = db.documents.find((d) => d.type === 'HANDOVER_ACT');
+  assert.equal(db.documents.length, 2);
+  assert.equal(handover.reconstructed, false);
+  assert.equal(handover.amount, 650);
+  assert.equal(handover.snapshot.rentalData.bike.battery.serialNumber, 'BAT-001');
+  assert.equal(handover.snapshot.rentalData.totalPaidForBuyout, 650);
+  const original = JSON.stringify(handover);
+  db.clients[0].fullName = 'Сергей Морозов';
+  db.clients[0].registrationAddress = 'г. Самара';
+  db.settings.paymentDetails.recipientName = 'Новые реквизиты';
+  db.models[0].name = 'Другая модель';
+  db.tariffs[0].price = 1500;
+  db.outfits[0].name = 'Другой замок';
+  rentals.renew(rental.id, { amount: 650, durationDays: 7, method: 'CASH' });
+  assert.equal(JSON.stringify(handover), original);
+  assert.equal(db.documents.length, 2);
+  assert.equal(handover.snapshot.rentalData.client.registrationAddress, 'г. Москва, ул. Лесная, д. 10');
+});
+
+test('return acts record equipment condition, defects, deductions and linked workshop order', () => {
+  const rental = issue();
+  completeReturn(rental.id, { bikeCondition: 'NEEDS_REPAIR', defectDescription: 'Повреждено колесо', outfitReturns: [{ outfitId: 'outfit', condition: 'DAMAGED', deductionAmount: 300 }] });
+  const act = db.documents.find((d) => d.type === 'RETURN_ACT');
+  assert.equal(act.amount, 700);
+  assert.ok(act.snapshot.notes.includes('Повреждено колесо'));
+  assert.ok(act.snapshot.equipment.some((e) => e.number.includes('Повреждено')));
+  assert.ok(act.snapshot.details.some((d) => d.label === 'Удержано' && d.value === '300 ₽'));
+  assert.ok(db.documents.some((d) => d.type === 'REPAIR_ORDER' && d.sourceId === db.repairs[0].id));
+});
+
+test('buyout and later deposit settlement have separate dates and asset lists', () => {
+  const rental = issue({ tariffId: 'buyout' });
+  rentals.renew(rental.id, { amount: 3000, method: 'CASH', isBuyoutFinal: true });
+  const buyout = db.documents.find((d) => d.type === 'BUYOUT_ACT');
+  assert.equal(buyout.amount, 4000);
+  assert.equal(buyout.snapshot.equipment.length, 3);
+  assert.equal(buyout.snapshot.equipment.some((e) => e.name === 'Замок'), false);
+  store.setSystemTime('2026-10-25T12:00:00Z');
+  completeReturn(rental.id);
+  assert.equal(buyout.issuedAt, '2026-10-22T12:00:00.000Z');
+  assert.equal(db.documents.find((d) => d.type === 'RETURN_ACT').issuedAt, '2026-10-25T12:00:00.000Z');
+});
+
+test('sale receipts and completed repair acts freeze prices, names and original intake', async () => {
+  const sale = await shop.createOrder({ customerType: 'COURIER', clientId: 'client', paymentMethod: 'CASH', items: [{ itemType: 'PART', itemId: 'part1', quantity: 1 }] });
+  const receipt = db.documents.find((d) => d.type === 'SALE_RECEIPT');
+  const original = JSON.stringify(receipt);
+  sale.items[0].name = 'Изменено';
+  sale.totalAmount = 1;
+  db.parts[0].clientPrice = 350;
+  assert.equal(JSON.stringify(receipt), original);
+  const repair = repairs.create({ bikeId: 'bike', faultType: 'CLIENT_FAULT', description: 'Замена колодок', laborCost: 300 });
+  const intake = JSON.stringify(db.documents.find((d) => d.type === 'REPAIR_ORDER'));
+  repairs.complete(repair.id, { partsUsed: [{ partId: 'part1', quantity: 1 }], paymentMethod: 'CASH' });
+  const act = db.documents.find((d) => d.type === 'REPAIR_ACT');
+  assert.equal(act.amount, 650);
+  assert.equal(act.snapshot.items[0].name, 'Колодки');
+  assert.equal(JSON.stringify(db.documents.find((d) => d.type === 'REPAIR_ORDER')), intake);
+  db.parts[0].name = 'Новая деталь';
+  assert.equal(act.snapshot.items[0].name, 'Колодки');
+});
+
+test('legacy documents backfill once, persist and remain readable after source removal', async () => {
+  const { DocumentRepository: documents } = require('../dist/repositories/document.repository.js');
+  const rental = issue();
+  completeReturn(rental.id);
+  db.documents = [];
+  const token = issueSession(db.users[0]);
+  const headers = { Authorization: `Bearer ${token}` };
+  const response = await fetch(`${apiUrl}/documents`, { headers });
+  assert.equal(response.status, 200);
+  const list = await response.json();
+  assert.equal(list.total, 3);
+  assert.equal(list.items.every((d) => d.reconstructed && !('snapshot' in d)), true);
+  const saved = JSON.parse(fs.readFileSync(store.DB_FILE, 'utf8')).documents;
+  assert.equal(saved.length, 3);
+  assert.equal(documents.backfill(), false);
+  db.rentals = [];
+  const archived = await fetch(`${apiUrl}/documents/${list.items[0].id}`, { headers });
+  assert.equal(archived.status, 200);
+  assert.equal((await archived.json()).snapshot.client.fullName, 'Иван Иванов');
+});
+
+test('document API inherits source permissions and hides passport data from restricted roles', async () => {
+  issue();
+  const repair = repairs.create({ itemType: 'EXTERNAL_DEVICE', customItemName: 'Велосипед клиента', clientId: 'client', faultType: 'CLIENT_FAULT', description: 'Диагностика' });
+  db.users.push({ id: 'documents-master', fullName: 'Дмитрий Кузнецов', email: 'master@test.invalid', passwordHash: 'test', role: 'MECHANIC', accessLevelId: 'lvl-master', isActive: true });
+  const master = db.users.find((u) => u.role === 'MECHANIC');
+  const level = db.accessLevels.find((l) => l.id === master.accessLevelId);
+  level.permissions.rentals = { visible: false, canEdit: false, canDelete: false };
+  level.permissions.shop = { visible: false, canEdit: false, canDelete: false };
+  level.permissions.repairs = { visible: true, canEdit: true, canDelete: false };
+  const headers = { Authorization: `Bearer ${issueSession(master)}` };
+  const list = await (await fetch(`${apiUrl}/documents`, { headers })).json();
+  assert.equal(list.total, 1);
+  assert.equal(list.items[0].sourceId, repair.id);
+  assert.equal((await fetch(`${apiUrl}/documents/${db.documents.find((d) => d.type === 'HANDOVER_ACT').id}`, { headers })).status, 404);
+  assert.equal((await fetch(`${apiUrl}/documents`)).status, 401);
+  level.permissions.rentals.visible = true;
+  level.permissions.clients = { visible: false };
+  db.clients[0].passportNumber = '123456';
+  db.documents.find((d) => d.type === 'HANDOVER_ACT').snapshot.client.passportNumber = '123456';
+  const handover = await (await fetch(`${apiUrl}/documents/${db.documents.find((d) => d.type === 'HANDOVER_ACT').id}`, { headers })).json();
+  assert.equal('passportNumber' in handover.snapshot.client, false);
+  level.permissions.documents = { visible: false };
+  assert.equal((await fetch(`${apiUrl}/documents`, { headers })).status, 403);
+});
+
+test('document filters support normalized phone, dates, types and pagination', async () => {
+  const { DocumentRepository: documents } = require('../dist/repositories/document.repository.js');
+  issue();
+  const owner = db.users[0];
+  assert.equal(documents.getAll(owner, { search: '9991234567' }).total, 2);
+  assert.equal(documents.getAll(owner, { search: 'EV-001', type: 'HANDOVER_ACT' }).total, 1);
+  assert.equal(documents.getAll(owner, { from: '2026-10-23' }).total, 0);
+  const source = JSON.parse(JSON.stringify(db.documents[0]));
+  for (let i = 0; i < 35; i++) db.documents.push({ ...source, id: `archive-${i}`, number: `ДОГ-${i}` });
+  const page = documents.getAll(owner, { page: 2 });
+  assert.equal(page.total, 37);
+  assert.equal(page.items.length, 7);
+  const headers = { Authorization: `Bearer ${issueSession(owner)}` };
+  for (const query of ['from=2026-11-01&to=2026-10-01', 'page=0', 'type=UNKNOWN', 'from=invalid']) {
+    assert.equal((await fetch(`${apiUrl}/documents?${query}`, { headers })).status, 400);
+  }
+});
+
+test('restoring a receipt preserves its recorded customer and cashier rather than the reader', async () => {
+  const sale = await shop.createOrder({ customerType: 'CLIENT', clientId: 'client', paymentMethod: 'CASH', items: [{ itemType: 'PART', itemId: 'part1', quantity: 1 }] });
+  db.payments.find((p) => p.orderId === sale.id).cashierId = db.users[0].id;
+  db.clients[0].fullName = 'Сергей Морозов';
+  db.documents = [];
+  db.users.push({ id: 'reader', fullName: 'Алексей Смирнов', email: 'reader@test.invalid', passwordHash: 'test', role: 'MANAGER', accessLevelId: 'lvl-manager', isActive: true });
+  const headers = { Authorization: `Bearer ${issueSession(db.users.find((u) => u.id === 'reader'))}` };
+  const response = await fetch(`${apiUrl}/documents/doc-sale_receipt-${sale.id}`, { headers });
+  assert.equal(response.status, 200);
+  const doc = await response.json();
+  assert.equal(doc.clientName, 'Иван Иванов');
+  assert.equal(doc.snapshot.client.fullName, 'Иван Иванов');
+  assert.equal(doc.snapshot.actor, db.users[0].fullName);
+  assert.equal(doc.reconstructed, true);
+});
+
+test('failed issuance rolls back document captures together with the source operation', () => {
+  const { DocumentRepository: documents } = require('../dist/repositories/document.repository.js');
+  const originalCapture = documents.capture;
+  const before = JSON.stringify(db);
+  documents.capture = function (type, ...args) {
+    if (type === 'HANDOVER_ACT') throw new Error('Проверка отката документа');
+    return originalCapture.call(this, type, ...args);
+  };
+  try { assert.throws(() => issue(), /Проверка отката/); }
+  finally { documents.capture = originalCapture; }
+  assert.equal(JSON.stringify(db), before);
+});
+
 after(async () => {
   await store.flushDb(true);
   await new Promise((resolve) => httpServer.close(resolve));

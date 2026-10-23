@@ -1,4 +1,5 @@
 import { HistoryRepository } from './history.repository.js';
+import { DocumentRepository } from './document.repository.js';
 import { getDb, getSystemTime, withDbTransaction, RepairStatus, RepairFaultType, PaymentMethod, RepairOrderRecord, saveDb } from "./db.js";
 import { getCurrentUser } from "../context/userContext.js";
 import { activeRentalForBike, activeRentalForBattery, normalizePhone, nextNumber } from "./relations.js";
@@ -241,6 +242,7 @@ export class RepairRepository {
     };
 
     db.repairs.push(newRepair);
+    DocumentRepository.capture('REPAIR_ORDER', newRepair.id);
     saveDb();
 
     return this.getById(newRepair.id);
@@ -282,7 +284,7 @@ export class RepairRepository {
   }
 
   static complete(id: string, data: Parameters<typeof RepairRepository.completeInternal>[1]) {
-    return withDbTransaction(() => this.completeInternal(id, data));
+    return withDbTransaction(() => { DocumentRepository.capture('REPAIR_ORDER', id, true); return this.completeInternal(id, data); });
   }
 
   private static completeInternal(
@@ -390,6 +392,7 @@ export class RepairRepository {
       entityId: repair.id,
     });
 
+    DocumentRepository.capture('REPAIR_ACT', repair.id);
     saveDb();
     return this.getById(repair.id);
   }

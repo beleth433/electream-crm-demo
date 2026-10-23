@@ -2,6 +2,8 @@ import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { Rental, RentalStatus, Tariff, BikeModel, BatteryModel, TariffBuyoutBatteryItem } from '../types';
 import { api } from '../services/api';
+import type { DocumentSummary } from '../types/documents';
+import { SourceOperationNotice } from '../components/SourceOperationNotice';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
 import { PhoneQrModal } from '../components/PhoneQrModal';
@@ -31,6 +33,8 @@ import {
 import { toast } from 'sonner';
 
 interface RentalsPageProps {
+  sourceDocument?: DocumentSummary | null;
+  onClearSource?: () => void;
   onOpenCheckoutWizard: (initialType?: 'STANDARD' | 'RENT_TO_OWN') => void;
   onOpenCloseModal: (rental: Rental) => void;
   onOpenPrintAct: (rental: Rental) => void;
@@ -44,6 +48,8 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
   onOpenPrintAct,
   onNavigateToTab,
   refreshTrigger,
+  sourceDocument,
+  onClearSource,
 }) => {
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,8 +133,8 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
     setIsLoading(true);
     api
       .getRentals({
-        status: statusFilter === 'ALL' ? undefined : statusFilter,
-        search,
+        status: sourceDocument || statusFilter === 'ALL' ? undefined : statusFilter,
+        search: sourceDocument ? undefined : search,
       })
       .then((data) => setRentals(data))
       .catch((err) => toast.error('Ошибка загрузки аренд: ' + err.message))
@@ -140,7 +146,18 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
   useEffect(() => {
     loadRentals();
     loadTariffs();
-  }, [statusFilter, refreshTrigger]);
+  }, [statusFilter, refreshTrigger, sourceDocument]);
+
+  useEffect(() => {
+    if (!sourceDocument) return;
+    setStatusFilter('ALL');
+    setSearch('');
+    let cancelled = false;
+    api.getRental(sourceDocument.sourceId).then((rental) => {
+      if (!cancelled) setActiveMode(rental.type === 'RENT_TO_OWN' ? 'buyout' : 'standard');
+    }).catch((err) => { if (!cancelled) toast.error(err.message); });
+    return () => { cancelled = true; };
+  }, [sourceDocument]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -361,8 +378,9 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
     }
   };
 
-  const standardRentals = rentals.filter((r) => r.type !== 'RENT_TO_OWN');
-  const buyoutRentals = rentals.filter((r) => r.type === 'RENT_TO_OWN');
+  const sourceRentals = sourceDocument ? rentals.filter((r) => r.id === sourceDocument.sourceId) : rentals;
+  const standardRentals = sourceRentals.filter((r) => r.type !== 'RENT_TO_OWN');
+  const buyoutRentals = sourceRentals.filter((r) => r.type === 'RENT_TO_OWN');
 
   const activeStandardCount = standardRentals.filter((r) => r.status === 'ACTIVE' || r.status === 'OVERDUE').length;
   const activeBuyoutCount = buyoutRentals.filter((r) => r.status === 'ACTIVE' || r.status === 'OVERDUE').length;
@@ -373,6 +391,7 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
 
   return (
     <div className="space-y-6">
+      <SourceOperationNotice document={sourceDocument} onClear={onClearSource} />
       {/* Top action header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

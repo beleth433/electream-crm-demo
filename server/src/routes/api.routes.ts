@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { DocumentController } from '../controllers/document.controller.js';
 import { AuthController } from "../controllers/auth.controller.js";
 import { DashboardController } from "../controllers/dashboard.controller.js";
 import { BikeController } from "../controllers/bike.controller.js";
@@ -32,6 +33,8 @@ const userCtrl = new UserController();
 router.post("/auth/login", AuthController.login);
 router.post("/auth/trusted-login", AuthController.trustedLogin);
 router.use(authenticateApi);
+router.get('/documents', DocumentController.list);
+router.get('/documents/:id', DocumentController.get);
 router.post("/auth/logout", AuthController.logout);
 router.get("/auth/me", AuthController.getMe);
 

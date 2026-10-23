@@ -1,4 +1,5 @@
 import { HistoryRepository } from './history.repository.js';
+import { DocumentRepository } from './document.repository.js';
 import {
   getDb,
   getSystemTime,
@@ -399,6 +400,7 @@ export class ShopRepository {
       entityId: order.id,
     });
 
+    DocumentRepository.capture('SALE_RECEIPT', order.id);
     saveDb(true);
 
     return order;

@@ -2,6 +2,9 @@ import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import React, { useState, useEffect } from 'react';
 import { RepairOrder, Bike, Battery, Client, Part, RepairStatus, RepairFaultType } from '../types';
 import { api } from '../services/api';
+import type { DocumentSummary } from '../types/documents';
+import { SourceOperationNotice } from '../components/SourceOperationNotice';
+import { DocumentPreviewModal } from '../components/DocumentPreviewModal';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
 import {
@@ -25,6 +28,8 @@ import { getNextSequentialNumber, getStoredPrefix, setStoredPrefix } from '../ut
 import { getBikeStatusLabel, getBatteryStatusLabel } from '../utils/statusLabels';
 
 interface RepairsPageProps {
+  sourceDocument?: DocumentSummary | null;
+  onClearSource?: () => void;
   initialData?: {
     clientName?: string;
     clientPhone?: string;
@@ -34,7 +39,8 @@ interface RepairsPageProps {
   onClearInitialData?: () => void;
 }
 
-export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearInitialData }) => {
+export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearInitialData, sourceDocument, onClearSource }) => {
+  const [documentId, setDocumentId] = useState<string | null>(null);
   const [repairs, setRepairs] = useState<RepairOrder[]>([]);
   const [bikes, setBikes] = useState<Bike[]>([]);
   const [batteries, setBatteries] = useState<Battery[]>([]);
@@ -130,6 +136,8 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
   };
 
   useCrmRefresh(loadData);
+
+  useEffect(() => { if (sourceDocument) setStatusFilter('ALL'); }, [sourceDocument]);
 
   useEffect(() => {
     loadData();
@@ -259,6 +267,8 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
 
   return (
     <div className="space-y-6">
+      <SourceOperationNotice document={sourceDocument} onClear={onClearSource} />
+      <DocumentPreviewModal id={documentId} onClose={() => setDocumentId(null)} />
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -304,7 +314,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
 
       {/* Orders List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {repairs.map((order) => {
+        {repairs.filter((order) => !sourceDocument || order.id === sourceDocument.sourceId).map((order) => {
           const isCompleted = order.status === 'COMPLETED';
           const isClientFault = order.faultType === 'CLIENT_FAULT';
 
@@ -443,6 +453,10 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
               </div>
 
               {/* Bottom Cost and Actions */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button className="btn-secondary min-h-11" onClick={() => setDocumentId(`doc-repair_order-${order.id}`)}><FileText className="w-4 h-4" />Заказ-наряд / печать</button>
+                {order.status === 'COMPLETED' && <button className="btn-secondary min-h-11" onClick={() => setDocumentId(`doc-repair_act-${order.id}`)}><FileText className="w-4 h-4" />Акт работ</button>}
+              </div>
               <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase">Итого затраты:</span>

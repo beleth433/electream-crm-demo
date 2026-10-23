@@ -34,6 +34,7 @@ import {
 
 import { notifyCrmChanged } from '../hooks/useCrmRefresh';
 import type { BikePhoto } from '../types';
+import type { CrmDocument, DocumentFilters, DocumentList } from '../types/documents';
 const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
 
 function getAuthHeaders(): Record<string, string> {
@@ -95,6 +96,12 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  getDocuments: (filters: DocumentFilters = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => { if (value !== undefined && value !== '') query.set(key, String(value)); });
+    return fetchJson<DocumentList>(`/documents?${query}`);
+  },
+  getDocument: (id: string) => fetchJson<CrmDocument>(`/documents/${encodeURIComponent(id)}`),
   uploadBikePhoto: async (image: File, thumbnail: File): Promise<BikePhoto> => {
     const body = new FormData();
     body.append('image', image);

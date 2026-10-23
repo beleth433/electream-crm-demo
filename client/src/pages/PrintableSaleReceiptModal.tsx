@@ -1,5 +1,10 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../services/api';
+import { Modal } from '../components/Modal';
+import { PrintableContent } from '../components/PrintableContent';
 import { RetailOrder, PaymentDetails } from '../types';
+import type { CrmDocument } from '../types/documents';
 import { Printer, X, ShieldCheck, ShoppingBag, CheckCircle } from 'lucide-react';
 
 interface PrintableSaleReceiptModalProps {
@@ -7,15 +12,21 @@ interface PrintableSaleReceiptModalProps {
   onClose: () => void;
   order: RetailOrder | null;
   paymentDetails?: PaymentDetails;
+  archivedDocument?: CrmDocument;
 }
 
 export const PrintableSaleReceiptModal: React.FC<PrintableSaleReceiptModalProps> = ({
   isOpen,
   onClose,
-  order,
-  paymentDetails,
+  order: sourceOrder,
+  archivedDocument,
 }) => {
-  if (!isOpen || !order) return null;
+  const { data: fetched, error, isLoading } = useQuery({ queryKey: ['document', `doc-sale_receipt-${sourceOrder?.id}`], queryFn: () => api.getDocument(`doc-sale_receipt-${sourceOrder!.id}`), enabled: isOpen && !!sourceOrder && !archivedDocument, retry: false });
+  const archived = archivedDocument || fetched;
+  const order = archived?.snapshot.saleData;
+  const paymentDetails = archived?.snapshot.issuer;
+  if (!isOpen || !sourceOrder) return null;
+  if (!order) return <Modal isOpen={isOpen} onClose={onClose} title="Товарный чек"><p role={error ? 'alert' : 'status'}>{error ? error.message : isLoading ? 'Загрузка сохранённого документа…' : 'Данные документа недоступны'}</p></Modal>;
 
   const handlePrint = () => {
     window.print();
@@ -47,13 +58,14 @@ export const PrintableSaleReceiptModal: React.FC<PrintableSaleReceiptModalProps>
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/20"
+              className="flex items-center gap-2 min-h-11 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/20"
             >
               <Printer className="w-4 h-4" />
               Распечатать чек
             </button>
             <button
               onClick={onClose}
+              aria-label="Закрыть чек"
               className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               <X className="w-5 h-5" />
@@ -62,7 +74,8 @@ export const PrintableSaleReceiptModal: React.FC<PrintableSaleReceiptModalProps>
         </div>
 
         {/* Printable Area */}
-        <div className="p-8 space-y-6 text-xs print:p-4 print:text-[11px] text-slate-800 dark:text-slate-200 print:text-black">
+        <PrintableContent className="p-8 space-y-6 text-xs print:p-4 print:text-[11px] text-slate-800 dark:text-slate-200 print:text-black">
+          {archived?.reconstructed && <p>Восстановлен {new Date(archived.capturedAt).toLocaleDateString('ru-RU')} из доступных данных. Первоначальные данные могли отличаться.</p>}
           {/* Header */}
           <div className="flex justify-between items-start border-b border-slate-200 dark:border-slate-800 pb-4">
             <div>
@@ -196,7 +209,7 @@ export const PrintableSaleReceiptModal: React.FC<PrintableSaleReceiptModalProps>
             <div>
               <p className="font-semibold text-slate-600 dark:text-slate-400">Продавец (кассир):</p>
               <div className="mt-6 border-b border-slate-400 flex justify-between items-end pb-1">
-                <span className="text-[10px] text-slate-400">Иван Ковалев (Менеджер)</span>
+                <span className="text-[10px] text-slate-400">{archived?.snapshot.actor}</span>
                 <span className="text-[10px] text-slate-400">/ подпись /</span>
               </div>
             </div>
@@ -210,7 +223,7 @@ export const PrintableSaleReceiptModal: React.FC<PrintableSaleReceiptModalProps>
               </div>
             </div>
           </div>
-        </div>
+        </PrintableContent>
       </div>
     </div>
   );

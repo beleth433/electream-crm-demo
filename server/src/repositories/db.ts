@@ -461,7 +461,39 @@ export interface PresenceRecord {
   deviceInfo?: string;
 }
 
+export type DocumentType = "RENTAL_CONTRACT" | "HANDOVER_ACT" | "RETURN_ACT" | "BUYOUT_ACT" | "SALE_RECEIPT" | "REPAIR_ORDER" | "REPAIR_ACT";
+export type DocumentModule = "rentals" | "shop" | "repairs";
+export interface DocumentRecord {
+  id: string;
+  type: DocumentType;
+  number: string;
+  title: string;
+  sourceModule: DocumentModule;
+  sourceId: string;
+  sourceNumber: string;
+  clientId?: string | null;
+  clientName: string;
+  clientPhone: string;
+  bikeNumber: string;
+  issuedAt: string;
+  capturedAt: string;
+  reconstructed: boolean;
+  amount: number;
+  snapshot: {
+    issuer: PaymentDetailsRecord;
+    client: { fullName: string; phone: string; passportSerial?: string | null; passportNumber?: string | null; registrationAddress?: string | null; citizenship?: string | null; patentNumber?: string | null; courierService?: string | null };
+    actor: string;
+    equipment: Array<{ name: string; number: string }>;
+    items: Array<{ name: string; quantity: number; price: number }>;
+    details: Array<{ label: string; value: string }>;
+    notes: string;
+    rentalData?: Record<string, unknown>;
+    saleData?: RetailOrderRecord;
+  };
+}
+
 export interface DBStore {
+  documents: DocumentRecord[];
   accessLevels: AccessLevelRecord[];
   users: UserRecord[];
   models: BikeModelRecord[];
@@ -508,6 +540,7 @@ try {
 }
 
 export const createDefaultEmptyDb = (): DBStore => ({
+  documents: [],
   accessLevels: JSON.parse(JSON.stringify(INITIAL_ACCESS_LEVELS)),
   users: JSON.parse(JSON.stringify(INITIAL_USERS)),
   models: [],
@@ -602,6 +635,7 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
   }
 
   return {
+    documents: Array.isArray(parsed.documents) ? parsed.documents : [],
     accessLevels: existingAccessLevels.length > 0 ? existingAccessLevels : defaultDb.accessLevels,
     users: existingUsers.length > 0 ? existingUsers : defaultDb.users,
     models: (parsed.models || []).map((m: any) => ({
@@ -1021,6 +1055,7 @@ export const clearDb = () => {
   const authSigningKey = rawDb.settings?.authSigningKey;
   simulatedDate = null;
   rawDb.rentals = [];
+  rawDb.documents = [];
   rawDb.repairs = [];
   rawDb.payments = [];
   rawDb.reviews = [];

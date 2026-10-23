@@ -1,6 +1,10 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../services/api';
 import { Modal } from '../components/Modal';
+import { PrintableContent } from '../components/PrintableContent';
 import { Rental } from '../types';
+import type { CrmDocument } from '../types/documents';
 import { Printer, Download, CheckCircle2 } from 'lucide-react';
 
 interface PrintableActModalProps {
@@ -8,15 +12,21 @@ interface PrintableActModalProps {
   onClose: () => void;
   rental: Rental | null;
   paymentDetails?: any;
+  archivedDocument?: CrmDocument;
 }
 
 export const PrintableActModal: React.FC<PrintableActModalProps> = ({
   isOpen,
   onClose,
-  rental,
-  paymentDetails,
+  rental: sourceRental,
+  archivedDocument,
 }) => {
-  if (!rental) return null;
+  const { data: fetched, error, isLoading } = useQuery({ queryKey: ['document', `doc-handover_act-${sourceRental?.id}`], queryFn: () => api.getDocument(`doc-handover_act-${sourceRental!.id}`), enabled: isOpen && !!sourceRental && !archivedDocument, retry: false });
+  const archived = archivedDocument || fetched;
+  const rental = archived?.snapshot.rentalData;
+  const paymentDetails = archived?.snapshot.issuer;
+  if (!isOpen || !sourceRental) return null;
+  if (!rental) return <Modal isOpen={isOpen} onClose={onClose} title="Акт выдачи техники"><p role={error ? 'alert' : 'status'}>{error ? error.message : isLoading ? 'Загрузка сохранённого документа…' : 'Данные документа недоступны'}</p></Modal>;
 
   const handlePrint = () => {
     window.print();
@@ -59,7 +69,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
 
   const totalDays = isBuyout
     ? (rental.tariff?.durationDays || (totalPeriods * intervalDays))
-    : (rental.tariff?.durationDays || calculatedDays);
+    : calculatedDays;
 
   return (
     <Modal
@@ -68,6 +78,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
       title={isBuyout ? "Акт приема-передачи (Аренда с правом выкупа)" : "Акт приема-передачи оборудования"}
       subtitle={`Договор ${isBuyout ? 'выкупа' : 'аренды'} ${rental.rentalNumber}`}
       maxWidth="4xl"
+      mobileFullscreen
     >
       <div className="space-y-6">
         {/* Action bar for print */}
@@ -86,10 +97,10 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
         </div>
 
         {/* Printable Document Area */}
-        <div
-          id="printable-act"
+        <PrintableContent
           className="p-4 sm:p-8 bg-white text-slate-900 rounded-xl border border-slate-200 shadow-sm text-xs leading-relaxed font-sans print:p-0 print:border-0 print:shadow-none"
         >
+          {archived?.reconstructed && <p className="mb-3 text-xs">Восстановлен {new Date(archived.capturedAt).toLocaleDateString('ru-RU')} из доступных данных. Первоначальные данные могли отличаться.</p>}
           <div className="text-center pb-4 border-b border-slate-300">
             <h2 className="text-sm sm:text-base font-extrabold uppercase tracking-wide">
               {isBuyout
@@ -97,7 +108,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
                 : 'АКТ ПРИЕМА-ПЕРЕДАЧИ ЭЛЕКТРОВЕЛОСИПЕДА И СОПУТСТВУЮЩЕГО ОБОРУДОВАНИЯ'}
             </h2>
             <p className="text-[11px] text-slate-600 mt-1">
-              к Договору {isBuyout ? 'аренды с правом выкупа' : 'проката'} № <strong>{rental.rentalNumber}</strong> от {formattedDate} г.
+              к Договору {isBuyout ? 'аренды с правом выкупа' : 'проката'} № <strong>{rental.rentalNumber}</strong> от {formattedDate}
             </p>
           </div>
 
@@ -186,29 +197,15 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td className="border border-slate-300 p-1.5 text-center">1</td>
-                    <td className="border border-slate-300 p-1.5 font-medium">Аккумуляторная батарея Li-Ion</td>
+                  {(rental.batteries || []).map((battery, index) => <tr key={battery.id}>
+                    <td className="border border-slate-300 p-1.5 text-center">{index + 1}</td>
+                    <td className="border border-slate-300 p-1.5 font-medium">Аккумулятор {battery.voltage}V {battery.capacityAh}Ah</td>
                     <td className="border border-slate-300 p-1.5 font-mono text-center">
-                      {rental.bike?.battery ? rental.bike.battery.serialNumber : 'В комплекте'}
+                      {battery.serialNumber}
                     </td>
                     <td className="border border-slate-300 p-1.5 text-center">Исправен / Заряжен</td>
                     <td className="border border-slate-300 p-1.5 text-center font-bold text-emerald-700">[ Передано ]</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-300 p-1.5 text-center">2</td>
-                    <td className="border border-slate-300 p-1.5 font-medium">Зарядное устройство сетевое</td>
-                    <td className="border border-slate-300 p-1.5 font-mono text-center">—</td>
-                    <td className="border border-slate-300 p-1.5 text-center">Исправно</td>
-                    <td className="border border-slate-300 p-1.5 text-center font-bold text-emerald-700">[ Передано ]</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-300 p-1.5 text-center">3</td>
-                    <td className="border border-slate-300 p-1.5 font-medium">Комплект ключей (зажигание + батарейный отсек)</td>
-                    <td className="border border-slate-300 p-1.5 font-mono text-center">2 шт.</td>
-                    <td className="border border-slate-300 p-1.5 text-center">В наличии</td>
-                    <td className="border border-slate-300 p-1.5 text-center font-bold text-emerald-700">[ Передано ]</td>
-                  </tr>
+                  </tr>)}
                 </tbody>
               </table>
             </div>
@@ -360,7 +357,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </PrintableContent>
       </div>
     </Modal>
   );

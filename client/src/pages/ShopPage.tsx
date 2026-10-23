@@ -3,6 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ShopCatalog, RetailOrder, Client, PaymentMethod, PaymentDetails } from '../types';
 import { api } from '../services/api';
 import { PrintableSaleReceiptModal } from './PrintableSaleReceiptModal';
+import type { DocumentSummary } from '../types/documents';
+import { SourceOperationNotice } from '../components/SourceOperationNotice';
 import {
   ShoppingBag,
   Bike as BikeIcon,
@@ -42,7 +44,7 @@ interface CartItem {
   sku?: string;
 }
 
-export const ShopPage: React.FC = () => {
+export const ShopPage: React.FC<{ sourceDocument?: DocumentSummary | null; onClearSource?: () => void }> = ({ sourceDocument, onClearSource }) => {
   const [activeTab, setActiveTab] = useState<'POS' | 'ORDERS'>('POS');
   const [catalog, setCatalog] = useState<ShopCatalog | null>(null);
   const [orders, setOrders] = useState<RetailOrder[]>([]);
@@ -101,6 +103,8 @@ export const ShopPage: React.FC = () => {
   };
 
   useCrmRefresh(loadData);
+
+  useEffect(() => { if (sourceDocument) setActiveTab('ORDERS'); }, [sourceDocument]);
 
   useEffect(() => {
     loadData();
@@ -375,6 +379,7 @@ export const ShopPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header & Tab Switcher */}
+      <SourceOperationNotice document={sourceDocument} onClear={onClearSource} />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1176,7 +1181,7 @@ export const ShopPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10">
-                {orders.map((ord) => (
+                {orders.filter((ord) => !sourceDocument || ord.id === sourceDocument.sourceId).map((ord) => (
                   <tr key={ord.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
                     <td className="p-3.5 font-mono font-bold text-emerald-400">
                       {ord.orderNumber}
@@ -1208,7 +1213,7 @@ export const ShopPage: React.FC = () => {
                       {ord.totalAmount.toLocaleString('ru-RU')} ₽
                     </td>
                     <td className="p-3.5 text-right font-bold text-emerald-500">
-                      +{ord.profit.toLocaleString('ru-RU')} ₽
+                      {ord.profit == null ? '—' : `+${ord.profit.toLocaleString('ru-RU')} ₽`}
                     </td>
                     <td className="p-3.5 text-right">
                       <button

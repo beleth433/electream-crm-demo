@@ -25,6 +25,7 @@ import {
   History,
   ShoppingBag,
   Award,
+  FileText,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardStats, User, PartOrder, Article, BatteryStats } from '../types';
@@ -251,10 +252,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'История',
       icon: History,
     },
+    { id: 'documents', label: 'Документы', icon: FileText },
   ];
 
   const isTabAllowed = (tabId: string) => {
     if (!currentUser?.accessLevel) return true;
+    if (tabId === 'documents') return currentUser.accessLevel.permissions?.documents?.visible !== false && ['rentals', 'shop', 'repairs'].some((source) => currentUser.accessLevel!.permissions?.[source]?.visible !== false);
     const perm = currentUser.accessLevel.permissions?.[tabId];
     if (!perm) return true;
     return perm.visible !== false;

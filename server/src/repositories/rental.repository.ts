@@ -1,4 +1,5 @@
 import { getDb, getSystemTime, saveDb, withDbTransaction, RentalStatus, RentalType, PaymentMethod, OutfitStatus, BikeStatus, TariffBuyoutBatteryItem } from "./db.js";
+import { DocumentRepository } from './document.repository.js';
 import { getCurrentUser } from "../context/userContext.js";
 import { activeRentalForBike, activeRentalForBattery, isOpenRental, nextNumber } from "./relations.js";
 import { HistoryRepository } from "./history.repository.js";
@@ -409,12 +410,13 @@ export class RentalRepository {
       });
     }
 
+    DocumentRepository.captureRental(rental.id);
     if (isRentToOwn && totalBuyoutPrice && firstPaymentAmount >= totalBuyoutPrice) this.finalizeBuyout(rental.id);
     return this.getById(rental.id);
   }
 
   static renew(id: string, data: Parameters<typeof RentalRepository.renewInternal>[1]) {
-    return withDbTransaction(() => this.renewInternal(id, data));
+    return withDbTransaction(() => { DocumentRepository.captureRental(id, true); return this.renewInternal(id, data); });
   }
 
   private static renewInternal(id: string, data: { durationDays?: number; amount?: number; method: PaymentMethod; notes?: string; isBuyoutFinal?: boolean; createdAt?: string; externalReference?: string }) {
@@ -521,10 +523,11 @@ export class RentalRepository {
         battery.updatedAt = now;
       }
     }
+    DocumentRepository.capture('BUYOUT_ACT', id);
   }
 
   static close(id: string, data: Parameters<typeof RentalRepository.closeInternal>[1]) {
-    return withDbTransaction(() => this.closeInternal(id, data));
+    return withDbTransaction(() => { DocumentRepository.captureRental(id, true); return this.closeInternal(id, data); });
   }
 
   private static closeInternal(
@@ -595,7 +598,10 @@ export class RentalRepository {
           parts: [],
         };
         if (existingRepair) repairOrderCreated = existingRepair as typeof repairOrderCreated;
-        else db.repairs.push(repairOrderCreated);
+        else {
+          db.repairs.push(repairOrderCreated);
+          DocumentRepository.capture('REPAIR_ORDER', repairOrderCreated.id);
+        }
       } else {
         bike.status = "AVAILABLE";
         bike.currentLocation = "Центральная база (м. Дмитровская)";
@@ -661,6 +667,7 @@ export class RentalRepository {
       });
     }
 
+    DocumentRepository.capture('RETURN_ACT', id, false, { depositReturned: netRefund, totalDeduction, defectDescription: data.defectDescription, outfitReturns: returns });
     saveDb(true);
 
     return {

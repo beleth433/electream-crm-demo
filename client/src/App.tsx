@@ -4,6 +4,8 @@ import { Toaster, toast } from 'sonner';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Sidebar } from './components/Sidebar';
 import { DashboardPage } from './pages/DashboardPage';
+import { DocumentsPage } from './pages/DocumentsPage';
+import type { DocumentSummary } from './types/documents';
 import { RentalsPage } from './pages/RentalsPage';
 import { BikesPage } from './pages/BikesPage';
 import { BatteriesPage } from './pages/BatteriesPage';
@@ -57,6 +59,7 @@ const queryClient = new QueryClient({
 });
 
 const VALID_TABS = new Set([
+  'documents',
   'dashboard',
   'rentals',
   'shop',
@@ -147,6 +150,7 @@ const MainLayout: React.FC = () => {
     const target = tab;
     if (!VALID_TABS.has(target)) return;
 
+    setSourceDocument(null);
     setCurrentTab(target);
     try {
       localStorage.setItem('crm_active_tab', target);
@@ -160,6 +164,7 @@ const MainLayout: React.FC = () => {
 
   const isTabAllowed = (tabId: string) => {
     if (!currentUser?.accessLevel) return true;
+    if (tabId === 'documents') return currentUser.accessLevel.permissions?.documents?.visible !== false && ['rentals', 'shop', 'repairs'].some((source) => currentUser.accessLevel!.permissions?.[source]?.visible !== false);
     const perm = currentUser.accessLevel.permissions?.[tabId];
     if (!perm) return true;
     return perm.visible !== false;
@@ -217,6 +222,7 @@ const MainLayout: React.FC = () => {
   } | null>(null);
   const [wizardInitialRentalType, setWizardInitialRentalType] = useState<'STANDARD' | 'RENT_TO_OWN' | undefined>(undefined);
   const [printableRental, setPrintableRental] = useState<Rental | null>(null);
+  const [sourceDocument, setSourceDocument] = useState<DocumentSummary | null>(null);
   const [closingRental, setClosingRental] = useState<Rental | null>(null);
   const [repairInitialData, setRepairInitialData] = useState<{
     clientName?: string;
@@ -504,6 +510,8 @@ const MainLayout: React.FC = () => {
 
   const getPageTitle = () => {
     switch (currentTab) {
+      case 'documents':
+        return 'Документы';
       case 'dashboard':
         return 'Дашборд и KPI';
       case 'rentals':
@@ -653,6 +661,8 @@ const MainLayout: React.FC = () => {
 
           {currentTab === 'rentals' && (
             <RentalsPage
+              sourceDocument={sourceDocument}
+              onClearSource={() => setSourceDocument(null)}
               onOpenCheckoutWizard={(initialType) => {
                 setWizardInitialRentalType(initialType);
                 setIsWizardOpen(true);
@@ -664,7 +674,8 @@ const MainLayout: React.FC = () => {
             />
           )}
 
-          {currentTab === 'shop' && <ShopPage />}
+          {currentTab === 'documents' && <DocumentsPage onOpenSource={(doc) => { handleSelectTab(doc.sourceModule); setSourceDocument(doc); }} />}
+          {currentTab === 'shop' && <ShopPage sourceDocument={sourceDocument} onClearSource={() => setSourceDocument(null)} />}
           {currentTab === 'bikes' && <BikesPage />}
           {currentTab === 'batteries' && <BatteriesPage />}
           {currentTab === 'outfits' && <OutfitsPage />}
@@ -672,6 +683,8 @@ const MainLayout: React.FC = () => {
           {currentTab === 'employees' && <EmployeesPage currentUser={currentUser} />}
           {currentTab === 'repairs' && (
             <RepairsPage
+              sourceDocument={sourceDocument}
+              onClearSource={() => setSourceDocument(null)}
               initialData={repairInitialData}
               onClearInitialData={() => setRepairInitialData(null)}
             />
