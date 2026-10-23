@@ -56,7 +56,7 @@
   }
 }
 
-/* Shared controls for the Documents / Clients readability pilot. */
+/* Shared controls for the document registry and related actions. */
 @layer components {
   .crm-page {
     @apply space-y-6 text-sm leading-relaxed text-slate-900 dark:text-slate-100;
@@ -106,61 +106,6 @@
   }
   .crm-table td {
     @apply px-4 py-3.5 align-middle;
-  }
-}
-
-/* Fit the client list to the content area, including when the sidebar is open. */
-.clients-list {
-  container-type: inline-size;
-}
-.clients-table-view {
-  display: none;
-}
-.clients-table {
-  table-layout: fixed;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.clients-table th,
-.clients-table td {
-  padding: 8px 10px;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.clients-table td {
-  vertical-align: middle;
-}
-.clients-table tbody tr {
-  height: 76px;
-}
-.clients-name,
-.clients-phone {
-  min-height: 44px;
-}
-.clients-phone {
-  display: inline-flex;
-  align-items: center;
-}
-@media (hover: hover) and (pointer: fine) {
-  .clients-row-action {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-  }
-  .clients-name,
-  .clients-phone {
-    min-height: 28px;
-  }
-}
-.clients-card-view {
-  overflow-wrap: anywhere;
-}
-@container (min-width: 900px) {
-  .clients-table-view {
-    display: block;
-  }
-  .clients-card-view {
-    display: none;
   }
 }
 
