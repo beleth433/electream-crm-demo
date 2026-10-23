@@ -5,35 +5,92 @@ import { api } from '../services/api';
 import { useCrmRefresh } from '../hooks/useCrmRefresh';
 import { DOCUMENT_TYPES, DocumentFilters, DocumentSummary } from '../types/documents';
 import { DocumentPreviewModal } from '../components/DocumentPreviewModal';
+import { CrmPageHeader } from '../components/CrmPageHeader';
+
+const formatDate = (date: string) => new Date(date).toLocaleDateString('ru-RU');
+const formatAmount = (amount: number) => amount.toLocaleString('ru-RU') + ' ₽';
 
 export function DocumentsPage({ onOpenSource }: { onOpenSource: (document: DocumentSummary) => void }) {
   const [filters, setFilters] = useState<DocumentFilters>({ page: 1 });
   const [search, setSearch] = useState('');
   const [openedId, setOpenedId] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  useEffect(() => { const timer = setTimeout(() => setFilters((prev) => ({ ...prev, search, page: 1 })), 250); return () => clearTimeout(timer); }, [search]);
+  useEffect(() => {
+    const timer = setTimeout(() => setFilters((prev) => ({ ...prev, search, page: 1 })), 250);
+    return () => clearTimeout(timer);
+  }, [search]);
   const invalidDates = !!(filters.from && filters.to && filters.from > filters.to);
   const { data, isLoading, error } = useQuery({ queryKey: ['documents', filters], queryFn: () => api.getDocuments(filters), enabled: !invalidDates, retry: false });
   useCrmRefresh(() => { void queryClient.invalidateQueries({ queryKey: ['documents'] }); });
   const update = (values: Partial<DocumentFilters>) => setFilters((prev) => ({ ...prev, ...values, page: 1 }));
-  const action = (doc: DocumentSummary) => <div className="flex gap-2 flex-wrap"><button className="btn-primary min-h-11" onClick={() => setOpenedId(doc.id)}>Просмотр / печать</button><button className="btn-secondary min-h-11" title="Перейти к исходной операции" onClick={() => onOpenSource(doc)}><ExternalLink className="w-4 h-4" /><span>Операция</span></button></div>;
-  return <div className="space-y-4">
-    <div><h2 className="text-lg font-bold flex items-center gap-2"><FileText className="w-5 h-5 text-emerald-500" />Документы</h2><p className="text-sm text-slate-500 mt-1">Договоры, акты, чеки и заказ-наряды. Новые документы сохраняют данные на момент оформления.</p></div>
-    <div className="contour-card p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-      <label className="text-sm space-y-1"><span className="flex gap-1 items-center"><Search className="w-4 h-4" />Поиск</span><input className="input-field w-full min-h-11 text-base" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Клиент, телефон, номер, велосипед" /></label>
-      <label className="text-sm space-y-1"><span>Тип документа</span><select className="input-field w-full min-h-11 text-base" value={filters.type || ''} onChange={(e) => update({ type: e.target.value })}><option value="">Все типы</option>{Object.entries(DOCUMENT_TYPES).map(([key, title]) => <option key={key} value={key}>{title}</option>)}</select></label>
-      <label className="text-sm space-y-1"><span>Дата с</span><input aria-label="Дата с" type="date" className="input-field w-full min-h-11 text-base" value={filters.from || ''} onChange={(e) => update({ from: e.target.value })} /></label>
-      <label className="text-sm space-y-1"><span>Дата по</span><input aria-label="Дата по" type="date" className="input-field w-full min-h-11 text-base" value={filters.to || ''} onChange={(e) => update({ to: e.target.value })} /></label>
+  const actions = (doc: DocumentSummary) => (
+    <div className="flex flex-wrap gap-2">
+      <button className="btn-primary" onClick={() => setOpenedId(doc.id)}><FileText className="h-4 w-4 shrink-0" />Просмотр / печать</button>
+      <button className="btn-secondary" title="Перейти к исходной операции" onClick={() => onOpenSource(doc)}><ExternalLink className="h-4 w-4 shrink-0" />Операция</button>
     </div>
-    {invalidDates && <p role="alert" className="text-rose-500">Дата начала позже даты окончания.</p>}
-    {error && <p role="alert" className="text-rose-500">Не удалось загрузить документы: {error.message}</p>}
+  );
+  return <div className="crm-page">
+    <CrmPageHeader title="Документы" icon={<FileText className="h-5 w-5" />}
+      description="Договоры, акты, чеки и заказ-наряды. Новые документы сохраняют данные на момент оформления." />
+    <div className="contour-card grid grid-cols-2 gap-4 p-4 xl:grid-cols-4">
+      <label className="col-span-2 min-w-0 sm:col-span-1">
+        <span className="crm-field-label">Поиск</span>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <input className="input-field pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Клиент, телефон, номер, велосипед" />
+        </div>
+      </label>
+      <label className="col-span-2 min-w-0 sm:col-span-1">
+        <span className="crm-field-label">Тип документа</span>
+        <select className="input-field" value={filters.type || ''} onChange={(e) => update({ type: e.target.value })}>
+          <option value="">Все типы</option>
+          {Object.entries(DOCUMENT_TYPES).map(([key, title]) => <option key={key} value={key}>{title}</option>)}
+        </select>
+      </label>
+      <label className="min-w-0"><span className="crm-field-label">Дата с</span><input type="date" className="input-field" value={filters.from || ''} onChange={(e) => update({ from: e.target.value })} /></label>
+      <label className="min-w-0"><span className="crm-field-label">Дата по</span><input type="date" className="input-field" value={filters.to || ''} onChange={(e) => update({ to: e.target.value })} /></label>
+    </div>
+    {invalidDates && <p role="alert" className="text-rose-600 dark:text-rose-400">Дата начала позже даты окончания.</p>}
+    {error && <p role="alert" className="text-rose-600 dark:text-rose-400">Не удалось загрузить документы: {error.message}</p>}
     {isLoading && <p role="status">Загрузка документов…</p>}
     {!invalidDates && !error && data && <>
-      <p className="text-sm text-slate-500">Найдено: {data.total}</p>
-      {!data.items.length && <div className="contour-card p-8 text-center text-slate-500">Документы не найдены. Они появятся после оформления аренды, продажи или заказ-наряда СТО.</div>}
-      <div className="hidden lg:block contour-card overflow-x-auto"><table className="w-full text-sm text-left"><thead className="border-b border-slate-200 dark:border-slate-700"><tr>{['Документ', 'Дата', 'Клиент', 'Техника / операция', 'Сумма', 'Действия'].map((label) => <th key={label} className="p-3">{label}</th>)}</tr></thead><tbody>{data.items.map((doc) => <tr key={doc.id} className="border-b border-slate-100 dark:border-slate-800"><td className="p-3"><p className="font-semibold">{doc.title}</p><p className="text-xs text-slate-500">{doc.number}{doc.reconstructed && ' · Восстановлен'}</p></td><td className="p-3">{new Date(doc.issuedAt).toLocaleDateString('ru-RU')}</td><td className="p-3"><p>{doc.clientName}</p>{doc.clientPhone && <a href={`tel:${doc.clientPhone}`} className="text-emerald-600">{doc.clientPhone}</a>}</td><td className="p-3">{doc.bikeNumber}<p className="text-xs text-slate-500">{doc.sourceNumber}</p></td><td className="p-3 whitespace-nowrap">{doc.amount.toLocaleString('ru-RU')} ₽</td><td className="p-3">{action(doc)}</td></tr>)}</tbody></table></div>
-      <div className="lg:hidden space-y-3">{data.items.map((doc) => <article key={doc.id} className="contour-card p-4 space-y-2"><h3 className="font-bold">{doc.title}</h3><p className="text-xs text-slate-500 break-all">{doc.number} · {new Date(doc.issuedAt).toLocaleDateString('ru-RU')}{doc.reconstructed && ' · Восстановлен'}</p><p>{doc.clientName}</p>{doc.clientPhone && <a className="block text-emerald-600" href={`tel:${doc.clientPhone}`}>{doc.clientPhone}</a>}<p>{doc.bikeNumber} · {doc.sourceNumber}</p><p className="font-bold">{doc.amount.toLocaleString('ru-RU')} ₽</p>{action(doc)}</article>)}</div>
-      {data.total > data.pageSize && <div className="flex flex-wrap gap-3 items-center justify-center"><button className="btn-secondary min-h-11" disabled={data.page <= 1} onClick={() => setFilters((prev) => ({ ...prev, page: data.page - 1 }))}>Назад</button><span>Страница {data.page} из {Math.ceil(data.total / data.pageSize)}</span><button className="btn-secondary min-h-11" disabled={data.page * data.pageSize >= data.total} onClick={() => setFilters((prev) => ({ ...prev, page: data.page + 1 }))}>Далее</button></div>}
+      <p className="text-slate-600 dark:text-slate-400" role="status">Найдено: <strong className="font-semibold text-slate-900 dark:text-white">{data.total}</strong></p>
+      {!data.items.length && <div className="contour-card p-8 text-center text-slate-600 dark:text-slate-400">Документы не найдены. Они появятся после оформления аренды, продажи или заказ-наряда СТО.</div>}
+      {data.items.length > 0 && <div className="contour-card hidden overflow-x-auto lg:block">
+        <table className="crm-table">
+          <thead><tr>{['Документ', 'Дата', 'Клиент', 'Техника / операция', 'Сумма', 'Действия'].map((label) => <th key={label}>{label}</th>)}</tr></thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10">
+            {data.items.map((doc) => <tr key={doc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+              <td><p className="font-semibold">{doc.title}</p><p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{doc.number}{doc.reconstructed && ' · Восстановлен'}</p></td>
+              <td className="whitespace-nowrap tabular-nums">{formatDate(doc.issuedAt)}</td>
+              <td><p className="font-medium">{doc.clientName}</p>{doc.clientPhone && <a href={'tel:' + doc.clientPhone} className="inline-flex min-h-11 items-center whitespace-nowrap text-emerald-700 hover:underline dark:text-emerald-400">{doc.clientPhone}</a>}</td>
+              <td>{doc.bikeNumber}<p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{doc.sourceNumber}</p></td>
+              <td className="whitespace-nowrap font-semibold tabular-nums">{formatAmount(doc.amount)}</td>
+              <td>{actions(doc)}</td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>}
+      <div className="space-y-3 lg:hidden">{data.items.map((doc) => <article key={doc.id} className="contour-card space-y-4 p-4">
+        <div className="space-y-1.5">
+          <h3 className="text-base font-semibold leading-snug">{doc.title}</h3>
+          <p className="break-words text-xs text-slate-600 dark:text-slate-400">{doc.number} · {formatDate(doc.issuedAt)}{doc.reconstructed && ' · Восстановлен'}</p>
+        </div>
+        <div>
+          <p className="font-medium">{doc.clientName}</p>
+          {doc.clientPhone && <a className="inline-flex min-h-11 items-center text-emerald-700 hover:underline dark:text-emerald-400" href={'tel:' + doc.clientPhone}>{doc.clientPhone}</a>}
+          <p className="break-words text-slate-600 dark:text-slate-400">{[doc.bikeNumber, doc.sourceNumber].filter(Boolean).join(' · ')}</p>
+        </div>
+        <div className="space-y-3 border-t border-slate-100 pt-3 dark:border-emerald-500/15">
+          <p className="text-base font-semibold tabular-nums">{formatAmount(doc.amount)}</p>
+          {actions(doc)}
+        </div>
+      </article>)}</div>
+      {data.total > data.pageSize && <div className="flex flex-wrap items-center justify-center gap-3">
+        <button className="btn-secondary" disabled={data.page <= 1} onClick={() => setFilters((prev) => ({ ...prev, page: data.page - 1 }))}>Назад</button>
+        <span>Страница {data.page} из {Math.ceil(data.total / data.pageSize)}</span>
+        <button className="btn-secondary" disabled={data.page * data.pageSize >= data.total} onClick={() => setFilters((prev) => ({ ...prev, page: data.page + 1 }))}>Далее</button>
+      </div>}
     </>}
     <DocumentPreviewModal id={openedId} onClose={() => setOpenedId(null)} />
   </div>;

@@ -56,6 +56,59 @@
   }
 }
 
+/* Shared controls for the Documents / Clients readability pilot. */
+@layer components {
+  .crm-page {
+    @apply space-y-6 text-sm leading-relaxed text-slate-900 dark:text-slate-100;
+  }
+  .crm-page-title {
+    @apply flex items-center gap-2 text-xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white;
+  }
+  .crm-page-description {
+    @apply max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-400;
+  }
+  .crm-field-label {
+    @apply mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300;
+  }
+  .input-field {
+    @apply block w-full min-w-0 min-h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-base font-normal leading-normal text-slate-900 placeholder:text-slate-500 transition-colors;
+    @apply focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply dark:border-emerald-500/20 dark:bg-[#101d17] dark:text-slate-100 dark:placeholder:text-slate-400;
+  }
+  .btn-primary, .btn-secondary {
+    @apply inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold leading-5 transition-colors;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-[#0b1511];
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-transparent bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/20 enabled:hover:bg-emerald-400;
+  }
+  .btn-secondary {
+    @apply border-slate-200 bg-white text-slate-700 enabled:hover:border-emerald-400 enabled:hover:bg-emerald-50;
+    @apply dark:border-emerald-500/20 dark:bg-[#101d17] dark:text-slate-200 dark:enabled:hover:bg-[#162720];
+  }
+  .crm-icon-button {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .crm-filter-tab {
+    @apply inline-flex min-h-11 max-w-full items-center justify-center rounded-xl border border-transparent px-3 py-2 text-sm font-semibold leading-5 transition-colors;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500;
+  }
+  .crm-table {
+    @apply w-full text-left text-sm leading-relaxed;
+  }
+  .crm-table thead {
+    @apply border-b border-slate-200 bg-slate-50/80 text-slate-600 dark:border-emerald-500/15 dark:bg-[#08100c] dark:text-slate-300;
+  }
+  .crm-table th {
+    @apply px-4 py-3 text-xs font-semibold;
+  }
+  .crm-table td {
+    @apply px-4 py-3.5 align-middle;
+  }
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
