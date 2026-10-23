@@ -322,20 +322,19 @@ export const ClientsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Desktop Table View (>= 768px) */}
-      <div className="hidden md:block contour-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="crm-table">
+      <div className="clients-list">
+      {/* Table only when the content area has room for every column. */}
+      <div className="clients-table-view contour-card">
+          <table className="crm-table clients-table">
+            <colgroup><col style={{ width: '23%' }} /><col style={{ width: '21%' }} /><col style={{ width: '22%' }} /><col style={{ width: '21%' }} /><col style={{ width: '13%' }} /></colgroup>
             <thead>
               <tr>
-                <th className="p-3.5 font-semibold whitespace-nowrap">Клиент</th>
-                <th className="p-3.5 font-semibold whitespace-nowrap">Контакты</th>
-                <th className="p-3.5 font-semibold whitespace-nowrap">Роль и активность</th>
-                <th className="p-3.5 font-semibold whitespace-nowrap">Арендная активность</th>
-                <th className="p-3.5 font-semibold whitespace-nowrap">Документы</th>
-                <th className="p-3.5 font-semibold whitespace-nowrap">Текущая аренда</th>
-                <th className="p-3.5 font-semibold text-center whitespace-nowrap">Статус</th>
-                <th className="p-3.5 font-semibold text-right whitespace-nowrap">Управление</th>
+                <th>Клиент</th>
+                <th>Контакты</th>
+                <th>Аренда и лояльность</th>
+                <th>Документы</th>
+
+                <th>Управление</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10">
@@ -348,8 +347,9 @@ export const ClientsPage: React.FC = () => {
                       isBlacklisted ? 'bg-rose-50/20 dark:bg-rose-950/10' : ''
                     }`}
                   >
-                    <td className="p-3.5">
-                      <div className="flex items-center gap-2.5">
+                    <td>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2.5">
                         <div
                           onClick={() => handleOpenProfile(c)}
                           className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-emerald-500 hover:text-white dark:hover:bg-emerald-500 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 shrink-0 cursor-pointer transition-colors"
@@ -362,21 +362,40 @@ export const ClientsPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleOpenProfile(c)}
-                              className="font-bold text-slate-900 dark:text-white hover:text-emerald-500 text-left transition-colors"
+                              className="min-h-11 font-bold text-slate-900 dark:text-white hover:text-emerald-500 text-left transition-colors"
                             >
                               {c.fullName}
                             </button>
                           </div>
                           {c.blackListReason && (
-                            <p className="text-xs text-rose-600 font-semibold max-w-xs truncate">
+                            <p className="text-xs text-rose-600 font-semibold max-w-xs">
                               Причина ЧС: {c.blackListReason}
                             </p>
                           )}
                         </div>
                       </div>
+                        <div className="flex flex-wrap gap-1">
+                        {c.isCourier && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold text-xs border border-emerald-500/20">
+                            🚲 {c.courierService || 'Курьер'}
+                          </span>
+                        )}
+                        {(c.retailOrdersCount || 0) > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 font-semibold text-xs border border-sky-500/20">
+                            🛍️ {c.retailOrdersCount} чеков ({(c.retailOrdersSpent || 0).toLocaleString('ru-RU')} ₽)
+                          </span>
+                        )}
+                        {!c.isCourier && (!c.retailOrdersCount || c.retailOrdersCount === 0) && (
+                          <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs">
+                            {c.clientType === 'RETAIL' ? 'Покупатель' : 'Клиент'}
+                          </span>
+                        )}
+                      </div>
+                        <div><StatusBadge type="client" status={c.status} className="!text-xs" /></div>
+                      </div>
                     </td>
 
-                    <td className="p-3.5 whitespace-nowrap">
+                    <td>
                       {c.phone ? (
                         <button
                           type="button"
@@ -392,11 +411,11 @@ export const ClientsPage: React.FC = () => {
                               },
                             })
                           }
-                          className="inline-flex min-h-11 items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800/80 dark:hover:bg-emerald-950/40 text-slate-800 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200/80 dark:border-slate-700 text-sm font-semibold transition group shadow-2xs"
+                          className="inline-flex w-full min-h-11 flex-wrap justify-center items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800/80 dark:hover:bg-emerald-950/40 text-slate-800 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200/80 dark:border-slate-700 text-sm font-semibold transition group shadow-2xs"
                           title="Связаться: QR-код для звонка или диалог в Telegram"
                         >
                           <Phone className="w-3.5 h-3.5 text-emerald-500 group-hover:scale-110 transition-transform" />
-                          <span className="font-mono">{c.phone}</span>
+                          <span className="min-w-0 font-mono">{c.phone}</span>
                           <QrCode className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-emerald-500 transition-colors" />
                         </button>
                       ) : (
@@ -404,27 +423,8 @@ export const ClientsPage: React.FC = () => {
                       )}
                     </td>
 
-                    <td className="p-3.5">
-                      <div className="flex flex-wrap gap-1">
-                        {c.isCourier && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold text-xs border border-emerald-500/20 whitespace-nowrap">
-                            🚲 {c.courierService || 'Курьер'}
-                          </span>
-                        )}
-                        {(c.retailOrdersCount || 0) > 0 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 font-semibold text-xs border border-sky-500/20 whitespace-nowrap">
-                            🛍️ {c.retailOrdersCount} чеков ({(c.retailOrdersSpent || 0).toLocaleString('ru-RU')} ₽)
-                          </span>
-                        )}
-                        {!c.isCourier && (!c.retailOrdersCount || c.retailOrdersCount === 0) && (
-                          <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs whitespace-nowrap">
-                            {c.clientType === 'RETAIL' ? 'Покупатель' : 'Клиент'}
-                          </span>
-                        )}
-                      </div>
-                    </td>
 
-                    <td className="p-3.5 whitespace-nowrap">
+                    <td>
                       <div>
                         <span className="font-semibold text-slate-800 dark:text-slate-200">
                           {c.totalRentalDays || 0} дн. в прокате
@@ -438,9 +438,19 @@ export const ClientsPage: React.FC = () => {
                           )}
                         </div>
                       </div>
+                      <div className="mt-3 space-y-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Текущая аренда</p>
+                        {c.activeRental ? (
+                        <span className="text-sky-600 dark:text-sky-400 font-bold">
+                          {c.activeRental.rentalNumber}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 dark:text-slate-400">Нет активной</span>
+                      )}
+                      </div>
                     </td>
 
-                    <td className="p-3.5 space-y-0.5 whitespace-nowrap">
+                    <td className="space-y-1">
                       <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 text-xs font-semibold">
                         {c.citizenship}
                       </span>
@@ -458,22 +468,10 @@ export const ClientsPage: React.FC = () => {
                       )}
                     </td>
 
-                    <td className="p-3.5 whitespace-nowrap">
-                      {c.activeRental ? (
-                        <span className="text-sky-600 dark:text-sky-400 font-bold">
-                          {c.activeRental.rentalNumber}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500 dark:text-slate-400">Нет активной</span>
-                      )}
-                    </td>
 
-                    <td className="p-3.5 text-center whitespace-nowrap">
-                      <StatusBadge type="client" status={c.status} />
-                    </td>
 
-                    <td className="p-3.5 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td>
+                      <div className="grid grid-cols-2 justify-items-center gap-1">
                         <button
                           onClick={() => handleOpenProfile(c)}
                           title="Просмотреть карточку и историю клиента"
@@ -490,9 +488,10 @@ export const ClientsPage: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleOpenStatusModal(c)}
-                          className="btn-secondary"
+                          title="Изменить статус клиента"
+                          className="crm-icon-button text-slate-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40"
                         >
-                          Статус
+                          <ShieldAlert className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteClient(c)}
@@ -513,11 +512,10 @@ export const ClientsPage: React.FC = () => {
               })}
             </tbody>
           </table>
-        </div>
       </div>
 
-      {/* Mobile Card View (< 768px) */}
-      <div className="block md:hidden space-y-3">
+      {/* Full cards when the content area is too narrow for a table. */}
+      <div className="clients-card-view space-y-3">
         {clients.length === 0 ? (
           <div className="p-8 text-center text-slate-500 dark:text-slate-400 italic contour-card">
             Клиенты не найдены
@@ -535,8 +533,8 @@ export const ClientsPage: React.FC = () => {
                 }`}
               >
                 {/* Header: Name, Status & Courier badge */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex flex-1 basis-56 items-center gap-2.5 min-w-0">
                     <div
                       onClick={() => handleOpenProfile(c)}
                       className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 shrink-0 cursor-pointer"
@@ -557,6 +555,7 @@ export const ClientsPage: React.FC = () => {
                             🚲 {c.courierService || 'Курьер'}
                           </span>
                         )}
+                        {!c.isCourier && <span className="text-xs text-slate-500 dark:text-slate-400">{c.clientType === 'RETAIL' ? 'Покупатель' : 'Клиент'}</span>}
                         <span className="text-xs text-slate-500 dark:text-slate-400">
                           {c.citizenship}
                         </span>
@@ -575,10 +574,10 @@ export const ClientsPage: React.FC = () => {
                 )}
 
                 {/* 1-Tap Call and Telegram Row */}
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <a
                     href={`tel:${c.phone}`}
-                    className="flex-1 min-h-[44px] px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm font-bold flex items-center justify-center gap-2 transition-colors active:scale-95"
+                    className="min-w-0 flex-1 min-h-[44px] px-3 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm font-bold flex items-center justify-center gap-2 transition-colors active:scale-95"
                   >
                     <Phone className="w-4 h-4" />
                     <span className="break-words">Позвонить ({c.phone})</span>
@@ -623,7 +622,7 @@ export const ClientsPage: React.FC = () => {
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                     <span className="text-xs text-slate-600 dark:text-slate-400 block">Текущая аренда</span>
                     {c.activeRental ? (
-                      <strong className="text-sky-600 dark:text-sky-400 font-bold block truncate">
+                      <strong className="text-sky-600 dark:text-sky-400 font-bold block break-words">
                         {c.activeRental.rentalNumber}
                       </strong>
                     ) : (
@@ -636,7 +635,7 @@ export const ClientsPage: React.FC = () => {
                     <div className="text-slate-800 dark:text-slate-200 font-semibold flex flex-wrap items-center gap-1.5 text-sm">
                       <span>{c.totalRentalDays || 0} дн. • {(c.totalSpent || 0).toLocaleString('ru-RU')} ₽</span>
                       {c.loyaltyTier && (
-                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-extrabold text-xs border border-amber-500/20 uppercase shrink-0">
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 font-extrabold text-xs border border-amber-500/20 uppercase">
                           ★ {c.loyaltyTier.name}
                         </span>
                       )}
@@ -644,8 +643,15 @@ export const ClientsPage: React.FC = () => {
                   </div>
                 </div>
 
+                <div className="space-y-1 rounded-xl border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+                  <span className="block text-xs text-slate-600 dark:text-slate-400">Документы</span>
+                  <p>{c.passportNumber ? `Паспорт: ${c.passportSerial || ''} ${c.passportNumber}` : 'Паспорт не внесен'}</p>
+                  {c.patentNumber && <p className="text-emerald-600 dark:text-emerald-400">Патент: {c.patentNumber}</p>}
+                </div>
+                {(c.retailOrdersCount || 0) > 0 && <p className="text-sm text-sky-700 dark:text-sky-300">Покупки: {c.retailOrdersCount} чеков · {(c.retailOrdersSpent || 0).toLocaleString('ru-RU')} ₽</p>}
+
                 {/* Mobile Touch Action Buttons (min-height 44px) */}
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-emerald-500/10">
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-emerald-500/10">
                   <button
                     type="button"
                     onClick={() => handleOpenProfile(c)}
@@ -691,6 +697,8 @@ export const ClientsPage: React.FC = () => {
             );
           })
         )}
+      </div>
+
       </div>
 
       {/* Modal: Change Status & Blacklist */}

@@ -109,6 +109,37 @@
   }
 }
 
+/* Fit the client list to the content area, including when the sidebar is open. */
+.clients-list {
+  container-type: inline-size;
+}
+.clients-table-view {
+  display: none;
+}
+.clients-table {
+  table-layout: fixed;
+}
+.clients-table th,
+.clients-table td {
+  padding: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.clients-table td {
+  vertical-align: top;
+}
+.clients-card-view {
+  overflow-wrap: anywhere;
+}
+@container (min-width: 900px) {
+  .clients-table-view {
+    display: block;
+  }
+  .clients-card-view {
+    display: none;
+  }
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
