@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import { Toaster, toast } from 'sonner';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Sidebar } from './components/Sidebar';
+import { AssistantButton } from './components/AssistantButton';
 import { DashboardPage } from './pages/DashboardPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import type { DocumentSummary } from './types/documents';
@@ -582,7 +583,7 @@ const MainLayout: React.FC = () => {
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="md:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#112219] active:scale-95 transition-all shrink-0"
+              className="md:hidden min-h-11 min-w-11 flex items-center justify-center p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#112219] active:scale-95 transition-all shrink-0"
               title="Открыть меню"
             >
               <Menu className="w-5 h-5" />
@@ -592,10 +593,10 @@ const MainLayout: React.FC = () => {
             <img
               src="/electream-logo.png"
               alt="ELECTREAM"
-              className="md:hidden h-8 w-auto object-contain shrink-0"
+              className="hidden min-[430px]:block md:hidden h-8 w-auto object-contain shrink-0"
             />
 
-            <div className="overflow-hidden">
+            <div className="hidden sm:block min-w-0 overflow-hidden">
               <h1 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 truncate">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block shadow-sm shadow-emerald-500 shrink-0" />
                 <span className="truncate">{getPageTitle()}</span>
@@ -606,7 +607,8 @@ const MainLayout: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
+            <AssistantButton userId={currentUser.id} onOpenModule={handleSelectTab} />
             {/* Real-time Online Users Presence */}
             <NavbarOnlineUsers
               onlineUsers={onlineUsers}

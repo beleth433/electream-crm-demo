@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { AssistantController } from '../controllers/assistant.controller.js';
 import { DocumentController } from '../controllers/document.controller.js';
 import { AuthController } from "../controllers/auth.controller.js";
 import { DashboardController } from "../controllers/dashboard.controller.js";
@@ -32,7 +33,19 @@ const userCtrl = new UserController();
 // 1. Auth
 router.post("/auth/login", AuthController.login);
 router.post("/auth/trusted-login", AuthController.trustedLogin);
+// A helper credential can only claim work and return proposals, never edit CRM.
+router.post('/assistant/connect', AssistantController.connect);
+router.post('/assistant/worker/poll', AssistantController.poll);
+router.post('/assistant/worker/result', AssistantController.result);
 router.use(authenticateApi);
+router.get('/assistant/status', AssistantController.status);
+router.get('/assistant/tasks', AssistantController.tasks);
+router.post('/assistant/pair', AssistantController.pair);
+router.post('/assistant/jobs', AssistantController.submit);
+router.post('/assistant/jobs/:id/apply', AssistantController.apply);
+router.post('/assistant/jobs/:id/cancel', AssistantController.cancel);
+router.post('/assistant/devices/:id/revoke', AssistantController.revoke);
+router.post('/assistant/tasks/:id/resolve', AssistantController.resolve);
 router.get('/documents', DocumentController.list);
 router.get('/documents/:id', DocumentController.get);
 router.post("/auth/logout", AuthController.logout);

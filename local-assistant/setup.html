@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Локальный помощник · ELECTREAM CRM</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f6f4;color:#0f172a;font:15px/1.5 system-ui,sans-serif;padding:24px}main{max-width:640px;margin:24px auto;background:white;border:1px solid #cbd5e1;border-radius:20px;padding:24px}h1{font-size:24px;margin:8px 0}p{color:#475569}label{display:block;font-weight:600;margin:16px 0 6px}input,select,button{font:inherit;min-height:44px;border-radius:12px;width:100%;padding:10px 12px;border:1px solid #cbd5e1}input,select{background:#f8fafc;min-width:0}button{cursor:pointer;background:#10b981;color:#052e16;font-weight:700;margin-top:16px}button:disabled{opacity:.5;cursor:wait}button.secondary{background:white;color:#475569}.status{padding:12px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:12px;overflow-wrap:anywhere}.error{color:#be123c;white-space:pre-wrap}small{color:#64748b}code{overflow-wrap:anywhere}@media(max-width:430px){body{padding:12px}main{padding:16px;margin:8px auto}}
+</style>
+<main><small>ELECTREAM · работает на вашем компьютере</small><h1>Локальный помощник CRM</h1>
+<p>Модель обрабатывает команды здесь. Готовый план отправляется в CRM и применяется только после вашего подтверждения.</p>
+<div id="status" class="status" role="status">Проверяем подключение…</div>
+<p id="error" class="error" role="alert"></p>
+<form id="form">
+<label for="url">Адрес CRM</label><input id="url" type="url" placeholder="https://ваша-crm.vercel.app" required autocomplete="url">
+<label for="model">Установленная модель Ollama</label><select id="model" required></select>
+<label for="code">Одноразовый код из CRM</label><input id="code" required minlength="32" maxlength="32" autocomplete="off" spellcheck="false">
+<small>В CRM откройте «Помощник» → «Подключить компьютер». Код действует 10 минут.</small>
+<button id="connect" type="submit">Подключить компьютер</button>
+</form><button id="disconnect" class="secondary" hidden>Отключить локальную программу</button>
+<p><small>Диктуйте в поле команды CRM с помощью вашей программы транскрибации. Встроенное распознавание в этом пилоте не требуется. Не закрывайте процесс помощника во время работы; эту страницу можно закрыть.</small></p></main>
+<script>
+const $=id=>document.getElementById(id);let initialized=false;
+async function refresh(){try{const s=await fetch('/status').then(r=>r.json());$('status').textContent=s.connected?(s.busy?'Модель готовит предложение. Результат появится в CRM.':'Подключён к CRM. Ожидает команды.'):'Компьютер ещё не подключён';$('error').textContent=s.error||'';$('disconnect').hidden=!s.connected;
+if(!initialized){$('url').value=s.crmUrl;$('model').replaceChildren(...s.models.map(name=>{const o=document.createElement('option');o.value=name;o.textContent=name;return o}));if(s.models.includes(s.model))$('model').value=s.model;initialized=s.models.length>0;}}
+catch{$('error').textContent='Локальная программа недоступна. Запустите её заново.'}}
+$('form').onsubmit=async e=>{e.preventDefault();$('connect').disabled=true;try{const r=await fetch('/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({crmUrl:$('url').value,model:$('model').value,code:$('code').value})});const d=await r.json();if(!r.ok)throw Error(d.error);$('code').value='';await refresh()}catch(e){$('error').textContent=e.message}finally{$('connect').disabled=false}};
+$('disconnect').onclick=async()=>{await fetch('/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});await refresh()};refresh();setInterval(refresh,5000);
+</script></html>

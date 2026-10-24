@@ -493,6 +493,7 @@ export interface DocumentRecord {
 }
 
 export interface DBStore {
+  assistant: import('../dtos/assistant.dto.js').AssistantStore;
   documents: DocumentRecord[];
   accessLevels: AccessLevelRecord[];
   users: UserRecord[];
@@ -540,6 +541,7 @@ try {
 }
 
 export const createDefaultEmptyDb = (): DBStore => ({
+  assistant: { devices: [], pairings: [], jobs: [], tasks: [] },
   documents: [],
   accessLevels: JSON.parse(JSON.stringify(INITIAL_ACCESS_LEVELS)),
   users: JSON.parse(JSON.stringify(INITIAL_USERS)),
@@ -636,6 +638,12 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
 
   return {
     documents: Array.isArray(parsed.documents) ? parsed.documents : [],
+    assistant: {
+      devices: Array.isArray(parsed.assistant?.devices) ? parsed.assistant.devices : [],
+      pairings: Array.isArray(parsed.assistant?.pairings) ? parsed.assistant.pairings : [],
+      jobs: Array.isArray(parsed.assistant?.jobs) ? parsed.assistant.jobs : [],
+      tasks: Array.isArray(parsed.assistant?.tasks) ? parsed.assistant.tasks : [],
+    },
     accessLevels: existingAccessLevels.length > 0 ? existingAccessLevels : defaultDb.accessLevels,
     users: existingUsers.length > 0 ? existingUsers : defaultDb.users,
     models: (parsed.models || []).map((m: any) => ({

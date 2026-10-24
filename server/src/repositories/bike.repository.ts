@@ -1,4 +1,5 @@
 import { getDb, BikeStatus, BikeRecord, BikePhoto, saveDb } from "./db.js";
+import { randomUUID } from 'node:crypto';
 import { BatteryRepository } from "./battery.repository.js";
 import { activeRentalForBike } from "./relations.js";
 
@@ -230,7 +231,7 @@ export class BikeRepository {
 
     const newBike = {
       photos: data.photos || [],
-      id: `bike-${Date.now()}`,
+      id: `bike-${randomUUID()}`,
       inventoryNumber: data.inventoryNumber,
       modelId: data.modelId,
       batteryId: data.batteryId || null,

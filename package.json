@@ -8,6 +8,8 @@
   ],
   "description": "Production-ready CRM system for commercial courier e-bike rental & service",
   "scripts": {
+    "assistant:local": "node local-assistant/server.mjs",
+    "test:assistant-local": "node --test local-assistant/*.test.mjs",
     "install:all": "npm install --prefix server && npm install --prefix client",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",

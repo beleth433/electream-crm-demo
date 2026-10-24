@@ -1,4 +1,5 @@
 import { getDb, BatteryRecord, BatteryStatus, BatteryModelRecord, BatteryChemistry, saveDb } from "./db.js";
+import { randomUUID } from 'node:crypto';
 import { activeRentalForBike, activeRentalForBattery, isOpenRental } from "./relations.js";
 
 export class BatteryRepository {
@@ -281,7 +282,7 @@ export class BatteryRepository {
     }
 
     const newBattery: BatteryRecord = {
-      id: `bat-${Date.now()}`,
+      id: `bat-${randomUUID()}`,
       serialNumber: cleanSerial,
       modelId: data.modelId || null,
       modelName,

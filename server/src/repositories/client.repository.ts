@@ -1,4 +1,5 @@
 import { getDb, getSystemTime, ClientStatus, ClientRecord, ClientType, saveDb } from "./db.js";
+import { randomUUID } from 'node:crypto';
 import { LoyaltyRepository } from "./loyalty.repository.js";
 import { normalizePhone } from "./relations.js";
 import { isRevenuePayment } from "./financials.js";
@@ -237,7 +238,7 @@ export class ClientRepository {
 
     const newClient: ClientRecord = {
       registrationAddress: data.registrationAddress?.trim() || null,
-      id: `cli-${Date.now()}`,
+      id: `cli-${randomUUID()}`,
       fullName: data.fullName,
       phone: data.phone,
       telegram: data.telegram || null,

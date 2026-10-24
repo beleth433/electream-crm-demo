@@ -35,6 +35,7 @@ import {
 import { notifyCrmChanged } from '../hooks/useCrmRefresh';
 import type { BikePhoto } from '../types';
 import type { CrmDocument, DocumentFilters, DocumentList } from '../types/documents';
+import type { AssistantStatus, AssistantTask } from '../types/assistant';
 const API_BASE = (import.meta as any).env?.VITE_API_URL || '/api';
 
 function getAuthHeaders(): Record<string, string> {
@@ -91,11 +92,19 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   }
 
   const result = await res.json();
-  if (options?.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method) && !/^\/(presence|chat|auth)\b/.test(url)) notifyCrmChanged();
+  if (options?.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method) && (!/^\/(presence|chat|auth|assistant)\b/.test(url) || /^\/assistant\/jobs\/[^/]+\/apply$/.test(url))) notifyCrmChanged();
   return result;
 }
 
 export const api = {
+  getAssistantStatus: () => fetchJson<AssistantStatus>('/assistant/status'),
+  getAssistantTasks: () => fetchJson<AssistantTask[]>('/assistant/tasks'),
+  pairAssistant: () => fetchJson<{ code: string; expiresAt: number }>('/assistant/pair', { method: 'POST', body: '{}' }),
+  submitAssistant: (id: string, text: string) => fetchJson<{ id: string }>('/assistant/jobs', { method: 'POST', body: JSON.stringify({ id, text }) }),
+  applyAssistant: (id: string) => fetchJson(`/assistant/jobs/${id}/apply`, { method: 'POST', body: '{}' }),
+  cancelAssistant: (id: string) => fetchJson(`/assistant/jobs/${id}/cancel`, { method: 'POST', body: '{}' }),
+  revokeAssistant: (id: string) => fetchJson(`/assistant/devices/${id}/revoke`, { method: 'POST', body: '{}' }),
+  resolveAssistantTask: (id: string) => fetchJson(`/assistant/tasks/${id}/resolve`, { method: 'POST', body: '{}' }),
   getDocuments: (filters: DocumentFilters = {}) => {
     const query = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => { if (value !== undefined && value !== '') query.set(key, String(value)); });
