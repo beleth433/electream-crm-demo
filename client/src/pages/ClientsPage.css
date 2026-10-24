@@ -1,0 +1,102 @@
+.clients-list {
+  container: clients-list / inline-size;
+}
+
+.clients-table-view {
+  display: none;
+}
+
+.clients-table {
+  table-layout: fixed;
+}
+
+.clients-table th,
+.clients-table td {
+  padding: 12px 10px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.clients-table thead th:first-child {
+  border-top-left-radius: 1rem;
+}
+
+.clients-table thead th:last-child {
+  border-top-right-radius: 1rem;
+}
+
+.clients-table td:first-child button {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.clients-table td:first-child .truncate {
+  white-space: normal;
+}
+
+.clients-table td:first-child > div > div:last-child {
+  min-width: 0;
+}
+
+.clients-table td:nth-child(3) span,
+.clients-table td:nth-child(4) span {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.clients-contact {
+  max-width: 100%;
+  padding-inline: 8px;
+  gap: 4px;
+}
+
+.clients-contact span {
+  min-width: 0;
+}
+
+.clients-contact svg,
+.clients-actions button {
+  flex-shrink: 0;
+}
+
+.clients-actions {
+  flex-wrap: nowrap;
+}
+
+.clients-card-view button,
+.clients-card-view a,
+.clients-card-view span {
+  overflow-wrap: anywhere;
+}
+
+.clients-card-view button.truncate {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.clients-card-view a,
+.clients-card-view a span {
+  min-width: 0;
+}
+
+@container clients-list (min-width: 960px) {
+  .clients-table-view {
+    display: block;
+  }
+
+  .clients-card-view {
+    display: none;
+  }
+}
+
+@container clients-list (min-width: 960px) and (max-width: 1059px) {
+  .clients-table th,
+  .clients-table td {
+    padding-inline: 8px;
+  }
+
+  .clients-contact {
+    padding-inline: 6px;
+    gap: 3px;
+  }
+}
