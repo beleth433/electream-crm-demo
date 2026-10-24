@@ -44,6 +44,7 @@ router.post('/assistant/pair', AssistantController.pair);
 router.post('/assistant/jobs', AssistantController.submit);
 router.post('/assistant/jobs/:id/apply', AssistantController.apply);
 router.post('/assistant/jobs/:id/cancel', AssistantController.cancel);
+router.post('/assistant/jobs/:id/retry', AssistantController.retry);
 router.post('/assistant/devices/:id/revoke', AssistantController.revoke);
 router.post('/assistant/tasks/:id/resolve', AssistantController.resolve);
 router.get('/documents', DocumentController.list);

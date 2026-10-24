@@ -103,6 +103,7 @@ export const api = {
   submitAssistant: (id: string, text: string) => fetchJson<{ id: string }>('/assistant/jobs', { method: 'POST', body: JSON.stringify({ id, text }) }),
   applyAssistant: (id: string) => fetchJson(`/assistant/jobs/${id}/apply`, { method: 'POST', body: '{}' }),
   cancelAssistant: (id: string) => fetchJson(`/assistant/jobs/${id}/cancel`, { method: 'POST', body: '{}' }),
+  retryAssistant: (id: string) => fetchJson(`/assistant/jobs/${id}/retry`, { method: 'POST', body: '{}' }),
   revokeAssistant: (id: string) => fetchJson(`/assistant/devices/${id}/revoke`, { method: 'POST', body: '{}' }),
   resolveAssistantTask: (id: string) => fetchJson(`/assistant/tasks/${id}/resolve`, { method: 'POST', body: '{}' }),
   getDocuments: (filters: DocumentFilters = {}) => {

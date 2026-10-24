@@ -1,0 +1,11 @@
+export function label(value: string): string;
+export function intent(text: string): { clients: boolean; bikes: boolean; batteries: boolean };
+export function clientTypeFromText(text: string): 'COURIER' | 'RETAIL' | null;
+export function isUpdate(text: string): boolean;
+export function phone(value: string): { valid: boolean; digits: string };
+export function phoneCandidates(text: string): { raw: string; valid: boolean; digits: string; index: number }[];
+export function phoneInText(value: string, text: string): boolean;
+export function modelInText(model: { name?: string; voltage?: number; capacityAh?: number }, text: string, battery?: boolean): boolean;
+export function requestedCount(text: string, category: string): number | null;
+export function money(text: string): number[];
+export function unitPurchasePrice(text: string): number | null;

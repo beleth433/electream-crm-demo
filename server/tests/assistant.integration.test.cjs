@@ -28,7 +28,8 @@ const connect = (userId = owner.id) => assistant.connect({ code: assistant.creat
 const submit = (text = 'Добавь три велосипеда Minako Monster') => assistant.submit(owner.id, { id: randomUUID(), text }).id;
 const plan = actions => ({ summary: 'Предлагаемые изменения', questions: [], actions });
 function ready(actions) {
-  const worker = connect(); const id = submit('Добавить записи: ' + actions.map(a => a.phone || '').join(' ') + ' и велосипеды'); const work = assistant.poll(worker.token);
+  const source = 'Добавить клиентов и велосипеды: ' + actions.map(a => [a.phone, db.models.find(m => m.id === a.modelId)?.name, db.batteryModels.find(m => m.id === a.modelId)?.name, a.purchasePrice != null ? `закупочная цена ${a.purchasePrice} рублей за каждый` : ''].filter(Boolean).join('; ')).join('; ');
+  const worker = connect(); const id = submit(source); const work = assistant.poll(worker.token);
   assistant.result(worker.token, { id, lease: work.job.lease, plan: plan(actions) });
   return { id, worker, work };
 }
@@ -109,7 +110,7 @@ test('permission changes are checked again at approval and context respects modu
   assert.deepEqual(work.context.bikeModels, []);
 });
 test('changed source data makes a proposal stale rather than silently changing its result', () => {
-  const { id } = ready([bikeAction]); db.models[0].name = 'Другая модель';
+  const { id } = ready([bikeAction]); db.models[0].purchasePrice = 47000;
   assert.throws(() => assistant.apply(owner.id, id), /данные изменились/);
   assert.equal(db.bikes.length, 0);
 });
@@ -162,5 +163,56 @@ test('HTTP approval records the verified employee, not a caller-supplied header'
   assert.equal(r.status, 200);
   assert.ok(db.auditLogs.at(0).actorName.includes(owner.fullName));
   assert.ok(!db.auditLogs.at(0).actorName.includes('Подставное'));
+});
+test('a real but unrelated catalog model cannot replace the named model, including legacy proposals', () => {
+  const worker = connect(); const id = submit('Добавь три велосипеда Amiko U2 Premium'); const work = assistant.poll(worker.token);
+  assistant.result(worker.token, { id, lease: work.job.lease, plan: plan([{ kind: 'add_bikes', modelId: 'model', quantity: 3 }]) });
+  const job = db.assistant.jobs.find(j => j.id === id);
+  assert.equal(job.status, 'ERROR'); assert.match(job.error, /не названа/);
+  job.status = 'READY'; job.plan = plan([{ kind: 'add_bikes', modelId: 'model', quantity: 3 }]);
+  assert.equal(assistant.status(owner.id).jobs[0].canApply, false);
+  assert.throws(() => assistant.apply(owner.id, id), /не названа/);
+  assert.equal(db.bikes.length, 0);
+});
+test('stated prices cannot disappear or become a silent catalog fallback', () => {
+  for (const text of ['Добавь три велосипеда Minako Monster, закупочная цена 60 тысяч за каждый', 'Добавь три велосипеда Minako Monster, стоимость 60 тысяч каждого']) {
+    const worker = connect(); const id = submit(text); const work = assistant.poll(worker.token);
+    assistant.result(worker.token, { id, lease: work.job.lease, plan: plan([{ kind: 'add_bikes', modelId: 'model', quantity: 3 }]) });
+    assert.equal(db.assistant.jobs.find(j => j.id === id).status, 'ERROR');
+  }
+  assert.equal(db.bikes.length, 0);
+});
+test('client-only requests cannot contain invented equipment or silently lose one person', () => {
+  const worker = connect(); const id = submit('Добавь трёх клиентов: Иван Иванов, Дмитрий Кузнецов, Сергей Морозов'); const work = assistant.poll(worker.token);
+  assistant.result(worker.token, { id, lease: work.job.lease, plan: plan([{ kind: 'add_bikes', modelId: 'model', quantity: 3 }]) });
+  assert.equal(db.assistant.jobs.find(j => j.id === id).status, 'ERROR');
+  const next = submit('Добавь трёх клиентов-курьеров: Иван Иванов +7 999 123 4567; Дмитрий Кузнецов +7 999 111 2233; Сергей Морозов +7 999 333 4455');
+  const second = assistant.poll(worker.token);
+  assistant.result(worker.token, { id: next, lease: second.job.lease, plan: plan([{ kind: 'create_client', fullName: 'Иван Иванов', phone: '79991234567', clientType: 'COURIER' }]) });
+  assert.equal(db.assistant.jobs.find(j => j.id === next).status, 'ERROR');
+  assert.equal(db.clients.length + db.bikes.length, 0);
+});
+test('offline and expired jobs are displayed explicitly and can be retried without duplicating the command', () => {
+  const worker = connect(); const id = submit();
+  let status = assistant.status(owner.id);
+  assert.equal(status.workerOnline, false); assert.match(status.jobs[0].waitingReason, /Нет связи/);
+  const work = assistant.poll(worker.token); status = assistant.status(owner.id);
+  assert.equal(status.workerOnline, true);
+  assert.throws(() => assistant.retry(owner.id, id), /нельзя повторно/);
+  db.assistant.jobs.find(j => j.id === id).leaseUntil = Date.now() - 1;
+  assert.equal(assistant.status(owner.id).jobs[0].stalled, true);
+  assistant.retry(owner.id, id);
+  assert.equal(db.assistant.jobs.length, 1);
+  assert.equal(db.assistant.jobs[0].status, 'QUEUED');
+  assert.throws(() => assistant.result(worker.token, { id, lease: work.job.lease, plan: plan([bikeAction]) }), /отменён/);
+});
+test('malformed model output ends in a visible error instead of leaving the job processing', () => {
+  const worker = connect(); const id = submit(); const work = assistant.poll(worker.token);
+  assistant.result(worker.token, { id, lease: work.job.lease, plan: { summary: 'Неполный ответ', actions: 'not-an-array' } });
+  assert.equal(db.assistant.jobs.find(j => j.id === id).status, 'ERROR');
+  assert.equal(db.bikes.length, 0);
+  const next = submit('Добавь клиентов'); const second = assistant.poll(worker.token);
+  assistant.result(worker.token, { id: next, lease: second.job.lease, plan: { summary: 'Нужно дополнить клиентов', questions: Array.from({length:20}, (_,i) => `Клиент ${i+1}: укажите телефон`), actions: [] } });
+  assert.equal(db.assistant.jobs.find(j => j.id === next).status, 'READY');
 });
 after(async () => { await store.flushDb(true); await new Promise(r => server.close(r)); });

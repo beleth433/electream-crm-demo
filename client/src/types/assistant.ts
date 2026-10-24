@@ -7,9 +7,11 @@ export interface AssistantJob {
   status: 'QUEUED' | 'PROCESSING' | 'READY' | 'ERROR' | 'APPLIED' | 'CANCELLED';
   summary?: string; questions: string[]; canApply: boolean;
   preview?: string[]; warnings?: string[]; error?: string;
+  stalled?: boolean; waitingReason?: string;
   results?: { module: string; id: string; label: string }[];
 }
 export interface AssistantStatus {
+  workerOnline: boolean;
   devices: { id: string; name: string; createdAt: string; lastSeenAt?: string }[];
   jobs: AssistantJob[]; tasks: AssistantTask[];
 }

@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { generatePlan, localOllamaUrl } from './model.mjs';
+import { jsonRequest, networkError } from './transport.mjs';
 
 export function crmBase(value) {
   const url = new URL(value);
@@ -13,14 +14,6 @@ export function crmBase(value) {
   return url.origin;
 }
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-async function jsonRequest(url, body, token) {
-  const response = await fetch(url, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(25000),
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
-  let data;
-  try { data = await response.json(); } catch { throw new Error('По этому адресу не найден API CRM. Проверьте адрес и версию сайта.'); }
-  if (!response.ok) throw Object.assign(new Error(data.error || `CRM: HTTP ${response.status}`), { status: response.status });
-  return data;
-}
 
 export async function startAssistant(options = {}) {
   const configDir = options.configDir || process.env.CRM_ASSISTANT_DIR || path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), '.local', 'share'), 'ElectreamCRM', 'assistant');
@@ -29,6 +22,7 @@ export async function startAssistant(options = {}) {
   const port = options.port ?? Number(process.env.CRM_ASSISTANT_PORT || 47831);
   const localSession = randomBytes(32).toString('hex');
   let config = { model: 'qwen2.5:3b' }, error = '', busy = false, running = true, controller;
+  let lastContactAt = null, activeJobId = null, pendingResult = null;
   let polling;
   try { config = { ...config, ...JSON.parse(await fs.readFile(configFile, 'utf8')) }; if (config.crmUrl) config.crmUrl = crmBase(config.crmUrl); } catch (e) { if (e.code !== 'ENOENT') error = 'Настройки не прочитаны. Подключите компьютер заново.'; }
   const save = async next => {
@@ -60,7 +54,7 @@ export async function startAssistant(options = {}) {
           if (!r.ok) throw new Error();
           models = (await r.json()).models.map(m => m.name);
         } catch { ollamaError = 'Ollama недоступен. Запустите Ollama на этом компьютере.'; }
-        return send(200, { crmUrl: config.crmUrl || '', model: config.model, connected: !!config.token, models, error: error || ollamaError, busy });
+        return send(200, { crmUrl: config.crmUrl || '', model: config.model, connected: !!config.token, online: !!lastContactAt && Date.now() - Date.parse(lastContactAt) < 60000 && !error, lastContactAt, activeJobId, models, error: error || ollamaError, busy });
       }
       if (req.method !== 'POST' || !['/connect', '/disconnect'].includes(req.url)) return send(404, { error: 'Не найдено' });
       let raw = '';
@@ -68,6 +62,7 @@ export async function startAssistant(options = {}) {
       const data = JSON.parse(raw);
       if (req.url === '/disconnect') {
         controller?.abort();
+        pendingResult = null; lastContactAt = null; activeJobId = null;
         await save({ model: config.model }); error = '';
         return send(200, { ok: true });
       }
@@ -77,6 +72,7 @@ export async function startAssistant(options = {}) {
       if (!tags.models?.some(m => m.name === data.model)) throw new Error('Модель не установлена в Ollama');
       const connected = await jsonRequest(`${base}/api/assistant/connect`, { code: String(data.code || '').trim(), name: os.hostname().slice(0, 80) });
       controller?.abort();
+      pendingResult = null; lastContactAt = null; activeJobId = null;
       await save({ crmUrl: base, model: data.model, token: connected.token, deviceId: connected.deviceId });
       error = '';
       return send(200, { ok: true });
@@ -88,10 +84,14 @@ export async function startAssistant(options = {}) {
       const connection = { ...config };
       if (connection.token && connection.crmUrl) {
         try {
+          if (pendingResult && pendingResult.token === connection.token) {
+            try { await jsonRequest(`${connection.crmUrl}/api/assistant/worker/result`, pendingResult.body, connection.token); pendingResult = null; activeJobId = null; }
+            catch (e) { if ([400, 401, 403, 409].includes(e.status)) { pendingResult = null; activeJobId = null; } else throw e; }
+          }
           const response = await jsonRequest(`${connection.crmUrl}/api/assistant/worker/poll`, {}, connection.token);
-          error = '';
+          error = ''; lastContactAt = new Date().toISOString();
           if (response.job) {
-            busy = true;
+            busy = true; activeJobId = response.job.id;
             controller = new AbortController();
             const timeout = setTimeout(() => controller?.abort(), 240000);
             let payload;
@@ -100,9 +100,14 @@ export async function startAssistant(options = {}) {
               payload = { plan };
             } catch (e) { payload = { error: e.name === 'AbortError' ? 'Обработка прервана или заняла больше 4 минут. Упростите команду.' : e.message }; }
             finally { clearTimeout(timeout); busy = false; controller = undefined; }
-            if (connection.token === config.token) await jsonRequest(`${connection.crmUrl}/api/assistant/worker/result`, { id: response.job.id, lease: response.job.lease, ...payload }, connection.token);
+            if (connection.token === config.token) {
+              pendingResult = { token: connection.token, body: { id: response.job.id, lease: response.job.lease, ...payload } };
+              try { await jsonRequest(`${connection.crmUrl}/api/assistant/worker/result`, pendingResult.body, connection.token); pendingResult = null; }
+              catch (e) { if ([400, 401, 403, 409].includes(e.status)) pendingResult = null; throw e; }
+            }
+            activeJobId = null;
           }
-        } catch (e) { error = e.message || 'CRM недоступна'; }
+        } catch (e) { error = networkError(e); }
       }
       await sleep(options.pollMs || 5000);
     }

@@ -45,6 +45,7 @@ export const AssistantButton: React.FC<{ userId: string; onOpenModule: (module: 
             Пилот: клиенты, добавление велосипедов и АКБ по существующим моделям. Продажи, аренда и касса пока оформляются в своих разделах. Модель должна быть запущена на подключённом компьютере.
           </div>
           {!data?.devices.length && <button type="button" onClick={() => setTab('connection')} className={`${control} bg-amber-500/10 text-amber-700 dark:text-amber-300 w-full`}>Сначала подключите компьютер</button>}
+          {!!data?.devices.length && !data.workerOnline && <div role="status" className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs text-amber-800 dark:text-amber-300">CRM давно не получала сигнал от локальной программы. <a href="http://127.0.0.1:47831" target="_blank" rel="noreferrer" className="underline font-semibold">Откройте её настройки</a> и проверьте связь. Команды сохраняются в очереди, но сейчас могут не обрабатываться.</div>}
           <form onSubmit={e => { e.preventDefault(); run(async () => {
             const clean = text.trim();
             if (!request.current || request.current.text !== clean) request.current = { id: crypto.randomUUID(), text: clean };
@@ -58,7 +59,9 @@ export const AssistantButton: React.FC<{ userId: string; onOpenModule: (module: 
           </form>
           <div className="space-y-3">
             {data?.jobs.map(job => <article key={job.id} className="p-3 sm:p-4 rounded-xl border border-slate-200 dark:border-emerald-500/20 space-y-2 break-words [overflow-wrap:anywhere]">
-              <div className="flex flex-wrap items-center justify-between gap-2"><span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold ${job.status === 'APPLIED' ? 'bg-emerald-500/10 text-emerald-600' : job.status === 'ERROR' ? 'bg-rose-500/10 text-rose-600' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'}`}>{['QUEUED', 'PROCESSING'].includes(job.status) && <Loader2 className="w-3 h-3 animate-spin" />}{statuses[job.status]}</span><time className="text-[11px] text-slate-500">{new Date(job.createdAt).toLocaleString('ru-RU')}</time></div>
+              <div className="flex flex-wrap items-center justify-between gap-2"><span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold ${job.status === 'APPLIED' ? 'bg-emerald-500/10 text-emerald-600' : job.status === 'ERROR' || job.stalled ? 'bg-rose-500/10 text-rose-600' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'}`}>{job.status === 'PROCESSING' && !job.stalled && <Loader2 className="w-3 h-3 animate-spin" />}{job.stalled ? 'Обработка прервалась' : job.status === 'READY' && job.questions.length ? 'Нужно уточнить данные' : job.status === 'QUEUED' && !data.workerOnline ? 'Нет связи с компьютером' : statuses[job.status]}</span><time className="text-[11px] text-slate-500">{new Date(job.createdAt).toLocaleString('ru-RU')}</time></div>
+              {job.waitingReason && <p className="text-xs text-amber-700 dark:text-amber-300">{job.waitingReason}</p>}
+              {job.stalled && <p role="alert" className="text-xs text-rose-600">Время обработки истекло. Проверьте локальную программу и повторите команду; сохранение в CRM ещё не выполнялось.</p>}
               <p className="text-xs text-slate-500 whitespace-pre-wrap">{job.text}</p>
               {job.summary && <p className="font-semibold">{job.summary}</p>}
               {!!job.preview?.length && <ul className="list-disc pl-5 space-y-1 text-xs">{job.preview.map((line, i) => <li key={i}>{line}</li>)}</ul>}
@@ -68,6 +71,7 @@ export const AssistantButton: React.FC<{ userId: string; onOpenModule: (module: 
               {job.results && <p className="text-xs text-emerald-700 dark:text-emerald-400">{job.results.map(r => r.label).join(', ')}</p>}
               <div className="flex flex-wrap gap-2">
                 {job.canApply && <button type="button" disabled={busy} onClick={() => run(async () => { await api.applyAssistant(job.id); toast.success('Изменения сохранены в CRM'); })} className={`${control} bg-emerald-500 text-slate-950 border-emerald-500`}>Подтвердить и сохранить</button>}
+                {(job.stalled || job.status === 'ERROR') && <button type="button" disabled={busy} onClick={() => run(() => api.retryAssistant(job.id))} className={control}>Повторить обработку</button>}
                 {['READY', 'ERROR'].includes(job.status) && <button type="button" disabled={busy} title="Отменить прежнее предложение и подготовить уточнённое" onClick={() => run(async () => { await api.cancelAssistant(job.id); setText(job.text + '\nУточнение: '); document.getElementById('assistant-command')?.focus(); })} className={control}>Уточнить запрос</button>}
                 {['QUEUED', 'PROCESSING', 'READY', 'ERROR'].includes(job.status) && <button type="button" disabled={busy} onClick={() => run(() => api.cancelAssistant(job.id))} className={`${control} text-slate-500`}>Отменить</button>}
               </div>

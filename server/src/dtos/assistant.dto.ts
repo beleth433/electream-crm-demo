@@ -14,7 +14,7 @@ export const AssistantActionDto = z.object({
 }).strict();
 export const AssistantPlanDto = z.object({
   summary: z.string().trim().min(1).max(2000),
-  questions: z.array(z.string().trim().min(1).max(500)).max(12),
+  questions: z.array(z.string().trim().min(1).max(500)).max(60),
   actions: z.array(AssistantActionDto).max(20),
 }).strict();
 export type AssistantAction = z.infer<typeof AssistantActionDto>;

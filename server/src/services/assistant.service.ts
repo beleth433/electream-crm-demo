@@ -8,6 +8,7 @@ import { BikeRepository } from '../repositories/bike.repository.js';
 import { BatteryRepository } from '../repositories/battery.repository.js';
 import { HistoryRepository } from '../repositories/history.repository.js';
 import { normalizePhone } from '../repositories/relations.js';
+import { intent, isUpdate, label, phoneInText, modelInText, requestedCount, money } from '../../../local-assistant/facts.cjs';
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const now = () => new Date().toISOString();
@@ -40,6 +41,7 @@ function validatePlan(userId: string, plan: AssistantPlan, sourceText: string) {
   const db = getDb();
   const preview: string[] = [], warnings: string[] = [], baseline: unknown[] = [];
   const phones = new Set<string>(), inventory = new Set<string>(), serials = new Set<string>(), edited = new Set<string>();
+  const source = intent(sourceText);
   let total = 0;
   for (const a of plan.actions) {
     if (a.kind === 'create_client' || a.kind === 'update_client') {
@@ -47,6 +49,7 @@ function validatePlan(userId: string, plan: AssistantPlan, sourceText: string) {
       const data = clientData(a);
       const existing = a.kind === 'update_client' ? db.clients.find(c => c.id === a.clientId) : undefined;
       if (a.kind === 'update_client' && !existing) fail('Клиент для редактирования не найден. Уточните имя или телефон.');
+      if (existing && (!isUpdate(sourceText) || (!label(sourceText).includes(label(existing.fullName)) && !phoneInText(existing.phone, sourceText)))) fail('Изменение этого клиента не запрошено. Уточните действие и клиента по телефону.');
       if (existing && edited.has(existing.id)) fail('Объедините изменения одного клиента в одно действие');
       if (existing) edited.add(existing.id);
       if (existing) {
@@ -60,8 +63,7 @@ function validatePlan(userId: string, plan: AssistantPlan, sourceText: string) {
       const phone = normalizePhone(String(data.phone || existing?.phone || ''));
       if (phone.length < 10) fail('Для сохранения клиента нужен настоящий телефон. Дополните запрос.');
       if (data.phone) {
-        const digits = sourceText.replace(/\D/g, '');
-        if (!digits.includes(phone) && !(phone.startsWith('7') && digits.includes('8' + phone.slice(1)))) fail('Предложенный телефон отсутствует в команде. Укажите настоящий номер цифрами.');
+        if (!phoneInText(String(data.phone), sourceText)) fail('Предложенный телефон отсутствует в команде или неполный. Для +7/8 нужно 11 цифр; недостающие цифры не дописываются.');
       }
       if (phones.has(phone) || db.clients.some(c => c.id !== existing?.id && normalizePhone(c.phone) === phone)) fail('Клиент с таким телефоном уже есть. Попросите обновить существующую запись.');
       phones.add(phone);
@@ -78,6 +80,9 @@ function validatePlan(userId: string, plan: AssistantPlan, sourceText: string) {
       requireEdit(userId, bike ? 'bikes' : 'batteries');
       const model = (bike ? db.models : db.batteryModels).find(m => m.id === a.modelId);
       if (!model) fail('Модель техники не найдена. Создайте её в каталоге или уточните название.');
+      if (source.clients && !source.bikes && !source.batteries) fail('Запрос содержит только клиентов: действие с техникой не соответствует команде.');
+      if (!modelInText(model, sourceText, !bike)) fail(`Модель «${model.name}» не названа в команде. Подстановка другой модели запрещена; уточните каталог.`);
+      if (a.purchasePrice != null && !money(sourceText).includes(a.purchasePrice)) fail('Предложенная закупочная цена не содержится в команде. Уточните цену за единицу.');
       if (a.quantity == null) fail('Укажите количество техники в запросе');
       const quantity = a.quantity || 1;
       total += quantity;
@@ -104,6 +109,17 @@ function validatePlan(userId: string, plan: AssistantPlan, sourceText: string) {
       if (a.purchasePrice == null) warnings.push(`${model.name}: цена поступления не названа; сохранится цена из модели (${model.purchasePrice ?? 0} ₽), с задачей проверить фактическую стоимость`);
       baseline.push(model);
     }
+  }
+  if (!plan.questions.length) {
+    const expected = requestedCount(sourceText, 'clients');
+    if (expected && source.clients && plan.actions.filter(a => a.kind === 'create_client').length !== expected) fail(`В команде ${expected} клиентов: предложение должно содержать каждого из них или вопросы по недостающим данным.`);
+    const amounts = money(sourceText);
+    for (const [category, kind] of [['bikes', 'add_bikes'], ['batteries', 'add_batteries']]) {
+      const count = requestedCount(sourceText, category);
+      if (count && plan.actions.filter(a => a.kind === kind).reduce((n, a) => n + (a.quantity || 0), 0) !== count) fail('Количество техники не соответствует команде. Подготовьте предложение заново.');
+    }
+    if ((source.bikes || source.batteries) && amounts.length && !/закуп|покупн|приобрет|купили|поставщик/iu.test(sourceText)) fail('Уточните назначение суммы: закупочная цена за единицу или цена продажи. Неоднозначная стоимость не подставляется автоматически.');
+    if ((source.bikes || source.batteries) && amounts.some(value => !plan.actions.some(a => a.purchasePrice === value))) fail('Указанная в команде сумма потеряна. Уточните закупочную цену за единицу; она не заменяется ценой каталога.');
   }
   return { preview, warnings: [...new Set(warnings)], baseline: hash(JSON.stringify(baseline)) };
 }
@@ -151,9 +167,24 @@ export class AssistantService {
     return device;
   }
   static status(userId: string) {
+    const devices = state().devices.filter(d => d.userId === userId && !d.revokedAt);
+    const workerOnline = devices.some(d => !!d.lastSeenAt && Date.now() - Date.parse(d.lastSeenAt) < 90000);
+    const active = state().jobs.some(j => j.userId === userId && j.status === 'PROCESSING' && (j.leaseUntil || 0) > Date.now());
     return {
-      devices: state().devices.filter(d => d.userId === userId && !d.revokedAt).map(({ id, name, createdAt, lastSeenAt }) => ({ id, name, createdAt, lastSeenAt })),
-      jobs: state().jobs.filter(j => j.userId === userId).slice(-30).reverse().map(({ lease, deviceId, baseline, plan, ...j }) => ({ ...j, summary: plan?.summary, questions: plan?.questions || [], canApply: j.status === 'READY' && !!plan?.actions.length && !plan.questions.length })),
+      workerOnline,
+      devices: devices.map(({ id, name, createdAt, lastSeenAt }) => ({ id, name, createdAt, lastSeenAt })),
+      jobs: state().jobs.filter(j => j.userId === userId).slice(-30).reverse().map(({ lease, deviceId, baseline, plan, ...j }) => {
+        let validationError: string | undefined;
+        if (j.status === 'READY' && plan && !plan.questions.length) {
+          try { if (validatePlan(userId, plan, j.text).baseline !== baseline) validationError = 'Связанные данные изменились. Подготовьте предложение заново.'; }
+          catch (e: any) { validationError = e.errors?.[0]?.message || e.message; }
+        }
+        return { ...j,
+        stalled: j.status === 'PROCESSING' && (j.leaseUntil || 0) < Date.now(),
+        waitingReason: j.status === 'QUEUED' ? active ? 'Ожидает завершения предыдущей команды' : !workerOnline ? 'Нет связи с локальной программой. Откройте её настройки и проверьте интернет, прокси и сообщение об ошибке.' : undefined : undefined,
+        summary: validationError ? 'Предложение нужно подготовить заново' : plan?.questions.length ? 'Нужно уточнить данные перед сохранением' : j.preview?.length ? j.preview.filter(line => !line.startsWith('  ')).join('; ') : plan?.summary,
+        error: validationError || j.error,
+        questions: plan?.questions || [], canApply: !validationError && j.status === 'READY' && !!plan?.actions.length && !plan.questions.length }; }),
       tasks: state().tasks.filter(t => t.userId === userId && !t.resolvedAt && allowed(userId, t.module) && !taskComplete(t)).map(t => {
         const entity = getDb()[t.module].find(e => e.id === t.entityId) as any;
         return { ...t, label: entity?.fullName || entity?.inventoryNumber || entity?.serialNumber || t.label };
@@ -208,15 +239,15 @@ export class AssistantService {
   }
   static result(token: string, input: unknown) {
     const device = this.authenticateWorker(token);
-    const data = z.object({ id: z.string().uuid(), lease: z.string().uuid(), plan: AssistantPlanDto.optional(), error: z.string().max(1500).optional() }).strict().parse(input);
+    const data = z.object({ id: z.string().uuid(), lease: z.string().uuid(), plan: z.unknown().optional(), error: z.string().max(1500).optional() }).strict().parse(input);
     const job = ownedJob(device.userId, data.id);
     if (job.status !== 'PROCESSING' || job.deviceId !== device.id || job.lease !== data.lease || (job.leaseUntil || 0) < Date.now()) fail('Запрос отменён или срок обработки истёк', 409);
     if (data.error) { job.status = 'ERROR'; job.error = data.error; }
     else {
-      if (!data.plan) fail('Модель не вернула план');
       try {
-        const validated = validatePlan(device.userId, data.plan, job.text);
-        job.plan = data.plan; Object.assign(job, validated); job.status = 'READY'; job.error = undefined;
+        const plan = AssistantPlanDto.parse(data.plan);
+        const validated = validatePlan(device.userId, plan, job.text);
+        job.plan = plan; Object.assign(job, validated); job.status = 'READY'; job.error = undefined;
       } catch (error: any) { job.status = 'ERROR'; job.error = error.errors?.[0]?.message || error.message; }
     }
     saveDb(); return { ok: true };
@@ -225,6 +256,12 @@ export class AssistantService {
     const job = ownedJob(userId, id);
     if (job.status === 'APPLIED') fail('Выполненный запрос нельзя отменить', 409);
     job.status = 'CANCELLED'; saveDb(); return { ok: true };
+  }
+  static retry(userId: string, id: string) {
+    const job = ownedJob(userId, id);
+    if (job.status === 'APPLIED' || job.status === 'READY' || (job.status === 'PROCESSING' && (job.leaseUntil || 0) > Date.now())) fail('Эту команду нельзя повторно поставить в очередь в текущем состоянии', 409);
+    job.status = 'QUEUED'; job.attempts = 0; job.error = undefined; job.lease = undefined; job.leaseUntil = undefined;
+    saveDb(); return { ok: true };
   }
   static revoke(userId: string, id: string) {
     const device = state().devices.find(d => d.id === id && d.userId === userId);

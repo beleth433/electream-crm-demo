@@ -17,6 +17,7 @@ export const AssistantController = {
   submit: (req: Request, res: Response) => handle(req, res, () => service.submit(user(req), req.body)),
   apply: (req: Request, res: Response) => handle(req, res, () => service.apply(user(req), req.params.id)),
   cancel: (req: Request, res: Response) => handle(req, res, () => service.cancel(user(req), req.params.id)),
+  retry: (req: Request, res: Response) => handle(req, res, () => service.retry(user(req), req.params.id)),
   revoke: (req: Request, res: Response) => handle(req, res, () => service.revoke(user(req), req.params.id)),
   resolve: (req: Request, res: Response) => handle(req, res, () => service.resolveTask(user(req), req.params.id)),
 };
