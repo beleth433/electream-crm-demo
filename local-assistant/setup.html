@@ -7,20 +7,26 @@
 <main><small>ELECTREAM · работает на вашем компьютере</small><h1>Локальный помощник CRM</h1>
 <p>Модель обрабатывает команды здесь. Готовый план отправляется в CRM и применяется только после вашего подтверждения.</p>
 <div id="status" class="status" role="status">Проверяем подключение…</div>
+<p>Активная модель: <strong id="active-model">проверяем…</strong></p>
 <p id="error" class="error" role="alert"></p>
 <form id="form">
 <label for="url">Адрес CRM</label><input id="url" type="url" placeholder="https://ваша-crm.vercel.app" required autocomplete="url">
 <label for="model">Установленная модель Ollama</label><select id="model" required></select>
+<button id="change-model" class="secondary" type="button">Применить выбранную модель</button>
+<small>Смена модели сохраняет подключение к CRM. Повторный код не нужен.</small>
 <label for="code">Одноразовый код из CRM</label><input id="code" required minlength="32" maxlength="32" autocomplete="off" spellcheck="false">
 <small>В CRM откройте «Помощник» → «Подключить компьютер». Код действует 10 минут.</small>
 <button id="connect" type="submit">Подключить компьютер</button>
 </form><button id="disconnect" class="secondary" hidden>Отключить локальную программу</button>
 <p><small>Диктуйте в поле команды CRM с помощью вашей программы транскрибации. Встроенное распознавание в этом пилоте не требуется. Не закрывайте процесс помощника во время работы; эту страницу можно закрыть.</small></p></main>
 <script>
-const $=id=>document.getElementById(id);let initialized=false;
+const $=id=>document.getElementById(id);let initialized=false,modelList='',changingModel=false;
 async function refresh(){try{const s=await fetch('/status').then(r=>r.json());$('status').textContent=s.connected?(s.busy?'Модель готовит предложение. Результат появится в CRM.':!s.online?'Подключение сохранено, но связи с CRM пока нет. Проверяем интернет и системный маршрут…':'Есть связь с CRM. Ожидает команды.'):'Компьютер ещё не подключён';$('error').textContent=s.error||'';$('disconnect').hidden=!s.connected;
-if(!initialized){$('url').value=s.crmUrl;$('model').replaceChildren(...s.models.map(name=>{const o=document.createElement('option');o.value=name;o.textContent=name;return o}));if(s.models.includes(s.model))$('model').value=s.model;initialized=s.models.length>0;}}
+$('active-model').textContent=s.model;$('change-model').disabled=changingModel||!s.canChangeModel||!s.models.length;
+if(!initialized)$('url').value=s.crmUrl;
+if(!initialized||modelList!==JSON.stringify(s.models)){const selected=initialized?$('model').value:s.model;$('model').replaceChildren(...s.models.map(name=>{const o=document.createElement('option');o.value=name;o.textContent=name;return o}));if(s.models.includes(selected))$('model').value=selected;modelList=JSON.stringify(s.models);initialized=s.models.length>0;}}
 catch{$('error').textContent='Локальная программа недоступна. Запустите её заново.'}}
 $('form').onsubmit=async e=>{e.preventDefault();$('connect').disabled=true;try{const r=await fetch('/connect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({crmUrl:$('url').value,model:$('model').value,code:$('code').value})});const d=await r.json();if(!r.ok)throw Error(d.error);$('code').value='';await refresh()}catch(e){$('error').textContent=e.message}finally{$('connect').disabled=false}};
+$('change-model').onclick=async()=>{changingModel=true;$('change-model').disabled=true;try{const r=await fetch('/model',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:$('model').value})});const d=await r.json();if(!r.ok)throw Error(d.error);await refresh()}catch(e){$('error').textContent=e.message}finally{changingModel=false;$('change-model').disabled=false}};
 $('disconnect').onclick=async()=>{await fetch('/disconnect',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});await refresh()};refresh();setInterval(refresh,5000);
 </script></html>

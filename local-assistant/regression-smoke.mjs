@@ -28,7 +28,7 @@ const examples = [
 ];
 for (const scenario of examples) {
   const start = Date.now();
-  const plan = await generatePlan({ text: scenario.text, context: scenario.context || context });
+  const plan = await generatePlan({ text: scenario.text, context: scenario.context || context, model: process.env.CRM_ASSISTANT_MODEL || 'qwen2.5:3b' });
   console.log(JSON.stringify({ seconds: (Date.now() - start) / 1000, text: scenario.text, plan }, null, 2));
   scenario.check(plan);
 }

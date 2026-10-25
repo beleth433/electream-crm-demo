@@ -40,12 +40,12 @@ test('unknown models and invented client IDs become clarifications instead of op
 test('local setup rejects cross-origin writes and exposes neither pairing nor worker credentials', async () => {
   const configDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ebike-assistant-local-'));
   const workerToken = 'b'.repeat(64);
-  const model = http.createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ models: [{ name: 'qwen2.5:3b' }] })); });
-  let polls = 0;
+  const model = http.createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ models: [{ name: 'qwen2.5:3b' }, { name: 'qwen2.5:7b-instruct-q4_K_M' }] })); });
+  let polls = 0, connections = 0;
   const crm = http.createServer(async (req, res) => {
     for await (const chunk of req) {} // Drain the request, without logging secrets.
     res.setHeader('Content-Type', 'application/json');
-    if (req.url === '/api/assistant/connect') res.end(JSON.stringify({ token: workerToken, deviceId: 'device' }));
+    if (req.url === '/api/assistant/connect') { connections++; res.end(JSON.stringify({ token: workerToken, deviceId: 'device' })); }
     else {
       assert.equal(req.headers.authorization, `Bearer ${workerToken}`); polls++;
       res.end(JSON.stringify({ job: null }));
@@ -69,6 +69,17 @@ test('local setup rejects cross-origin writes and exposes neither pairing nor wo
     assert.ok(polls > 0);
     const stored = JSON.parse(await fs.readFile(path.join(configDir, 'connection.json'), 'utf8'));
     assert.equal(stored.token, workerToken);
+    const changeModel = (model, origin = app.url) => fetch(app.url + '/model', { method: 'POST', headers: { Cookie: cookie, Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify({ model }) });
+    assert.equal((await changeModel('qwen2.5:7b-instruct-q4_K_M', 'https://unrelated.example')).status, 403);
+    assert.equal((await changeModel('not-installed')).status, 400);
+    assert.equal((await changeModel('qwen2.5:7b-instruct-q4_K_M')).status, 200);
+    const updated = JSON.parse(await fs.readFile(path.join(configDir, 'connection.json'), 'utf8'));
+    assert.equal(updated.model, 'qwen2.5:7b-instruct-q4_K_M');
+    assert.equal(updated.token, stored.token);
+    assert.equal(updated.crmUrl, stored.crmUrl);
+    assert.equal(updated.deviceId, stored.deviceId);
+    assert.equal(connections, 1, 'Changing model must not pair the computer again');
+    assert.equal((await changeModel('qwen2.5:3b')).status, 200);
   } finally { await app.close(); await close(crm); await close(model); }
 });
 test('a catalog model must match the request and client-only commands cannot add equipment', () => {
@@ -119,11 +130,14 @@ test('CONNECT proxy carries CRM auth only inside the tunnel and timeouts have an
 test('a lost result upload retries the proposal without another inference or CRM edits', async () => {
   const configDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ebike-assistant-retry-'));
   let inference = 0, uploads = 0, claimed = false;
+  let releaseInference;
+  const inferenceGate = new Promise(resolve => { releaseInference = resolve; });
   const model = http.createServer(async (req, res) => {
     for await (const chunk of req) {}
     res.setHeader('Content-Type', 'application/json');
     if (req.url === '/api/tags') return res.end('{"models":[{"name":"qwen2.5:3b"}]}');
-    inference++; res.end(JSON.stringify({ message: { content: JSON.stringify({ summary: 'Предложение', questions: ['Уточните телефон'], actions: [] }) } }));
+    inference++; await inferenceGate;
+    res.end(JSON.stringify({ message: { content: JSON.stringify({ summary: 'Предложение', questions: ['Уточните телефон'], actions: [] }) } }));
   });
   const crm = http.createServer(async (req, res) => {
     for await (const chunk of req) {}
@@ -139,7 +153,14 @@ test('a lost result upload retries the proposal without another inference or CRM
     const initial = await fetch(app.url); const cookie = initial.headers.get('set-cookie').split(';')[0];
     const r = await fetch(app.url + '/connect', { method: 'POST', headers: { Cookie: cookie, Origin: app.url, 'Content-Type': 'application/json' }, body: JSON.stringify({ crmUrl: `http://127.0.0.1:${crm.address().port}`, model: 'qwen2.5:3b', code: 'a'.repeat(32) }) });
     assert.equal(r.status, 200);
+    for (let i = 0; i < 100 && inference === 0; i++) await new Promise(r => setTimeout(r, 20));
+    const busyStatus = await fetch(app.url + '/status', { headers: { Cookie: cookie } }).then(r => r.json());
+    assert.equal(busyStatus.busy, true);
+    assert.equal(busyStatus.canChangeModel, false);
+    const changeWhileBusy = await fetch(app.url + '/model', { method: 'POST', headers: { Cookie: cookie, Origin: app.url, 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'qwen2.5:3b' }) });
+    assert.equal(changeWhileBusy.status, 409, 'Model must not change during inference');
+    releaseInference();
     for (let i = 0; i < 100 && uploads < 2; i++) await new Promise(r => setTimeout(r, 20));
     assert.equal(uploads, 2); assert.equal(inference, 1);
-  } finally { await app.close(); await close(crm); await close(model); }
+  } finally { releaseInference(); await app.close(); await close(crm); await close(model); }
 });

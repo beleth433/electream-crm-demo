@@ -54,9 +54,9 @@ export async function startAssistant(options = {}) {
           if (!r.ok) throw new Error();
           models = (await r.json()).models.map(m => m.name);
         } catch { ollamaError = 'Ollama недоступен. Запустите Ollama на этом компьютере.'; }
-        return send(200, { crmUrl: config.crmUrl || '', model: config.model, connected: !!config.token, online: !!lastContactAt && Date.now() - Date.parse(lastContactAt) < 60000 && !error, lastContactAt, activeJobId, models, error: error || ollamaError, busy });
+        return send(200, { crmUrl: config.crmUrl || '', model: config.model, connected: !!config.token, online: !!lastContactAt && Date.now() - Date.parse(lastContactAt) < 60000 && !error, lastContactAt, activeJobId, models, error: error || ollamaError, busy, canChangeModel: !busy && !pendingResult });
       }
-      if (req.method !== 'POST' || !['/connect', '/disconnect'].includes(req.url)) return send(404, { error: 'Не найдено' });
+      if (req.method !== 'POST' || !['/connect', '/disconnect', '/model'].includes(req.url)) return send(404, { error: 'Не найдено' });
       let raw = '';
       for await (const chunk of req) { raw += chunk; if (raw.length > 8192) return send(413, { error: 'Слишком большой запрос' }); }
       const data = JSON.parse(raw);
@@ -66,10 +66,15 @@ export async function startAssistant(options = {}) {
         await save({ model: config.model }); error = '';
         return send(200, { ok: true });
       }
-      const base = crmBase(data.crmUrl);
       if (typeof data.model !== 'string' || !/^[\w./:-]{1,100}$/.test(data.model)) throw new Error('Выберите установленную модель');
       const tags = await fetch(`${ollamaUrl}/api/tags`, { signal: AbortSignal.timeout(5000) }).then(r => r.json());
       if (!tags.models?.some(m => m.name === data.model)) throw new Error('Модель не установлена в Ollama');
+      if (req.url === '/model') {
+        if (busy || pendingResult) return send(409, { error: 'Дождитесь завершения текущей команды и отправки результата в CRM перед сменой модели.' });
+        await save({ ...config, model: data.model });
+        return send(200, { ok: true, model: config.model });
+      }
+      const base = crmBase(data.crmUrl);
       const connected = await jsonRequest(`${base}/api/assistant/connect`, { code: String(data.code || '').trim(), name: os.hostname().slice(0, 80) });
       controller?.abort();
       pendingResult = null; lastContactAt = null; activeJobId = null;
