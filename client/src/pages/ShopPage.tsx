@@ -83,9 +83,9 @@ export const ShopPage: React.FC<{ sourceDocument?: DocumentSummary | null; onCle
   // Printable Receipt Modal
   const [printedOrder, setPrintedOrder] = useState<RetailOrder | null>(null);
 
-  const loadData = () => {
-    setIsLoading(true);
-    Promise.all([api.getShopCatalog(), api.getShopOrders(), api.getClients(), api.getFinanceSettings()])
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return Promise.all([api.getShopCatalog(), api.getShopOrders(), api.getClients(), api.getFinanceSettings()])
       .then(([catalogData, ordersData, clientsData, settingsData]) => {
         setCatalog(catalogData);
         setOrders(ordersData);
@@ -99,7 +99,7 @@ export const ShopPage: React.FC<{ sourceDocument?: DocumentSummary | null; onCle
         setShopOrderNumber((current) => current || nextNum);
       })
       .catch((err) => toast.error('Ошибка загрузки данных магазина: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   useCrmRefresh(loadData);

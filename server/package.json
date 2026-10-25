@@ -4,7 +4,7 @@
   "description": "Production-ready backend API for Courier EBike Rental & Service CRM",
   "main": "dist/index.js",
   "scripts": {
-    "test": "tsc && node --test tests/crm.integration.test.cjs tests/assistant.integration.test.cjs && tsx --test tests/bank-parser.test.ts tests/api-sync.test.ts",
+    "test": "tsc && node --test tests/crm.integration.test.cjs tests/assistant.integration.test.cjs && tsx --test tests/bank-parser.test.ts tests/api-sync.test.ts tests/crm-refresh.test.ts",
     "dev": "tsx watch src/index.ts",
     "build": "tsc && esbuild src/serverless.ts --bundle --platform=node --target=node18 --format=cjs --outfile=index.js && esbuild src/serverless.ts --bundle --platform=node --target=node18 --format=cjs --outfile=app.js && esbuild src/serverless.ts --bundle --platform=node --target=node18 --format=cjs --outfile=../api/index.js",
     "start": "node dist/index.js",

@@ -63,6 +63,9 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Box */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className={`relative w-full ${widthClasses} bg-white dark:bg-[#0c1511] ${mobileFullscreen ? 'rounded-none h-[100dvh] max-h-[100dvh] sm:rounded-2xl sm:h-auto sm:max-h-[92vh]' : 'rounded-2xl max-h-[92vh]'} shadow-2xl border border-slate-200 dark:border-emerald-500/25 dark:shadow-[0_0_50px_rgba(16,185,129,0.12)] p-4 sm:p-6 transition-all transform flex flex-col z-10`}
       >
         {/* Header */}

@@ -21,7 +21,7 @@ export function DocumentsPage({ onOpenSource }: { onOpenSource: (document: Docum
   }, [search]);
   const invalidDates = !!(filters.from && filters.to && filters.from > filters.to);
   const { data, isLoading, error } = useQuery({ queryKey: ['documents', filters], queryFn: () => api.getDocuments(filters), enabled: !invalidDates, retry: false });
-  useCrmRefresh(() => { void queryClient.invalidateQueries({ queryKey: ['documents'] }); });
+  useCrmRefresh(() => queryClient.invalidateQueries({ queryKey: ['documents'] }));
   const update = (values: Partial<DocumentFilters>) => setFilters((prev) => ({ ...prev, ...values, page: 1 }));
   const actions = (doc: DocumentSummary) => (
     <div className="flex flex-wrap gap-2">

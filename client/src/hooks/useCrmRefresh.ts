@@ -1,29 +1,12 @@
 import { useEffect, useRef } from 'react';
+import { CRM_CHANGED_EVENT, subscribeCrmRefresh } from './crmRefresh';
 
-export const CRM_CHANGED_EVENT = 'crm:data-changed';
+export { CRM_CHANGED_EVENT } from './crmRefresh';
 
-export function useCrmRefresh(refresh: () => void) {
+export function useCrmRefresh(refresh: (background?: boolean) => unknown) {
   const current = useRef(refresh);
   current.current = refresh;
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const schedule = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => current.current(), 100);
-    };
-    const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('crm-data') : null;
-    if (channel) channel.onmessage = schedule;
-    window.addEventListener(CRM_CHANGED_EVENT, schedule);
-    window.addEventListener('focus', schedule);
-    const interval = setInterval(() => { if (!document.hidden) schedule(); }, 15000);
-    return () => {
-      if (timer) clearTimeout(timer);
-      clearInterval(interval);
-      window.removeEventListener(CRM_CHANGED_EVENT, schedule);
-      window.removeEventListener('focus', schedule);
-      channel?.close();
-    };
-  }, []);
+  useEffect(() => subscribeCrmRefresh(() => current.current(true)), []);
 }
 
 export function notifyCrmChanged() {

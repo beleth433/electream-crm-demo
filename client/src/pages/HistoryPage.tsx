@@ -32,9 +32,9 @@ export const HistoryPage: React.FC = () => {
   const [daysFilter, setDaysFilter] = useState<number>(0); // 0 = all time
   const [searchQuery, setSearchQuery] = useState('');
 
-  const loadHistory = () => {
-    setIsLoading(true);
-    api
+  const loadHistory = (background = false) => {
+    if (!background) setIsLoading(true);
+    return api
       .getHistory({
         category: categoryFilter === 'ALL' ? undefined : categoryFilter,
         days: daysFilter > 0 ? daysFilter : undefined,
@@ -46,7 +46,7 @@ export const HistoryPage: React.FC = () => {
         setTotalCount(res.totalCount);
       })
       .catch((err) => toast.error('Ошибка загрузки истории действий: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   useCrmRefresh(loadHistory);
@@ -133,7 +133,7 @@ export const HistoryPage: React.FC = () => {
         </div>
 
         <button
-          onClick={loadHistory}
+          onClick={() => loadHistory()}
           disabled={isLoading}
           className="flex items-center justify-center gap-2 px-4 h-11 bg-slate-100 dark:bg-[#101d17] hover:bg-slate-200 dark:hover:bg-[#162720] text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-emerald-500/20 transition-all self-start sm:self-auto"
         >

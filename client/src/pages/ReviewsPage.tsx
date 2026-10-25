@@ -21,9 +21,9 @@ export const ReviewsPage: React.FC = () => {
     comment: '',
   });
 
-  const loadData = () => {
-    setIsLoading(true);
-    Promise.all([api.getReviews(), api.getBikes(), api.getClients()])
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return Promise.all([api.getReviews(), api.getBikes(), api.getClients()])
       .then(([revRes, bikesRes, clientsRes]) => {
         setReviews(revRes);
         setBikes(bikesRes);
@@ -37,7 +37,7 @@ export const ReviewsPage: React.FC = () => {
         }
       })
       .catch((err) => toast.error('Ошибка загрузки отзывов: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   useCrmRefresh(loadData);

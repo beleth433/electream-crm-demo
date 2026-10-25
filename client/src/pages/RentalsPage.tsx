@@ -115,33 +115,32 @@ export const RentalsPage: React.FC<RentalsPageProps> = ({
   const [isBuyoutFinal, setIsBuyoutFinal] = useState<boolean>(false);
 
   const loadTariffs = () => {
-    api
-      .getRentalTariffs()
-      .then(setTariffs)
-      .catch((err) => console.error('Ошибка загрузки тарифов:', err));
-    api
-      .getBikeModels()
-      .then(setModels)
-      .catch((err) => console.error('Ошибка загрузки моделей:', err));
-    api
-      .getBatteryModels()
-      .then(setBatteryModels)
-      .catch((err) => console.error('Ошибка загрузки моделей АКБ:', err));
+    return Promise.all([
+      api.getRentalTariffs()
+        .then(setTariffs)
+        .catch((err) => console.error('Ошибка загрузки тарифов:', err)),
+      api.getBikeModels()
+        .then(setModels)
+        .catch((err) => console.error('Ошибка загрузки моделей:', err)),
+      api.getBatteryModels()
+        .then(setBatteryModels)
+        .catch((err) => console.error('Ошибка загрузки моделей АКБ:', err)),
+    ]);
   };
 
-  const loadRentals = () => {
-    setIsLoading(true);
-    api
+  const loadRentals = (background = false) => {
+    if (!background) setIsLoading(true);
+    return api
       .getRentals({
         status: sourceDocument || statusFilter === 'ALL' ? undefined : statusFilter,
         search: sourceDocument ? undefined : search,
       })
       .then((data) => setRentals(data))
       .catch((err) => toast.error('Ошибка загрузки аренд: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
-  useCrmRefresh(() => { loadRentals(); loadTariffs(); });
+  useCrmRefresh((background) => Promise.all([loadRentals(background), loadTariffs()]));
 
   useEffect(() => {
     loadRentals();

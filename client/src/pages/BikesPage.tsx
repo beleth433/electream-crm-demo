@@ -214,9 +214,9 @@ export const BikesPage: React.FC = () => {
     purchasePrice: 40000,
   });
 
-  const loadData = () => {
-    setIsLoading(true);
-    Promise.all([
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return Promise.all([
       api.getBikes({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
         search,
@@ -240,7 +240,7 @@ export const BikesPage: React.FC = () => {
         }
       })
       .catch((err) => toast.error('Ошибка загрузки техники: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   useCrmRefresh(loadData);

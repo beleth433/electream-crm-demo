@@ -302,9 +302,9 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
     }
   };
 
-  const loadData = () => {
-    setIsLoading(true);
-    Promise.all([
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return Promise.all([
       api.getParts({
         lowStockOnly: lowStockFilter,
         categoryId: categoryFilter === 'ALL' ? undefined : categoryFilter,
@@ -329,7 +329,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
         }
       })
       .catch((err) => toast.error('Ошибка загрузки склада запчастей: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   const handleCreateOrder = async (e: React.FormEvent) => {

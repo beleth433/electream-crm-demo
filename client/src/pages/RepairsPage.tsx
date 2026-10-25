@@ -107,9 +107,9 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'SBP' | 'BANK_TRANSFER'>('CASH');
   const [mechanicNotes, setMechanicNotes] = useState('');
 
-  const loadData = () => {
-    setIsLoading(true);
-    Promise.all([
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return Promise.all([
       api.getRepairs({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
       }),
@@ -132,7 +132,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ initialData, onClearIn
         }
       })
       .catch((err) => toast.error('Ошибка загрузки СТО: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   useCrmRefresh(loadData);

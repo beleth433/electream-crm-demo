@@ -22,6 +22,12 @@ test('successful mutations preserve auth headers and notify related CRM views', 
     assert.equal(notifications, 1);
     await api.sendPresenceHeartbeat({ userId: 'usr-test', userName: 'Иван Иванов' });
     assert.equal(notifications, 1);
+    await api.getAssistantStatus();
+    await api.submitAssistant('00000000-0000-4000-8000-000000000001', 'Добавить клиента');
+    await api.cancelAssistant('00000000-0000-4000-8000-000000000001');
+    assert.equal(notifications, 1, 'Preparing and polling assistant proposals must not reload CRM lists');
+    await api.applyAssistant('00000000-0000-4000-8000-000000000001');
+    assert.equal(notifications, 2, 'Only applying a confirmed proposal refreshes related lists');
   } finally {
     globalThis.fetch = previousFetch;
     delete (globalThis as any).window;

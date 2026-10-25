@@ -121,9 +121,9 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
     0
   );
 
-  const loadData = () => {
-    setIsLoading(true);
-    Promise.all([
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return Promise.all([
       api.getPayments({ type: typeFilter === 'ALL' ? undefined : typeFilter }),
       api.getFinanceSummary(),
       api.getFinanceSettings(),
@@ -140,7 +140,7 @@ export const FinancePage: React.FC<FinancePageProps> = ({ currentUser }) => {
         }
       })
       .catch((err) => toast.error('Ошибка загрузки финансов: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   useCrmRefresh(loadData);

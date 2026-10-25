@@ -116,9 +116,9 @@ export const OutfitsPage: React.FC = () => {
     description: '',
   });
 
-  const loadData = () => {
-    setIsLoading(true);
-    Promise.all([
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return Promise.all([
       api.getOutfits({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
         category: categoryFilter === 'ALL' ? undefined : categoryFilter,
@@ -138,7 +138,7 @@ export const OutfitsPage: React.FC = () => {
         }
       })
       .catch((err) => toast.error('Ошибка загрузки данных экипировки: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   useCrmRefresh(loadData);

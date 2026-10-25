@@ -168,8 +168,8 @@ export const BatteriesPage: React.FC = () => {
   const [swapSearch, setSwapSearch] = useState('');
 
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (background = false) => {
+    if (!background) setIsLoading(true);
     try {
       const [batList, batModels, batStats, bikeList] = await Promise.all([
         api.getBatteries(),
@@ -187,7 +187,7 @@ export const BatteriesPage: React.FC = () => {
     } catch (err: any) {
       toast.error('Ошибка загрузки батарейного парка: ' + err.message);
     } finally {
-      setIsLoading(false);
+      if (!background) setIsLoading(false);
     }
   };
 

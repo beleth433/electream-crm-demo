@@ -59,8 +59,8 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ currentUser }) => 
     u.accessLevel?.id === 'lvl-owner' ||
     u.login === 'bxleth';
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (background = false) => {
+    if (!background) setIsLoading(true);
     try {
       const [uData, lData, eData] = await Promise.all([
         api.getUsers(),
@@ -73,7 +73,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ currentUser }) => 
     } catch (err: any) {
       toast.error('Ошибка загрузки данных: ' + err.message);
     } finally {
-      setIsLoading(false);
+      if (!background) setIsLoading(false);
     }
   };
 

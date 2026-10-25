@@ -65,15 +65,15 @@ export const LoyaltyPage: React.FC = () => {
   const [selectedClientForOverride, setSelectedClientForOverride] = useState<Client | null>(null);
   const [targetTierId, setTargetTierId] = useState<string>('AUTO'); // 'AUTO' or tier.id
 
-  const loadData = () => {
-    setIsLoading(true);
-    Promise.all([api.getLoyaltyTiers(), api.getClients()])
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return Promise.all([api.getLoyaltyTiers(), api.getClients()])
       .then(([tiersData, clientsData]) => {
         setTiers(tiersData);
         setClients(clientsData);
       })
       .catch((err) => toast.error('Ошибка загрузки данных программы лояльности: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   useCrmRefresh(loadData);
@@ -291,7 +291,7 @@ export const LoyaltyPage: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={loadData}
+            onClick={() => loadData()}
             disabled={isLoading}
             className="p-2.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
             title="Обновить данные"

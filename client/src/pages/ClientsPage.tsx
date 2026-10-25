@@ -137,9 +137,9 @@ export const ClientsPage: React.FC = () => {
     }
   };
 
-  const loadData = () => {
-    setIsLoading(true);
-    api
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return api
       .getClients({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
         courierService: serviceFilter === 'ALL' ? undefined : serviceFilter,
@@ -148,13 +148,13 @@ export const ClientsPage: React.FC = () => {
       })
       .then((data) => setClients(data))
       .catch((err) => toast.error('Ошибка загрузки клиентов: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
-  useCrmRefresh(() => {
-    loadData();
-    if (profileClient) api.getClient(profileClient.id).then(setProfileClient).catch(() => {});
-  });
+  useCrmRefresh((background) => Promise.all([
+    loadData(background),
+    profileClient ? api.getClient(profileClient.id).then(setProfileClient).catch(() => {}) : Promise.resolve(),
+  ]));
 
   useEffect(() => {
     loadData();

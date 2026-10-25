@@ -38,9 +38,9 @@ export const InfoPage: React.FC = () => {
     pinned: false,
   });
 
-  const loadData = () => {
-    setIsLoading(true);
-    Promise.all([
+  const loadData = (background = false) => {
+    if (!background) setIsLoading(true);
+    return Promise.all([
       api.getArticles({
         category: selectedCategory === 'ALL' ? undefined : selectedCategory,
         search: searchQuery || undefined,
@@ -52,7 +52,7 @@ export const InfoPage: React.FC = () => {
         setCategories(cats);
       })
       .catch((err) => toast.error('Ошибка загрузки информации: ' + err.message))
-      .finally(() => setIsLoading(false));
+      .finally(() => { if (!background) setIsLoading(false); });
   };
 
   useCrmRefresh(loadData);
