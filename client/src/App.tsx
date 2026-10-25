@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import { Toaster, toast } from 'sonner';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Sidebar } from './components/Sidebar';
-import { AssistantButton } from './components/AssistantButton';
 import { DashboardPage } from './pages/DashboardPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import type { DocumentSummary } from './types/documents';
@@ -608,7 +607,6 @@ const MainLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
-            <AssistantButton userId={currentUser.id} onOpenModule={handleSelectTab} />
             {/* Real-time Online Users Presence */}
             <NavbarOnlineUsers
               onlineUsers={onlineUsers}
