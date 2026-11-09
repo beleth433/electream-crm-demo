@@ -756,8 +756,8 @@ var require_toidentifier = __commonJS({
     "use strict";
     module2.exports = toIdentifier;
     function toIdentifier(str) {
-      return str.split(" ").map(function(token) {
-        return token.slice(0, 1).toUpperCase() + token.slice(1);
+      return str.split(" ").map(function(token2) {
+        return token2.slice(0, 1).toUpperCase() + token2.slice(1);
       }).join("").replace(/[^ _0-9a-z]/gi, "");
     }
   }
@@ -1043,12 +1043,12 @@ var require_debug = __commonJS({
     exports2.formatters = {};
     var prevTime;
     function selectColor(namespace) {
-      var hash = 0, i;
+      var hash2 = 0, i;
       for (i in namespace) {
-        hash = (hash << 5) - hash + namespace.charCodeAt(i);
-        hash |= 0;
+        hash2 = (hash2 << 5) - hash2 + namespace.charCodeAt(i);
+        hash2 |= 0;
       }
-      return exports2.colors[Math.abs(hash) % exports2.colors.length];
+      return exports2.colors[Math.abs(hash2) % exports2.colors.length];
     }
     function createDebug(namespace) {
       function debug() {
@@ -4307,7 +4307,7 @@ var require_dbcs_data = __commonJS({
       // == Japanese/ShiftJIS ====================================================
       // All japanese encodings are based on JIS X set of standards:
       // JIS X 0201 - Single-byte encoding of ASCII + ¥ + Kana chars at 0xA1-0xDF.
-      // JIS X 0208 - Main set of 6879 characters, placed in 94x94 plane, to be encoded by 2 bytes.
+      // JIS X 0208 - Main set of 6879 characters, placed in 94x94 plane, to be encoded by 2 bytes. 
       //              Has several variations in 1978, 1983, 1990 and 1997.
       // JIS X 0212 - Supplementary plane of 6067 chars in 94x94 plane. 1990. Effectively dead.
       // JIS X 0213 - Extension and modern replacement of 0208 and 0212. Total chars: 11233.
@@ -4324,7 +4324,7 @@ var require_dbcs_data = __commonJS({
       //               0x8F, (0xA1-0xFE)x2 - 0212 plane (94x94).
       //  * JIS X 208: 7-bit, direct encoding of 0208. Byte ranges: 0x21-0x7E (94 values). Uncommon.
       //               Used as-is in ISO2022 family.
-      //  * ISO2022-JP: Stateful encoding, with escape sequences to switch between ASCII,
+      //  * ISO2022-JP: Stateful encoding, with escape sequences to switch between ASCII, 
       //                0201-1976 Roman, 0208-1978, 0208-1983.
       //  * ISO2022-JP-1: Adds esc seq for 0212-1990.
       //  * ISO2022-JP-2: Adds esc seq for GB2313-1980, KSX1001-1992, ISO8859-1, ISO8859-7.
@@ -4435,7 +4435,7 @@ var require_dbcs_data = __commonJS({
       //  * Windows CP 951: Microsoft variant of Big5-HKSCS-2001. Seems to be never public. http://me.abelcheung.org/articles/research/what-is-cp951/
       //  * Big5-2003 (Taiwan standard) almost superset of cp950.
       //  * Unicode-at-on (UAO) / Mozilla 1.8. Falling out of use on the Web. Not supported by other browsers.
-      //  * Big5-HKSCS (-2001, -2004, -2008). Hong Kong standard.
+      //  * Big5-HKSCS (-2001, -2004, -2008). Hong Kong standard. 
       //    many unicode code points moved from PUA to Supplementary plane (U+2XXXX) over the years.
       //    Plus, it has 4 combining sequences.
       //    Seems that Mozilla refused to support it for 10 yrs. https://bugzilla.mozilla.org/show_bug.cgi?id=162431 https://bugzilla.mozilla.org/show_bug.cgi?id=310299
@@ -4446,7 +4446,7 @@ var require_dbcs_data = __commonJS({
       //    In the encoder, it might make sense to support encoding old PUA mappings to Big5 bytes seq-s.
       //    Official spec: http://www.ogcio.gov.hk/en/business/tech_promotion/ccli/terms/doc/2003cmp_2008.txt
       //                   http://www.ogcio.gov.hk/tc/business/tech_promotion/ccli/terms/doc/hkscs-2008-big5-iso.txt
-      //
+      // 
       // Current understanding of how to deal with Big5(-HKSCS) is in the Encoding Standard, http://encoding.spec.whatwg.org/#big5-encoder
       // Unicode mapping (http://www.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/OTHER/BIG5.TXT) is said to be wrong.
       "windows950": "cp950",
@@ -4980,8 +4980,8 @@ var require_raw_body = __commonJS({
           type: "entity.too.large"
         }));
       }
-      var state = stream._readableState;
-      if (stream._decoder || state && (state.encoding || state.decoder)) {
+      var state2 = stream._readableState;
+      if (stream._decoder || state2 && (state2.encoding || state2.decoder)) {
         return done(createError(500, "stream encoding should not be set", {
           type: "stream.encoding.set"
         }));
@@ -14433,8 +14433,8 @@ var require_text = __commonJS({
     var debug = require_src()("body-parser:text");
     var read = require_read();
     var typeis = require_type_is();
-    module2.exports = text;
-    function text(options) {
+    module2.exports = text2;
+    function text2(options) {
       var opts = options || {};
       var defaultCharset = opts.defaultCharset || "utf-8";
       var inflate = opts.inflate !== false;
@@ -17845,7 +17845,7 @@ var require_layer = __commonJS({
         next(err);
       }
     };
-    Layer.prototype.handle_request = function handle(req, res, next) {
+    Layer.prototype.handle_request = function handle2(req, res, next) {
       var fn = this.handle;
       if (fn.length > 3) {
         return next();
@@ -18028,13 +18028,13 @@ var require_route = __commonJS({
     Route.prototype.all = function all() {
       var handles = flatten(slice.call(arguments));
       for (var i = 0; i < handles.length; i++) {
-        var handle = handles[i];
-        if (typeof handle !== "function") {
-          var type = toString.call(handle);
+        var handle2 = handles[i];
+        if (typeof handle2 !== "function") {
+          var type = toString.call(handle2);
           var msg = "Route.all() requires a callback function but got a " + type;
           throw new TypeError(msg);
         }
-        var layer = Layer("/", {}, handle);
+        var layer = Layer("/", {}, handle2);
         layer.method = void 0;
         this.methods._all = true;
         this.stack.push(layer);
@@ -18045,14 +18045,14 @@ var require_route = __commonJS({
       Route.prototype[method] = function() {
         var handles = flatten(slice.call(arguments));
         for (var i = 0; i < handles.length; i++) {
-          var handle = handles[i];
-          if (typeof handle !== "function") {
-            var type = toString.call(handle);
+          var handle2 = handles[i];
+          if (typeof handle2 !== "function") {
+            var type = toString.call(handle2);
             var msg = "Route." + method + "() requires a callback function but got a " + type;
             throw new Error(msg);
           }
           debug("%s %o", method, this.path);
-          var layer = Layer("/", {}, handle);
+          var layer = Layer("/", {}, handle2);
           layer.method = method;
           this.methods[method] = true;
           this.stack.push(layer);
@@ -18131,7 +18131,7 @@ var require_router = __commonJS({
       (this.params[name] = this.params[name] || []).push(fn);
       return this;
     };
-    proto.handle = function handle(req, res, out) {
+    proto.handle = function handle2(req, res, out) {
       var self2 = this;
       debug("dispatching %s %s", req.method, req.url);
       var idx = 0;
@@ -18821,9 +18821,9 @@ var require_etag = __commonJS({
       if (entity.length === 0) {
         return '"0-2jmj7l5rSw0yVb/vlWAYkK/YBwk"';
       }
-      var hash = crypto2.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
+      var hash2 = crypto2.createHash("sha1").update(entity, "utf8").digest("base64").substring(0, 27);
       var len = typeof entity === "string" ? Buffer.byteLength(entity, "utf8") : entity.length;
-      return '"' + len.toString(16) + "-" + hash + '"';
+      return '"' + len.toString(16) + "-" + hash2 + '"';
     }
     function etag(entity, options) {
       if (entity == null) {
@@ -20787,7 +20787,7 @@ var require_application = __commonJS({
         this._router.use(middleware.init(this));
       }
     };
-    app2.handle = function handle(req, res, callback) {
+    app2.handle = function handle2(req, res, callback) {
       var router2 = this._router;
       var done = callback || finalhandler(req, res, {
         env: this.get("env"),
@@ -23708,20 +23708,20 @@ function __importStar(mod) {
 function __importDefault(mod) {
   return mod && mod.__esModule ? mod : { default: mod };
 }
-function __classPrivateFieldGet(receiver, state, kind, f) {
+function __classPrivateFieldGet(receiver, state2, kind, f) {
   if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-  return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+  if (typeof state2 === "function" ? receiver !== state2 || !f : !state2.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+  return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state2.get(receiver);
 }
-function __classPrivateFieldSet(receiver, state, value, kind, f) {
+function __classPrivateFieldSet(receiver, state2, value, kind, f) {
   if (kind === "m") throw new TypeError("Private method is not writable");
   if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-  if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-  return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value), value;
+  if (typeof state2 === "function" ? receiver !== state2 || !f : !state2.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+  return kind === "a" ? f.call(receiver, value) : f ? f.value = value : state2.set(receiver, value), value;
 }
-function __classPrivateFieldIn(state, receiver) {
+function __classPrivateFieldIn(state2, receiver) {
   if (receiver === null || typeof receiver !== "object" && typeof receiver !== "function") throw new TypeError("Cannot use 'in' operator on non-object");
-  return typeof state === "function" ? receiver === state : state.has(receiver);
+  return typeof state2 === "function" ? receiver === state2 : state2.has(receiver);
 }
 function __addDisposableResource(env, value, async) {
   if (value !== null && value !== void 0) {
@@ -23751,7 +23751,7 @@ function __addDisposableResource(env, value, async) {
   return value;
 }
 function __disposeResources(env) {
-  function fail(e) {
+  function fail2(e) {
     env.error = env.hasError ? new _SuppressedError(e, env.error, "An error was suppressed during disposal.") : e;
     env.hasError = true;
   }
@@ -23763,12 +23763,12 @@ function __disposeResources(env) {
         if (r.dispose) {
           var result = r.dispose.call(r.value);
           if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) {
-            fail(e);
+            fail2(e);
             return next();
           });
         } else s |= 1;
       } catch (e) {
-        fail(e);
+        fail2(e);
       }
     }
     if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
@@ -23998,8 +23998,8 @@ var require_FunctionsClient = __commonJS({
        * functions.setAuth(session.access_token)
        * ```
        */
-      setAuth(token) {
-        this.headers.Authorization = `Bearer ${token}`;
+      setAuth(token2) {
+        this.headers.Authorization = `Bearer ${token2}`;
       }
       /**
        * Invokes a function
@@ -25479,13 +25479,13 @@ var require_phoenix_cjs = __commonJS({
         }
         this.ajax("GET", headers, null, () => this.ontimeout(), (resp) => {
           if (resp) {
-            var { status, token, messages } = resp;
+            var { status, token: token2, messages } = resp;
             if (status === 410 && this.token !== null) {
               this.onerror(410);
               this.closeAndRetry(3410, "session_gone", false);
               return;
             }
-            this.token = token;
+            this.token = token2;
           } else {
             status = 0;
           }
@@ -25674,17 +25674,17 @@ var require_phoenix_cjs = __commonJS({
        * @returns {Record<string, PresenceState>}
        */
       static syncState(currentState, newState, onJoin, onLeave) {
-        let state = this.toNullProtoObj(this.clone(currentState));
+        let state2 = this.toNullProtoObj(this.clone(currentState));
         newState = this.toNullProtoObj(newState);
         let joins = /* @__PURE__ */ Object.create(null);
         let leaves = /* @__PURE__ */ Object.create(null);
-        this.map(state, (key, presence) => {
+        this.map(state2, (key, presence) => {
           if (!newState[key]) {
             leaves[key] = presence;
           }
         });
         this.map(newState, (key, newPresence) => {
-          let currentPresence = state[key];
+          let currentPresence = state2[key];
           if (currentPresence) {
             let newRefs = newPresence.metas.map((m) => m.phx_ref);
             let curRefs = currentPresence.metas.map((m) => m.phx_ref);
@@ -25702,7 +25702,7 @@ var require_phoenix_cjs = __commonJS({
             joins[key] = newPresence;
           }
         });
-        return this.syncDiff(state, { joins, leaves }, onJoin, onLeave);
+        return this.syncDiff(state2, { joins, leaves }, onJoin, onLeave);
       }
       /**
        *
@@ -25718,8 +25718,8 @@ var require_phoenix_cjs = __commonJS({
        *
        * @returns {Record<string, PresenceState>}
        */
-      static syncDiff(state, diff, onJoin, onLeave) {
-        state = this.toNullProtoObj(state);
+      static syncDiff(state2, diff, onJoin, onLeave) {
+        state2 = this.toNullProtoObj(state2);
         let { joins, leaves } = this.clone(diff);
         if (!onJoin) {
           onJoin = function() {
@@ -25730,17 +25730,17 @@ var require_phoenix_cjs = __commonJS({
           };
         }
         this.map(joins, (key, newPresence) => {
-          let currentPresence = state[key];
-          state[key] = this.clone(newPresence);
+          let currentPresence = state2[key];
+          state2[key] = this.clone(newPresence);
           if (currentPresence) {
-            let joinedRefs = state[key].metas.map((m) => m.phx_ref);
+            let joinedRefs = state2[key].metas.map((m) => m.phx_ref);
             let curMetas = currentPresence.metas.filter((m) => joinedRefs.indexOf(m.phx_ref) < 0);
-            state[key].metas.unshift(...curMetas);
+            state2[key].metas.unshift(...curMetas);
           }
           onJoin(key, currentPresence, newPresence);
         });
         this.map(leaves, (key, leftPresence) => {
-          let currentPresence = state[key];
+          let currentPresence = state2[key];
           if (!currentPresence) {
             return;
           }
@@ -25750,10 +25750,10 @@ var require_phoenix_cjs = __commonJS({
           });
           onLeave(key, currentPresence, leftPresence);
           if (currentPresence.metas.length === 0) {
-            delete state[key];
+            delete state2[key];
           }
         });
-        return state;
+        return state2;
       }
       /**
        * Returns the array of presences, with selected metadata.
@@ -26667,10 +26667,10 @@ var require_presenceAdapter = __commonJS({
        * })
        *
        */
-      static transformState(state) {
-        state = cloneState(state);
-        return Object.getOwnPropertyNames(state).reduce((newState, key) => {
-          const presences = state[key];
+      static transformState(state2) {
+        state2 = cloneState(state2);
+        return Object.getOwnPropertyNames(state2).reduce((newState, key) => {
+          const presences = state2[key];
           newState[key] = transformState(presences);
           return newState;
         }, {});
@@ -26707,8 +26707,8 @@ var require_presenceAdapter = __commonJS({
         return transformedPresence;
       });
     }
-    function cloneState(state) {
-      return JSON.parse(JSON.stringify(state));
+    function cloneState(state2) {
+      return JSON.parse(JSON.stringify(state2));
     }
     function phoenixPresenceOptions(opts) {
       return (opts === null || opts === void 0 ? void 0 : opts.events) && { events: opts.events };
@@ -26804,8 +26804,8 @@ var require_channelAdapter = __commonJS({
       get state() {
         return this.channel.state;
       }
-      set state(state) {
-        this.channel.state = state;
+      set state(state2) {
+        this.channel.state = state2;
       }
       get joinedOnce() {
         return this.channel.joinedOnce;
@@ -27067,8 +27067,8 @@ var require_RealtimeChannel = __commonJS({
       get state() {
         return this.channelAdapter.state;
       }
-      set state(state) {
-        this.channelAdapter.state = state;
+      set state(state2) {
+        this.channelAdapter.state = state2;
       }
       get joinedOnce() {
         return this.channelAdapter.joinedOnce;
@@ -28273,9 +28273,9 @@ var require_RealtimeClient = __commonJS({
        *
        * @category Realtime
        */
-      async setAuth(token = null) {
+      async setAuth(token2 = null) {
         const authGeneration = ++this._authGeneration;
-        const authPromise = this._performAuth(token, authGeneration);
+        const authPromise = this._performAuth(token2, authGeneration);
         if (authGeneration === this._authGeneration) {
           this._authPromise = authPromise;
         }
@@ -28363,11 +28363,11 @@ var require_RealtimeClient = __commonJS({
        * Perform the actual auth operation
        * @internal
        */
-      async _performAuth(token, authGeneration) {
+      async _performAuth(token2, authGeneration) {
         let tokenToSend;
         let isManualToken = false;
-        if (token) {
-          tokenToSend = token;
+        if (token2) {
+          tokenToSend = token2;
           isManualToken = true;
         } else if (this.accessToken) {
           try {
@@ -28847,33 +28847,33 @@ var require_base64url = __commonJS({
       }
       return charMap;
     })();
-    function byteToBase64URL(byte, state, emit) {
+    function byteToBase64URL(byte, state2, emit) {
       if (byte !== null) {
-        state.queue = state.queue << 8 | byte;
-        state.queuedBits += 8;
-        while (state.queuedBits >= 6) {
-          const pos = state.queue >> state.queuedBits - 6 & 63;
+        state2.queue = state2.queue << 8 | byte;
+        state2.queuedBits += 8;
+        while (state2.queuedBits >= 6) {
+          const pos = state2.queue >> state2.queuedBits - 6 & 63;
           emit(TO_BASE64URL[pos]);
-          state.queuedBits -= 6;
+          state2.queuedBits -= 6;
         }
-      } else if (state.queuedBits > 0) {
-        state.queue = state.queue << 6 - state.queuedBits;
-        state.queuedBits = 6;
-        while (state.queuedBits >= 6) {
-          const pos = state.queue >> state.queuedBits - 6 & 63;
+      } else if (state2.queuedBits > 0) {
+        state2.queue = state2.queue << 6 - state2.queuedBits;
+        state2.queuedBits = 6;
+        while (state2.queuedBits >= 6) {
+          const pos = state2.queue >> state2.queuedBits - 6 & 63;
           emit(TO_BASE64URL[pos]);
-          state.queuedBits -= 6;
+          state2.queuedBits -= 6;
         }
       }
     }
-    function byteFromBase64URL(charCode, state, emit) {
+    function byteFromBase64URL(charCode, state2, emit) {
       const bits = FROM_BASE64URL[charCode];
       if (bits > -1) {
-        state.queue = state.queue << 6 | bits;
-        state.queuedBits += 6;
-        while (state.queuedBits >= 8) {
-          emit(state.queue >> state.queuedBits - 8 & 255);
-          state.queuedBits -= 8;
+        state2.queue = state2.queue << 6 | bits;
+        state2.queuedBits += 6;
+        while (state2.queuedBits >= 8) {
+          emit(state2.queue >> state2.queuedBits - 8 & 255);
+          state2.queuedBits -= 8;
         }
       } else if (bits === -2) {
         return;
@@ -28886,11 +28886,11 @@ var require_base64url = __commonJS({
       const emitter = (char) => {
         base64.push(char);
       };
-      const state = { queue: 0, queuedBits: 0 };
+      const state2 = { queue: 0, queuedBits: 0 };
       stringToUTF8(str, (byte) => {
-        byteToBase64URL(byte, state, emitter);
+        byteToBase64URL(byte, state2, emitter);
       });
-      byteToBase64URL(null, state, emitter);
+      byteToBase64URL(null, state2, emitter);
       return base64.join("");
     }
     function stringFromBase64URL(str) {
@@ -28945,47 +28945,47 @@ var require_base64url = __commonJS({
         codepointToUTF8(codepoint, emit);
       }
     }
-    function stringFromUTF8(byte, state, emit) {
-      if (state.utf8seq === 0) {
+    function stringFromUTF8(byte, state2, emit) {
+      if (state2.utf8seq === 0) {
         if (byte <= 127) {
           emit(byte);
           return;
         }
         for (let leadingBit = 1; leadingBit < 6; leadingBit += 1) {
           if ((byte >> 7 - leadingBit & 1) === 0) {
-            state.utf8seq = leadingBit;
+            state2.utf8seq = leadingBit;
             break;
           }
         }
-        if (state.utf8seq === 2) {
-          state.codepoint = byte & 31;
-        } else if (state.utf8seq === 3) {
-          state.codepoint = byte & 15;
-        } else if (state.utf8seq === 4) {
-          state.codepoint = byte & 7;
+        if (state2.utf8seq === 2) {
+          state2.codepoint = byte & 31;
+        } else if (state2.utf8seq === 3) {
+          state2.codepoint = byte & 15;
+        } else if (state2.utf8seq === 4) {
+          state2.codepoint = byte & 7;
         } else {
           throw new Error("Invalid UTF-8 sequence");
         }
-        state.utf8seq -= 1;
-      } else if (state.utf8seq > 0) {
+        state2.utf8seq -= 1;
+      } else if (state2.utf8seq > 0) {
         if (byte <= 127) {
           throw new Error("Invalid UTF-8 sequence");
         }
-        state.codepoint = state.codepoint << 6 | byte & 63;
-        state.utf8seq -= 1;
-        if (state.utf8seq === 0) {
-          emit(state.codepoint);
+        state2.codepoint = state2.codepoint << 6 | byte & 63;
+        state2.utf8seq -= 1;
+        if (state2.utf8seq === 0) {
+          emit(state2.codepoint);
         }
       }
     }
     function base64UrlToUint8Array(str) {
       const result = [];
-      const state = { queue: 0, queuedBits: 0 };
+      const state2 = { queue: 0, queuedBits: 0 };
       const onByte = (byte) => {
         result.push(byte);
       };
       for (let i = 0; i < str.length; i += 1) {
-        byteFromBase64URL(str.charCodeAt(i), state, onByte);
+        byteFromBase64URL(str.charCodeAt(i), state2, onByte);
       }
       return new Uint8Array(result);
     }
@@ -28996,12 +28996,12 @@ var require_base64url = __commonJS({
     }
     function bytesToBase64URL(bytes) {
       const result = [];
-      const state = { queue: 0, queuedBits: 0 };
+      const state2 = { queue: 0, queuedBits: 0 };
       const onChar = (char) => {
         result.push(char);
       };
-      bytes.forEach((byte) => byteToBase64URL(byte, state, onChar));
-      byteToBase64URL(null, state, onChar);
+      bytes.forEach((byte) => byteToBase64URL(byte, state2, onChar));
+      byteToBase64URL(null, state2, onChar);
       return result.join("");
     }
   }
@@ -29140,8 +29140,8 @@ var require_helpers = __commonJS({
     };
     exports2.Deferred = Deferred;
     Deferred.promiseConstructor = Promise;
-    function decodeJWT(token) {
-      const parts = token.split(".");
+    function decodeJWT(token2) {
+      const parts = token2.split(".");
       if (parts.length !== 3) {
         throw new errors_1.AuthInvalidJwtError("Invalid JWT structure");
       }
@@ -29210,8 +29210,8 @@ var require_helpers = __commonJS({
     async function sha256(randomString) {
       const encoder = new TextEncoder();
       const encodedData = encoder.encode(randomString);
-      const hash = await crypto.subtle.digest("SHA-256", encodedData);
-      const bytes = new Uint8Array(hash);
+      const hash2 = await crypto.subtle.digest("SHA-256", encodedData);
+      const bytes = new Uint8Array(hash2);
       return Array.from(bytes).map((c) => String.fromCharCode(c)).join("");
     }
     async function generatePKCEChallenge(verifier) {
@@ -29397,8 +29397,8 @@ var require_helpers = __commonJS({
         }
       });
     }
-    function insecureUserWarningProxy(user, suppressWarningRef) {
-      return new Proxy(user, {
+    function insecureUserWarningProxy(user2, suppressWarningRef) {
+      return new Proxy(user2, {
         get: (target, prop, receiver) => {
           if (prop === "__isInsecureUserWarningProxy") {
             return true;
@@ -29565,8 +29565,8 @@ var require_fetch = __commonJS({
           session.expires_at = (0, helpers_1.expiresAt)(data.expires_in);
         }
       }
-      const user = (_a = data.user) !== null && _a !== void 0 ? _a : typeof (data === null || data === void 0 ? void 0 : data.id) === "string" ? data : null;
-      return { data: { session, user }, error: null };
+      const user2 = (_a = data.user) !== null && _a !== void 0 ? _a : typeof (data === null || data === void 0 ? void 0 : data.id) === "string" ? data : null;
+      return { data: { session, user: user2 }, error: null };
     }
     function _sessionResponsePassword(data) {
       const response = _sessionResponse(data);
@@ -29577,8 +29577,8 @@ var require_fetch = __commonJS({
     }
     function _userResponse(data) {
       var _a;
-      const user = (_a = data.user) !== null && _a !== void 0 ? _a : data;
-      return { data: { user }, error: null };
+      const user2 = (_a = data.user) !== null && _a !== void 0 ? _a : data;
+      return { data: { user: user2 }, error: null };
     }
     function _ssoResponse(data) {
       return { data, error: null };
@@ -29592,11 +29592,11 @@ var require_fetch = __commonJS({
         redirect_to,
         verification_type
       };
-      const user = Object.assign({}, rest);
+      const user2 = Object.assign({}, rest);
       return {
         data: {
           properties,
-          user
+          user: user2
         },
         error: null
       };
@@ -31277,10 +31277,10 @@ var require_webauthn = __commonJS({
         ["challenge", "user", "excludeCredentials"]
       );
       const challenge = (0, base64url_1.base64UrlToUint8Array)(challengeStr).buffer;
-      const user = Object.assign(Object.assign({}, userOpts), { id: (0, base64url_1.base64UrlToUint8Array)(userOpts.id).buffer });
+      const user2 = Object.assign(Object.assign({}, userOpts), { id: (0, base64url_1.base64UrlToUint8Array)(userOpts.id).buffer });
       const result = Object.assign(Object.assign({}, restOptions), {
         challenge,
-        user
+        user: user2
       });
       if (excludeCredentials && excludeCredentials.length > 0) {
         result.excludeCredentials = new Array(excludeCredentials.length);
@@ -31533,20 +31533,20 @@ var require_webauthn = __commonJS({
           }
           const abortSignal = signal !== null && signal !== void 0 ? signal : exports2.webAuthnAbortService.createNewAbortSignal();
           if (challengeResponse.webauthn.type === "create") {
-            const { user } = challengeResponse.webauthn.credential_options.publicKey;
-            if (!user.name) {
+            const { user: user2 } = challengeResponse.webauthn.credential_options.publicKey;
+            if (!user2.name) {
               const nameToUse = friendlyName;
               if (!nameToUse) {
                 const currentUser = await this.client.getUser();
                 const userData = currentUser.data.user;
                 const fallbackName = ((_a = userData === null || userData === void 0 ? void 0 : userData.user_metadata) === null || _a === void 0 ? void 0 : _a.name) || (userData === null || userData === void 0 ? void 0 : userData.email) || (userData === null || userData === void 0 ? void 0 : userData.id) || "User";
-                user.name = `${user.id}:${fallbackName}`;
+                user2.name = `${user2.id}:${fallbackName}`;
               } else {
-                user.name = `${user.id}:${nameToUse}`;
+                user2.name = `${user2.id}:${nameToUse}`;
               }
             }
-            if (!user.displayName) {
-              user.displayName = user.name;
+            if (!user2.displayName) {
+              user2.displayName = user2.name;
             }
           }
           switch (challengeResponse.webauthn.type) {
@@ -32181,12 +32181,12 @@ var require_GoTrueClient = __commonJS({
             return this._returnResult({ data: { user: null, session: null }, error });
           }
           const session = data.session;
-          const user = data.user;
+          const user2 = data.user;
           if (data.session) {
             await this._saveSession(data.session);
             await this._notifyAllSubscribers("SIGNED_IN", session);
           }
-          return this._returnResult({ data: { user, session }, error: null });
+          return this._returnResult({ data: { user: user2, session }, error: null });
         } catch (error) {
           if ((0, errors_1.isAuthError)(error)) {
             return this._returnResult({ data: { user: null, session: null }, error });
@@ -32419,12 +32419,12 @@ var require_GoTrueClient = __commonJS({
             return this._returnResult({ data: { user: null, session: null }, error });
           }
           const session = data.session;
-          const user = data.user;
+          const user2 = data.user;
           if (data.session) {
             await this._saveSession(data.session);
             await this._notifyAllSubscribers("SIGNED_IN", session);
           }
-          return this._returnResult({ data: { user, session }, error: null });
+          return this._returnResult({ data: { user: user2, session }, error: null });
         } catch (error) {
           await (0, helpers_1.removePKCEVerifier)(this.storage, this.storageKey, flowId);
           if ((0, errors_1.isAuthError)(error)) {
@@ -33314,12 +33314,12 @@ var require_GoTrueClient = __commonJS({
        */
       async signInWithIdToken(credentials) {
         try {
-          const { options, provider, token, access_token, nonce } = credentials;
+          const { options, provider, token: token2, access_token, nonce } = credentials;
           const res = await (0, fetch_1._request)(this.fetch, "POST", `${this.url}/token?grant_type=id_token`, {
             headers: this.headers,
             body: {
               provider,
-              id_token: token,
+              id_token: token2,
               access_token,
               nonce,
               gotrue_meta_security: { captcha_token: options === null || options === void 0 ? void 0 : options.captchaToken }
@@ -33634,12 +33634,12 @@ var require_GoTrueClient = __commonJS({
             throw tokenVerificationError;
           }
           const session = data.session;
-          const user = data.user;
+          const user2 = data.user;
           if (session === null || session === void 0 ? void 0 : session.access_token) {
             await this._saveSession(session);
             await this._notifyAllSubscribers(params.type == "recovery" ? "PASSWORD_RECOVERY" : "SIGNED_IN", session);
           }
-          return this._returnResult({ data: { user, session }, error: null });
+          return this._returnResult({ data: { user: user2, session }, error: null });
         } catch (error) {
           if ((0, errors_1.isAuthError)(error)) {
             return this._returnResult({ data: { user: null, session: null }, error });
@@ -35402,13 +35402,13 @@ var require_GoTrueClient = __commonJS({
             const { error: sessionError, data: { session } } = result;
             if (sessionError)
               throw sessionError;
-            const { options, provider, token, access_token, nonce } = credentials;
+            const { options, provider, token: token2, access_token, nonce } = credentials;
             const res = await (0, fetch_1._request)(this.fetch, "POST", `${this.url}/token?grant_type=id_token`, {
               headers: this.headers,
               jwt: (_a = session === null || session === void 0 ? void 0 : session.access_token) !== null && _a !== void 0 ? _a : void 0,
               body: {
                 provider,
-                id_token: token,
+                id_token: token2,
                 access_token,
                 nonce,
                 link_identity: true,
@@ -35958,7 +35958,7 @@ var require_GoTrueClient = __commonJS({
           try {
             await this._acquireLock(0, async () => {
               try {
-                const now = Date.now();
+                const now2 = Date.now();
                 try {
                   return await this._useSession(async (result) => {
                     const { data: { session } } = result;
@@ -35966,7 +35966,7 @@ var require_GoTrueClient = __commonJS({
                       this._debug("#_autoRefreshTokenTick()", "no session");
                       return;
                     }
-                    const expiresInTicks = Math.floor((session.expires_at * 1e3 - now) / constants_1.AUTO_REFRESH_TICK_DURATION_MS);
+                    const expiresInTicks = Math.floor((session.expires_at * 1e3 - now2) / constants_1.AUTO_REFRESH_TICK_DURATION_MS);
                     this._debug("#_autoRefreshTokenTick()", `access token expires in ${expiresInTicks} ticks, a tick lasts ${constants_1.AUTO_REFRESH_TICK_DURATION_MS}ms, refresh threshold is ${constants_1.AUTO_REFRESH_TICK_THRESHOLD} ticks`);
                     if (expiresInTicks <= constants_1.AUTO_REFRESH_TICK_THRESHOLD) {
                       await this._callRefreshToken(session.refresh_token);
@@ -35993,7 +35993,7 @@ var require_GoTrueClient = __commonJS({
           return;
         }
         try {
-          const now = Date.now();
+          const now2 = Date.now();
           try {
             await this._useSession(async (result) => {
               const { data: { session } } = result;
@@ -36001,7 +36001,7 @@ var require_GoTrueClient = __commonJS({
                 this._debug("#_autoRefreshTokenTick()", "no session");
                 return;
               }
-              const expiresInTicks = Math.floor((session.expires_at * 1e3 - now) / constants_1.AUTO_REFRESH_TICK_DURATION_MS);
+              const expiresInTicks = Math.floor((session.expires_at * 1e3 - now2) / constants_1.AUTO_REFRESH_TICK_DURATION_MS);
               this._debug("#_autoRefreshTokenTick()", `access token expires in ${expiresInTicks} ticks, a tick lasts ${constants_1.AUTO_REFRESH_TICK_DURATION_MS}ms, refresh threshold is ${constants_1.AUTO_REFRESH_TICK_THRESHOLD} ticks`);
               if (expiresInTicks <= constants_1.AUTO_REFRESH_TICK_THRESHOLD) {
                 await this._callRefreshToken(session.refresh_token);
@@ -36286,7 +36286,7 @@ var require_GoTrueClient = __commonJS({
        */
       async _listFactors() {
         var _a;
-        const { data: { user }, error: userError } = await this.getUser();
+        const { data: { user: user2 }, error: userError } = await this.getUser();
         if (userError) {
           return { data: null, error: userError };
         }
@@ -36297,7 +36297,7 @@ var require_GoTrueClient = __commonJS({
           webauthn: [],
           recovery_code: []
         };
-        for (const factor of (_a = user === null || user === void 0 ? void 0 : user.factors) !== null && _a !== void 0 ? _a : []) {
+        for (const factor of (_a = user2 === null || user2 === void 0 ? void 0 : user2.factors) !== null && _a !== void 0 ? _a : []) {
           data.all.push(factor);
           if (factor.status === "verified" && factor.factor_type in data && Array.isArray(data[factor.factor_type])) {
             ;
@@ -36322,11 +36322,11 @@ var require_GoTrueClient = __commonJS({
               currentLevel2 = payload2.aal;
             }
             let nextLevel2 = currentLevel2;
-            const { data: { user }, error: userError } = await this.getUser(jwt);
+            const { data: { user: user2 }, error: userError } = await this.getUser(jwt);
             if (userError) {
               return this._returnResult({ data: null, error: userError });
             }
-            const verifiedFactors2 = (_b = (_a = user === null || user === void 0 ? void 0 : user.factors) === null || _a === void 0 ? void 0 : _a.filter((factor) => factor.status === "verified")) !== null && _b !== void 0 ? _b : [];
+            const verifiedFactors2 = (_b = (_a = user2 === null || user2 === void 0 ? void 0 : user2.factors) === null || _a === void 0 ? void 0 : _a.filter((factor) => factor.status === "verified")) !== null && _b !== void 0 ? _b : [];
             if (verifiedFactors2.length > 0) {
               nextLevel2 = "aal2";
             }
@@ -36674,9 +36674,9 @@ var require_GoTrueClient = __commonJS({
         if (jwk) {
           return jwk;
         }
-        const now = Date.now();
+        const now2 = Date.now();
         jwk = this.jwks.keys.find((key) => key.kid === kid);
-        if (jwk && this.jwks_cached_at + constants_1.JWKS_TTL > now) {
+        if (jwk && this.jwks_cached_at + constants_1.JWKS_TTL > now2) {
           return jwk;
         }
         const { data, error } = await (0, fetch_1._request)(this.fetch, "GET", `${this.url}/.well-known/jwks.json`, {
@@ -36689,7 +36689,7 @@ var require_GoTrueClient = __commonJS({
           return null;
         }
         this.jwks = data;
-        this.jwks_cached_at = now;
+        this.jwks_cached_at = now2;
         jwk = data.keys.find((key) => key.kid === kid);
         if (!jwk) {
           return null;
@@ -36763,15 +36763,15 @@ var require_GoTrueClient = __commonJS({
        */
       async getClaims(jwt, options = {}) {
         try {
-          let token = jwt;
-          if (!token) {
+          let token2 = jwt;
+          if (!token2) {
             const { data, error } = await this.getSession();
             if (error || !data.session) {
               return this._returnResult({ data: null, error });
             }
-            token = data.session.access_token;
+            token2 = data.session.access_token;
           }
-          const { header, payload, signature, raw: { header: rawHeader, payload: rawPayload } } = (0, helpers_1.decodeJWT)(token);
+          const { header, payload, signature, raw: { header: rawHeader, payload: rawPayload } } = (0, helpers_1.decodeJWT)(token2);
           if (!(options === null || options === void 0 ? void 0 : options.allowExpired)) {
             try {
               (0, helpers_1.validateExp)(payload.exp);
@@ -36781,7 +36781,7 @@ var require_GoTrueClient = __commonJS({
           }
           const signingKey2 = !header.alg || header.alg.startsWith("HS") || !header.kid || !("crypto" in globalThis && "subtle" in globalThis.crypto) ? null : await this.fetchJwk(header.kid, (options === null || options === void 0 ? void 0 : options.keys) ? { keys: options.keys } : options === null || options === void 0 ? void 0 : options.jwks);
           if (!signingKey2) {
-            const { error } = await this.getUser(token);
+            const { error } = await this.getUser(token2);
             if (error) {
               throw error;
             }
@@ -38145,16 +38145,16 @@ var require_pg_types = __commonJS({
 var require_defaults = __commonJS({
   "node_modules/pg/lib/defaults.js"(exports2, module2) {
     "use strict";
-    var user;
+    var user2;
     try {
-      user = process.platform === "win32" ? process.env.USERNAME : process.env.USER;
+      user2 = process.platform === "win32" ? process.env.USERNAME : process.env.USER;
     } catch {
     }
     module2.exports = {
       // database host. defaults to localhost
       host: "localhost",
       // database user's name
-      user,
+      user: user2,
       // name of database to connect
       database: void 0,
       // database user's password
@@ -38380,7 +38380,7 @@ var require_utils4 = __commonJS({
     var nodeCrypto = require("crypto");
     module2.exports = {
       postgresMd5PasswordHash,
-      randomBytes: randomBytes2,
+      randomBytes: randomBytes3,
       deriveKey,
       sha256,
       hashByName,
@@ -38390,7 +38390,7 @@ var require_utils4 = __commonJS({
     var webCrypto = nodeCrypto.webcrypto || globalThis.crypto;
     var subtleCrypto = webCrypto.subtle;
     var textEncoder = new TextEncoder();
-    function randomBytes2(length) {
+    function randomBytes3(length) {
       return webCrypto.getRandomValues(Buffer.alloc(length));
     }
     async function md5(string) {
@@ -38398,20 +38398,20 @@ var require_utils4 = __commonJS({
         return nodeCrypto.createHash("md5").update(string, "utf-8").digest("hex");
       } catch (e) {
         const data = typeof string === "string" ? textEncoder.encode(string) : string;
-        const hash = await subtleCrypto.digest("MD5", data);
-        return Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, "0")).join("");
+        const hash2 = await subtleCrypto.digest("MD5", data);
+        return Array.from(new Uint8Array(hash2)).map((b) => b.toString(16).padStart(2, "0")).join("");
       }
     }
-    async function postgresMd5PasswordHash(user, password, salt) {
-      const inner = await md5(password + user);
+    async function postgresMd5PasswordHash(user2, password, salt) {
+      const inner = await md5(password + user2);
       const outer = await md5(Buffer.concat([Buffer.from(inner), salt]));
       return "md5" + outer;
     }
-    async function sha256(text) {
-      return await subtleCrypto.digest("SHA-256", text);
+    async function sha256(text2) {
+      return await subtleCrypto.digest("SHA-256", text2);
     }
-    async function hashByName(hashName, text) {
-      return await subtleCrypto.digest(hashName, text);
+    async function hashByName(hashName, text2) {
+      return await subtleCrypto.digest(hashName, text2);
     }
     async function hmacSha256(keyBuffer, msg) {
       const key = await subtleCrypto.importKey("raw", keyBuffer, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -38632,21 +38632,21 @@ var require_sasl = __commonJS({
         throw new Error("SASL: SCRAM-SERVER-FINAL-MESSAGE: server signature does not match");
       }
     }
-    function isPrintableChars(text) {
-      if (typeof text !== "string") {
+    function isPrintableChars(text2) {
+      if (typeof text2 !== "string") {
         throw new TypeError("SASL: text must be a string");
       }
-      return text.split("").map((_, i) => text.charCodeAt(i)).every((c) => c >= 33 && c <= 43 || c >= 45 && c <= 126);
+      return text2.split("").map((_, i) => text2.charCodeAt(i)).every((c) => c >= 33 && c <= 43 || c >= 45 && c <= 126);
     }
-    function isBase64(text) {
-      return /^(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(text);
+    function isBase64(text2) {
+      return /^(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(text2);
     }
-    function parseAttributePairs(text) {
-      if (typeof text !== "string") {
+    function parseAttributePairs(text2) {
+      if (typeof text2 !== "string") {
         throw new TypeError("SASL: attribute pairs text must be a string");
       }
       return new Map(
-        text.split(",").map((attrValue) => {
+        text2.split(",").map((attrValue) => {
           if (!/^.=/.test(attrValue)) {
             throw new Error("SASL: Invalid attribute pair entry");
           }
@@ -39528,9 +39528,9 @@ var require_messages = __commonJS({
     };
     exports2.ReadyForQueryMessage = ReadyForQueryMessage;
     var CommandCompleteMessage = class {
-      constructor(length, text) {
+      constructor(length, text2) {
         this.length = length;
-        this.text = text;
+        this.text = text2;
         this.name = "commandComplete";
       }
     };
@@ -39711,8 +39711,8 @@ var require_serializer2 = __commonJS({
         /* code.startup */
       );
     };
-    var query = (text) => {
-      return writer.addCString(text).flush(
+    var query = (text2) => {
+      return writer.addCString(text2).flush(
         81
         /* code.query */
       );
@@ -39829,8 +39829,8 @@ var require_serializer2 = __commonJS({
       return msg.name ? cstringMessage(68, `${msg.type}${msg.name || ""}`) : msg.type === "P" ? emptyDescribePortal : emptyDescribeStatement;
     };
     var close = (msg) => {
-      const text = `${msg.type}${msg.name || ""}`;
-      return cstringMessage(67, text);
+      const text2 = `${msg.type}${msg.name || ""}`;
+      return cstringMessage(67, text2);
     };
     var copyData = (chunk) => {
       return writer.add(chunk).flush(
@@ -40102,8 +40102,8 @@ var require_parser = __commonJS({
       return new messages_1.ReadyForQueryMessage(LATEINIT_LENGTH, status);
     };
     var parseCommandCompleteMessage = (reader) => {
-      const text = reader.cstring();
-      return new messages_1.CommandCompleteMessage(LATEINIT_LENGTH, text);
+      const text2 = reader.cstring();
+      return new messages_1.CommandCompleteMessage(LATEINIT_LENGTH, text2);
     };
     var parseCopyData = (reader, length) => {
       const chunk = reader.bytes(length - 4);
@@ -40490,8 +40490,8 @@ var require_connection = __commonJS({
         }
         return this.stream.write(buffer);
       }
-      query(text) {
-        this._send(serialize.query(text));
+      query(text2) {
+        this._send(serialize.query(text2));
       }
       // send parse message
       parse(query) {
@@ -41886,9 +41886,9 @@ var require_pg_pool = __commonJS({
         this._idle.push(new IdleItem(client, idleListener, tid));
         this._pulseQueue();
       }
-      query(text, values, cb) {
-        if (typeof text === "function") {
-          const response2 = promisify(this.Promise, text);
+      query(text2, values, cb) {
+        if (typeof text2 === "function") {
+          const response2 = promisify(this.Promise, text2);
           setImmediate(function() {
             return response2.callback(new Error("Passing a function as the first parameter to pool.query is not supported"));
           });
@@ -41916,7 +41916,7 @@ var require_pg_pool = __commonJS({
           client.once("error", onError);
           this.log("dispatching query");
           try {
-            client.query(text, values, (err2, res) => {
+            client.query(text2, values, (err2, res) => {
               this.log("query dispatched");
               client.removeListener("error", onError);
               if (clientReleased) {
@@ -42517,6 +42517,68 @@ var require_lib5 = __commonJS({
         return native;
       }
     });
+  }
+});
+
+// ../local-assistant/facts.cjs
+var require_facts = __commonJS({
+  "../local-assistant/facts.cjs"(exports2, module2) {
+    var transliteration = { \u0430: "a", \u0431: "b", \u0432: "v", \u0433: "g", \u0434: "d", \u0435: "e", \u0451: "e", \u0436: "zh", \u0437: "z", \u0438: "i", \u0439: "y", \u043A: "k", \u043B: "l", \u043C: "m", \u043D: "n", \u043E: "o", \u043F: "p", \u0440: "r", \u0441: "s", \u0442: "t", \u0443: "u", \u0444: "f", \u0445: "h", \u0446: "ts", \u0447: "ch", \u0448: "sh", \u0449: "sch", \u044A: "", \u044B: "y", \u044C: "", \u044D: "e", \u044E: "yu", \u044F: "ya" };
+    function label2(value) {
+      return String(value).toLowerCase().replace(/[а-яё]/g, (c) => transliteration[c]).replace(/[^a-z0-9]/g, "");
+    }
+    function intent2(text2) {
+      return { clients: /клиент|курьер|покупател/iu.test(text2), bikes: /велосипед|байк/iu.test(text2), batteries: /аккумулятор|батаре|акб/iu.test(text2) };
+    }
+    function clientTypeFromText(text2) {
+      const courier = /курьер/iu.test(text2), retail = /покупател|розниц|(?:^|[\s.,])сто(?:$|[\s.,])/iu.test(text2);
+      return courier !== retail ? courier ? "COURIER" : "RETAIL" : null;
+    }
+    function isUpdate2(text2) {
+      return /измен|обнов|исправ|помен|дополни|внеси\s+(?:прописку|паспорт|телефон)/iu.test(text2);
+    }
+    function phone(value) {
+      const raw = String(value).trim(), digits = raw.replace(/\D/g, "");
+      if (/^\+?7/.test(raw) || digits.startsWith("8")) return { valid: digits.length === 11, digits: digits.startsWith("8") ? "7" + digits.slice(1) : digits };
+      if (digits.length === 10 && digits.startsWith("9")) return { valid: true, digits: "7" + digits };
+      return { valid: raw.startsWith("+") && digits.length >= 10 && digits.length <= 15, digits };
+    }
+    function phoneCandidates(text2) {
+      return [...text2.matchAll(/(?<![\p{L}\d])(?:\+\d|[789])(?:[\s().-]*\d){8,14}(?![\s().-]*\d)/gu)].map((m) => ({ raw: m[0].trim(), ...phone(m[0]), index: m.index }));
+    }
+    function phoneInText2(value, text2) {
+      const parsed = phone(value);
+      return parsed.valid && phoneCandidates(text2).some((p) => p.valid && p.digits === parsed.digits);
+    }
+    function modelInText2(model, text2, battery = false) {
+      if (model.name && label2(text2).includes(label2(model.name))) return true;
+      if (!battery || !model.voltage || !model.capacityAh) return false;
+      return new RegExp(`(?<!\\d)${model.voltage}\\s*(?:v|\u0432(?:\u043E\u043B\u044C\u0442)?)(?![\\p{L}\\d])`, "iu").test(text2) && new RegExp(`(?<!\\d)${model.capacityAh}\\s*(?:ah|\u0430\u0447|\u0430[ -]*\u0447|\u0430\u043C\u043F\u0435\u0440(?:[ -]*\u0447\u0430\u0441(?:\u043E\u0432|\u0430)?)?)(?![\\p{L}\\d])`, "iu").test(text2);
+    }
+    var counts = { \u043E\u0434\u0438\u043D: 1, \u043E\u0434\u043D\u043E\u0433\u043E: 1, \u043E\u0434\u043D\u0443: 1, \u0434\u0432\u0430: 2, \u0434\u0432\u0435: 2, \u0434\u0432\u0443\u0445: 2, \u0442\u0440\u0438: 3, \u0442\u0440\u0435\u0445: 3, "\u0442\u0440\u0451\u0445": 3, \u0447\u0435\u0442\u044B\u0440\u0435: 4, \u0447\u0435\u0442\u044B\u0440\u0435\u0445: 4, "\u0447\u0435\u0442\u044B\u0440\u0451\u0445": 4, \u043F\u044F\u0442\u044C: 5, \u043F\u044F\u0442\u0438: 5, \u0448\u0435\u0441\u0442\u044C: 6, \u0448\u0435\u0441\u0442\u0438: 6, \u0441\u0435\u043C\u044C: 7, \u0441\u0435\u043C\u0438: 7, \u0432\u043E\u0441\u0435\u043C\u044C: 8, \u0432\u043E\u0441\u044C\u043C\u0438: 8, \u0434\u0435\u0432\u044F\u0442\u044C: 9, \u0434\u0435\u0432\u044F\u0442\u0438: 9, \u0434\u0435\u0441\u044F\u0442\u044C: 10, \u0434\u0435\u0441\u044F\u0442\u0438: 10 };
+    function requestedCount2(text2, category) {
+      const noun = category === "clients" ? "(?:\u043D\u043E\u0432\u044B\u0445\\s+)?(?:\u043A\u043B\u0438\u0435\u043D\u0442|\u043A\u0443\u0440\u044C\u0435\u0440|\u043F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B)" : category === "bikes" ? "(?:\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434|\u0431\u0430\u0439\u043A)" : "(?:\u0430\u043A\u0431|\u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440|\u0431\u0430\u0442\u0430\u0440\u0435)";
+      const match = text2.toLowerCase().match(new RegExp(`(?:^|[^\\p{L}\\d])(\\d+|${Object.keys(counts).join("|")})\\s+${noun}`, "u"));
+      return match ? counts[match[1]] || Number(match[1]) : null;
+    }
+    function money2(text2) {
+      const amounts = [];
+      for (const match of text2.matchAll(/(?<!\d)(\d[\d ]*(?:[.,]\d+)?)\s*(тыс(?:яч(?:и|у)?)?\.?|тыщ(?:и)?|к)?(?![\p{L}])\s*(руб(?:лей|ля|ль|\.)?|₽)?/giu)) {
+        if (!match[2] && !match[3]) continue;
+        const value = Number(match[1].replace(/ /g, "").replace(",", ".")) * (match[2] ? 1e3 : 1);
+        if (Number.isFinite(value)) amounts.push(value);
+      }
+      for (const match of text2.matchAll(/(?:цен[ауые]|стоимость|по)\s*[:=]?\s*(\d[\d ]*(?:[.,]\d+)?)\s*(тыс(?:яч(?:и|у)?)?\.?|к)?(?![\p{L}])/giu)) {
+        const value = Number(match[1].replace(/ /g, "").replace(",", ".")) * (match[2] ? 1e3 : 1);
+        if (Number.isFinite(value)) amounts.push(value);
+      }
+      return [...new Set(amounts)];
+    }
+    function unitPurchasePrice(text2) {
+      const values = money2(text2);
+      return values.length === 1 && /закуп|покупн|приобрет|купили|поставщик/iu.test(text2) && /кажд|за\s+(?:одн|единиц|штук)|по\s+\d/iu.test(text2) && !/всего|общая\s+сумма|за\s+все|итого/iu.test(text2) ? values[0] : null;
+    }
+    module2.exports = { label: label2, intent: intent2, clientTypeFromText, isUpdate: isUpdate2, phone, phoneCandidates, phoneInText: phoneInText2, modelInText: modelInText2, requestedCount: requestedCount2, money: money2, unitPurchasePrice };
   }
 });
 
@@ -47202,12 +47264,12 @@ var require_stream_writable = __commonJS({
     "use strict";
     var pna = require_process_nextick_args();
     module2.exports = Writable;
-    function CorkedRequest(state) {
+    function CorkedRequest(state2) {
       var _this = this;
       this.next = null;
       this.entry = null;
       this.finish = function() {
-        onCorkedFinish(_this, state);
+        onCorkedFinish(_this, state2);
       };
     }
     var asyncWrite = !process.browser && ["v0.10", "v0.9."].indexOf(process.version.slice(0, 5)) > -1 ? setImmediate : pna.nextTick;
@@ -47329,12 +47391,12 @@ var require_stream_writable = __commonJS({
       stream.emit("error", er);
       pna.nextTick(cb, er);
     }
-    function validChunk(stream, state, chunk, cb) {
+    function validChunk(stream, state2, chunk, cb) {
       var valid = true;
       var er = false;
       if (chunk === null) {
         er = new TypeError("May not write null values to stream");
-      } else if (typeof chunk !== "string" && chunk !== void 0 && !state.objectMode) {
+      } else if (typeof chunk !== "string" && chunk !== void 0 && !state2.objectMode) {
         er = new TypeError("Invalid non-string/buffer chunk");
       }
       if (er) {
@@ -47345,9 +47407,9 @@ var require_stream_writable = __commonJS({
       return valid;
     }
     Writable.prototype.write = function(chunk, encoding, cb) {
-      var state = this._writableState;
+      var state2 = this._writableState;
       var ret = false;
-      var isBuf = !state.objectMode && _isUint8Array(chunk);
+      var isBuf = !state2.objectMode && _isUint8Array(chunk);
       if (isBuf && !Buffer2.isBuffer(chunk)) {
         chunk = _uint8ArrayToBuffer(chunk);
       }
@@ -47356,24 +47418,24 @@ var require_stream_writable = __commonJS({
         encoding = null;
       }
       if (isBuf) encoding = "buffer";
-      else if (!encoding) encoding = state.defaultEncoding;
+      else if (!encoding) encoding = state2.defaultEncoding;
       if (typeof cb !== "function") cb = nop;
-      if (state.ended) writeAfterEnd(this, cb);
-      else if (isBuf || validChunk(this, state, chunk, cb)) {
-        state.pendingcb++;
-        ret = writeOrBuffer(this, state, isBuf, chunk, encoding, cb);
+      if (state2.ended) writeAfterEnd(this, cb);
+      else if (isBuf || validChunk(this, state2, chunk, cb)) {
+        state2.pendingcb++;
+        ret = writeOrBuffer(this, state2, isBuf, chunk, encoding, cb);
       }
       return ret;
     };
     Writable.prototype.cork = function() {
-      var state = this._writableState;
-      state.corked++;
+      var state2 = this._writableState;
+      state2.corked++;
     };
     Writable.prototype.uncork = function() {
-      var state = this._writableState;
-      if (state.corked) {
-        state.corked--;
-        if (!state.writing && !state.corked && !state.bufferProcessing && state.bufferedRequest) clearBuffer(this, state);
+      var state2 = this._writableState;
+      if (state2.corked) {
+        state2.corked--;
+        if (!state2.writing && !state2.corked && !state2.bufferProcessing && state2.bufferedRequest) clearBuffer(this, state2);
       }
     };
     Writable.prototype.setDefaultEncoding = function setDefaultEncoding(encoding) {
@@ -47382,8 +47444,8 @@ var require_stream_writable = __commonJS({
       this._writableState.defaultEncoding = encoding;
       return this;
     };
-    function decodeChunk(state, chunk, encoding) {
-      if (!state.objectMode && state.decodeStrings !== false && typeof chunk === "string") {
+    function decodeChunk(state2, chunk, encoding) {
+      if (!state2.objectMode && state2.decodeStrings !== false && typeof chunk === "string") {
         chunk = Buffer2.from(chunk, encoding);
       }
       return chunk;
@@ -47397,22 +47459,22 @@ var require_stream_writable = __commonJS({
         return this._writableState.highWaterMark;
       }
     });
-    function writeOrBuffer(stream, state, isBuf, chunk, encoding, cb) {
+    function writeOrBuffer(stream, state2, isBuf, chunk, encoding, cb) {
       if (!isBuf) {
-        var newChunk = decodeChunk(state, chunk, encoding);
+        var newChunk = decodeChunk(state2, chunk, encoding);
         if (chunk !== newChunk) {
           isBuf = true;
           encoding = "buffer";
           chunk = newChunk;
         }
       }
-      var len = state.objectMode ? 1 : chunk.length;
-      state.length += len;
-      var ret = state.length < state.highWaterMark;
-      if (!ret) state.needDrain = true;
-      if (state.writing || state.corked) {
-        var last = state.lastBufferedRequest;
-        state.lastBufferedRequest = {
+      var len = state2.objectMode ? 1 : chunk.length;
+      state2.length += len;
+      var ret = state2.length < state2.highWaterMark;
+      if (!ret) state2.needDrain = true;
+      if (state2.writing || state2.corked) {
+        var last = state2.lastBufferedRequest;
+        state2.lastBufferedRequest = {
           chunk,
           encoding,
           isBuf,
@@ -47420,82 +47482,82 @@ var require_stream_writable = __commonJS({
           next: null
         };
         if (last) {
-          last.next = state.lastBufferedRequest;
+          last.next = state2.lastBufferedRequest;
         } else {
-          state.bufferedRequest = state.lastBufferedRequest;
+          state2.bufferedRequest = state2.lastBufferedRequest;
         }
-        state.bufferedRequestCount += 1;
+        state2.bufferedRequestCount += 1;
       } else {
-        doWrite(stream, state, false, len, chunk, encoding, cb);
+        doWrite(stream, state2, false, len, chunk, encoding, cb);
       }
       return ret;
     }
-    function doWrite(stream, state, writev, len, chunk, encoding, cb) {
-      state.writelen = len;
-      state.writecb = cb;
-      state.writing = true;
-      state.sync = true;
-      if (writev) stream._writev(chunk, state.onwrite);
-      else stream._write(chunk, encoding, state.onwrite);
-      state.sync = false;
+    function doWrite(stream, state2, writev, len, chunk, encoding, cb) {
+      state2.writelen = len;
+      state2.writecb = cb;
+      state2.writing = true;
+      state2.sync = true;
+      if (writev) stream._writev(chunk, state2.onwrite);
+      else stream._write(chunk, encoding, state2.onwrite);
+      state2.sync = false;
     }
-    function onwriteError(stream, state, sync, er, cb) {
-      --state.pendingcb;
+    function onwriteError(stream, state2, sync, er, cb) {
+      --state2.pendingcb;
       if (sync) {
         pna.nextTick(cb, er);
-        pna.nextTick(finishMaybe, stream, state);
+        pna.nextTick(finishMaybe, stream, state2);
         stream._writableState.errorEmitted = true;
         stream.emit("error", er);
       } else {
         cb(er);
         stream._writableState.errorEmitted = true;
         stream.emit("error", er);
-        finishMaybe(stream, state);
+        finishMaybe(stream, state2);
       }
     }
-    function onwriteStateUpdate(state) {
-      state.writing = false;
-      state.writecb = null;
-      state.length -= state.writelen;
-      state.writelen = 0;
+    function onwriteStateUpdate(state2) {
+      state2.writing = false;
+      state2.writecb = null;
+      state2.length -= state2.writelen;
+      state2.writelen = 0;
     }
     function onwrite(stream, er) {
-      var state = stream._writableState;
-      var sync = state.sync;
-      var cb = state.writecb;
-      onwriteStateUpdate(state);
-      if (er) onwriteError(stream, state, sync, er, cb);
+      var state2 = stream._writableState;
+      var sync = state2.sync;
+      var cb = state2.writecb;
+      onwriteStateUpdate(state2);
+      if (er) onwriteError(stream, state2, sync, er, cb);
       else {
-        var finished = needFinish(state);
-        if (!finished && !state.corked && !state.bufferProcessing && state.bufferedRequest) {
-          clearBuffer(stream, state);
+        var finished = needFinish(state2);
+        if (!finished && !state2.corked && !state2.bufferProcessing && state2.bufferedRequest) {
+          clearBuffer(stream, state2);
         }
         if (sync) {
-          asyncWrite(afterWrite, stream, state, finished, cb);
+          asyncWrite(afterWrite, stream, state2, finished, cb);
         } else {
-          afterWrite(stream, state, finished, cb);
+          afterWrite(stream, state2, finished, cb);
         }
       }
     }
-    function afterWrite(stream, state, finished, cb) {
-      if (!finished) onwriteDrain(stream, state);
-      state.pendingcb--;
+    function afterWrite(stream, state2, finished, cb) {
+      if (!finished) onwriteDrain(stream, state2);
+      state2.pendingcb--;
       cb();
-      finishMaybe(stream, state);
+      finishMaybe(stream, state2);
     }
-    function onwriteDrain(stream, state) {
-      if (state.length === 0 && state.needDrain) {
-        state.needDrain = false;
+    function onwriteDrain(stream, state2) {
+      if (state2.length === 0 && state2.needDrain) {
+        state2.needDrain = false;
         stream.emit("drain");
       }
     }
-    function clearBuffer(stream, state) {
-      state.bufferProcessing = true;
-      var entry = state.bufferedRequest;
+    function clearBuffer(stream, state2) {
+      state2.bufferProcessing = true;
+      var entry = state2.bufferedRequest;
       if (stream._writev && entry && entry.next) {
-        var l = state.bufferedRequestCount;
+        var l = state2.bufferedRequestCount;
         var buffer = new Array(l);
-        var holder = state.corkedRequestsFree;
+        var holder = state2.corkedRequestsFree;
         holder.entry = entry;
         var count = 0;
         var allBuffers = true;
@@ -47506,40 +47568,40 @@ var require_stream_writable = __commonJS({
           count += 1;
         }
         buffer.allBuffers = allBuffers;
-        doWrite(stream, state, true, state.length, buffer, "", holder.finish);
-        state.pendingcb++;
-        state.lastBufferedRequest = null;
+        doWrite(stream, state2, true, state2.length, buffer, "", holder.finish);
+        state2.pendingcb++;
+        state2.lastBufferedRequest = null;
         if (holder.next) {
-          state.corkedRequestsFree = holder.next;
+          state2.corkedRequestsFree = holder.next;
           holder.next = null;
         } else {
-          state.corkedRequestsFree = new CorkedRequest(state);
+          state2.corkedRequestsFree = new CorkedRequest(state2);
         }
-        state.bufferedRequestCount = 0;
+        state2.bufferedRequestCount = 0;
       } else {
         while (entry) {
           var chunk = entry.chunk;
           var encoding = entry.encoding;
           var cb = entry.callback;
-          var len = state.objectMode ? 1 : chunk.length;
-          doWrite(stream, state, false, len, chunk, encoding, cb);
+          var len = state2.objectMode ? 1 : chunk.length;
+          doWrite(stream, state2, false, len, chunk, encoding, cb);
           entry = entry.next;
-          state.bufferedRequestCount--;
-          if (state.writing) {
+          state2.bufferedRequestCount--;
+          if (state2.writing) {
             break;
           }
         }
-        if (entry === null) state.lastBufferedRequest = null;
+        if (entry === null) state2.lastBufferedRequest = null;
       }
-      state.bufferedRequest = entry;
-      state.bufferProcessing = false;
+      state2.bufferedRequest = entry;
+      state2.bufferProcessing = false;
     }
     Writable.prototype._write = function(chunk, encoding, cb) {
       cb(new Error("_write() is not implemented"));
     };
     Writable.prototype._writev = null;
     Writable.prototype.end = function(chunk, encoding, cb) {
-      var state = this._writableState;
+      var state2 = this._writableState;
       if (typeof chunk === "function") {
         cb = chunk;
         chunk = null;
@@ -47549,69 +47611,69 @@ var require_stream_writable = __commonJS({
         encoding = null;
       }
       if (chunk !== null && chunk !== void 0) this.write(chunk, encoding);
-      if (state.corked) {
-        state.corked = 1;
+      if (state2.corked) {
+        state2.corked = 1;
         this.uncork();
       }
-      if (!state.ending) endWritable(this, state, cb);
+      if (!state2.ending) endWritable(this, state2, cb);
     };
-    function needFinish(state) {
-      return state.ending && state.length === 0 && state.bufferedRequest === null && !state.finished && !state.writing;
+    function needFinish(state2) {
+      return state2.ending && state2.length === 0 && state2.bufferedRequest === null && !state2.finished && !state2.writing;
     }
-    function callFinal(stream, state) {
+    function callFinal(stream, state2) {
       stream._final(function(err) {
-        state.pendingcb--;
+        state2.pendingcb--;
         if (err) {
           stream.emit("error", err);
         }
-        state.prefinished = true;
+        state2.prefinished = true;
         stream.emit("prefinish");
-        finishMaybe(stream, state);
+        finishMaybe(stream, state2);
       });
     }
-    function prefinish(stream, state) {
-      if (!state.prefinished && !state.finalCalled) {
+    function prefinish(stream, state2) {
+      if (!state2.prefinished && !state2.finalCalled) {
         if (typeof stream._final === "function") {
-          state.pendingcb++;
-          state.finalCalled = true;
-          pna.nextTick(callFinal, stream, state);
+          state2.pendingcb++;
+          state2.finalCalled = true;
+          pna.nextTick(callFinal, stream, state2);
         } else {
-          state.prefinished = true;
+          state2.prefinished = true;
           stream.emit("prefinish");
         }
       }
     }
-    function finishMaybe(stream, state) {
-      var need = needFinish(state);
+    function finishMaybe(stream, state2) {
+      var need = needFinish(state2);
       if (need) {
-        prefinish(stream, state);
-        if (state.pendingcb === 0) {
-          state.finished = true;
+        prefinish(stream, state2);
+        if (state2.pendingcb === 0) {
+          state2.finished = true;
           stream.emit("finish");
         }
       }
       return need;
     }
-    function endWritable(stream, state, cb) {
-      state.ending = true;
-      finishMaybe(stream, state);
+    function endWritable(stream, state2, cb) {
+      state2.ending = true;
+      finishMaybe(stream, state2);
       if (cb) {
-        if (state.finished) pna.nextTick(cb);
+        if (state2.finished) pna.nextTick(cb);
         else stream.once("finish", cb);
       }
-      state.ended = true;
+      state2.ended = true;
       stream.writable = false;
     }
-    function onCorkedFinish(corkReq, state, err) {
+    function onCorkedFinish(corkReq, state2, err) {
       var entry = corkReq.entry;
       corkReq.entry = null;
       while (entry) {
         var cb = entry.callback;
-        state.pendingcb--;
+        state2.pendingcb--;
         cb(err);
         entry = entry.next;
       }
-      state.corkedRequestsFree.next = corkReq;
+      state2.corkedRequestsFree.next = corkReq;
     }
     Object.defineProperty(Writable.prototype, "destroyed", {
       get: function() {
@@ -48122,12 +48184,12 @@ var require_stream_readable = __commonJS({
       cb(err);
     };
     Readable.prototype.push = function(chunk, encoding) {
-      var state = this._readableState;
+      var state2 = this._readableState;
       var skipChunkCheck;
-      if (!state.objectMode) {
+      if (!state2.objectMode) {
         if (typeof chunk === "string") {
-          encoding = encoding || state.defaultEncoding;
-          if (encoding !== state.encoding) {
+          encoding = encoding || state2.defaultEncoding;
+          if (encoding !== state2.encoding) {
             chunk = Buffer2.from(chunk, encoding);
             encoding = "";
           }
@@ -48142,61 +48204,61 @@ var require_stream_readable = __commonJS({
       return readableAddChunk(this, chunk, null, true, false);
     };
     function readableAddChunk(stream, chunk, encoding, addToFront, skipChunkCheck) {
-      var state = stream._readableState;
+      var state2 = stream._readableState;
       if (chunk === null) {
-        state.reading = false;
-        onEofChunk(stream, state);
+        state2.reading = false;
+        onEofChunk(stream, state2);
       } else {
         var er;
-        if (!skipChunkCheck) er = chunkInvalid(state, chunk);
+        if (!skipChunkCheck) er = chunkInvalid(state2, chunk);
         if (er) {
           stream.emit("error", er);
-        } else if (state.objectMode || chunk && chunk.length > 0) {
-          if (typeof chunk !== "string" && !state.objectMode && Object.getPrototypeOf(chunk) !== Buffer2.prototype) {
+        } else if (state2.objectMode || chunk && chunk.length > 0) {
+          if (typeof chunk !== "string" && !state2.objectMode && Object.getPrototypeOf(chunk) !== Buffer2.prototype) {
             chunk = _uint8ArrayToBuffer(chunk);
           }
           if (addToFront) {
-            if (state.endEmitted) stream.emit("error", new Error("stream.unshift() after end event"));
-            else addChunk(stream, state, chunk, true);
-          } else if (state.ended) {
+            if (state2.endEmitted) stream.emit("error", new Error("stream.unshift() after end event"));
+            else addChunk(stream, state2, chunk, true);
+          } else if (state2.ended) {
             stream.emit("error", new Error("stream.push() after EOF"));
           } else {
-            state.reading = false;
-            if (state.decoder && !encoding) {
-              chunk = state.decoder.write(chunk);
-              if (state.objectMode || chunk.length !== 0) addChunk(stream, state, chunk, false);
-              else maybeReadMore(stream, state);
+            state2.reading = false;
+            if (state2.decoder && !encoding) {
+              chunk = state2.decoder.write(chunk);
+              if (state2.objectMode || chunk.length !== 0) addChunk(stream, state2, chunk, false);
+              else maybeReadMore(stream, state2);
             } else {
-              addChunk(stream, state, chunk, false);
+              addChunk(stream, state2, chunk, false);
             }
           }
         } else if (!addToFront) {
-          state.reading = false;
+          state2.reading = false;
         }
       }
-      return needMoreData(state);
+      return needMoreData(state2);
     }
-    function addChunk(stream, state, chunk, addToFront) {
-      if (state.flowing && state.length === 0 && !state.sync) {
+    function addChunk(stream, state2, chunk, addToFront) {
+      if (state2.flowing && state2.length === 0 && !state2.sync) {
         stream.emit("data", chunk);
         stream.read(0);
       } else {
-        state.length += state.objectMode ? 1 : chunk.length;
-        if (addToFront) state.buffer.unshift(chunk);
-        else state.buffer.push(chunk);
-        if (state.needReadable) emitReadable(stream);
+        state2.length += state2.objectMode ? 1 : chunk.length;
+        if (addToFront) state2.buffer.unshift(chunk);
+        else state2.buffer.push(chunk);
+        if (state2.needReadable) emitReadable(stream);
       }
-      maybeReadMore(stream, state);
+      maybeReadMore(stream, state2);
     }
-    function chunkInvalid(state, chunk) {
+    function chunkInvalid(state2, chunk) {
       var er;
-      if (!_isUint8Array(chunk) && typeof chunk !== "string" && chunk !== void 0 && !state.objectMode) {
+      if (!_isUint8Array(chunk) && typeof chunk !== "string" && chunk !== void 0 && !state2.objectMode) {
         er = new TypeError("Invalid non-string/buffer chunk");
       }
       return er;
     }
-    function needMoreData(state) {
-      return !state.ended && (state.needReadable || state.length < state.highWaterMark || state.length === 0);
+    function needMoreData(state2) {
+      return !state2.ended && (state2.needReadable || state2.length < state2.highWaterMark || state2.length === 0);
     }
     Readable.prototype.isPaused = function() {
       return this._readableState.flowing === false;
@@ -48222,91 +48284,91 @@ var require_stream_readable = __commonJS({
       }
       return n;
     }
-    function howMuchToRead(n, state) {
-      if (n <= 0 || state.length === 0 && state.ended) return 0;
-      if (state.objectMode) return 1;
+    function howMuchToRead(n, state2) {
+      if (n <= 0 || state2.length === 0 && state2.ended) return 0;
+      if (state2.objectMode) return 1;
       if (n !== n) {
-        if (state.flowing && state.length) return state.buffer.head.data.length;
-        else return state.length;
+        if (state2.flowing && state2.length) return state2.buffer.head.data.length;
+        else return state2.length;
       }
-      if (n > state.highWaterMark) state.highWaterMark = computeNewHighWaterMark(n);
-      if (n <= state.length) return n;
-      if (!state.ended) {
-        state.needReadable = true;
+      if (n > state2.highWaterMark) state2.highWaterMark = computeNewHighWaterMark(n);
+      if (n <= state2.length) return n;
+      if (!state2.ended) {
+        state2.needReadable = true;
         return 0;
       }
-      return state.length;
+      return state2.length;
     }
     Readable.prototype.read = function(n) {
       debug("read", n);
       n = parseInt(n, 10);
-      var state = this._readableState;
+      var state2 = this._readableState;
       var nOrig = n;
-      if (n !== 0) state.emittedReadable = false;
-      if (n === 0 && state.needReadable && (state.length >= state.highWaterMark || state.ended)) {
-        debug("read: emitReadable", state.length, state.ended);
-        if (state.length === 0 && state.ended) endReadable(this);
+      if (n !== 0) state2.emittedReadable = false;
+      if (n === 0 && state2.needReadable && (state2.length >= state2.highWaterMark || state2.ended)) {
+        debug("read: emitReadable", state2.length, state2.ended);
+        if (state2.length === 0 && state2.ended) endReadable(this);
         else emitReadable(this);
         return null;
       }
-      n = howMuchToRead(n, state);
-      if (n === 0 && state.ended) {
-        if (state.length === 0) endReadable(this);
+      n = howMuchToRead(n, state2);
+      if (n === 0 && state2.ended) {
+        if (state2.length === 0) endReadable(this);
         return null;
       }
-      var doRead = state.needReadable;
+      var doRead = state2.needReadable;
       debug("need readable", doRead);
-      if (state.length === 0 || state.length - n < state.highWaterMark) {
+      if (state2.length === 0 || state2.length - n < state2.highWaterMark) {
         doRead = true;
         debug("length less than watermark", doRead);
       }
-      if (state.ended || state.reading) {
+      if (state2.ended || state2.reading) {
         doRead = false;
         debug("reading or ended", doRead);
       } else if (doRead) {
         debug("do read");
-        state.reading = true;
-        state.sync = true;
-        if (state.length === 0) state.needReadable = true;
-        this._read(state.highWaterMark);
-        state.sync = false;
-        if (!state.reading) n = howMuchToRead(nOrig, state);
+        state2.reading = true;
+        state2.sync = true;
+        if (state2.length === 0) state2.needReadable = true;
+        this._read(state2.highWaterMark);
+        state2.sync = false;
+        if (!state2.reading) n = howMuchToRead(nOrig, state2);
       }
       var ret;
-      if (n > 0) ret = fromList(n, state);
+      if (n > 0) ret = fromList(n, state2);
       else ret = null;
       if (ret === null) {
-        state.needReadable = true;
+        state2.needReadable = true;
         n = 0;
       } else {
-        state.length -= n;
+        state2.length -= n;
       }
-      if (state.length === 0) {
-        if (!state.ended) state.needReadable = true;
-        if (nOrig !== n && state.ended) endReadable(this);
+      if (state2.length === 0) {
+        if (!state2.ended) state2.needReadable = true;
+        if (nOrig !== n && state2.ended) endReadable(this);
       }
       if (ret !== null) this.emit("data", ret);
       return ret;
     };
-    function onEofChunk(stream, state) {
-      if (state.ended) return;
-      if (state.decoder) {
-        var chunk = state.decoder.end();
+    function onEofChunk(stream, state2) {
+      if (state2.ended) return;
+      if (state2.decoder) {
+        var chunk = state2.decoder.end();
         if (chunk && chunk.length) {
-          state.buffer.push(chunk);
-          state.length += state.objectMode ? 1 : chunk.length;
+          state2.buffer.push(chunk);
+          state2.length += state2.objectMode ? 1 : chunk.length;
         }
       }
-      state.ended = true;
+      state2.ended = true;
       emitReadable(stream);
     }
     function emitReadable(stream) {
-      var state = stream._readableState;
-      state.needReadable = false;
-      if (!state.emittedReadable) {
-        debug("emitReadable", state.flowing);
-        state.emittedReadable = true;
-        if (state.sync) pna.nextTick(emitReadable_, stream);
+      var state2 = stream._readableState;
+      state2.needReadable = false;
+      if (!state2.emittedReadable) {
+        debug("emitReadable", state2.flowing);
+        state2.emittedReadable = true;
+        if (state2.sync) pna.nextTick(emitReadable_, stream);
         else emitReadable_(stream);
       }
     }
@@ -48315,45 +48377,45 @@ var require_stream_readable = __commonJS({
       stream.emit("readable");
       flow(stream);
     }
-    function maybeReadMore(stream, state) {
-      if (!state.readingMore) {
-        state.readingMore = true;
-        pna.nextTick(maybeReadMore_, stream, state);
+    function maybeReadMore(stream, state2) {
+      if (!state2.readingMore) {
+        state2.readingMore = true;
+        pna.nextTick(maybeReadMore_, stream, state2);
       }
     }
-    function maybeReadMore_(stream, state) {
-      var len = state.length;
-      while (!state.reading && !state.flowing && !state.ended && state.length < state.highWaterMark) {
+    function maybeReadMore_(stream, state2) {
+      var len = state2.length;
+      while (!state2.reading && !state2.flowing && !state2.ended && state2.length < state2.highWaterMark) {
         debug("maybeReadMore read 0");
         stream.read(0);
-        if (len === state.length)
+        if (len === state2.length)
           break;
-        else len = state.length;
+        else len = state2.length;
       }
-      state.readingMore = false;
+      state2.readingMore = false;
     }
     Readable.prototype._read = function(n) {
       this.emit("error", new Error("_read() is not implemented"));
     };
     Readable.prototype.pipe = function(dest, pipeOpts) {
       var src = this;
-      var state = this._readableState;
-      switch (state.pipesCount) {
+      var state2 = this._readableState;
+      switch (state2.pipesCount) {
         case 0:
-          state.pipes = dest;
+          state2.pipes = dest;
           break;
         case 1:
-          state.pipes = [state.pipes, dest];
+          state2.pipes = [state2.pipes, dest];
           break;
         default:
-          state.pipes.push(dest);
+          state2.pipes.push(dest);
           break;
       }
-      state.pipesCount += 1;
-      debug("pipe count=%d opts=%j", state.pipesCount, pipeOpts);
+      state2.pipesCount += 1;
+      debug("pipe count=%d opts=%j", state2.pipesCount, pipeOpts);
       var doEnd = (!pipeOpts || pipeOpts.end !== false) && dest !== process.stdout && dest !== process.stderr;
       var endFn = doEnd ? onend : unpipe;
-      if (state.endEmitted) pna.nextTick(endFn);
+      if (state2.endEmitted) pna.nextTick(endFn);
       else src.once("end", endFn);
       dest.on("unpipe", onunpipe);
       function onunpipe(readable, unpipeInfo) {
@@ -48383,7 +48445,7 @@ var require_stream_readable = __commonJS({
         src.removeListener("end", unpipe);
         src.removeListener("data", ondata);
         cleanedUp = true;
-        if (state.awaitDrain && (!dest._writableState || dest._writableState.needDrain)) ondrain();
+        if (state2.awaitDrain && (!dest._writableState || dest._writableState.needDrain)) ondrain();
       }
       var increasedAwaitDrain = false;
       src.on("data", ondata);
@@ -48392,9 +48454,9 @@ var require_stream_readable = __commonJS({
         increasedAwaitDrain = false;
         var ret = dest.write(chunk);
         if (false === ret && !increasedAwaitDrain) {
-          if ((state.pipesCount === 1 && state.pipes === dest || state.pipesCount > 1 && indexOf(state.pipes, dest) !== -1) && !cleanedUp) {
-            debug("false write response, pause", state.awaitDrain);
-            state.awaitDrain++;
+          if ((state2.pipesCount === 1 && state2.pipes === dest || state2.pipesCount > 1 && indexOf(state2.pipes, dest) !== -1) && !cleanedUp) {
+            debug("false write response, pause", state2.awaitDrain);
+            state2.awaitDrain++;
             increasedAwaitDrain = true;
           }
           src.pause();
@@ -48423,7 +48485,7 @@ var require_stream_readable = __commonJS({
         src.unpipe(dest);
       }
       dest.emit("pipe", src);
-      if (!state.flowing) {
+      if (!state2.flowing) {
         debug("pipe resume");
         src.resume();
       }
@@ -48431,44 +48493,44 @@ var require_stream_readable = __commonJS({
     };
     function pipeOnDrain(src) {
       return function() {
-        var state = src._readableState;
-        debug("pipeOnDrain", state.awaitDrain);
-        if (state.awaitDrain) state.awaitDrain--;
-        if (state.awaitDrain === 0 && EElistenerCount(src, "data")) {
-          state.flowing = true;
+        var state2 = src._readableState;
+        debug("pipeOnDrain", state2.awaitDrain);
+        if (state2.awaitDrain) state2.awaitDrain--;
+        if (state2.awaitDrain === 0 && EElistenerCount(src, "data")) {
+          state2.flowing = true;
           flow(src);
         }
       };
     }
     Readable.prototype.unpipe = function(dest) {
-      var state = this._readableState;
+      var state2 = this._readableState;
       var unpipeInfo = { hasUnpiped: false };
-      if (state.pipesCount === 0) return this;
-      if (state.pipesCount === 1) {
-        if (dest && dest !== state.pipes) return this;
-        if (!dest) dest = state.pipes;
-        state.pipes = null;
-        state.pipesCount = 0;
-        state.flowing = false;
+      if (state2.pipesCount === 0) return this;
+      if (state2.pipesCount === 1) {
+        if (dest && dest !== state2.pipes) return this;
+        if (!dest) dest = state2.pipes;
+        state2.pipes = null;
+        state2.pipesCount = 0;
+        state2.flowing = false;
         if (dest) dest.emit("unpipe", this, unpipeInfo);
         return this;
       }
       if (!dest) {
-        var dests = state.pipes;
-        var len = state.pipesCount;
-        state.pipes = null;
-        state.pipesCount = 0;
-        state.flowing = false;
+        var dests = state2.pipes;
+        var len = state2.pipesCount;
+        state2.pipes = null;
+        state2.pipesCount = 0;
+        state2.flowing = false;
         for (var i = 0; i < len; i++) {
           dests[i].emit("unpipe", this, { hasUnpiped: false });
         }
         return this;
       }
-      var index = indexOf(state.pipes, dest);
+      var index = indexOf(state2.pipes, dest);
       if (index === -1) return this;
-      state.pipes.splice(index, 1);
-      state.pipesCount -= 1;
-      if (state.pipesCount === 1) state.pipes = state.pipes[0];
+      state2.pipes.splice(index, 1);
+      state2.pipesCount -= 1;
+      if (state2.pipesCount === 1) state2.pipes = state2.pipes[0];
       dest.emit("unpipe", this, unpipeInfo);
       return this;
     };
@@ -48477,13 +48539,13 @@ var require_stream_readable = __commonJS({
       if (ev === "data") {
         if (this._readableState.flowing !== false) this.resume();
       } else if (ev === "readable") {
-        var state = this._readableState;
-        if (!state.endEmitted && !state.readableListening) {
-          state.readableListening = state.needReadable = true;
-          state.emittedReadable = false;
-          if (!state.reading) {
+        var state2 = this._readableState;
+        if (!state2.endEmitted && !state2.readableListening) {
+          state2.readableListening = state2.needReadable = true;
+          state2.emittedReadable = false;
+          if (!state2.reading) {
             pna.nextTick(nReadingNextTick, this);
-          } else if (state.length) {
+          } else if (state2.length) {
             emitReadable(this);
           }
         }
@@ -48496,30 +48558,30 @@ var require_stream_readable = __commonJS({
       self2.read(0);
     }
     Readable.prototype.resume = function() {
-      var state = this._readableState;
-      if (!state.flowing) {
+      var state2 = this._readableState;
+      if (!state2.flowing) {
         debug("resume");
-        state.flowing = true;
-        resume(this, state);
+        state2.flowing = true;
+        resume(this, state2);
       }
       return this;
     };
-    function resume(stream, state) {
-      if (!state.resumeScheduled) {
-        state.resumeScheduled = true;
-        pna.nextTick(resume_, stream, state);
+    function resume(stream, state2) {
+      if (!state2.resumeScheduled) {
+        state2.resumeScheduled = true;
+        pna.nextTick(resume_, stream, state2);
       }
     }
-    function resume_(stream, state) {
-      if (!state.reading) {
+    function resume_(stream, state2) {
+      if (!state2.reading) {
         debug("resume read 0");
         stream.read(0);
       }
-      state.resumeScheduled = false;
-      state.awaitDrain = 0;
+      state2.resumeScheduled = false;
+      state2.awaitDrain = 0;
       stream.emit("resume");
       flow(stream);
-      if (state.flowing && !state.reading) stream.read(0);
+      if (state2.flowing && !state2.reading) stream.read(0);
     }
     Readable.prototype.pause = function() {
       debug("call pause flowing=%j", this._readableState.flowing);
@@ -48531,28 +48593,28 @@ var require_stream_readable = __commonJS({
       return this;
     };
     function flow(stream) {
-      var state = stream._readableState;
-      debug("flow", state.flowing);
-      while (state.flowing && stream.read() !== null) {
+      var state2 = stream._readableState;
+      debug("flow", state2.flowing);
+      while (state2.flowing && stream.read() !== null) {
       }
     }
     Readable.prototype.wrap = function(stream) {
       var _this = this;
-      var state = this._readableState;
+      var state2 = this._readableState;
       var paused = false;
       stream.on("end", function() {
         debug("wrapped end");
-        if (state.decoder && !state.ended) {
-          var chunk = state.decoder.end();
+        if (state2.decoder && !state2.ended) {
+          var chunk = state2.decoder.end();
           if (chunk && chunk.length) _this.push(chunk);
         }
         _this.push(null);
       });
       stream.on("data", function(chunk) {
         debug("wrapped data");
-        if (state.decoder) chunk = state.decoder.write(chunk);
-        if (state.objectMode && (chunk === null || chunk === void 0)) return;
-        else if (!state.objectMode && (!chunk || !chunk.length)) return;
+        if (state2.decoder) chunk = state2.decoder.write(chunk);
+        if (state2.objectMode && (chunk === null || chunk === void 0)) return;
+        else if (!state2.objectMode && (!chunk || !chunk.length)) return;
         var ret = _this.push(chunk);
         if (!ret) {
           paused = true;
@@ -48590,17 +48652,17 @@ var require_stream_readable = __commonJS({
       }
     });
     Readable._fromList = fromList;
-    function fromList(n, state) {
-      if (state.length === 0) return null;
+    function fromList(n, state2) {
+      if (state2.length === 0) return null;
       var ret;
-      if (state.objectMode) ret = state.buffer.shift();
-      else if (!n || n >= state.length) {
-        if (state.decoder) ret = state.buffer.join("");
-        else if (state.buffer.length === 1) ret = state.buffer.head.data;
-        else ret = state.buffer.concat(state.length);
-        state.buffer.clear();
+      if (state2.objectMode) ret = state2.buffer.shift();
+      else if (!n || n >= state2.length) {
+        if (state2.decoder) ret = state2.buffer.join("");
+        else if (state2.buffer.length === 1) ret = state2.buffer.head.data;
+        else ret = state2.buffer.concat(state2.length);
+        state2.buffer.clear();
       } else {
-        ret = fromListPartial(n, state.buffer, state.decoder);
+        ret = fromListPartial(n, state2.buffer, state2.decoder);
       }
       return ret;
     }
@@ -48671,16 +48733,16 @@ var require_stream_readable = __commonJS({
       return ret;
     }
     function endReadable(stream) {
-      var state = stream._readableState;
-      if (state.length > 0) throw new Error('"endReadable()" called on non-empty stream');
-      if (!state.endEmitted) {
-        state.ended = true;
-        pna.nextTick(endReadableNT, state, stream);
+      var state2 = stream._readableState;
+      if (state2.length > 0) throw new Error('"endReadable()" called on non-empty stream');
+      if (!state2.endEmitted) {
+        state2.ended = true;
+        pna.nextTick(endReadableNT, state2, stream);
       }
     }
-    function endReadableNT(state, stream) {
-      if (!state.endEmitted && state.length === 0) {
-        state.endEmitted = true;
+    function endReadableNT(state2, stream) {
+      if (!state2.endEmitted && state2.length === 0) {
+        state2.endEmitted = true;
         stream.readable = false;
         stream.emit("end");
       }
@@ -49672,6 +49734,9 @@ var import_dotenv = __toESM(require_main());
 
 // src/routes/api.routes.ts
 var import_express = __toESM(require_express2());
+
+// src/services/assistant.service.ts
+var import_node_crypto4 = require("node:crypto");
 
 // node_modules/zod/v3/external.js
 var external_exports = {};
@@ -53714,13 +53779,6 @@ var coerce = {
 };
 var NEVER = INVALID;
 
-// src/context/userContext.ts
-var import_async_hooks = require("async_hooks");
-var userStorage = new import_async_hooks.AsyncLocalStorage();
-function getCurrentUser() {
-  return userStorage.getStore();
-}
-
 // src/repositories/db.ts
 var import_fs = __toESM(require("fs"));
 var import_path = __toESM(require("path"));
@@ -55745,7 +55803,7 @@ var PostgrestQueryBuilder = class {
   * @remarks
   * When using `count` with `.range()` or `.limit()`, the returned `count` is the total number of rows
   * that match your filters, not the number of rows in the current page. Use this to build pagination UI.
-
+  
   * - By default, Supabase projects return a maximum of 1,000 rows. This setting can be changed in your project's [API settings](/dashboard/project/_/settings/api). It's recommended that you keep it low to limit the payload size of accidental or malicious requests. You can use `range()` queries to paginate through your data.
   * - `select()` can be combined with [Filters](/docs/reference/javascript/using-filters)
   * - `select()` can be combined with [Modifiers](/docs/reference/javascript/using-modifiers)
@@ -56004,7 +56062,7 @@ var PostgrestQueryBuilder = class {
   *       name
   *     )
   *   `)
-  *
+  *   
   * ```
   *
   * @exampleSql Query referenced tables through a join table
@@ -56073,7 +56131,7 @@ var PostgrestQueryBuilder = class {
   *     "status": 200,
   *     "statusText": "OK"
   *   }
-  *
+  *   
   * ```
   *
   * @exampleDescription Query the same referenced table multiple times
@@ -56164,7 +56222,7 @@ var PostgrestQueryBuilder = class {
   *         )
   *       )
   *     `)
-  *
+  *   
   * ```
   *
   * @exampleSql Query nested foreign tables through a join table
@@ -56252,7 +56310,7 @@ var PostgrestQueryBuilder = class {
   *     "status": 200,
   *     "statusText": "OK"
   *   }
-  *
+  *   
   * ```
   *
   * @exampleDescription Filtering through referenced tables
@@ -57727,9 +57785,9 @@ function createFetchClient(options) {
         },
         body: body ? JSON.stringify(body) : void 0
       });
-      const text = await res.text();
+      const text2 = await res.text();
       const isJson = (res.headers.get("content-type") || "").includes("application/json");
-      const data = isJson && text ? JSON.parse(text) : text;
+      const data = isJson && text2 ? JSON.parse(text2) : text2;
       if (!res.ok) {
         const errBody = isJson ? data : void 0;
         const errorDetail = errBody?.error;
@@ -58714,12 +58772,12 @@ var StorageFileApi = class extends BaseApiClient {
   *   - `objects` table permissions: none
   * - Refer to the [Storage guide](/docs/guides/storage/security/access-control) on how access control works
   */
-  async uploadToSignedUrl(path5, token, fileBody, fileOptions) {
+  async uploadToSignedUrl(path5, token2, fileBody, fileOptions) {
     var _this3 = this;
     const cleanPath = _this3._removeEmptyFolders(path5);
     const _path = _this3._getFinalPath(cleanPath);
     const url = new URL(_this3.url + `/object/upload/sign/${_path}`);
-    url.searchParams.set("token", token);
+    url.searchParams.set("token", token2);
     return _this3.handleOperation(async () => {
       let body;
       const options = _objectSpread22(_objectSpread22({}, DEFAULT_FILE_OPTIONS), fileOptions);
@@ -58785,12 +58843,12 @@ var StorageFileApi = class extends BaseApiClient {
       if (options === null || options === void 0 ? void 0 : options.upsert) headers["x-upsert"] = "true";
       const data = await post(_this4.fetch, `${_this4.url}/object/upload/sign/${_path}`, {}, { headers });
       const url = new URL(_this4.url + data.url);
-      const token = url.searchParams.get("token");
-      if (!token) throw new StorageError("No token returned by API");
+      const token2 = url.searchParams.get("token");
+      if (!token2) throw new StorageError("No token returned by API");
       return {
         signedUrl: url.toString(),
         path: path5,
-        token
+        token: token2
       };
     });
   }
@@ -61675,7 +61733,7 @@ var SupabaseClient = class {
       accessToken: this._getAccessToken.bind(this),
       fetch: this.fetch
     }, settings.realtime));
-    if (this.accessToken) Promise.resolve(this.accessToken()).then((token) => this.realtime.setAuth(token)).catch((e) => console.warn("Failed to set initial Realtime auth token:", e));
+    if (this.accessToken) Promise.resolve(this.accessToken()).then((token2) => this.realtime.setAuth(token2)).catch((e) => console.warn("Failed to set initial Realtime auth token:", e));
     this.rest = new PostgrestClient(new URL("rest/v1", baseUrl).href, {
       headers: this.headers,
       schema: settings.db.schema,
@@ -61870,10 +61928,10 @@ var SupabaseClient = class {
       this._handleTokenChanged(event, "CLIENT", session === null || session === void 0 ? void 0 : session.access_token);
     });
   }
-  _handleTokenChanged(event, source, token) {
-    if ((event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "INITIAL_SESSION") && this.changedAccessToken !== token) {
-      this.changedAccessToken = token;
-      this.realtime.setAuth(token);
+  _handleTokenChanged(event, source, token2) {
+    if ((event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "INITIAL_SESSION") && this.changedAccessToken !== token2) {
+      this.changedAccessToken = token2;
+      this.realtime.setAuth(token2);
     } else if (event === "SIGNED_OUT") {
       this.realtime.setAuth();
       if (source == "STORAGE") this.auth.signOut();
@@ -62134,11 +62192,11 @@ var SupabaseAdapter = class {
     if (!this.isConnected || this.mode === "LOCAL_FILE") {
       return null;
     }
-    const now = Date.now();
-    if (!force && now - this.lastSyncCheckTime < 250) {
+    const now2 = Date.now();
+    if (!force && now2 - this.lastSyncCheckTime < 250) {
       return null;
     }
-    this.lastSyncCheckTime = now;
+    this.lastSyncCheckTime = now2;
     try {
       if (this.mode === "SUPABASE_POSTGRES" && this.pgPool) {
         const checkRes = await this.pgPool.query(
@@ -62385,6 +62443,19 @@ var INITIAL_ACCESS_LEVELS = [
 ];
 var INITIAL_USERS = [
   {
+    id: "usr-demo",
+    login: "demo",
+    username: "demo",
+    email: "demo@electream.ru",
+    passwordHash: "demo",
+    fullName: "\u0414\u0435\u043C\u043E-\u0410\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440",
+    phone: "+7 (999) 777-88-99",
+    role: "ADMIN",
+    roleTitle: "\u0414\u0435\u043C\u043E-\u0410\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440",
+    accessLevelId: "lvl-owner",
+    isActive: true
+  },
+  {
     id: "usr-bxleth",
     login: "bxleth",
     username: "bxleth",
@@ -62486,6 +62557,7 @@ try {
 } catch (err) {
 }
 var createDefaultEmptyDb = () => ({
+  assistant: { devices: [], pairings: [], jobs: [], tasks: [] },
   documents: [],
   accessLevels: JSON.parse(JSON.stringify(INITIAL_ACCESS_LEVELS)),
   users: JSON.parse(JSON.stringify(INITIAL_USERS)),
@@ -62560,6 +62632,12 @@ function sanitizeLoadedDb(parsed) {
   }
   return {
     documents: Array.isArray(parsed.documents) ? parsed.documents : [],
+    assistant: {
+      devices: Array.isArray(parsed.assistant?.devices) ? parsed.assistant.devices : [],
+      pairings: Array.isArray(parsed.assistant?.pairings) ? parsed.assistant.pairings : [],
+      jobs: Array.isArray(parsed.assistant?.jobs) ? parsed.assistant.jobs : [],
+      tasks: Array.isArray(parsed.assistant?.tasks) ? parsed.assistant.tasks : []
+    },
     accessLevels: existingAccessLevels.length > 0 ? existingAccessLevels : defaultDb.accessLevels,
     users: existingUsers.length > 0 ? existingUsers : defaultDb.users,
     models: (parsed.models || []).map((m) => ({
@@ -62614,7 +62692,7 @@ function sanitizeLoadedDb(parsed) {
       (l) => l.entityId !== "usr-twizzy" && !l.title?.toLowerCase().includes("twizzy") && l.entityId !== "usr-bogdan" && l.entityId !== "usr-vladik" && !l.title?.toLowerCase().includes("bogdan") && !l.title?.toLowerCase().includes("vladik")
     ).map((l) => {
       let actorName = l.actorName || "\u0410\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440";
-      if ((actorName.includes("\u041A\u043E\u0432\u0430\u043B\u0435\u0432") || actorName.includes("\u0421\u043C\u0438\u0440\u043D\u043E\u0432")) && !existingUsers.some((user) => actorName.includes(user.fullName))) {
+      if ((actorName.includes("\u041A\u043E\u0432\u0430\u043B\u0435\u0432") || actorName.includes("\u0421\u043C\u0438\u0440\u043D\u043E\u0432")) && !existingUsers.some((user2) => actorName.includes(user2.fullName))) {
         actorName = "BXLETH (\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C \u043F\u0430\u0440\u043A\u0430)";
       }
       return {
@@ -62940,339 +63018,35 @@ var resetDb = () => {
   clearDb();
 };
 
-// src/repositories/relations.ts
-var isOpenRental = (rental) => rental.status === "ACTIVE" || rental.status === "OVERDUE" || rental.status === "PROBLEM";
-var activeRentalForBike = (bikeId) => getDb().rentals.find((rental) => rental.bikeId === bikeId && isOpenRental(rental));
-var activeRentalForBattery = (batteryId) => {
-  const db2 = getDb();
-  const battery = db2.batteries.find((item) => item.id === batteryId);
-  return db2.rentals.find((rental) => isOpenRental(rental) && (rental.batteryIds?.includes(batteryId) || rental.bikeId === battery?.installedBikeId || rental.bikeId === battery?.issuedBikeId || db2.bikes.some((bike) => bike.id === rental.bikeId && bike.batteryId === batteryId)));
-};
-function normalizePhone(phone) {
-  const digits = (phone || "").replace(/\D/g, "");
-  return digits.length === 11 && digits.startsWith("8") ? `7${digits.slice(1)}` : digits;
-}
-function nextNumber(prefix, existing) {
-  const max = existing.reduce((value, number) => {
-    if (!number.startsWith(`${prefix}-`)) return value;
-    const suffix = Number(number.slice(prefix.length + 1));
-    return Number.isInteger(suffix) ? Math.max(value, suffix) : value;
-  }, 0);
-  return `${prefix}-${String(max + 1).padStart(3, "0")}`;
-}
-
-// src/repositories/document.repository.ts
-var titles = {
-  RENTAL_CONTRACT: "\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B",
-  HANDOVER_ACT: "\u0410\u043A\u0442 \u0432\u044B\u0434\u0430\u0447\u0438 \u0442\u0435\u0445\u043D\u0438\u043A\u0438",
-  RETURN_ACT: "\u0410\u043A\u0442 \u0432\u043E\u0437\u0432\u0440\u0430\u0442\u0430 \u0442\u0435\u0445\u043D\u0438\u043A\u0438",
-  BUYOUT_ACT: "\u0410\u043A\u0442 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u0432\u044B\u043A\u0443\u043F\u0430",
-  SALE_RECEIPT: "\u0422\u043E\u0432\u0430\u0440\u043D\u044B\u0439 \u0447\u0435\u043A",
-  REPAIR_ORDER: "\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u0421\u0422\u041E",
-  REPAIR_ACT: "\u0410\u043A\u0442 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u0445 \u0440\u0430\u0431\u043E\u0442 \u0421\u0422\u041E"
-};
-var prefixes = { RENTAL_CONTRACT: "\u0414\u041E\u0413", HANDOVER_ACT: "\u0412\u042B\u0414", RETURN_ACT: "\u0412\u041E\u0417", BUYOUT_ACT: "\u0412\u042B\u041A", SALE_RECEIPT: "\u0427\u0415\u041A", REPAIR_ORDER: "\u0417\u041D", REPAIR_ACT: "\u0420\u0410\u0411" };
-var DocumentRepository = class {
-  static canReadModule(user, module2) {
-    const level = getDb().accessLevels.find((item) => item.id === user.accessLevelId) || getDb().accessLevels.find((item) => item.id === (user.role === "ADMIN" ? "lvl-owner" : user.role === "MECHANIC" ? "lvl-master" : "lvl-manager"));
-    return Boolean(level && level.permissions.documents?.visible !== false && level.permissions[module2]?.visible !== false);
-  }
-  static capture(type, sourceId, reconstructed = false, settlement) {
-    const db2 = getDb();
-    if (!db2.documents) db2.documents = [];
-    const id = `doc-${type.toLowerCase()}-${sourceId}`;
-    const existing = db2.documents.find((document3) => document3.id === id);
-    if (existing) return existing;
-    const sourceModule = type === "SALE_RECEIPT" ? "shop" : type.startsWith("REPAIR_") ? "repairs" : "rentals";
-    const rental = sourceModule === "rentals" ? db2.rentals.find((item) => item.id === sourceId) : void 0;
-    const sale = sourceModule === "shop" ? db2.retailOrders.find((item) => item.id === sourceId) : void 0;
-    const repair = sourceModule === "repairs" ? db2.repairs.find((item) => item.id === sourceId) : void 0;
-    if (!rental && !sale && !repair) throw new Error("\u0418\u0441\u0445\u043E\u0434\u043D\u0430\u044F \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
-    const clientId = rental?.clientId || sale?.clientId || repair?.clientId;
-    const client = db2.clients.find((item) => item.id === clientId);
-    const bike = db2.bikes.find((item) => item.id === (rental?.bikeId || repair?.bikeId));
-    const tariff = db2.tariffs.find((item) => item.id === rental?.tariffId);
-    const model = db2.models.find((item) => item.id === bike?.modelId);
-    const sourceNumber = rental?.rentalNumber || sale?.orderNumber || repair?.orderNumber || sourceId;
-    const clientName = sale?.customerName || repair?.clientName || client?.fullName || "\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D";
-    const clientPhone = sale?.customerPhone || repair?.clientPhone || client?.phone || "";
-    const sourceActorId = rental?.managerId || repair?.mechanicId || (sale ? db2.payments.find((item) => item.orderId === sale.id)?.cashierId : void 0);
-    const actorId = reconstructed ? sourceActorId : getCurrentUser()?.id || sourceActorId;
-    const actor = db2.users.find((item) => item.id === actorId);
-    const date = getSystemTime().toISOString();
-    const finished = ["RETURN_ACT", "BUYOUT_ACT", "REPAIR_ACT"].includes(type);
-    const issuedAt = rental ? type === "RETURN_ACT" ? rental.updatedAt || rental.closedAt || date : finished ? rental.closedAt || rental.updatedAt || date : rental.startedAt : sale?.createdAt || (type === "REPAIR_ACT" ? repair?.completedAt || repair?.createdAt : repair?.createdAt) || date;
-    const details = [];
-    const equipment = [];
-    let items = [];
-    let amount = 0;
-    let notes = "";
-    if (bike) equipment.push({ name: model?.name || "\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434", number: [bike.inventoryNumber, bike.frameNumber ? `\u0440\u0430\u043C\u0430 ${bike.frameNumber}` : "", bike.motorNumber ? `\u043C\u043E\u0442\u043E\u0440 ${bike.motorNumber}` : ""].filter(Boolean).join(" \xB7 ") });
-    if (rental) {
-      for (const battery of db2.batteries.filter((item) => rental.batteryIds?.includes(item.id) || item.id === bike?.batteryId)) equipment.push({ name: `\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${battery.voltage}V ${battery.capacityAh}Ah`, number: battery.serialNumber });
-      if (type !== "BUYOUT_ACT") for (const outfit of db2.outfits.filter((item) => rental.outfitIds.includes(item.id))) {
-        const returned = settlement?.outfitReturns?.find((item) => item.outfitId === outfit.id);
-        const condition = returned ? { OK: "\u0412\u043E\u0437\u0432\u0440\u0430\u0449\u0435\u043D\u043E \u0431\u0435\u0437 \u0437\u0430\u043C\u0435\u0447\u0430\u043D\u0438\u0439", DAMAGED: "\u041F\u043E\u0432\u0440\u0435\u0436\u0434\u0435\u043D\u043E", LOST: "\u0423\u0442\u0440\u0430\u0447\u0435\u043D\u043E" }[returned.condition] : "";
-        equipment.push({ name: outfit.name, number: [outfit.inventoryNumber || "\u2014", condition].filter(Boolean).join(" \xB7 ") });
-      }
-      const paid = db2.payments.filter((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT")).reduce((total, p) => total + p.amount, 0);
-      const firstPayment = db2.payments.find((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT"));
-      amount = type === "RETURN_ACT" ? settlement?.depositReturned ?? db2.payments.filter((p) => p.rentalId === rental.id && p.type === "DEPOSIT_REFUND").reduce((total, p) => total + p.amount, 0) : rental.type === "RENT_TO_OWN" ? rental.totalBuyoutPrice ?? tariff?.totalBuyoutPrice ?? 0 : firstPayment?.amount ?? tariff?.price ?? 0;
-      details.push({ label: "\u0412\u0438\u0434 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430", value: rental.type === "RENT_TO_OWN" ? "\u0410\u0440\u0435\u043D\u0434\u0430 \u0441 \u043F\u0440\u0430\u0432\u043E\u043C \u0432\u044B\u043A\u0443\u043F\u0430" : "\u0421\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u0430\u044F \u0430\u0440\u0435\u043D\u0434\u0430" }, { label: "\u0422\u0430\u0440\u0438\u0444", value: tariff?.name || "\u2014" }, { label: "\u041D\u0430\u0447\u0430\u043B\u043E", value: rental.startedAt }, { label: "\u0421\u0440\u043E\u043A \u0434\u043E", value: rental.expiresAt }, { label: "\u041E\u0431\u0435\u0441\u043F\u0435\u0447\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u0437\u0430\u043B\u043E\u0433", value: `${rental.depositAmount} \u20BD` }, { label: "\u0412\u043D\u0435\u0441\u0435\u043D\u043E \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443", value: `${paid} \u20BD` });
-      if (rental.type === "RENT_TO_OWN") details.push({ label: "\u041F\u043E\u043B\u043D\u0430\u044F \u0446\u0435\u043D\u0430 \u0432\u044B\u043A\u0443\u043F\u0430", value: `${rental.totalBuyoutPrice ?? tariff?.totalBuyoutPrice ?? 0} \u20BD` }, { label: "\u0420\u0435\u0433\u0443\u043B\u044F\u0440\u043D\u044B\u0439 \u043F\u043B\u0430\u0442\u0451\u0436", value: `${rental.installmentPayment ?? tariff?.installmentPayment ?? 0} \u20BD` }, { label: "\u0418\u043D\u0442\u0435\u0440\u0432\u0430\u043B \u043F\u043B\u0430\u0442\u0435\u0436\u0435\u0439", value: `${rental.paymentIntervalDays ?? tariff?.paymentIntervalDays ?? 7} \u0434\u043D.` });
-      if (finished) details.push({ label: "\u041F\u0440\u043E\u0431\u0435\u0433", value: `${bike?.mileageKm || 0} \u043A\u043C` }, { label: "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0442\u0435\u0445\u043D\u0438\u043A\u0438", value: bike?.status === "IN_MAINTENANCE" ? "\u0422\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044F \u0440\u0435\u043C\u043E\u043D\u0442" : type === "BUYOUT_ACT" ? "\u041F\u0435\u0440\u0435\u0434\u0430\u043D\u0430 \u0432 \u0441\u043E\u0431\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0441\u0442\u044C \u043A\u043B\u0438\u0435\u043D\u0442\u0430" : rental.status === "BOUGHT_OUT" ? "\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u043C; \u0440\u0430\u0441\u0447\u0451\u0442 \u043F\u043E \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0435 \u0438 \u0437\u0430\u043B\u043E\u0433\u0443" : "\u041F\u0440\u0438\u043D\u044F\u0442\u0430 \u043D\u0430 \u0431\u0430\u0437\u0443" });
-      if (settlement) details.push({ label: "\u0417\u0430\u043B\u043E\u0433 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0451\u043D", value: `${settlement.depositReturned} \u20BD` }, { label: "\u0423\u0434\u0435\u0440\u0436\u0430\u043D\u043E", value: `${settlement.totalDeduction} \u20BD` });
-      notes = [rental.notes, settlement?.defectDescription].filter(Boolean).join("\n");
-    } else if (sale) {
-      items = sale.items.map((item) => ({ name: item.name, quantity: item.quantity, price: item.price }));
-      amount = sale.totalAmount;
-      details.push({ label: "\u0421\u043F\u043E\u0441\u043E\u0431 \u043E\u043F\u043B\u0430\u0442\u044B", value: { CASH: "\u041D\u0430\u043B\u0438\u0447\u043D\u044B\u0435", CARD: "\u0411\u0430\u043D\u043A\u043E\u0432\u0441\u043A\u0430\u044F \u043A\u0430\u0440\u0442\u0430", SBP: "\u0421\u0411\u041F", BANK_TRANSFER: "\u0411\u0430\u043D\u043A\u043E\u0432\u0441\u043A\u0438\u0439 \u043F\u0435\u0440\u0435\u0432\u043E\u0434" }[sale.paymentMethod] || sale.paymentMethod });
-      notes = sale.notes || "";
-    } else if (repair) {
-      if (repair.batteryId) {
-        const battery = db2.batteries.find((item) => item.id === repair.batteryId);
-        if (battery) equipment.push({ name: "\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440", number: battery.serialNumber });
-      }
-      if (repair.customItemName) equipment.push({ name: repair.customItemName, number: "\u0422\u0435\u0445\u043D\u0438\u043A\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0430" });
-      items = repair.parts.map((part) => ({ name: db2.parts.find((item) => item.id === part.partId)?.name || "\u0417\u0430\u043F\u0447\u0430\u0441\u0442\u044C", quantity: part.quantity, price: part.priceCharged }));
-      items.push({ name: "\u0420\u0430\u0431\u043E\u0442\u044B \u0421\u0422\u041E", quantity: 1, price: repair.laborCost });
-      amount = repair.totalCost;
-      details.push({ label: "\u041E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0441\u0442\u044C", value: repair.faultType === "CLIENT_FAULT" || repair.itemType === "EXTERNAL_DEVICE" ? "\u041E\u043F\u043B\u0430\u0442\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0430" : "\u0420\u0430\u0441\u0445\u043E\u0434\u044B \u0441\u0435\u0440\u0432\u0438\u0441\u0430" }, { label: "\u042D\u0442\u0430\u043F", value: type === "REPAIR_ACT" ? "\u0420\u0430\u0431\u043E\u0442\u044B \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u044B" : "\u041F\u0440\u0438\u0451\u043C \u0442\u0435\u0445\u043D\u0438\u043A\u0438 \u043D\u0430 \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443" });
-      notes = repair.description;
-    }
-    const document2 = {
-      id,
-      type,
-      number: sourceNumber.startsWith(`${prefixes[type]}-`) ? sourceNumber : `${prefixes[type]}-${sourceNumber}`,
-      title: type === "RENTAL_CONTRACT" && rental?.type === "RENT_TO_OWN" ? "\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B \u0441 \u043F\u0440\u0430\u0432\u043E\u043C \u0432\u044B\u043A\u0443\u043F\u0430" : titles[type],
-      sourceModule,
-      sourceId,
-      sourceNumber,
-      clientId,
-      clientName,
-      clientPhone,
-      bikeNumber: bike?.inventoryNumber || "",
-      issuedAt,
-      capturedAt: date,
-      reconstructed,
-      amount,
-      snapshot: { issuer: { ...db2.settings?.paymentDetails || {} }, client: { fullName: clientName, phone: clientPhone, ...rental ? { passportSerial: client?.passportSerial, passportNumber: client?.passportNumber, registrationAddress: client?.registrationAddress } : {} }, actor: actor?.fullName || (!reconstructed ? getCurrentUser()?.fullName : void 0) || "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A \u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D", equipment, items, details, notes }
-    };
-    if (rental) {
-      Object.assign(document2.snapshot.client, { citizenship: client?.citizenship, patentNumber: client?.patentNumber, courierService: client?.courierService });
-      const totalPaidForBuyout = db2.payments.filter((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT")).reduce((total, p) => total + p.amount, 0);
-      document2.snapshot.rentalData = { ...rental, totalPaidForBuyout, client: document2.snapshot.client, bike: bike ? { ...bike, model, battery: db2.batteries.find((item) => item.id === bike.batteryId) || null } : null, tariff: tariff ? { ...tariff, ...rental.type === "STANDARD" ? { price: amount } : {} } : null, manager: { fullName: document2.snapshot.actor }, outfits: db2.outfits.filter((item) => rental.outfitIds.includes(item.id)), batteries: db2.batteries.filter((item) => rental.batteryIds?.includes(item.id)) };
-    }
-    if (sale) document2.snapshot.saleData = { ...sale };
-    db2.documents.push(JSON.parse(JSON.stringify(document2)));
-    saveDb();
-    return document2;
-  }
-  static captureRental(id, reconstructed = false) {
-    this.capture("RENTAL_CONTRACT", id, reconstructed);
-    this.capture("HANDOVER_ACT", id, reconstructed);
-  }
-  static backfill() {
-    const db2 = getDb();
-    const existing = new Set(db2.documents.map((item) => item.id));
-    const missing = [];
-    const add = (type, id) => {
-      if (!existing.has(`doc-${type.toLowerCase()}-${id}`)) missing.push([type, id]);
-    };
-    for (const rental of db2.rentals.filter((item) => !["DRAFT", "RESERVED"].includes(item.status))) {
-      add("RENTAL_CONTRACT", rental.id);
-      add("HANDOVER_ACT", rental.id);
-      if (rental.status === "CLOSED" || rental.status === "BOUGHT_OUT" && rental.depositRefunded) add("RETURN_ACT", rental.id);
-      if (rental.status === "BOUGHT_OUT") add("BUYOUT_ACT", rental.id);
-    }
-    for (const sale of db2.retailOrders) add("SALE_RECEIPT", sale.id);
-    for (const repair of db2.repairs) {
-      add("REPAIR_ORDER", repair.id);
-      if (repair.status === "COMPLETED") add("REPAIR_ACT", repair.id);
-    }
-    if (!missing.length) return false;
-    withDbTransaction(() => {
-      for (const [type, id] of missing) this.capture(type, id, true);
-    });
-    return true;
-  }
-  static getAll(user, filters = {}) {
-    let documents = getDb().documents.filter((document2) => this.canReadModule(user, document2.sourceModule));
-    if (filters.type) documents = documents.filter((document2) => document2.type === filters.type);
-    if (filters.sourceId) documents = documents.filter((document2) => document2.sourceId === filters.sourceId);
-    if (filters.sourceModule) documents = documents.filter((document2) => document2.sourceModule === filters.sourceModule);
-    if (filters.from) documents = documents.filter((document2) => document2.issuedAt.slice(0, 10) >= filters.from);
-    if (filters.to) documents = documents.filter((document2) => document2.issuedAt.slice(0, 10) <= filters.to);
-    if (filters.search?.trim()) {
-      const query = filters.search.trim().toLowerCase();
-      const phone = normalizePhone(query);
-      documents = documents.filter((document2) => [document2.number, document2.sourceNumber, document2.clientName, document2.clientPhone, document2.bikeNumber].some((value) => value.toLowerCase().includes(query)) || phone.length >= 6 && normalizePhone(document2.clientPhone).includes(phone));
-    }
-    documents.sort((a, b) => b.issuedAt.localeCompare(a.issuedAt) || a.number.localeCompare(b.number));
-    const page = Math.max(1, filters.page || 1);
-    return { items: documents.slice((page - 1) * 30, page * 30).map(({ snapshot, ...summary }) => summary), total: documents.length, page, pageSize: 30 };
-  }
-  static getById(id, user) {
-    const document2 = getDb().documents.find((item) => item.id === id);
-    return document2 && this.canReadModule(user, document2.sourceModule) ? document2 : null;
-  }
-};
-
-// src/controllers/document.controller.ts
-var querySchema = external_exports.object({
-  search: external_exports.string().max(200).optional(),
-  type: external_exports.enum(["RENTAL_CONTRACT", "HANDOVER_ACT", "RETURN_ACT", "BUYOUT_ACT", "SALE_RECEIPT", "REPAIR_ORDER", "REPAIR_ACT"]).optional(),
-  from: external_exports.string().date().optional(),
-  to: external_exports.string().date().optional(),
-  sourceId: external_exports.string().max(200).optional(),
-  sourceModule: external_exports.enum(["rentals", "shop", "repairs"]).optional(),
-  page: external_exports.coerce.number().int().min(1).max(1e5).optional()
-}).refine((value) => !value.from || !value.to || value.from <= value.to, "\u0414\u0430\u0442\u0430 \u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0437\u0436\u0435 \u0434\u0430\u0442\u044B \u043E\u043A\u043E\u043D\u0447\u0430\u043D\u0438\u044F");
-var DocumentController = class {
-  static async list(req, res) {
-    try {
-      const filters = querySchema.parse(req.query);
-      const user = getDb().users.find((item) => item.id === req.currentUser.id);
-      if (DocumentRepository.backfill()) await flushDb(true);
-      return res.json(DocumentRepository.getAll(user, filters));
-    } catch (error) {
-      return res.status(error instanceof external_exports.ZodError ? 400 : 500).json({ error: error instanceof external_exports.ZodError ? error.issues[0].message : error.message });
-    }
-  }
-  static async get(req, res) {
-    try {
-      const user = getDb().users.find((item) => item.id === req.currentUser.id);
-      if (DocumentRepository.backfill()) await flushDb(true);
-      const document2 = DocumentRepository.getById(req.params.id, user);
-      if (!document2) return res.status(404).json({ error: "\u0414\u043E\u043A\u0443\u043C\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u0438\u043B\u0438 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D" });
-      return res.json(document2);
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  }
-};
-
-// src/services/session.service.ts
-var import_node_crypto = require("node:crypto");
-function hashPassword(password) {
-  const salt = (0, import_node_crypto.randomBytes)(16).toString("hex");
-  return `scrypt:${salt}:${(0, import_node_crypto.scryptSync)(password, salt, 64).toString("hex")}`;
-}
-function verifyPassword(password, stored) {
-  if (!stored.startsWith("scrypt:")) return password === stored;
-  const [, salt, hash] = stored.split(":");
-  const expected = Buffer.from(hash || "", "hex");
-  const actual = (0, import_node_crypto.scryptSync)(password, salt, 64);
-  return actual.length === expected.length && (0, import_node_crypto.timingSafeEqual)(actual, expected);
-}
-function signingKey() {
-  const db2 = getDb();
-  if (!db2.settings) db2.settings = { monthlyFixedExpenses: 0 };
-  if (!db2.settings.authSigningKey) db2.settings.authSigningKey = (0, import_node_crypto.randomBytes)(32).toString("hex");
-  return process.env.SESSION_SECRET || db2.settings.authSigningKey;
-}
-function fingerprint(user) {
-  return (0, import_node_crypto.createHmac)("sha256", signingKey()).update(user.passwordHash).digest("hex");
-}
-function issueSession(user, kind = "session") {
-  const payload = Buffer.from(JSON.stringify({ userId: user.id, kind, expiresAt: Date.now() + (kind === "device" ? 90 : 30) * 864e5, fingerprint: fingerprint(user) })).toString("base64url");
-  return `${payload}.${(0, import_node_crypto.createHmac)("sha256", signingKey()).update(payload).digest("base64url")}`;
-}
-function authenticateSession(token, kind = "session") {
-  const [payload, signature] = token.split(".");
-  if (!payload || !signature) throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u043D\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u0430. \u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
-  const expected = (0, import_node_crypto.createHmac)("sha256", signingKey()).update(payload).digest();
-  const actual = Buffer.from(signature, "base64url");
-  if (expected.length !== actual.length || !(0, import_node_crypto.timingSafeEqual)(expected, actual)) throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u043D\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u0430. \u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
-  const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
-  const user = getDb().users.find((candidate) => candidate.id === parsed.userId);
-  if (parsed.kind !== kind || !Number.isFinite(parsed.expiresAt) || parsed.expiresAt < Date.now() || !user || user.isActive === false || parsed.fingerprint !== fingerprint(user)) {
-    throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u0438\u0441\u0442\u0435\u043A\u043B\u0430 \u0438\u043B\u0438 \u0434\u043E\u0441\u0442\u0443\u043F \u043E\u0442\u043E\u0437\u0432\u0430\u043D. \u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
-  }
-  return user;
-}
-
-// src/services/auth.service.ts
-var AuthService = class {
-  static login(identifier, password, rememberDevice = false) {
-    const db2 = getDb();
-    const clean = (identifier || "").trim().toLowerCase();
-    const user = db2.users.find(
-      (u) => u.login && u.login.toLowerCase() === clean || u.username && u.username.toLowerCase() === clean || u.email && u.email.toLowerCase() === clean || u.fullName && u.fullName.toLowerCase() === clean
-    );
-    if (!user) {
-      throw new Error("\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043B\u043E\u0433\u0438\u043D \u0438\u043B\u0438 email.");
-    }
-    if (!user.isActive) {
-      throw new Error("\u0423\u0447\u0435\u0442\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043D\u0430 \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u043E\u043C.");
-    }
-    if (!password || !password.trim()) {
-      throw new Error("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043F\u0430\u0440\u043E\u043B\u044C \u0434\u043B\u044F \u0432\u0445\u043E\u0434\u0430 \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0443.");
-    }
-    const p = password.trim();
-    const valid = verifyPassword(p, user.passwordHash);
-    if (!valid) {
-      throw new Error("\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u0432\u0432\u043E\u0434\u0430 \u0438\u043B\u0438 \u043E\u0431\u0440\u0430\u0442\u0438\u0442\u0435\u0441\u044C \u043A \u0440\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044E.");
-    }
-    if (!user.passwordHash.startsWith("scrypt:")) user.passwordHash = hashPassword(p);
-    user.lastLoginAt = (/* @__PURE__ */ new Date()).toISOString();
-    const accessLevel = (db2.accessLevels || []).find((l) => l.id === user.accessLevelId) || (db2.accessLevels || []).find(
-      (l) => l.id === (user.role === "ADMIN" ? "lvl-owner" : user.role === "MECHANIC" ? "lvl-master" : "lvl-manager")
-    ) || (db2.accessLevels || [])[0];
-    return {
-      token: issueSession(user),
-      trustedDeviceToken: rememberDevice ? issueSession(user, "device") : void 0,
-      user: {
-        id: user.id,
-        login: user.login || user.username || user.email.split("@")[0],
-        username: user.username || user.login || user.email.split("@")[0],
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        roleTitle: user.roleTitle || (user.role === "ADMIN" ? "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C \u043F\u0430\u0440\u043A\u0430" : user.role === "MECHANIC" ? "\u041C\u0430\u0441\u0442\u0435\u0440 \u0421\u0422\u041E" : "\u0423\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0449\u0438\u0439"),
-        phone: user.phone,
-        accessLevelId: user.accessLevelId || accessLevel?.id || "lvl-owner",
-        accessLevel,
-        isActive: Boolean(user.isActive)
-      }
-    };
-  }
-  static trustedLogin(token) {
-    const user = authenticateSession(token, "device");
-    return { token: issueSession(user), user: this.getMe(user.id) };
-  }
-  static getMe(userId) {
-    const db2 = getDb();
-    let user;
-    if (userId) {
-      user = db2.users.find((u) => u.id === userId);
-      if (!user) {
-        throw new Error(`\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u0441 ID "${userId}" \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-      }
-    } else {
-      user = db2.users.find((u) => u.id === "usr-bxleth") || db2.users[0];
-      if (!user) {
-        throw new Error("\u0412 \u0441\u0438\u0441\u0442\u0435\u043C\u0435 \u043D\u0435\u0442 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0445 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u0435\u0439");
-      }
-    }
-    const accessLevel = (db2.accessLevels || []).find((l) => l.id === user.accessLevelId) || (db2.accessLevels || []).find(
-      (l) => l.id === (user.role === "ADMIN" ? "lvl-owner" : user.role === "MECHANIC" ? "lvl-master" : "lvl-manager")
-    ) || (db2.accessLevels || [])[0];
-    return {
-      id: user.id,
-      login: user.login || user.username || user.email.split("@")[0],
-      username: user.username || user.login || user.email.split("@")[0],
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-      roleTitle: user.roleTitle || (user.role === "ADMIN" ? "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C \u043F\u0430\u0440\u043A\u0430" : user.role === "MECHANIC" ? "\u041C\u0430\u0441\u0442\u0435\u0440 \u0421\u0422\u041E" : "\u0423\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0449\u0438\u0439"),
-      phone: user.phone,
-      accessLevelId: user.accessLevelId || accessLevel?.id || "lvl-owner",
-      accessLevel,
-      isActive: Boolean(user.isActive)
-    };
-  }
-};
+// src/dtos/assistant.dto.ts
+var text = external_exports.string().trim().max(500).nullable().optional();
+var numbers = external_exports.array(external_exports.string().trim().min(1).max(100)).max(50).nullable().optional();
+var AssistantActionDto = external_exports.object({
+  kind: external_exports.enum(["create_client", "update_client", "add_bikes", "add_batteries"]),
+  clientId: text,
+  fullName: text,
+  phone: text,
+  clientType: external_exports.enum(["COURIER", "RETAIL"]).nullable().optional(),
+  courierService: text,
+  registrationAddress: text,
+  passportSerial: text,
+  passportNumber: text,
+  citizenship: external_exports.enum(["\u0420\u0424", "\u0421\u041D\u0413"]).nullable().optional(),
+  migrationCard: text,
+  patentNumber: text,
+  modelId: text,
+  quantity: external_exports.number().int().min(1).max(50).nullable().optional(),
+  purchasePrice: external_exports.number().finite().min(0).nullable().optional(),
+  inventoryNumbers: numbers,
+  serialNumbers: numbers,
+  frameNumbers: numbers,
+  motorNumbers: numbers
+}).strict();
+var AssistantPlanDto = external_exports.object({
+  summary: external_exports.string().trim().min(1).max(2e3),
+  questions: external_exports.array(external_exports.string().trim().min(1).max(500)).max(60),
+  actions: external_exports.array(AssistantActionDto).max(20)
+}).strict();
 
 // src/dtos/schemas.dto.ts
 var LoginDto = external_exports.object({
@@ -63579,42 +63353,134 @@ var ArticleUpdateDto = external_exports.object({
   pinned: external_exports.boolean().optional()
 });
 
-// src/controllers/auth.controller.ts
-var AuthController = class {
-  static login(req, res) {
-    try {
-      const parsed = LoginDto.parse(req.body);
-      const result = AuthService.login(parsed.email, parsed.password, parsed.rememberDevice);
-      res.cookie("crm_session", result.token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 30 * 864e5 });
-      return res.json(result);
-    } catch (err) {
-      return res.status(400).json({ error: err.message || "\u041E\u0448\u0438\u0431\u043A\u0430 \u0430\u0432\u0442\u043E\u0440\u0438\u0437\u0430\u0446\u0438\u0438" });
+// src/repositories/client.repository.ts
+var import_node_crypto = require("node:crypto");
+
+// src/repositories/loyalty.repository.ts
+var LoyaltyRepository = class {
+  static getAll() {
+    const db2 = getDb();
+    if (!db2.loyaltyTiers || db2.loyaltyTiers.length === 0) {
+      return [];
     }
+    return [...db2.loyaltyTiers].sort((a, b) => {
+      if (a.minRentalDays !== b.minRentalDays) {
+        return a.minRentalDays - b.minRentalDays;
+      }
+      return a.minTotalSpent - b.minTotalSpent;
+    });
   }
-  static trustedLogin(req, res) {
-    try {
-      const result = AuthService.trustedLogin(String(req.body.token || ""));
-      res.cookie("crm_session", result.token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 30 * 864e5 });
-      return res.json(result);
-    } catch (error) {
-      return res.status(401).json({ error: error.message });
+  static getById(id) {
+    const db2 = getDb();
+    return db2.loyaltyTiers.find((t) => t.id === id) || null;
+  }
+  static create(data) {
+    const db2 = getDb();
+    const newTier = {
+      id: `tier-${Date.now()}`,
+      name: data.name.trim(),
+      color: data.color || "amber",
+      minRentalDays: Math.max(0, Number(data.minRentalDays) || 0),
+      minTotalSpent: Math.max(0, Number(data.minTotalSpent) || 0),
+      discountRentalPercent: Math.min(100, Math.max(0, Number(data.discountRentalPercent) || 0)),
+      discountPartsPercent: Math.min(100, Math.max(0, Number(data.discountPartsPercent) || 0)),
+      discountRepairsPercent: Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)),
+      description: data.description?.trim() || "",
+      isDefault: Boolean(data.isDefault)
+    };
+    db2.loyaltyTiers.push(newTier);
+    saveDb();
+    return newTier;
+  }
+  static update(id, data) {
+    const db2 = getDb();
+    const index = db2.loyaltyTiers.findIndex((t) => t.id === id);
+    if (index === -1) return null;
+    db2.loyaltyTiers[index] = {
+      ...db2.loyaltyTiers[index],
+      ...data,
+      minRentalDays: data.minRentalDays !== void 0 ? Math.max(0, Number(data.minRentalDays) || 0) : db2.loyaltyTiers[index].minRentalDays,
+      minTotalSpent: data.minTotalSpent !== void 0 ? Math.max(0, Number(data.minTotalSpent) || 0) : db2.loyaltyTiers[index].minTotalSpent,
+      discountRentalPercent: data.discountRentalPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountRentalPercent) || 0)) : db2.loyaltyTiers[index].discountRentalPercent,
+      discountPartsPercent: data.discountPartsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountPartsPercent) || 0)) : db2.loyaltyTiers[index].discountPartsPercent,
+      discountRepairsPercent: data.discountRepairsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)) : db2.loyaltyTiers[index].discountRepairsPercent
+    };
+    saveDb();
+    return db2.loyaltyTiers[index];
+  }
+  static delete(id) {
+    const db2 = getDb();
+    const index = db2.loyaltyTiers.findIndex((t) => t.id === id);
+    if (index === -1) return false;
+    if (db2.loyaltyTiers.length <= 1) {
+      throw new Error("\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0435\u0434\u0438\u043D\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439 \u043E\u0441\u0442\u0430\u0432\u0448\u0438\u0439\u0441\u044F \u0443\u0440\u043E\u0432\u0435\u043D\u044C \u043B\u043E\u044F\u043B\u044C\u043D\u043E\u0441\u0442\u0438");
     }
-  }
-  static logout(req, res) {
-    res.clearCookie("crm_session");
-    return res.json({ success: true });
-  }
-  static getMe(req, res) {
-    try {
-      const userId = getCurrentUser()?.id;
-      if (!userId) return res.status(401).json({ error: "\u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0443" });
-      const user = AuthService.getMe(userId);
-      return res.json(user);
-    } catch (err) {
-      return res.status(404).json({ error: err.message || "\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D" });
+    db2.loyaltyTiers.splice(index, 1);
+    for (const client of db2.clients) {
+      if (client.manualLoyaltyTierId === id) {
+        client.manualLoyaltyTierId = null;
+      }
     }
+    saveDb();
+    return true;
+  }
+  /**
+   * Determine client tier based on manual assignment or automatic thresholds
+   */
+  static determineTier(totalDays, totalSpent, manualTierId) {
+    const tiers = this.getAll();
+    const fallbackTier = tiers.find((t) => t.isDefault) || tiers[0] || {
+      id: "tier-bronze",
+      name: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439",
+      color: "slate",
+      minRentalDays: 0,
+      minTotalSpent: 0,
+      discountRentalPercent: 0,
+      discountPartsPercent: 0,
+      discountRepairsPercent: 0
+    };
+    if (manualTierId) {
+      const manual = tiers.find((t) => t.id === manualTierId);
+      if (manual) {
+        return { tier: manual, mode: "MANUAL" };
+      }
+    }
+    const sortedDescending = [...tiers].sort((a, b) => {
+      const scoreB = b.minTotalSpent + b.minRentalDays * 1e3;
+      const scoreA = a.minTotalSpent + a.minRentalDays * 1e3;
+      return scoreB - scoreA;
+    });
+    for (const t of sortedDescending) {
+      const daysMet = t.minRentalDays > 0 && totalDays >= t.minRentalDays;
+      const spentMet = t.minTotalSpent > 0 && totalSpent >= t.minTotalSpent;
+      if (daysMet || spentMet || t.minRentalDays === 0 && t.minTotalSpent === 0) {
+        return { tier: t, mode: "AUTO" };
+      }
+    }
+    return { tier: fallbackTier, mode: "AUTO" };
   }
 };
+
+// src/repositories/relations.ts
+var isOpenRental = (rental) => rental.status === "ACTIVE" || rental.status === "OVERDUE" || rental.status === "PROBLEM";
+var activeRentalForBike = (bikeId) => getDb().rentals.find((rental) => rental.bikeId === bikeId && isOpenRental(rental));
+var activeRentalForBattery = (batteryId) => {
+  const db2 = getDb();
+  const battery = db2.batteries.find((item) => item.id === batteryId);
+  return db2.rentals.find((rental) => isOpenRental(rental) && (rental.batteryIds?.includes(batteryId) || rental.bikeId === battery?.installedBikeId || rental.bikeId === battery?.issuedBikeId || db2.bikes.some((bike) => bike.id === rental.bikeId && bike.batteryId === batteryId)));
+};
+function normalizePhone(phone) {
+  const digits = (phone || "").replace(/\D/g, "");
+  return digits.length === 11 && digits.startsWith("8") ? `7${digits.slice(1)}` : digits;
+}
+function nextNumber(prefix, existing) {
+  const max = existing.reduce((value, number) => {
+    if (!number.startsWith(`${prefix}-`)) return value;
+    const suffix = Number(number.slice(prefix.length + 1));
+    return Number.isInteger(suffix) ? Math.max(value, suffix) : value;
+  }, 0);
+  return `${prefix}-${String(max + 1).padStart(3, "0")}`;
+}
 
 // src/repositories/financials.ts
 var isRevenuePayment = (payment) => ["RENTAL", "BUYOUT", "REPAIR", "OUTFIT_SALE", "RETAIL_SALE", "FINE"].includes(payment.type);
@@ -63649,162 +63515,289 @@ function calculateFinancials() {
   return { totalRevenue, rentalPayments, buyoutPayments, repairPayments, outfitSales, retailSales, fines, salaryExpenses, partPurchaseExpenses, totalPartsCost, retailCogs, monthlyFixedExpenses, fixedExpenses, netMargin, depositsCollected, depositsRefunded, activeDepositsHeld, fixedExpensesDescription: settings.fixedExpensesDescription || "\u0410\u0440\u0435\u043D\u0434\u0430 \u0441\u0435\u0440\u0432\u0438\u0441\u043D\u043E\u0433\u043E \u0445\u0430\u0431\u0430 \u0438 \u043D\u0430\u043A\u043B\u0430\u0434\u043D\u044B\u0435 \u0440\u0430\u0441\u0445\u043E\u0434\u044B", fixedExpenseItems: settings.fixedExpenseItems || [] };
 }
 
-// src/repositories/stats.repository.ts
-var StatsRepository = class {
-  static getDashboardStats() {
+// src/repositories/client.repository.ts
+var ClientRepository = class {
+  static computeClientLoyalty(client) {
     const db2 = getDb();
-    const now = getSystemTime();
-    const totalBikes = db2.bikes.length;
-    const activeParkBikes = db2.bikes.filter((b) => b.status !== "DECOMMISSIONED" && b.status !== "SOLD" && b.status !== "BOUGHT_OUT").length;
-    const rentedBikes = db2.bikes.filter((b) => b.status === "RENTED").length;
-    const availableBikes = db2.bikes.filter((b) => b.status === "AVAILABLE").length;
-    const maintenanceBikes = db2.bikes.filter((b) => b.status === "IN_MAINTENANCE").length;
-    const forSaleBikes = db2.bikes.filter((b) => b.status === "FOR_SALE").length;
-    const decommissionedBikes = db2.bikes.filter((b) => b.status === "DECOMMISSIONED").length;
-    const soldBikes = db2.bikes.filter((b) => b.status === "SOLD").length;
-    const fleetUtilization = activeParkBikes > 0 ? Math.round(rentedBikes / activeParkBikes * 1e3) / 10 : 0;
-    let overdueCount = 0;
-    let activeRentalsCount = 0;
-    const urgentOverdueRentals = [];
-    db2.rentals.forEach((r) => {
-      const isPastDue = new Date(r.nextPaymentDue) < now;
-      if (r.status === "ACTIVE" && isPastDue) {
-        r.status = "OVERDUE";
+    const clientRentals = db2.rentals.filter((r) => r.clientId === client.id);
+    let totalRentalDays = 0;
+    for (const r of clientRentals) {
+      if (r.status === "DRAFT" || r.status === "RESERVED") continue;
+      if (r.startedAt) {
+        const start = new Date(r.startedAt).getTime();
+        const finished = r.status === "CLOSED" || r.status === "BOUGHT_OUT";
+        const end = Math.min(getSystemTime().getTime(), finished ? new Date(r.closedAt || r.updatedAt || r.expiresAt).getTime() : getSystemTime().getTime());
+        if (!isNaN(start) && !isNaN(end) && end > start) {
+          totalRentalDays += Math.floor((end - start) / 864e5);
+        }
       }
-      if (r.status === "ACTIVE" || r.status === "OVERDUE") activeRentalsCount++;
-      if (r.status === "OVERDUE") {
-        overdueCount++;
-        const client = db2.clients.find((c) => c.id === r.clientId);
-        const bike = db2.bikes.find((b) => b.id === r.bikeId);
-        const diffDays = Math.ceil((now.getTime() - new Date(r.nextPaymentDue).getTime()) / 864e5);
-        urgentOverdueRentals.push({
-          rentalId: r.id,
-          rentalNumber: r.rentalNumber,
-          clientId: r.clientId,
-          clientName: client?.fullName,
-          clientPhone: client?.phone,
-          clientTelegram: client?.telegram,
-          courierService: client?.courierService,
-          bikeInventoryNumber: bike?.inventoryNumber,
-          daysOverdue: Math.max(1, diffDays),
-          nextPaymentDue: r.nextPaymentDue,
-          depositAmount: r.depositAmount
-        });
-      }
-    });
-    const openRepairsCount = db2.repairs.filter(
-      (rp) => rp.status !== "COMPLETED" && rp.status !== "CANCELLED"
-    ).length;
-    const lowStockParts = db2.parts.filter((p) => p.quantity <= p.minQuantity);
-    const lowStockPartsCount = lowStockParts.length;
-    const financialSummary = calculateFinancials();
-    const { totalRevenue, salaryExpenses, totalPartsCost, retailCogs, fixedExpenses, monthlyFixedExpenses, netMargin, activeDepositsHeld } = financialSummary;
-    const { rentalPayments: rentalRevenue, buyoutPayments: buyoutRevenue, repairPayments: clientRepairRevenue, outfitSales: outfitRevenue, retailSales: retailRevenue } = financialSummary;
-    const settings = getDb().settings;
-    const revenueByMonth = Array.from({ length: 12 }, (_, index) => {
-      const monthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11 + index, 1));
-      const key = monthDate.toISOString().slice(0, 7);
-      const payments = db2.payments.filter((payment) => payment.createdAt.slice(0, 7) === key && isRevenuePayment(payment));
-      const sum = (type) => payments.filter((payment) => payment.type === type).reduce((total, payment) => total + payment.amount, 0);
-      return { key, month: monthDate.toLocaleDateString("ru-RU", { month: "short", timeZone: "UTC" }), rental: sum("RENTAL"), buyout: sum("BUYOUT"), repair: sum("REPAIR"), retail: sum("RETAIL_SALE"), outfit: sum("OUTFIT_SALE"), fines: sum("FINE"), total: payments.reduce((total, payment) => total + payment.amount, 0) };
-    });
-    const modelsBreakdown = db2.models.map((m) => {
-      const modelBikes = db2.bikes.filter(
-        (b) => b.modelId === m.id && b.status !== "DECOMMISSIONED" && b.status !== "SOLD" && b.status !== "BOUGHT_OUT"
-      );
-      const rented = modelBikes.filter((b) => b.status === "RENTED").length;
-      const available = modelBikes.filter((b) => b.status === "AVAILABLE").length;
-      const maintenance = modelBikes.filter((b) => b.status === "IN_MAINTENANCE").length;
-      const total = modelBikes.length;
-      const utilization = total > 0 ? Math.round(rented / total * 100) : 0;
-      return {
-        modelId: m.id,
-        name: m.name,
-        powerWatts: m.powerWatts,
-        total,
-        rented,
-        available,
-        maintenance,
-        utilization
-      };
-    }).filter((m) => m.total > 0 || db2.models.length <= 6);
+    }
+    const rentalIds = new Set(clientRentals.map((r) => r.id));
+    const cleanPhone = normalizePhone(client.phone);
+    const clientRetailOrders = (db2.retailOrders || []).filter(
+      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone
+    );
+    const clientRepairs = (db2.repairs || []).filter(
+      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && normalizePhone(rep.clientPhone) === cleanPhone
+    );
+    const repairIds = new Set(clientRepairs.map((rep) => rep.id));
+    const retailIds = new Set(clientRetailOrders.map((order) => order.id));
+    const totalSpent = db2.payments.filter((payment) => isRevenuePayment(payment) && (payment.clientId === client.id || payment.rentalId && rentalIds.has(payment.rentalId) || payment.orderId && retailIds.has(payment.orderId) || payment.repairOrderId && repairIds.has(payment.repairOrderId))).reduce((sum, payment) => sum + payment.amount, 0);
+    const { tier, mode } = LoyaltyRepository.determineTier(
+      totalRentalDays,
+      totalSpent,
+      client.manualLoyaltyTierId
+    );
     return {
-      revenueByMonth,
-      fleet: {
-        totalBikes,
-        activeParkBikes,
-        rentedBikes,
-        availableBikes,
-        maintenanceBikes,
-        forSaleBikes,
-        decommissionedBikes,
-        soldBikes,
-        fleetUtilization
-      },
-      modelsBreakdown,
-      rentals: {
-        activeRentalsCount,
-        overdueCount,
-        urgentOverdueRentals
-      },
-      repairs: {
-        openRepairsCount
-      },
-      inventory: {
-        lowStockPartsCount,
-        lowStockParts
-      },
-      financials: {
-        fines: financialSummary.fines,
-        partPurchaseExpenses: financialSummary.partPurchaseExpenses,
-        totalRevenue,
-        rentalRevenue,
-        buyoutRevenue,
-        clientRepairRevenue,
-        outfitRevenue,
-        retailRevenue,
-        salaryExpenses,
-        totalPartsCost,
-        retailCogs,
-        fixedExpenses,
-        monthlyFixedExpenses,
-        fixedExpensesDescription: settings.fixedExpensesDescription || "\u0410\u0440\u0435\u043D\u0434\u0430 \u0441\u0435\u0440\u0432\u0438\u0441\u043D\u043E\u0433\u043E \u0445\u0430\u0431\u0430 \u0438 \u043D\u0430\u043A\u043B\u0430\u0434\u043D\u044B\u0435 \u0440\u0430\u0441\u0445\u043E\u0434\u044B",
-        fixedExpenseItems: settings.fixedExpenseItems || [],
-        netMargin,
-        activeDepositsHeld
-      },
-      recentPayments: [...db2.payments].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10),
-      totalClients: db2.clients.length,
-      employeesCount: db2.employees.length,
-      retailOrdersCount: db2.retailOrders.length,
-      systemTime: {
-        currentDate: now.toISOString(),
-        isSimulated: isTimeSimulated()
-      }
+      totalRentalDays,
+      totalSpent,
+      loyaltyTier: tier,
+      loyaltyMode: mode
     };
   }
-};
-
-// src/services/dashboard.service.ts
-var DashboardService = class {
-  static getStats() {
-    return StatsRepository.getDashboardStats();
-  }
-};
-
-// src/controllers/dashboard.controller.ts
-var DashboardController = class {
-  static getStats(req, res) {
-    try {
-      const stats = DashboardService.getStats();
-      return res.json(stats);
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
+  static getAll(filters) {
+    const db2 = getDb();
+    let list = db2.clients.map((c) => {
+      const cleanPhone = normalizePhone(c.phone);
+      const activeRental = db2.rentals.find(
+        (r) => r.clientId === c.id && (r.status === "ACTIVE" || r.status === "OVERDUE")
+      );
+      const totalRentals = db2.rentals.filter((r) => r.clientId === c.id).length;
+      const clientOrders = (db2.retailOrders || []).filter(
+        (ro) => ro.clientId === c.id || cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone
+      );
+      const retailOrdersCount = clientOrders.length;
+      const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
+      const isCourier = c.clientType === "COURIER" || totalRentals > 0 || Boolean(c.courierService);
+      const isRetailBuyer = c.clientType === "RETAIL" || retailOrdersCount > 0;
+      const loyalty = this.computeClientLoyalty(c);
+      return {
+        ...c,
+        clientType: c.clientType || (totalRentals > 0 || c.courierService ? "COURIER" : "RETAIL"),
+        activeRental: activeRental ? {
+          id: activeRental.id,
+          rentalNumber: activeRental.rentalNumber,
+          status: activeRental.status,
+          expiresAt: activeRental.expiresAt
+        } : null,
+        totalRentals,
+        retailOrdersCount,
+        retailOrdersSpent,
+        isCourier,
+        isRetailBuyer,
+        ...loyalty
+      };
+    });
+    if (filters?.status) {
+      list = list.filter((c) => c.status === filters.status);
     }
+    if (filters?.courierService) {
+      list = list.filter((c) => c.courierService === filters.courierService);
+    }
+    if (filters?.clientType && filters.clientType !== "ALL") {
+      if (filters.clientType === "COURIER") {
+        list = list.filter((c) => c.isCourier || c.clientType === "COURIER");
+      } else if (filters.clientType === "RETAIL") {
+        list = list.filter((c) => c.isRetailBuyer || c.clientType === "RETAIL");
+      } else {
+        list = list.filter((c) => c.clientType === filters.clientType);
+      }
+    }
+    if (filters?.search) {
+      const q = filters.search.toLowerCase();
+      list = list.filter(
+        (c) => c.fullName.toLowerCase().includes(q) || c.phone.toLowerCase().includes(q) || c.telegram?.toLowerCase().includes(q) || c.patentNumber?.toLowerCase().includes(q) || c.passportNumber?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }
+  static getById(id) {
+    const db2 = getDb();
+    const client = db2.clients.find((c) => c.id === id);
+    if (!client) return null;
+    const rentals = db2.rentals.filter((r) => r.clientId === client.id).map((r) => {
+      const bike = db2.bikes.find((b) => b.id === r.bikeId);
+      const tariff = db2.tariffs.find((t) => t.id === r.tariffId);
+      return { ...r, bike, tariff };
+    });
+    const reviews = db2.reviews.filter((rv) => rv.clientId === client.id).map((rv) => {
+      const bike = db2.bikes.find((b) => b.id === rv.bikeId);
+      return { ...rv, bike };
+    });
+    const cleanPhone = normalizePhone(client.phone);
+    const clientOrders = (db2.retailOrders || []).filter(
+      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone
+    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    clientOrders.forEach((ro) => {
+      if (!ro.clientId) ro.clientId = client.id;
+    });
+    const clientRepairs = (db2.repairs || []).filter(
+      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && normalizePhone(rep.clientPhone) === cleanPhone
+    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const retailOrdersCount = clientOrders.length;
+    const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
+    const totalRentals = rentals.length;
+    const isCourier = client.clientType === "COURIER" || totalRentals > 0 || Boolean(client.courierService);
+    const isRetailBuyer = client.clientType === "RETAIL" || retailOrdersCount > 0;
+    const loyalty = this.computeClientLoyalty(client);
+    return {
+      ...client,
+      clientType: client.clientType || (totalRentals > 0 || client.courierService ? "COURIER" : "RETAIL"),
+      rentals,
+      reviews,
+      retailOrders: clientOrders,
+      retailOrdersCount,
+      retailOrdersSpent,
+      repairs: clientRepairs,
+      isCourier,
+      isRetailBuyer,
+      ...loyalty
+    };
+  }
+  static getByPhone(phone) {
+    const db2 = getDb();
+    const cleanPhone = normalizePhone(phone);
+    return db2.clients.find((c) => normalizePhone(c.phone) === cleanPhone) || null;
+  }
+  static create(data) {
+    const db2 = getDb();
+    const cleanPhone = normalizePhone(data.phone);
+    if (db2.clients.some((c) => normalizePhone(c.phone) === cleanPhone)) {
+      throw new Error(`\u041A\u043B\u0438\u0435\u043D\u0442 \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u043C ${data.phone} \u0443\u0436\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D`);
+    }
+    const newClient = {
+      registrationAddress: data.registrationAddress?.trim() || null,
+      id: `cli-${(0, import_node_crypto.randomUUID)()}`,
+      fullName: data.fullName,
+      phone: data.phone,
+      telegram: data.telegram || null,
+      passportSerial: data.passportSerial || null,
+      passportNumber: data.passportNumber || null,
+      citizenship: data.citizenship || "\u0420\u0424",
+      migrationCard: data.migrationCard || null,
+      patentNumber: data.patentNumber || null,
+      courierService: data.courierService || null,
+      documentPhotoUrls: data.documentPhotoUrls || [],
+      status: data.status || "NORMAL",
+      clientType: data.clientType || "COURIER",
+      manualLoyaltyTierId: data.manualLoyaltyTierId || null,
+      blackListReason: null,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    db2.clients.push(newClient);
+    saveDb();
+    return this.getById(newClient.id);
+  }
+  static update(id, data) {
+    const db2 = getDb();
+    const index = db2.clients.findIndex((c) => c.id === id);
+    if (index === -1) return null;
+    if (data.registrationAddress !== void 0) data = { ...data, registrationAddress: data.registrationAddress?.trim() || null };
+    if (data.phone && db2.clients.some((client) => client.id !== id && normalizePhone(client.phone) === normalizePhone(data.phone))) {
+      throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u0441 \u044D\u0442\u0438\u043C \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u043C \u0443\u0436\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D");
+    }
+    db2.clients[index] = {
+      ...db2.clients[index],
+      ...data
+    };
+    saveDb();
+    return this.getById(id);
+  }
+  static setLoyaltyTier(id, manualLoyaltyTierId) {
+    const db2 = getDb();
+    const client = db2.clients.find((c) => c.id === id);
+    if (!client) {
+      throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    }
+    client.manualLoyaltyTierId = manualLoyaltyTierId && manualLoyaltyTierId.trim() ? manualLoyaltyTierId.trim() : null;
+    saveDb();
+    return this.getById(id);
+  }
+  static updateStatus(id, status, blackListReason) {
+    const db2 = getDb();
+    const client = db2.clients.find((c) => c.id === id);
+    if (!client) return null;
+    client.status = status;
+    client.blackListReason = blackListReason || null;
+    saveDb();
+    return this.getById(id);
+  }
+  static delete(id) {
+    const db2 = getDb();
+    const index = db2.clients.findIndex((c) => c.id === id);
+    if (index === -1) {
+      throw new Error("\u041A\u0443\u0440\u044C\u0435\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    }
+    if (db2.rentals.some((r) => r.clientId === id) || db2.repairs.some((r) => r.clientId === id) || db2.retailOrders.some((order) => order.clientId === id) || db2.payments.some((p) => p.clientId === id)) throw new Error("\u0423 \u043A\u043B\u0438\u0435\u043D\u0442\u0430 \u0435\u0441\u0442\u044C \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u044B. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u0434\u043B\u044F \u0438\u0441\u0442\u043E\u0440\u0438\u0438 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439");
+    const activeRental = db2.rentals.find(
+      (r) => r.clientId === id && (r.status === "ACTIVE" || r.status === "OVERDUE")
+    );
+    if (activeRental) {
+      throw new Error(`\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u043A\u0443\u0440\u044C\u0435\u0440\u0430 \u0441 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0439 \u0430\u0440\u0435\u043D\u0434\u043E\u0439 (${activeRental.rentalNumber})`);
+    }
+    const removed = db2.clients.splice(index, 1)[0];
+    saveDb();
+    return removed;
   }
 };
+
+// src/services/client.service.ts
+var ClientService = class {
+  static getAllClients(filters) {
+    return ClientRepository.getAll(filters);
+  }
+  static getClientById(id) {
+    const client = ClientRepository.getById(id);
+    if (!client) {
+      throw new Error(`\u041A\u043B\u0438\u0435\u043D\u0442 \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+    }
+    return client;
+  }
+  static searchByPhone(phone) {
+    return ClientRepository.getByPhone(phone);
+  }
+  static createClient(data) {
+    const clientType = data.clientType || "COURIER";
+    const citizenship = data.citizenship?.trim() || "\u0420\u0424";
+    if (clientType === "COURIER" && citizenship !== "\u0420\u0424") {
+      if (!data.migrationCard) {
+        throw new Error("\u0414\u043B\u044F \u0438\u043D\u043E\u0441\u0442\u0440\u0430\u043D\u043D\u044B\u0445 \u0433\u0440\u0430\u0436\u0434\u0430\u043D \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0443\u043A\u0430\u0437\u0430\u043D\u0438\u0435 \u043D\u043E\u043C\u0435\u0440\u0430 \u043C\u0438\u0433\u0440\u0430\u0446\u0438\u043E\u043D\u043D\u043E\u0439 \u043A\u0430\u0440\u0442\u044B");
+      }
+      if (!data.patentNumber) {
+        throw new Error("\u0414\u043B\u044F \u0438\u043D\u043E\u0441\u0442\u0440\u0430\u043D\u043D\u044B\u0445 \u0433\u0440\u0430\u0436\u0434\u0430\u043D \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0443\u043A\u0430\u0437\u0430\u043D\u0438\u0435 \u043F\u0430\u0442\u0435\u043D\u0442\u0430 \u0438\u043B\u0438 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0415\u0410\u042D\u0421");
+      }
+    }
+    return ClientRepository.create({
+      ...data,
+      citizenship,
+      clientType,
+      manualLoyaltyTierId: data.manualLoyaltyTierId || null
+    });
+  }
+  static updateClient(id, data) {
+    const client = ClientRepository.update(id, data);
+    if (!client) {
+      throw new Error(`\u041A\u0443\u0440\u044C\u0435\u0440 \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+    }
+    return client;
+  }
+  static updateStatus(id, status, blackListReason) {
+    const client = ClientRepository.updateStatus(id, status, blackListReason);
+    if (!client) {
+      throw new Error(`\u041A\u0443\u0440\u044C\u0435\u0440 \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+    }
+    return client;
+  }
+  static deleteClient(id) {
+    return ClientRepository.delete(id);
+  }
+};
+
+// src/repositories/bike.repository.ts
+var import_node_crypto3 = require("node:crypto");
 
 // src/repositories/battery.repository.ts
+var import_node_crypto2 = require("node:crypto");
 var BatteryRepository = class {
   // Battery Model Templates CRUD
   static getBatteryModels() {
@@ -64016,7 +64009,7 @@ var BatteryRepository = class {
       }
     }
     const newBattery = {
-      id: `bat-${Date.now()}`,
+      id: `bat-${(0, import_node_crypto2.randomUUID)()}`,
       serialNumber: cleanSerial,
       modelId: data.modelId || null,
       modelName,
@@ -64176,31 +64169,31 @@ var BatteryRepository = class {
     const battery = db2.batteries.find((b) => b.id === batteryId);
     if (!battery) throw new Error("\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     if (battery.status === "SOLD" || battery.status === "DECOMMISSIONED") throw new Error("\u0410\u041A\u0411 \u0432\u044B\u0431\u044B\u043B \u0438\u0437 \u043F\u0430\u0440\u043A\u0430 \u0438 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0431\u044B\u0442\u044C \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0451\u043D \u043D\u0430 \u0441\u043A\u043B\u0430\u0434");
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now2 = (/* @__PURE__ */ new Date()).toISOString();
     if (battery.installedBikeId) {
       const bike = db2.bikes.find((b) => b.id === battery.installedBikeId);
       if (bike) {
         bike.batteryId = null;
-        bike.updatedAt = now;
+        bike.updatedAt = now2;
       }
       battery.installedBikeId = null;
     }
     const bikeHolding = db2.bikes.find((b) => b.batteryId === batteryId);
     if (bikeHolding) {
       bikeHolding.batteryId = null;
-      bikeHolding.updatedAt = now;
+      bikeHolding.updatedAt = now2;
     }
     const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
     for (const r of activeRentals) {
       if (r.batteryIds && r.batteryIds.includes(batteryId)) {
         r.batteryIds = r.batteryIds.filter((id) => id !== batteryId);
-        r.updatedAt = now;
+        r.updatedAt = now2;
       }
     }
     battery.status = "AVAILABLE";
     battery.issuedBikeId = null;
     battery.installedBikeId = null;
-    battery.updatedAt = now;
+    battery.updatedAt = now2;
     saveDb();
     return {
       success: true,
@@ -64213,7 +64206,7 @@ var BatteryRepository = class {
     const bike = db2.bikes.find((b) => b.id === bikeId);
     if (!bike) throw new Error("\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
     if (["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status)) throw new Error("\u0422\u0435\u0445\u043D\u0438\u043A\u0430 \u0432\u044B\u0431\u044B\u043B\u0430 \u0438\u0437 \u043F\u0430\u0440\u043A\u0430");
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now2 = (/* @__PURE__ */ new Date()).toISOString();
     let detachedBattery = null;
     const targetBatteryId = bike.batteryId;
     if (targetBatteryId) {
@@ -64222,18 +64215,18 @@ var BatteryRepository = class {
         battery.installedBikeId = null;
         battery.issuedBikeId = null;
         battery.status = "AVAILABLE";
-        battery.updatedAt = now;
+        battery.updatedAt = now2;
         detachedBattery = battery;
       }
       bike.batteryId = null;
-      bike.updatedAt = now;
+      bike.updatedAt = now2;
     } else {
       const orphanBattery = db2.batteries.find((b) => b.installedBikeId === bikeId);
       if (orphanBattery) {
         orphanBattery.installedBikeId = null;
         orphanBattery.issuedBikeId = null;
         orphanBattery.status = "AVAILABLE";
-        orphanBattery.updatedAt = now;
+        orphanBattery.updatedAt = now2;
         detachedBattery = orphanBattery;
       }
     }
@@ -64242,7 +64235,7 @@ var BatteryRepository = class {
       const rental = activeRentals.find((r) => r.bikeId === bikeId);
       if (rental && rental.batteryIds) {
         rental.batteryIds = rental.batteryIds.filter((id) => id !== detachedBattery.id);
-        rental.updatedAt = now;
+        rental.updatedAt = now2;
       }
     }
     saveDb();
@@ -64270,7 +64263,7 @@ var BatteryRepository = class {
     if (newBat.status !== "AVAILABLE") {
       throw new Error(`\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${newBat.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D (\u0441\u0442\u0430\u0442\u0443\u0441: ${newBat.status})`);
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now2 = (/* @__PURE__ */ new Date()).toISOString();
     const activeRentals = db2.rentals.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
     const rental = activeRentals.find(
       (r) => r.batteryIds && r.batteryIds.includes(oldBat.id) || oldBat.installedBikeId && r.bikeId === oldBat.installedBikeId || oldBat.issuedBikeId && r.bikeId === oldBat.issuedBikeId
@@ -64279,46 +64272,46 @@ var BatteryRepository = class {
       newBat.status = "ISSUED_SPARE";
       newBat.issuedBikeId = oldBat.issuedBikeId || (rental ? rental.bikeId : null);
       newBat.installedBikeId = null;
-      newBat.updatedAt = now;
+      newBat.updatedAt = now2;
       if (rental) {
         if (!rental.batteryIds) rental.batteryIds = [];
         rental.batteryIds = rental.batteryIds.map((id) => id === oldBat.id ? newBat.id : id);
         if (!rental.batteryIds.includes(newBat.id)) {
           rental.batteryIds.push(newBat.id);
         }
-        rental.updatedAt = now;
+        rental.updatedAt = now2;
       }
       oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
       oldBat.issuedBikeId = null;
       oldBat.installedBikeId = null;
-      oldBat.updatedAt = now;
+      oldBat.updatedAt = now2;
     } else if (oldBat.installedBikeId) {
       const bike = db2.bikes.find((b) => b.id === oldBat.installedBikeId);
       if (bike) {
         bike.batteryId = newBat.id;
-        bike.updatedAt = now;
+        bike.updatedAt = now2;
       }
       newBat.status = "INSTALLED";
       newBat.installedBikeId = oldBat.installedBikeId;
       newBat.issuedBikeId = null;
-      newBat.updatedAt = now;
+      newBat.updatedAt = now2;
       if (rental) {
         if (!rental.batteryIds) rental.batteryIds = [];
         rental.batteryIds = rental.batteryIds.map((id) => id === oldBat.id ? newBat.id : id);
         if (!rental.batteryIds.includes(newBat.id)) {
           rental.batteryIds.push(newBat.id);
         }
-        rental.updatedAt = now;
+        rental.updatedAt = now2;
       }
       oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
       oldBat.installedBikeId = null;
       oldBat.issuedBikeId = null;
-      oldBat.updatedAt = now;
+      oldBat.updatedAt = now2;
     } else {
       newBat.status = "AVAILABLE";
-      newBat.updatedAt = now;
+      newBat.updatedAt = now2;
       oldBat.status = sendOldToCharging ? "IN_MAINTENANCE" : "AVAILABLE";
-      oldBat.updatedAt = now;
+      oldBat.updatedAt = now2;
     }
     saveDb();
     return {
@@ -64494,7 +64487,7 @@ var BikeRepository = class {
     const salePrice = data.salePrice !== void 0 ? Number(data.salePrice) : model?.salePrice ?? 0;
     const newBike = {
       photos: data.photos || [],
-      id: `bike-${Date.now()}`,
+      id: `bike-${(0, import_node_crypto3.randomUUID)()}`,
       inventoryNumber: data.inventoryNumber,
       modelId: data.modelId,
       batteryId: data.batteryId || null,
@@ -64579,1260 +64572,12 @@ var BikeRepository = class {
   }
 };
 
-// src/services/bike.service.ts
-var BikeService = class {
-  static getAllBikes(filters) {
-    return BikeRepository.getAll(filters);
-  }
-  static getBikeById(id) {
-    const bike = BikeRepository.getById(id);
-    if (!bike) {
-      throw new Error(`\u0411\u0430\u0439\u043A \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-    }
-    return bike;
-  }
-  static getModels() {
-    return BikeRepository.getModels();
-  }
-  static createModel(data) {
-    return BikeRepository.createModel(data);
-  }
-  static updateModel(id, data) {
-    return BikeRepository.updateModel(id, data);
-  }
-  static deleteModel(id) {
-    return BikeRepository.deleteModel(id);
-  }
-  static createBike(data) {
-    return BikeRepository.create(data);
-  }
-  static updateBike(id, data) {
-    const bike = BikeRepository.update(id, data);
-    if (!bike) {
-      throw new Error(`\u0411\u0430\u0439\u043A \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-    }
-    return bike;
-  }
-  static changeStatus(id, status, location2) {
-    const bike = BikeRepository.updateStatus(id, status, location2);
-    if (!bike) {
-      throw new Error(`\u0411\u0430\u0439\u043A \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-    }
-    return bike;
-  }
-  static deleteBike(id) {
-    return BikeRepository.delete(id);
-  }
-};
-
-// src/controllers/bike.controller.ts
-var BikeController = class {
-  static getAll(req, res) {
-    try {
-      const { status, modelId, search } = req.query;
-      const bikes = BikeService.getAllBikes({
-        status,
-        modelId,
-        search
-      });
-      return res.json(bikes);
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-  static getModels(req, res) {
-    try {
-      const models = BikeService.getModels();
-      return res.json(models);
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-  static createModel(req, res) {
-    try {
-      const newModel = BikeService.createModel(req.body);
-      return res.status(201).json(newModel);
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  }
-  static updateModel(req, res) {
-    try {
-      const updated = BikeService.updateModel(req.params.id, req.body);
-      return res.json(updated);
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  }
-  static deleteModel(req, res) {
-    try {
-      const removed = BikeService.deleteModel(req.params.id);
-      return res.json({
-        success: true,
-        message: `\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 "${removed.name}" \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0443\u0434\u0430\u043B\u0435\u043D`,
-        data: removed
-      });
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  }
-  static getById(req, res) {
-    try {
-      const bike = BikeService.getBikeById(req.params.id);
-      return res.json(bike);
-    } catch (err) {
-      return res.status(404).json({ error: err.message });
-    }
-  }
-  static create(req, res) {
-    try {
-      const parsed = BikeCreateDto.parse(req.body);
-      const newBike = BikeService.createBike(parsed);
-      return res.status(201).json(newBike);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static update(req, res) {
-    try {
-      const parsed = BikeUpdateDto.parse(req.body);
-      const updated = BikeService.updateBike(req.params.id, parsed);
-      return res.json(updated);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static delete(req, res) {
-    try {
-      const removed = BikeService.deleteBike(req.params.id);
-      return res.json({ success: true, message: `\u0411\u0430\u0439\u043A ${removed.inventoryNumber} \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0443\u0434\u0430\u043B\u0435\u043D \u0438\u0437 \u043F\u0430\u0440\u043A\u0430`, data: removed });
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  }
-};
-
-// src/repositories/loyalty.repository.ts
-var LoyaltyRepository = class {
-  static getAll() {
-    const db2 = getDb();
-    if (!db2.loyaltyTiers || db2.loyaltyTiers.length === 0) {
-      return [];
-    }
-    return [...db2.loyaltyTiers].sort((a, b) => {
-      if (a.minRentalDays !== b.minRentalDays) {
-        return a.minRentalDays - b.minRentalDays;
-      }
-      return a.minTotalSpent - b.minTotalSpent;
-    });
-  }
-  static getById(id) {
-    const db2 = getDb();
-    return db2.loyaltyTiers.find((t) => t.id === id) || null;
-  }
-  static create(data) {
-    const db2 = getDb();
-    const newTier = {
-      id: `tier-${Date.now()}`,
-      name: data.name.trim(),
-      color: data.color || "amber",
-      minRentalDays: Math.max(0, Number(data.minRentalDays) || 0),
-      minTotalSpent: Math.max(0, Number(data.minTotalSpent) || 0),
-      discountRentalPercent: Math.min(100, Math.max(0, Number(data.discountRentalPercent) || 0)),
-      discountPartsPercent: Math.min(100, Math.max(0, Number(data.discountPartsPercent) || 0)),
-      discountRepairsPercent: Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)),
-      description: data.description?.trim() || "",
-      isDefault: Boolean(data.isDefault)
-    };
-    db2.loyaltyTiers.push(newTier);
-    saveDb();
-    return newTier;
-  }
-  static update(id, data) {
-    const db2 = getDb();
-    const index = db2.loyaltyTiers.findIndex((t) => t.id === id);
-    if (index === -1) return null;
-    db2.loyaltyTiers[index] = {
-      ...db2.loyaltyTiers[index],
-      ...data,
-      minRentalDays: data.minRentalDays !== void 0 ? Math.max(0, Number(data.minRentalDays) || 0) : db2.loyaltyTiers[index].minRentalDays,
-      minTotalSpent: data.minTotalSpent !== void 0 ? Math.max(0, Number(data.minTotalSpent) || 0) : db2.loyaltyTiers[index].minTotalSpent,
-      discountRentalPercent: data.discountRentalPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountRentalPercent) || 0)) : db2.loyaltyTiers[index].discountRentalPercent,
-      discountPartsPercent: data.discountPartsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountPartsPercent) || 0)) : db2.loyaltyTiers[index].discountPartsPercent,
-      discountRepairsPercent: data.discountRepairsPercent !== void 0 ? Math.min(100, Math.max(0, Number(data.discountRepairsPercent) || 0)) : db2.loyaltyTiers[index].discountRepairsPercent
-    };
-    saveDb();
-    return db2.loyaltyTiers[index];
-  }
-  static delete(id) {
-    const db2 = getDb();
-    const index = db2.loyaltyTiers.findIndex((t) => t.id === id);
-    if (index === -1) return false;
-    if (db2.loyaltyTiers.length <= 1) {
-      throw new Error("\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0435\u0434\u0438\u043D\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0439 \u043E\u0441\u0442\u0430\u0432\u0448\u0438\u0439\u0441\u044F \u0443\u0440\u043E\u0432\u0435\u043D\u044C \u043B\u043E\u044F\u043B\u044C\u043D\u043E\u0441\u0442\u0438");
-    }
-    db2.loyaltyTiers.splice(index, 1);
-    for (const client of db2.clients) {
-      if (client.manualLoyaltyTierId === id) {
-        client.manualLoyaltyTierId = null;
-      }
-    }
-    saveDb();
-    return true;
-  }
-  /**
-   * Determine client tier based on manual assignment or automatic thresholds
-   */
-  static determineTier(totalDays, totalSpent, manualTierId) {
-    const tiers = this.getAll();
-    const fallbackTier = tiers.find((t) => t.isDefault) || tiers[0] || {
-      id: "tier-bronze",
-      name: "\u0411\u0430\u0437\u043E\u0432\u044B\u0439",
-      color: "slate",
-      minRentalDays: 0,
-      minTotalSpent: 0,
-      discountRentalPercent: 0,
-      discountPartsPercent: 0,
-      discountRepairsPercent: 0
-    };
-    if (manualTierId) {
-      const manual = tiers.find((t) => t.id === manualTierId);
-      if (manual) {
-        return { tier: manual, mode: "MANUAL" };
-      }
-    }
-    const sortedDescending = [...tiers].sort((a, b) => {
-      const scoreB = b.minTotalSpent + b.minRentalDays * 1e3;
-      const scoreA = a.minTotalSpent + a.minRentalDays * 1e3;
-      return scoreB - scoreA;
-    });
-    for (const t of sortedDescending) {
-      const daysMet = t.minRentalDays > 0 && totalDays >= t.minRentalDays;
-      const spentMet = t.minTotalSpent > 0 && totalSpent >= t.minTotalSpent;
-      if (daysMet || spentMet || t.minRentalDays === 0 && t.minTotalSpent === 0) {
-        return { tier: t, mode: "AUTO" };
-      }
-    }
-    return { tier: fallbackTier, mode: "AUTO" };
-  }
-};
-
-// src/repositories/client.repository.ts
-var ClientRepository = class {
-  static computeClientLoyalty(client) {
-    const db2 = getDb();
-    const clientRentals = db2.rentals.filter((r) => r.clientId === client.id);
-    let totalRentalDays = 0;
-    for (const r of clientRentals) {
-      if (r.status === "DRAFT" || r.status === "RESERVED") continue;
-      if (r.startedAt) {
-        const start = new Date(r.startedAt).getTime();
-        const finished = r.status === "CLOSED" || r.status === "BOUGHT_OUT";
-        const end = Math.min(getSystemTime().getTime(), finished ? new Date(r.closedAt || r.updatedAt || r.expiresAt).getTime() : getSystemTime().getTime());
-        if (!isNaN(start) && !isNaN(end) && end > start) {
-          totalRentalDays += Math.floor((end - start) / 864e5);
-        }
-      }
-    }
-    const rentalIds = new Set(clientRentals.map((r) => r.id));
-    const cleanPhone = normalizePhone(client.phone);
-    const clientRetailOrders = (db2.retailOrders || []).filter(
-      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone
-    );
-    const clientRepairs = (db2.repairs || []).filter(
-      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && normalizePhone(rep.clientPhone) === cleanPhone
-    );
-    const repairIds = new Set(clientRepairs.map((rep) => rep.id));
-    const retailIds = new Set(clientRetailOrders.map((order) => order.id));
-    const totalSpent = db2.payments.filter((payment) => isRevenuePayment(payment) && (payment.clientId === client.id || payment.rentalId && rentalIds.has(payment.rentalId) || payment.orderId && retailIds.has(payment.orderId) || payment.repairOrderId && repairIds.has(payment.repairOrderId))).reduce((sum, payment) => sum + payment.amount, 0);
-    const { tier, mode } = LoyaltyRepository.determineTier(
-      totalRentalDays,
-      totalSpent,
-      client.manualLoyaltyTierId
-    );
-    return {
-      totalRentalDays,
-      totalSpent,
-      loyaltyTier: tier,
-      loyaltyMode: mode
-    };
-  }
-  static getAll(filters) {
-    const db2 = getDb();
-    let list = db2.clients.map((c) => {
-      const cleanPhone = normalizePhone(c.phone);
-      const activeRental = db2.rentals.find(
-        (r) => r.clientId === c.id && (r.status === "ACTIVE" || r.status === "OVERDUE")
-      );
-      const totalRentals = db2.rentals.filter((r) => r.clientId === c.id).length;
-      const clientOrders = (db2.retailOrders || []).filter(
-        (ro) => ro.clientId === c.id || cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone
-      );
-      const retailOrdersCount = clientOrders.length;
-      const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
-      const isCourier = c.clientType === "COURIER" || totalRentals > 0 || Boolean(c.courierService);
-      const isRetailBuyer = c.clientType === "RETAIL" || retailOrdersCount > 0;
-      const loyalty = this.computeClientLoyalty(c);
-      return {
-        ...c,
-        clientType: c.clientType || (totalRentals > 0 || c.courierService ? "COURIER" : "RETAIL"),
-        activeRental: activeRental ? {
-          id: activeRental.id,
-          rentalNumber: activeRental.rentalNumber,
-          status: activeRental.status,
-          expiresAt: activeRental.expiresAt
-        } : null,
-        totalRentals,
-        retailOrdersCount,
-        retailOrdersSpent,
-        isCourier,
-        isRetailBuyer,
-        ...loyalty
-      };
-    });
-    if (filters?.status) {
-      list = list.filter((c) => c.status === filters.status);
-    }
-    if (filters?.courierService) {
-      list = list.filter((c) => c.courierService === filters.courierService);
-    }
-    if (filters?.clientType && filters.clientType !== "ALL") {
-      if (filters.clientType === "COURIER") {
-        list = list.filter((c) => c.isCourier || c.clientType === "COURIER");
-      } else if (filters.clientType === "RETAIL") {
-        list = list.filter((c) => c.isRetailBuyer || c.clientType === "RETAIL");
-      } else {
-        list = list.filter((c) => c.clientType === filters.clientType);
-      }
-    }
-    if (filters?.search) {
-      const q = filters.search.toLowerCase();
-      list = list.filter(
-        (c) => c.fullName.toLowerCase().includes(q) || c.phone.toLowerCase().includes(q) || c.telegram?.toLowerCase().includes(q) || c.patentNumber?.toLowerCase().includes(q) || c.passportNumber?.toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }
-  static getById(id) {
-    const db2 = getDb();
-    const client = db2.clients.find((c) => c.id === id);
-    if (!client) return null;
-    const rentals = db2.rentals.filter((r) => r.clientId === client.id).map((r) => {
-      const bike = db2.bikes.find((b) => b.id === r.bikeId);
-      const tariff = db2.tariffs.find((t) => t.id === r.tariffId);
-      return { ...r, bike, tariff };
-    });
-    const reviews = db2.reviews.filter((rv) => rv.clientId === client.id).map((rv) => {
-      const bike = db2.bikes.find((b) => b.id === rv.bikeId);
-      return { ...rv, bike };
-    });
-    const cleanPhone = normalizePhone(client.phone);
-    const clientOrders = (db2.retailOrders || []).filter(
-      (ro) => ro.clientId === client.id || cleanPhone.length >= 6 && ro.customerPhone && normalizePhone(ro.customerPhone) === cleanPhone
-    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    clientOrders.forEach((ro) => {
-      if (!ro.clientId) ro.clientId = client.id;
-    });
-    const clientRepairs = (db2.repairs || []).filter(
-      (rep) => rep.clientId === client.id || cleanPhone.length >= 6 && rep.clientPhone && normalizePhone(rep.clientPhone) === cleanPhone
-    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    const retailOrdersCount = clientOrders.length;
-    const retailOrdersSpent = clientOrders.reduce((sum, ro) => sum + (Number(ro.totalAmount) || 0), 0);
-    const totalRentals = rentals.length;
-    const isCourier = client.clientType === "COURIER" || totalRentals > 0 || Boolean(client.courierService);
-    const isRetailBuyer = client.clientType === "RETAIL" || retailOrdersCount > 0;
-    const loyalty = this.computeClientLoyalty(client);
-    return {
-      ...client,
-      clientType: client.clientType || (totalRentals > 0 || client.courierService ? "COURIER" : "RETAIL"),
-      rentals,
-      reviews,
-      retailOrders: clientOrders,
-      retailOrdersCount,
-      retailOrdersSpent,
-      repairs: clientRepairs,
-      isCourier,
-      isRetailBuyer,
-      ...loyalty
-    };
-  }
-  static getByPhone(phone) {
-    const db2 = getDb();
-    const cleanPhone = normalizePhone(phone);
-    return db2.clients.find((c) => normalizePhone(c.phone) === cleanPhone) || null;
-  }
-  static create(data) {
-    const db2 = getDb();
-    const cleanPhone = normalizePhone(data.phone);
-    if (db2.clients.some((c) => normalizePhone(c.phone) === cleanPhone)) {
-      throw new Error(`\u041A\u043B\u0438\u0435\u043D\u0442 \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u043C ${data.phone} \u0443\u0436\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D`);
-    }
-    const newClient = {
-      registrationAddress: data.registrationAddress?.trim() || null,
-      id: `cli-${Date.now()}`,
-      fullName: data.fullName,
-      phone: data.phone,
-      telegram: data.telegram || null,
-      passportSerial: data.passportSerial || null,
-      passportNumber: data.passportNumber || null,
-      citizenship: data.citizenship || "\u0420\u0424",
-      migrationCard: data.migrationCard || null,
-      patentNumber: data.patentNumber || null,
-      courierService: data.courierService || null,
-      documentPhotoUrls: data.documentPhotoUrls || [],
-      status: data.status || "NORMAL",
-      clientType: data.clientType || "COURIER",
-      manualLoyaltyTierId: data.manualLoyaltyTierId || null,
-      blackListReason: null,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    db2.clients.push(newClient);
-    saveDb();
-    return this.getById(newClient.id);
-  }
-  static update(id, data) {
-    const db2 = getDb();
-    const index = db2.clients.findIndex((c) => c.id === id);
-    if (index === -1) return null;
-    if (data.registrationAddress !== void 0) data = { ...data, registrationAddress: data.registrationAddress?.trim() || null };
-    if (data.phone && db2.clients.some((client) => client.id !== id && normalizePhone(client.phone) === normalizePhone(data.phone))) {
-      throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u0441 \u044D\u0442\u0438\u043C \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u043C \u0443\u0436\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D");
-    }
-    db2.clients[index] = {
-      ...db2.clients[index],
-      ...data
-    };
-    saveDb();
-    return this.getById(id);
-  }
-  static setLoyaltyTier(id, manualLoyaltyTierId) {
-    const db2 = getDb();
-    const client = db2.clients.find((c) => c.id === id);
-    if (!client) {
-      throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    }
-    client.manualLoyaltyTierId = manualLoyaltyTierId && manualLoyaltyTierId.trim() ? manualLoyaltyTierId.trim() : null;
-    saveDb();
-    return this.getById(id);
-  }
-  static updateStatus(id, status, blackListReason) {
-    const db2 = getDb();
-    const client = db2.clients.find((c) => c.id === id);
-    if (!client) return null;
-    client.status = status;
-    client.blackListReason = blackListReason || null;
-    saveDb();
-    return this.getById(id);
-  }
-  static delete(id) {
-    const db2 = getDb();
-    const index = db2.clients.findIndex((c) => c.id === id);
-    if (index === -1) {
-      throw new Error("\u041A\u0443\u0440\u044C\u0435\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    }
-    if (db2.rentals.some((r) => r.clientId === id) || db2.repairs.some((r) => r.clientId === id) || db2.retailOrders.some((order) => order.clientId === id) || db2.payments.some((p) => p.clientId === id)) throw new Error("\u0423 \u043A\u043B\u0438\u0435\u043D\u0442\u0430 \u0435\u0441\u0442\u044C \u0441\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u044B. \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u0434\u043B\u044F \u0438\u0441\u0442\u043E\u0440\u0438\u0438 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0439");
-    const activeRental = db2.rentals.find(
-      (r) => r.clientId === id && (r.status === "ACTIVE" || r.status === "OVERDUE")
-    );
-    if (activeRental) {
-      throw new Error(`\u041D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u043A\u0443\u0440\u044C\u0435\u0440\u0430 \u0441 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0439 \u0430\u0440\u0435\u043D\u0434\u043E\u0439 (${activeRental.rentalNumber})`);
-    }
-    const removed = db2.clients.splice(index, 1)[0];
-    saveDb();
-    return removed;
-  }
-};
-
-// src/services/client.service.ts
-var ClientService = class {
-  static getAllClients(filters) {
-    return ClientRepository.getAll(filters);
-  }
-  static getClientById(id) {
-    const client = ClientRepository.getById(id);
-    if (!client) {
-      throw new Error(`\u041A\u043B\u0438\u0435\u043D\u0442 \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-    }
-    return client;
-  }
-  static searchByPhone(phone) {
-    return ClientRepository.getByPhone(phone);
-  }
-  static createClient(data) {
-    const clientType = data.clientType || "COURIER";
-    const citizenship = data.citizenship?.trim() || "\u0420\u0424";
-    if (clientType === "COURIER" && citizenship !== "\u0420\u0424") {
-      if (!data.migrationCard) {
-        throw new Error("\u0414\u043B\u044F \u0438\u043D\u043E\u0441\u0442\u0440\u0430\u043D\u043D\u044B\u0445 \u0433\u0440\u0430\u0436\u0434\u0430\u043D \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0443\u043A\u0430\u0437\u0430\u043D\u0438\u0435 \u043D\u043E\u043C\u0435\u0440\u0430 \u043C\u0438\u0433\u0440\u0430\u0446\u0438\u043E\u043D\u043D\u043E\u0439 \u043A\u0430\u0440\u0442\u044B");
-      }
-      if (!data.patentNumber) {
-        throw new Error("\u0414\u043B\u044F \u0438\u043D\u043E\u0441\u0442\u0440\u0430\u043D\u043D\u044B\u0445 \u0433\u0440\u0430\u0436\u0434\u0430\u043D \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u0443\u043A\u0430\u0437\u0430\u043D\u0438\u0435 \u043F\u0430\u0442\u0435\u043D\u0442\u0430 \u0438\u043B\u0438 \u0441\u0442\u0430\u0442\u0443\u0441\u0430 \u0415\u0410\u042D\u0421");
-      }
-    }
-    return ClientRepository.create({
-      ...data,
-      citizenship,
-      clientType,
-      manualLoyaltyTierId: data.manualLoyaltyTierId || null
-    });
-  }
-  static updateClient(id, data) {
-    const client = ClientRepository.update(id, data);
-    if (!client) {
-      throw new Error(`\u041A\u0443\u0440\u044C\u0435\u0440 \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-    }
-    return client;
-  }
-  static updateStatus(id, status, blackListReason) {
-    const client = ClientRepository.updateStatus(id, status, blackListReason);
-    if (!client) {
-      throw new Error(`\u041A\u0443\u0440\u044C\u0435\u0440 \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-    }
-    return client;
-  }
-  static deleteClient(id) {
-    return ClientRepository.delete(id);
-  }
-};
-
-// src/controllers/client.controller.ts
-var ClientController = class {
-  static getAll(req, res) {
-    try {
-      const { status, search, courierService, clientType } = req.query;
-      const clients = ClientService.getAllClients({
-        status,
-        search,
-        courierService,
-        clientType
-      });
-      return res.json(clients);
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-  static getById(req, res) {
-    try {
-      const client = ClientService.getClientById(req.params.id);
-      return res.json(client);
-    } catch (err) {
-      return res.status(404).json({ error: err.message });
-    }
-  }
-  static searchByPhone(req, res) {
-    try {
-      const phone = req.query.phone;
-      if (!phone) return res.status(400).json({ error: "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440 phone \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D" });
-      const client = ClientService.searchByPhone(phone);
-      return res.json(client);
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-  static create(req, res) {
-    try {
-      const parsed = ClientCreateDto.parse(req.body);
-      const newClient = ClientService.createClient(parsed);
-      return res.status(201).json(newClient);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static update(req, res) {
-    try {
-      const parsed = ClientUpdateDto.parse(req.body);
-      const updated = ClientService.updateClient(req.params.id, parsed);
-      return res.json(updated);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static updateStatus(req, res) {
-    try {
-      const { status, reason } = req.body;
-      if (!status) return res.status(400).json({ error: "\u0421\u0442\u0430\u0442\u0443\u0441 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D" });
-      const updated = ClientService.updateStatus(req.params.id, status, reason);
-      return res.json(updated);
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  }
-  static delete(req, res) {
-    try {
-      const removed = ClientService.deleteClient(req.params.id);
-      return res.json({ success: true, message: `\u041A\u0443\u0440\u044C\u0435\u0440 ${removed.fullName} \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0443\u0434\u0430\u043B\u0435\u043D`, data: removed });
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  }
-};
-
-// src/repositories/rental.repository.ts
-var RentalRepository = class {
-  static refreshOverdueStatuses() {
-    const db2 = getDb();
-    const now = getSystemTime();
-    db2.rentals.forEach((r) => {
-      if (r.status === "ACTIVE" && new Date(r.nextPaymentDue) < now) {
-        r.status = "OVERDUE";
-      }
-    });
-  }
-  static getAll(filters) {
-    this.refreshOverdueStatuses();
-    const db2 = getDb();
-    let list = db2.rentals.map((r) => {
-      const client = db2.clients.find((c) => c.id === r.clientId);
-      const bike = db2.bikes.find((b) => b.id === r.bikeId);
-      const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
-      const battery = bike?.batteryId ? db2.batteries.find((bt) => bt.id === bike.batteryId) : null;
-      const tariff = db2.tariffs.find((t) => t.id === r.tariffId);
-      const tariffBikeModel = tariff?.bikeModelId ? db2.models.find((m) => m.id === tariff.bikeModelId) : null;
-      const fullTariff = tariff ? { ...tariff, bikeModel: tariffBikeModel } : null;
-      const outfits = db2.outfits.filter((o) => r.outfitIds.includes(o.id));
-      const payments = db2.payments.filter((p) => p.rentalId === r.id);
-      const manager = db2.users.find((user) => user.id === r.managerId);
-      const batteries = db2.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
-      const buyoutPayments = payments.filter((p) => p.type === "RENTAL" || p.type === "BUYOUT");
-      const totalPaidForBuyout = buyoutPayments.reduce((sum, p) => sum + p.amount, 0);
-      const totalBuyoutPrice = r.totalBuyoutPrice || (r.type === "RENT_TO_OWN" ? tariff?.totalBuyoutPrice || tariff?.price || 0 : void 0);
-      const remainingBuyoutAmount = totalBuyoutPrice !== void 0 ? Math.max(0, totalBuyoutPrice - totalPaidForBuyout) : void 0;
-      return {
-        ...r,
-        client,
-        bike: bike ? { ...bike, model: bikeModel, battery } : null,
-        batteries,
-        tariff: fullTariff,
-        outfits,
-        payments,
-        manager,
-        totalPaidForBuyout,
-        totalBuyoutPrice,
-        remainingBuyoutAmount
-      };
-    });
-    if (filters?.status) {
-      if (filters.status === "ACTIVE") {
-        list = list.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
-      } else {
-        list = list.filter((r) => r.status === filters.status);
-      }
-    }
-    if (filters?.clientId) {
-      list = list.filter((r) => r.clientId === filters.clientId);
-    }
-    if (filters?.search) {
-      const q = filters.search.toLowerCase();
-      list = list.filter(
-        (r) => r.rentalNumber.toLowerCase().includes(q) || r.client?.fullName.toLowerCase().includes(q) || r.client?.phone.toLowerCase().includes(q) || r.bike?.inventoryNumber.toLowerCase().includes(q)
-      );
-    }
-    return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-  }
-  static getById(id) {
-    this.refreshOverdueStatuses();
-    const db2 = getDb();
-    const r = db2.rentals.find(
-      (rent) => rent.id === id || rent.rentalNumber?.toLowerCase() === id.toLowerCase()
-    );
-    if (!r) return null;
-    const client = db2.clients.find((c) => c.id === r.clientId);
-    const bike = db2.bikes.find((b) => b.id === r.bikeId);
-    const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
-    const battery = bike?.batteryId ? db2.batteries.find((bt) => bt.id === bike.batteryId) : null;
-    const tariff = db2.tariffs.find((t) => t.id === r.tariffId);
-    const tariffBikeModel = tariff?.bikeModelId ? db2.models.find((m) => m.id === tariff.bikeModelId) : null;
-    const fullTariff = tariff ? { ...tariff, bikeModel: tariffBikeModel } : null;
-    const outfits = db2.outfits.filter((o) => r.outfitIds.includes(o.id));
-    const payments = db2.payments.filter((p) => p.rentalId === r.id);
-    const batteries = db2.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
-    const manager = db2.users.find((u) => u.id === r.managerId);
-    const buyoutPayments = payments.filter((p) => p.type === "RENTAL" || p.type === "BUYOUT");
-    const totalPaidForBuyout = buyoutPayments.reduce((sum, p) => sum + p.amount, 0);
-    const totalBuyoutPrice = r.totalBuyoutPrice || (r.type === "RENT_TO_OWN" ? tariff?.totalBuyoutPrice || tariff?.price || 0 : void 0);
-    const remainingBuyoutAmount = totalBuyoutPrice !== void 0 ? Math.max(0, totalBuyoutPrice - totalPaidForBuyout) : void 0;
-    return {
-      ...r,
-      client,
-      bike: bike ? { ...bike, model: bikeModel, battery } : null,
-      batteries,
-      tariff: fullTariff,
-      outfits,
-      payments,
-      manager,
-      totalPaidForBuyout,
-      totalBuyoutPrice,
-      remainingBuyoutAmount
-    };
-  }
-  static getTariffs() {
-    const db2 = getDb();
-    return db2.tariffs.map((t) => {
-      const bikeModel = t.bikeModelId ? db2.models.find((m) => m.id === t.bikeModelId) : null;
-      return {
-        ...t,
-        bikeModel
-      };
-    });
-  }
-  static createTariff(data) {
-    const db2 = getDb();
-    const newTariff = {
-      id: `trf-${Date.now()}`,
-      name: data.name,
-      type: data.type || "STANDARD",
-      durationDays: data.durationDays,
-      price: data.price,
-      depositRequired: data.depositRequired ?? 0,
-      isActive: data.isActive ?? true,
-      totalBuyoutPrice: data.totalBuyoutPrice !== void 0 ? Number(data.totalBuyoutPrice) : void 0,
-      paymentIntervalDays: data.paymentIntervalDays !== void 0 ? Number(data.paymentIntervalDays) : void 0,
-      installmentPayment: data.installmentPayment !== void 0 ? Number(data.installmentPayment) : void 0,
-      bikeModelId: data.bikeModelId || null,
-      includedBatteries: data.includedBatteries || []
-    };
-    db2.tariffs.push(newTariff);
-    const bikeModel = newTariff.bikeModelId ? db2.models.find((m) => m.id === newTariff.bikeModelId) : null;
-    return { ...newTariff, bikeModel };
-  }
-  static updateTariff(id, data) {
-    const db2 = getDb();
-    const tariff = db2.tariffs.find((t) => t.id === id);
-    if (!tariff) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    Object.assign(tariff, data);
-    const bikeModel = tariff.bikeModelId ? db2.models.find((m) => m.id === tariff.bikeModelId) : null;
-    return { ...tariff, bikeModel };
-  }
-  static deleteTariff(id) {
-    const db2 = getDb();
-    const inUse = db2.rentals.some(
-      (r) => r.tariffId === id && (r.status === "ACTIVE" || r.status === "OVERDUE")
-    );
-    if (inUse) {
-      throw new Error(
-        "\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0448\u0430\u0431\u043B\u043E\u043D, \u0442\u0430\u043A \u043A\u0430\u043A \u043F\u043E \u043D\u0435\u043C\u0443 \u0435\u0441\u0442\u044C \u0430\u043A\u0442\u0438\u0432\u043D\u044B\u0435 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u044B \u0430\u0440\u0435\u043D\u0434\u044B. \u0412\u044B \u043C\u043E\u0436\u0435\u0442\u0435 \u0434\u0435\u0430\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0435\u0433\u043E."
-      );
-    }
-    const idx = db2.tariffs.findIndex((t) => t.id === id);
-    if (idx === -1) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    db2.tariffs.splice(idx, 1);
-    return { success: true, message: "\u0428\u0430\u0431\u043B\u043E\u043D \u0442\u0430\u0440\u0438\u0444\u0430 \u0443\u0434\u0430\u043B\u0435\u043D" };
-  }
-  static create(data) {
-    return withDbTransaction(() => this.createInternal(data));
-  }
-  static createInternal(data) {
-    const db2 = getDb();
-    const client = db2.clients.find((c) => c.id === data.clientId);
-    if (!client) throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    if (client.status === "BLACKLIST") {
-      throw new Error(`\u041A\u043B\u0438\u0435\u043D\u0442 \u0432 \u0427\u0435\u0440\u043D\u043E\u043C \u0421\u043F\u0438\u0441\u043A\u0435! \u041F\u0440\u0438\u0447\u0438\u043D\u0430: ${client.blackListReason || "\u0437\u0430\u043F\u0440\u0435\u0442 \u0430\u0440\u0435\u043D\u0434\u044B"}`);
-    }
-    if (data.registrationAddress !== void 0) client.registrationAddress = data.registrationAddress?.trim() || null;
-    if (data.courierService) client.courierService = data.courierService;
-    if (data.passportSerial) client.passportSerial = data.passportSerial;
-    if (data.passportNumber) client.passportNumber = data.passportNumber;
-    if (data.citizenship) client.citizenship = data.citizenship;
-    if (data.patentNumber) client.patentNumber = data.patentNumber;
-    if (data.telegram && !client.telegram) client.telegram = data.telegram;
-    client.clientType = "COURIER";
-    const bike = db2.bikes.find((b) => b.id === data.bikeId);
-    if (!bike) throw new Error("\u0411\u0430\u0439\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    if (bike.status !== "AVAILABLE") {
-      throw new Error(`\u0411\u0430\u0439\u043A ${bike.inventoryNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438 (\u0442\u0435\u043A\u0443\u0449\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441: ${bike.status})`);
-    }
-    if (activeRentalForBike(bike.id)) throw new Error("\u0411\u0430\u0439\u043A \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
-    const tariff = db2.tariffs.find((t) => t.id === data.tariffId);
-    if (!tariff) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    if (!tariff.isActive) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D");
-    if (tariff.bikeModelId && tariff.bikeModelId !== bike.modelId) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043F\u043E\u0434\u0445\u043E\u0434\u0438\u0442 \u0434\u043B\u044F \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439 \u043C\u043E\u0434\u0435\u043B\u0438");
-    const outfits = db2.outfits.filter((o) => data.outfitIds.includes(o.id));
-    if (outfits.length !== new Set(data.outfitIds).size) throw new Error("\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u0430\u044F \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
-    if (outfits.some((o) => db2.rentals.some((r) => isOpenRental(r) && r.outfitIds.includes(o.id)))) {
-      throw new Error("\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0430 \u0437\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
-    }
-    const unavailableOutfit = outfits.find((o) => o.status !== "IN_STOCK");
-    if (unavailableOutfit) {
-      throw new Error(`\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 "${unavailableOutfit.name}" \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u043D\u0430 \u0441\u043A\u043B\u0430\u0434\u0435 (\u0441\u0442\u0430\u0442\u0443\u0441: ${unavailableOutfit.status})`);
-    }
-    const requestedBatteryIds = [.../* @__PURE__ */ new Set([...data.batteryIds || [], ...bike.batteryId ? [bike.batteryId] : []])];
-    const batteries = db2.batteries.filter((b) => requestedBatteryIds.includes(b.id));
-    if (batteries.length !== requestedBatteryIds.length) throw new Error("\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    for (const b of batteries) {
-      if (activeRentalForBattery(b.id)) throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${b.serialNumber} \u0443\u0436\u0435 \u0432\u044B\u0434\u0430\u043D \u043F\u043E \u0434\u0440\u0443\u0433\u043E\u043C\u0443 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443`);
-      if (b.status === "SOLD" || b.status === "DECOMMISSIONED" || b.status === "IN_MAINTENANCE") {
-        throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${b.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438`);
-      }
-      if (b.status !== "AVAILABLE" && b.installedBikeId !== bike.id && b.id !== bike.batteryId) {
-        throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${b.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438 (\u0442\u0435\u043A\u0443\u0449\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441: ${b.status})`);
-      }
-    }
-    const isRentToOwn = tariff.type === "RENT_TO_OWN";
-    const paymentIntervalDays = data.paymentIntervalDays ?? tariff.paymentIntervalDays ?? (isRentToOwn ? 7 : tariff.durationDays);
-    const model = db2.models.find((item) => item.id === bike.modelId);
-    const fallbackKitPrice = (model?.baseBuyoutPrice || model?.salePrice || 6e4) + batteries.reduce((sum, battery) => sum + (battery.salePrice || db2.batteryModels.find((item) => item.id === battery.modelId)?.salePrice || 25e3), 0);
-    const totalBuyoutPrice = data.totalBuyoutPrice ?? tariff.totalBuyoutPrice ?? (isRentToOwn ? fallbackKitPrice : void 0);
-    const installmentPayment = data.installmentPayment ?? tariff.installmentPayment ?? (isRentToOwn ? tariff.price : void 0);
-    const discount = ClientRepository.computeClientLoyalty(client).loyaltyTier.discountRentalPercent;
-    const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? installmentPayment ?? tariff.price : Math.round(tariff.price * (1 - discount / 100) * 100) / 100);
-    const now = getSystemTime();
-    let startDate = now;
-    if (data.startDate) {
-      const parsedStart = new Date(data.startDate);
-      if (!isNaN(parsedStart.getTime())) {
-        startDate = parsedStart;
-      }
-    }
-    const effectiveDurationDays = data.durationDays && data.durationDays > 0 ? data.durationDays : tariff.durationDays;
-    const nextPaymentDue = isRentToOwn ? new Date(startDate.getTime() + paymentIntervalDays * 864e5) : new Date(startDate.getTime() + effectiveDurationDays * 864e5);
-    const expiresAt = new Date(startDate.getTime() + effectiveDurationDays * 864e5);
-    const rentalNumber = data.rentalNumber && data.rentalNumber.trim() ? data.rentalNumber.trim() : nextNumber(`RNT-${startDate.getFullYear()}`, db2.rentals.map((r) => r.rentalNumber));
-    if (db2.rentals.some((r) => r.rentalNumber.toLowerCase() === rentalNumber.toLowerCase())) throw new Error("\u041D\u043E\u043C\u0435\u0440 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442");
-    const depositAmount = data.customDeposit !== void 0 ? data.customDeposit : tariff.depositRequired;
-    const rental = {
-      id: `rnt-${Date.now()}`,
-      rentalNumber,
-      clientId: data.clientId,
-      bikeId: data.bikeId,
-      tariffId: data.tariffId,
-      managerId: getCurrentUser()?.id || data.managerId || db2.users.find((u) => u.role === "MANAGER" || u.role === "ADMIN")?.id || db2.users[0]?.id || "usr-admin",
-      status: nextPaymentDue < now ? "OVERDUE" : "ACTIVE",
-      type: tariff.type,
-      startedAt: startDate.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-      nextPaymentDue: nextPaymentDue.toISOString(),
-      depositAmount,
-      depositRefunded: false,
-      notes: data.notes || null,
-      outfitIds: data.outfitIds,
-      batteryIds: requestedBatteryIds,
-      totalBuyoutPrice: totalBuyoutPrice !== void 0 ? Number(totalBuyoutPrice) : void 0,
-      paymentIntervalDays: paymentIntervalDays !== void 0 ? Number(paymentIntervalDays) : void 0,
-      installmentPayment: installmentPayment !== void 0 ? Number(installmentPayment) : void 0,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString()
-    };
-    db2.rentals.push(rental);
-    if (!bike.batteryId && batteries.length > 0) {
-      const primaryBattery = batteries[0];
-      bike.batteryId = primaryBattery.id;
-      primaryBattery.status = "INSTALLED";
-      primaryBattery.installedBikeId = bike.id;
-      primaryBattery.updatedAt = now.toISOString();
-    }
-    for (const b of batteries) {
-      if (b.id !== bike.batteryId) {
-        b.status = "ISSUED_SPARE";
-        b.installedBikeId = null;
-        b.issuedBikeId = bike.id;
-        b.updatedAt = now.toISOString();
-      }
-    }
-    bike.status = "RENTED";
-    bike.currentLocation = `\u0412 \u0430\u0440\u0435\u043D\u0434\u0435 \u0443 ${client.fullName}`;
-    bike.updatedAt = now.toISOString();
-    outfits.forEach((o) => {
-      o.status = "ISSUED";
-    });
-    if (firstPaymentAmount > 0) {
-      db2.payments.push({
-        id: `pay-${Date.now()}-1`,
-        rentalId: rental.id,
-        clientId: rental.clientId,
-        cashierId: getCurrentUser()?.id || rental.managerId,
-        type: isRentToOwn ? "BUYOUT" : "RENTAL",
-        amount: firstPaymentAmount,
-        method: data.paymentMethod,
-        description: isRentToOwn ? `\u041F\u0435\u0440\u0432\u043E\u043D\u0430\u0447\u0430\u043B\u044C\u043D\u044B\u0439 \u0432\u0437\u043D\u043E\u0441 \u043F\u043E \u0432\u044B\u043A\u0443\u043F\u0443 \u0442\u0430\u0440\u0438\u0444\u0430 "${tariff.name}" \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}` : `\u041E\u043F\u043B\u0430\u0442\u0430 \u0442\u0430\u0440\u0438\u0444\u0430 "${tariff.name}" \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`,
-        createdAt: startDate.toISOString()
-      });
-    }
-    if (depositAmount > 0) {
-      db2.payments.push({
-        id: `pay-${Date.now()}-2`,
-        rentalId: rental.id,
-        clientId: rental.clientId,
-        type: "DEPOSIT",
-        cashierId: getCurrentUser()?.id || rental.managerId,
-        amount: depositAmount,
-        method: data.paymentMethod,
-        description: `\u041E\u0431\u0435\u0441\u043F\u0435\u0447\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u0437\u0430\u043B\u043E\u0433 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`,
-        createdAt: startDate.toISOString()
-      });
-    }
-    DocumentRepository.captureRental(rental.id);
-    if (isRentToOwn && totalBuyoutPrice && firstPaymentAmount >= totalBuyoutPrice) this.finalizeBuyout(rental.id);
-    return this.getById(rental.id);
-  }
-  static renew(id, data) {
-    return withDbTransaction(() => {
-      DocumentRepository.captureRental(id, true);
-      return this.renewInternal(id, data);
-    });
-  }
-  static renewInternal(id, data) {
-    const db2 = getDb();
-    const rental = db2.rentals.find((r) => r.id === id);
-    if (!rental) throw new Error("\u0410\u0440\u0435\u043D\u0434\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
-    if (data.externalReference && db2.payments.some((p) => p.externalReference === data.externalReference)) return this.getById(id);
-    if (rental.status === "CLOSED" || rental.status === "BOUGHT_OUT") {
-      throw new Error("\u041D\u0435\u043B\u044C\u0437\u044F \u043F\u0440\u043E\u0434\u043B\u0438\u0442\u044C \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u043D\u044B\u0439 \u0438\u043B\u0438 \u0432\u044B\u043A\u0443\u043F\u043B\u0435\u043D\u043D\u044B\u0439 \u0434\u043E\u0433\u043E\u0432\u043E\u0440");
-    }
-    const tariff = db2.tariffs.find((t) => t.id === rental.tariffId);
-    const isRentToOwn = rental.type === "RENT_TO_OWN";
-    const durationDays = data.durationDays || rental.paymentIntervalDays || tariff?.paymentIntervalDays || tariff?.durationDays || 7;
-    const paid = db2.payments.filter((p) => p.rentalId === id && (p.type === "RENTAL" || p.type === "BUYOUT")).reduce((sum, p) => sum + p.amount, 0);
-    const target = rental.totalBuyoutPrice ?? tariff?.totalBuyoutPrice ?? tariff?.price ?? 0;
-    const defaultAmount = isRentToOwn ? Math.min(rental.installmentPayment ?? tariff?.installmentPayment ?? tariff?.price ?? 6e3, Math.max(0, target - paid)) : tariff?.price ?? 6e3;
-    const amount = data.amount ?? defaultAmount;
-    if (!Number.isFinite(amount) || amount <= 0) throw new Error("\u0421\u0443\u043C\u043C\u0430 \u043F\u043B\u0430\u0442\u0435\u0436\u0430 \u0434\u043E\u043B\u0436\u043D\u0430 \u0431\u044B\u0442\u044C \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439");
-    if (data.isBuyoutFinal && (!isRentToOwn || paid + amount < target)) throw new Error("\u0414\u043B\u044F \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u0432\u044B\u043A\u0443\u043F\u0430 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E \u043F\u043E\u0433\u0430\u0441\u0438\u0442\u044C \u043E\u0441\u0442\u0430\u0442\u043E\u043A \u0434\u043E\u043B\u0433\u0430");
-    const now = getSystemTime();
-    const paymentDate = data.createdAt ? new Date(data.createdAt) : now;
-    if (isNaN(paymentDate.getTime())) throw new Error("\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u0430\u044F \u0434\u0430\u0442\u0430 \u043F\u043B\u0430\u0442\u0435\u0436\u0430");
-    const currentDue = new Date(rental.nextPaymentDue || rental.expiresAt);
-    const baseDate = currentDue > paymentDate ? currentDue : paymentDate;
-    const newNextDue = new Date(baseDate.getTime() + durationDays * 864e5);
-    const paymentType = isRentToOwn ? "BUYOUT" : "RENTAL";
-    db2.payments.push({
-      id: `pay-${Date.now()}`,
-      rentalId: rental.id,
-      cashierId: getCurrentUser()?.id || rental.managerId,
-      externalReference: data.externalReference,
-      clientId: rental.clientId,
-      type: paymentType,
-      amount,
-      method: data.method,
-      description: isRentToOwn ? data.isBuyoutFinal ? `\u0424\u0438\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0432\u044B\u043A\u0443\u043F\u043D\u043E\u0439 \u043F\u043B\u0430\u0442\u0451\u0436 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}` : `\u041E\u0447\u0435\u0440\u0435\u0434\u043D\u043E\u0439 \u043F\u043B\u0430\u0442\u0451\u0436 \u043F\u043E \u0432\u044B\u043A\u0443\u043F\u0443 (${durationDays} \u0434\u043D.) \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}` : `\u041F\u0440\u043E\u0434\u043B\u0435\u043D\u0438\u0435 \u0430\u0440\u0435\u043D\u0434\u044B \u043D\u0430 ${durationDays} \u0434\u043D. \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`,
-      createdAt: paymentDate.toISOString()
-    });
-    const allBuyoutPayments = db2.payments.filter((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT"));
-    const totalPaid = allBuyoutPayments.reduce((sum, p) => sum + p.amount, 0);
-    const targetPrice = rental.totalBuyoutPrice || tariff?.totalBuyoutPrice || tariff?.price || 0;
-    const isFullyPaid = isRentToOwn && targetPrice > 0 && totalPaid >= targetPrice;
-    if (data.isBuyoutFinal || isFullyPaid) {
-      this.finalizeBuyout(rental.id);
-      rental.updatedAt = now.toISOString();
-      if (data.notes) {
-        rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u0412\u044B\u043A\u0443\u043F ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
-      } else {
-        rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u0412\u044B\u043A\u0443\u043F \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D ${now.toLocaleDateString("ru-RU")}]: \u041E\u043F\u043B\u0430\u0447\u0435\u043D\u043E ${totalPaid} \u0438\u0437 ${targetPrice} \u20BD`;
-      }
-      const bike = db2.bikes.find((b) => b.id === rental.bikeId);
-      const client = db2.clients.find((c) => c.id === rental.clientId);
-      if (bike) {
-        bike.status = "BOUGHT_OUT";
-        bike.currentLocation = `\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u043C ${client?.fullName || ""} (\u0434\u043E\u0433\u043E\u0432\u043E\u0440 ${rental.rentalNumber})`;
-        bike.updatedAt = now.toISOString();
-      }
-      return this.getById(rental.id);
-    }
-    rental.nextPaymentDue = newNextDue.toISOString();
-    if (!isRentToOwn) {
-      rental.expiresAt = newNextDue.toISOString();
-    }
-    rental.status = newNextDue < now ? "OVERDUE" : "ACTIVE";
-    rental.updatedAt = now.toISOString();
-    if (data.notes) {
-      rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u041F\u0440\u043E\u0434\u043B\u0435\u043D\u0438\u0435 ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
-    }
-    return this.getById(rental.id);
-  }
-  static finalizeBuyout(id) {
-    const db2 = getDb();
-    const rental = db2.rentals.find((r) => r.id === id);
-    if (!rental || rental.type !== "RENT_TO_OWN") return;
-    const now = getSystemTime().toISOString();
-    rental.status = "BOUGHT_OUT";
-    rental.closedAt = now;
-    rental.updatedAt = now;
-    const bike = db2.bikes.find((b) => b.id === rental.bikeId);
-    if (bike) {
-      bike.status = "BOUGHT_OUT";
-      bike.currentLocation = `\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`;
-      bike.updatedAt = now;
-    }
-    for (const battery of db2.batteries) {
-      if (rental.batteryIds?.includes(battery.id) || battery.id === bike?.batteryId || battery.installedBikeId === rental.bikeId || battery.issuedBikeId === rental.bikeId) {
-        battery.status = "SOLD";
-        battery.issuedBikeId = null;
-        battery.notes = `\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D \u0432 \u0441\u043E\u0441\u0442\u0430\u0432\u0435 \u043A\u043E\u043C\u043F\u043B\u0435\u043A\u0442\u0430 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`;
-        battery.updatedAt = now;
-      }
-    }
-    DocumentRepository.capture("BUYOUT_ACT", id);
-  }
-  static close(id, data) {
-    return withDbTransaction(() => {
-      DocumentRepository.captureRental(id, true);
-      return this.closeInternal(id, data);
-    });
-  }
-  static closeInternal(id, data) {
-    const db2 = getDb();
-    const rental = db2.rentals.find((r) => r.id === id);
-    if (!rental) throw new Error("\u0410\u0440\u0435\u043D\u0434\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
-    const isBoughtOut = rental.status === "BOUGHT_OUT";
-    if (rental.status === "CLOSED" || isBoughtOut && rental.depositRefunded) throw new Error("\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D \u0438 \u0440\u0430\u0441\u0447\u0451\u0442\u044B \u0437\u0430\u043A\u0440\u044B\u0442\u044B");
-    if (new Set(data.outfitReturns.map((o) => o.outfitId)).size !== data.outfitReturns.length || data.outfitReturns.some((o) => !rental.outfitIds.includes(o.outfitId))) {
-      throw new Error("\u0412 \u0432\u043E\u0437\u0432\u0440\u0430\u0442\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u0430 \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u0430\u044F \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u0438\u043B\u0438 \u043F\u0440\u0435\u0434\u043C\u0435\u0442 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430");
-    }
-    const bike = db2.bikes.find((b) => b.id === rental.bikeId);
-    const client = db2.clients.find((c) => c.id === rental.clientId);
-    const now = getSystemTime();
-    let repairOrderCreated = null;
-    if (bike && !isBoughtOut) {
-      const existingRepair = db2.repairs.find((repair) => repair.bikeId === bike.id && repair.status !== "COMPLETED" && repair.status !== "CANCELLED");
-      if (data.bikeMileageKm && data.bikeMileageKm > bike.mileageKm) {
-        bike.mileageKm = data.bikeMileageKm;
-      }
-      if (data.bikeCondition === "NEEDS_REPAIR" || existingRepair) {
-        bike.status = "IN_MAINTENANCE";
-        bike.currentLocation = "\u041C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0430\u044F \u0421\u0422\u041E (\u0432\u043E\u0437\u0432\u0440\u0430\u0442 \u0441 \u0434\u0435\u0444\u0435\u043A\u0442\u043E\u043C)";
-        bike.note = data.defectDescription || "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u044B \u0434\u0435\u0444\u0435\u043A\u0442\u044B \u043F\u0440\u0438 \u043F\u0440\u0438\u0435\u043C\u043A\u0435 \u0438\u0437 \u0430\u0440\u0435\u043D\u0434\u044B";
-        const orderNumber = nextNumber(`REP-${now.getFullYear()}`, db2.repairs.map((r) => r.orderNumber));
-        repairOrderCreated = {
-          id: `rep-${Date.now()}`,
-          orderNumber,
-          bikeId: bike.id,
-          clientId: rental.clientId,
-          clientName: client?.fullName || null,
-          clientPhone: client?.phone || null,
-          itemType: "BIKE",
-          mechanicId: getCurrentUser()?.id || db2.users.find((u) => u.role === "MECHANIC")?.id || db2.users[0]?.id || "usr-bxleth",
-          status: "DIAGNOSTICS",
-          faultType: data.faultType || "CLIENT_FAULT",
-          description: `\u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u043F\u043E \u0430\u0440\u0435\u043D\u0434\u0435 ${rental.rentalNumber}: ${data.defectDescription || "\u0414\u0435\u0444\u0435\u043A\u0442\u044B \u043F\u0440\u0438 \u0441\u0434\u0430\u0447\u0435"}`,
-          laborCost: 0,
-          partsCost: 0,
-          totalCost: 0,
-          createdAt: now.toISOString(),
-          completedAt: null,
-          parts: []
-        };
-        if (existingRepair) repairOrderCreated = existingRepair;
-        else {
-          db2.repairs.push(repairOrderCreated);
-          DocumentRepository.capture("REPAIR_ORDER", repairOrderCreated.id);
-        }
-      } else {
-        bike.status = "AVAILABLE";
-        bike.currentLocation = "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F \u0431\u0430\u0437\u0430 (\u043C. \u0414\u043C\u0438\u0442\u0440\u043E\u0432\u0441\u043A\u0430\u044F)";
-      }
-      bike.updatedAt = now.toISOString();
-    }
-    let totalDeduction = 0;
-    const returns = rental.outfitIds.map((outfitId) => data.outfitReturns.find((item) => item.outfitId === outfitId) || { outfitId, condition: "OK", deductionAmount: 0 });
-    returns.forEach((item) => {
-      const outfit = db2.outfits.find((o) => o.id === item.outfitId);
-      if (outfit) {
-        if (item.condition === "OK") {
-          outfit.status = "IN_STOCK";
-        } else if (item.condition === "DAMAGED") {
-          outfit.status = "DAMAGED";
-          totalDeduction += item.deductionAmount ?? 500;
-        } else if (item.condition === "LOST") {
-          outfit.status = "LOST";
-          totalDeduction += item.deductionAmount ?? outfit.depositValue;
-        }
-      }
-    });
-    const initialDeposit = rental.depositRefunded ? 0 : rental.depositAmount || 0;
-    const netRefund = Math.max(0, initialDeposit - totalDeduction);
-    if (netRefund > 0) {
-      db2.payments.push({
-        id: `pay-${Date.now()}-refund`,
-        rentalId: rental.id,
-        clientId: rental.clientId,
-        type: "DEPOSIT_REFUND",
-        cashierId: getCurrentUser()?.id || rental.managerId,
-        amount: netRefund,
-        method: data.refundMethod || "CASH",
-        description: `\u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u0437\u0430\u043B\u043E\u0433\u0430 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber} (\u0443\u0434\u0435\u0440\u0436\u0430\u043D\u043E ${totalDeduction} \u0440\u0443\u0431.)`,
-        createdAt: now.toISOString()
-      });
-      rental.depositRefunded = true;
-    }
-    rental.status = isBoughtOut ? "BOUGHT_OUT" : "CLOSED";
-    rental.closedAt = rental.closedAt || now.toISOString();
-    rental.depositRefunded = true;
-    rental.updatedAt = now.toISOString();
-    if (data.notes) {
-      rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u0417\u0430\u043A\u0440\u044B\u0442\u0438\u0435 ${now.toLocaleDateString("ru-RU")}]: ${data.notes}`;
-    }
-    if (!isBoughtOut && rental.batteryIds && rental.batteryIds.length > 0) {
-      rental.batteryIds.forEach((bId) => {
-        const bat = db2.batteries.find((b) => b.id === bId);
-        if (bat && bat.status === "ISSUED_SPARE") {
-          bat.status = "AVAILABLE";
-          bat.issuedBikeId = null;
-          bat.updatedAt = now.toISOString();
-        }
-      });
-    }
-    DocumentRepository.capture("RETURN_ACT", id, false, { depositReturned: netRefund, totalDeduction, defectDescription: data.defectDescription, outfitReturns: returns });
-    saveDb(true);
-    return {
-      rental: this.getById(rental.id),
-      repairOrder: repairOrderCreated,
-      depositReturned: netRefund,
-      totalDeduction
-    };
-  }
-  static delete(id) {
-    const db2 = getDb();
-    const index = db2.rentals.findIndex((r) => r.id === id);
-    if (index === -1) {
-      throw new Error("\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
-    }
-    const rental = db2.rentals[index];
-    if (rental.status === "ACTIVE" || rental.status === "OVERDUE") {
-      throw new Error(
-        `\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0430\u043A\u0442\u0438\u0432\u043D\u044B\u0439 \u0438\u043B\u0438 \u043F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u043D\u044B\u0439 \u0434\u043E\u0433\u043E\u0432\u043E\u0440 (${rental.rentalNumber}). \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u0430\u0440\u0435\u043D\u0434\u0443 \u0438 \u043E\u0444\u043E\u0440\u043C\u0438\u0442\u0435 \u0432\u043E\u0437\u0432\u0440\u0430\u0442 \u0442\u0435\u0445\u043D\u0438\u043A\u0438.`
-      );
-    }
-    const [removed] = db2.rentals.splice(index, 1);
-    db2.payments = db2.payments.filter((p) => p.rentalId !== id);
-    saveDb(true);
-    return removed;
-  }
-};
-
-// src/services/rental.service.ts
-var RentalService = class {
-  static getAllRentals(filters) {
-    return RentalRepository.getAll(filters);
-  }
-  static getRentalById(id) {
-    const rental = RentalRepository.getById(id);
-    if (!rental) {
-      throw new Error(`\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
-    }
-    return rental;
-  }
-  static getTariffs() {
-    return RentalRepository.getTariffs();
-  }
-  static createTariff(data) {
-    return RentalRepository.createTariff(data);
-  }
-  static updateTariff(id, data) {
-    return RentalRepository.updateTariff(id, data);
-  }
-  static deleteTariff(id) {
-    return RentalRepository.deleteTariff(id);
-  }
-  static createRental(data) {
-    return RentalRepository.create(data);
-  }
-  static renewRental(id, data) {
-    return RentalRepository.renew(id, data);
-  }
-  static closeRental(id, data) {
-    return RentalRepository.close(id, data);
-  }
-  static deleteRental(id) {
-    return RentalRepository.delete(id);
-  }
-};
-
-// src/controllers/rental.controller.ts
-var RentalController = class {
-  static getAll(req, res) {
-    try {
-      const { status, search, clientId } = req.query;
-      const rentals = RentalService.getAllRentals({
-        status,
-        search,
-        clientId
-      });
-      return res.json(rentals);
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-  static getById(req, res) {
-    try {
-      const rental = RentalService.getRentalById(req.params.id);
-      return res.json(rental);
-    } catch (err) {
-      return res.status(404).json({ error: err.message });
-    }
-  }
-  static getTariffs(req, res) {
-    try {
-      const tariffs = RentalService.getTariffs();
-      return res.json(tariffs);
-    } catch (err) {
-      return res.status(500).json({ error: err.message });
-    }
-  }
-  static createTariff(req, res) {
-    try {
-      const parsed = TariffCreateDto.parse(req.body);
-      const tariff = RentalService.createTariff(parsed);
-      return res.status(201).json(tariff);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static updateTariff(req, res) {
-    try {
-      const parsed = TariffUpdateDto.parse(req.body);
-      const tariff = RentalService.updateTariff(req.params.id, parsed);
-      return res.json(tariff);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static deleteTariff(req, res) {
-    try {
-      const result = RentalService.deleteTariff(req.params.id);
-      return res.json(result);
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  }
-  static create(req, res) {
-    try {
-      const parsed = RentalCreateDto.parse(req.body);
-      const rental = RentalService.createRental(parsed);
-      return res.status(201).json(rental);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static renew(req, res) {
-    try {
-      const parsed = RentalRenewDto.parse(req.body);
-      const rental = RentalService.renewRental(req.params.id, parsed);
-      return res.json(rental);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static close(req, res) {
-    try {
-      const parsed = RentalCloseDto.parse(req.body);
-      const result = RentalService.closeRental(req.params.id, parsed);
-      return res.json(result);
-    } catch (err) {
-      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
-    }
-  }
-  static delete(req, res) {
-    try {
-      const removed = RentalService.deleteRental(req.params.id);
-      return res.json({
-        success: true,
-        message: `\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B ${removed.rentalNumber} \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0443\u0434\u0430\u043B\u0435\u043D`,
-        data: removed
-      });
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-  }
-};
+// src/context/userContext.ts
+var import_async_hooks = require("async_hooks");
+var userStorage = new import_async_hooks.AsyncLocalStorage();
+function getCurrentUser() {
+  return userStorage.getStore();
+}
 
 // src/repositories/history.repository.ts
 var HistoryRepository = class {
@@ -66121,6 +64866,1754 @@ var HistoryRepository = class {
   }
 };
 
+// src/services/assistant.service.ts
+var import_facts = __toESM(require_facts());
+var hash = (value) => (0, import_node_crypto4.createHash)("sha256").update(value).digest("hex");
+var now = () => (/* @__PURE__ */ new Date()).toISOString();
+function fail(message, status = 400) {
+  throw Object.assign(new Error(message), { status });
+}
+var state = () => getDb().assistant;
+function userById(id) {
+  const user2 = getDb().users.find((u) => u.id === id && u.isActive !== false);
+  if (!user2) fail("\u0414\u043E\u0441\u0442\u0443\u043F \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u0430 \u043E\u0442\u043E\u0437\u0432\u0430\u043D", 403);
+  return user2;
+}
+function allowed(userId, module2, edit = false) {
+  const user2 = userById(userId);
+  const level = getDb().accessLevels.find((l) => l.id === (user2.accessLevelId || (user2.role === "ADMIN" ? "lvl-owner" : user2.role === "MECHANIC" ? "lvl-master" : "lvl-manager")));
+  const permission = level?.permissions[module2];
+  return permission?.visible === true && (!edit || permission.canEdit === true);
+}
+function requireEdit(userId, module2) {
+  if (!allowed(userId, module2, true)) fail(`\u041D\u0435\u0442 \u043F\u0440\u0430\u0432 \u043D\u0430 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u0440\u0430\u0437\u0434\u0435\u043B\u0430 \xAB${module2}\xBB`, 403);
+}
+function ownedJob(userId, id) {
+  const job = state().jobs.find((j) => j.id === id && j.userId === userId);
+  if (!job) fail("\u0417\u0430\u043F\u0440\u043E\u0441 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D", 404);
+  return job;
+}
+function clientData(a) {
+  return Object.fromEntries(["fullName", "phone", "clientType", "courierService", "registrationAddress", "passportSerial", "passportNumber", "citizenship", "migrationCard", "patentNumber"].filter((k) => a[k] != null).map((k) => [k, a[k]]));
+}
+function validatePlan(userId, plan, sourceText) {
+  const db2 = getDb();
+  const preview = [], warnings = [], baseline = [];
+  const phones = /* @__PURE__ */ new Set(), inventory = /* @__PURE__ */ new Set(), serials = /* @__PURE__ */ new Set(), edited = /* @__PURE__ */ new Set();
+  const source = (0, import_facts.intent)(sourceText);
+  let total = 0;
+  for (const a of plan.actions) {
+    if (a.kind === "create_client" || a.kind === "update_client") {
+      requireEdit(userId, "clients");
+      const data = clientData(a);
+      const existing = a.kind === "update_client" ? db2.clients.find((c) => c.id === a.clientId) : void 0;
+      if (a.kind === "update_client" && !existing) fail("\u041A\u043B\u0438\u0435\u043D\u0442 \u0434\u043B\u044F \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D. \u0423\u0442\u043E\u0447\u043D\u0438\u0442\u0435 \u0438\u043C\u044F \u0438\u043B\u0438 \u0442\u0435\u043B\u0435\u0444\u043E\u043D.");
+      if (existing && (!(0, import_facts.isUpdate)(sourceText) || !(0, import_facts.label)(sourceText).includes((0, import_facts.label)(existing.fullName)) && !(0, import_facts.phoneInText)(existing.phone, sourceText))) fail("\u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0435 \u044D\u0442\u043E\u0433\u043E \u043A\u043B\u0438\u0435\u043D\u0442\u0430 \u043D\u0435 \u0437\u0430\u043F\u0440\u043E\u0448\u0435\u043D\u043E. \u0423\u0442\u043E\u0447\u043D\u0438\u0442\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u0438 \u043A\u043B\u0438\u0435\u043D\u0442\u0430 \u043F\u043E \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0443.");
+      if (existing && edited.has(existing.id)) fail("\u041E\u0431\u044A\u0435\u0434\u0438\u043D\u0438\u0442\u0435 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043E\u0434\u043D\u043E\u0433\u043E \u043A\u043B\u0438\u0435\u043D\u0442\u0430 \u0432 \u043E\u0434\u043D\u043E \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435");
+      if (existing) edited.add(existing.id);
+      if (existing) {
+        ClientUpdateDto.parse(data);
+        if (!Object.keys(data).length) fail("\u041D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u044B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043A\u043B\u0438\u0435\u043D\u0442\u0430");
+      } else {
+        if (!a.clientType) fail("\u0423\u0442\u043E\u0447\u043D\u0438\u0442\u0435: \u043D\u043E\u0432\u044B\u0439 \u043A\u043B\u0438\u0435\u043D\u0442 \u2014 \u043A\u0443\u0440\u044C\u0435\u0440 \u0438\u043B\u0438 \u043F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C / \u043A\u043B\u0438\u0435\u043D\u0442 \u0421\u0422\u041E?");
+        ClientCreateDto.parse(data);
+        if (a.clientType === "COURIER" && a.citizenship === "\u0421\u041D\u0413" && (!a.migrationCard || !a.patentNumber)) fail("\u0414\u043B\u044F \u043D\u043E\u0432\u043E\u0433\u043E \u043A\u0443\u0440\u044C\u0435\u0440\u0430 \u0421\u041D\u0413 \u043D\u0443\u0436\u043D\u044B \u043C\u0438\u0433\u0440\u0430\u0446\u0438\u043E\u043D\u043D\u0430\u044F \u043A\u0430\u0440\u0442\u0430 \u0438 \u043F\u0430\u0442\u0435\u043D\u0442 / \u0441\u0442\u0430\u0442\u0443\u0441 \u0415\u0410\u042D\u0421. \u0414\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u043E\u0441; \u0432\u044B\u043C\u044B\u0448\u043B\u0435\u043D\u043D\u044B\u0435 \u0434\u043E\u043A\u0443\u043C\u0435\u043D\u0442\u044B \u043D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044E\u0442\u0441\u044F.");
+      }
+      const phone = normalizePhone(String(data.phone || existing?.phone || ""));
+      if (phone.length < 10) fail("\u0414\u043B\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u043A\u043B\u0438\u0435\u043D\u0442\u0430 \u043D\u0443\u0436\u0435\u043D \u043D\u0430\u0441\u0442\u043E\u044F\u0449\u0438\u0439 \u0442\u0435\u043B\u0435\u0444\u043E\u043D. \u0414\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435 \u0437\u0430\u043F\u0440\u043E\u0441.");
+      if (data.phone) {
+        if (!(0, import_facts.phoneInText)(String(data.phone), sourceText)) fail("\u041F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u043D\u044B\u0439 \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u043E\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u0432 \u043A\u043E\u043C\u0430\u043D\u0434\u0435 \u0438\u043B\u0438 \u043D\u0435\u043F\u043E\u043B\u043D\u044B\u0439. \u0414\u043B\u044F +7/8 \u043D\u0443\u0436\u043D\u043E 11 \u0446\u0438\u0444\u0440; \u043D\u0435\u0434\u043E\u0441\u0442\u0430\u044E\u0449\u0438\u0435 \u0446\u0438\u0444\u0440\u044B \u043D\u0435 \u0434\u043E\u043F\u0438\u0441\u044B\u0432\u0430\u044E\u0442\u0441\u044F.");
+      }
+      if (phones.has(phone) || db2.clients.some((c) => c.id !== existing?.id && normalizePhone(c.phone) === phone)) fail("\u041A\u043B\u0438\u0435\u043D\u0442 \u0441 \u0442\u0430\u043A\u0438\u043C \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u043E\u043C \u0443\u0436\u0435 \u0435\u0441\u0442\u044C. \u041F\u043E\u043F\u0440\u043E\u0441\u0438\u0442\u0435 \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044E\u0449\u0443\u044E \u0437\u0430\u043F\u0438\u0441\u044C.");
+      phones.add(phone);
+      const name = String(data.fullName || existing?.fullName);
+      preview.push(`${existing ? "\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C" : "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C"} \u043A\u043B\u0438\u0435\u043D\u0442\u0430: ${name}, ${data.phone || existing?.phone}${data.courierService ? ", " + data.courierService : ""}${data.clientType ? ", " + (data.clientType === "RETAIL" ? "\u043F\u043E\u043A\u0443\u043F\u0430\u0442\u0435\u043B\u044C / \u0421\u0422\u041E" : "\u043A\u0443\u0440\u044C\u0435\u0440") : ""}`);
+      for (const [field, title] of [["registrationAddress", "\u041F\u0440\u043E\u043F\u0438\u0441\u043A\u0430"], ["passportSerial", "\u0421\u0435\u0440\u0438\u044F \u043F\u0430\u0441\u043F\u043E\u0440\u0442\u0430"], ["passportNumber", "\u041D\u043E\u043C\u0435\u0440 \u043F\u0430\u0441\u043F\u043E\u0440\u0442\u0430"], ["citizenship", "\u0413\u0440\u0430\u0436\u0434\u0430\u043D\u0441\u0442\u0432\u043E"], ["migrationCard", "\u041C\u0438\u0433\u0440\u0430\u0446\u0438\u043E\u043D\u043D\u0430\u044F \u043A\u0430\u0440\u0442\u0430"], ["patentNumber", "\u041F\u0430\u0442\u0435\u043D\u0442 / \u0441\u0442\u0430\u0442\u0443\u0441 \u0415\u0410\u042D\u0421"]]) {
+        if (data[field]) preview.push(`  ${title}: ${data[field]}`);
+      }
+      if ((data.clientType || existing?.clientType || "COURIER") === "COURIER" && (!(data.passportNumber || existing?.passportNumber) || (existing?.citizenship || "\u0420\u0424") === "\u0420\u0424" && !(data.passportSerial || existing?.passportSerial))) warnings.push(`${name}: \u043D\u0443\u0436\u043D\u043E \u0437\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u044C \u043F\u0430\u0441\u043F\u043E\u0440\u0442 \u0434\u043B\u044F \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F \u0430\u0440\u0435\u043D\u0434\u044B`);
+      if ((data.clientType || existing?.clientType || "COURIER") === "COURIER" && !(data.registrationAddress || existing?.registrationAddress)) warnings.push(`${name}: \u043D\u0443\u0436\u043D\u043E \u0437\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u044C \u043F\u0440\u043E\u043F\u0438\u0441\u043A\u0443 \u0434\u043B\u044F \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u044F \u0430\u0440\u0435\u043D\u0434\u044B`);
+      baseline.push(existing || null);
+    } else {
+      const bike = a.kind === "add_bikes";
+      requireEdit(userId, bike ? "bikes" : "batteries");
+      const model = (bike ? db2.models : db2.batteryModels).find((m) => m.id === a.modelId);
+      if (!model) fail("\u041C\u043E\u0434\u0435\u043B\u044C \u0442\u0435\u0445\u043D\u0438\u043A\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430. \u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u0435\u0451 \u0432 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0435 \u0438\u043B\u0438 \u0443\u0442\u043E\u0447\u043D\u0438\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435.");
+      if (source.clients && !source.bikes && !source.batteries) fail("\u0417\u0430\u043F\u0440\u043E\u0441 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432: \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u0441 \u0442\u0435\u0445\u043D\u0438\u043A\u043E\u0439 \u043D\u0435 \u0441\u043E\u043E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u043A\u043E\u043C\u0430\u043D\u0434\u0435.");
+      if (!(0, import_facts.modelInText)(model, sourceText, !bike)) fail(`\u041C\u043E\u0434\u0435\u043B\u044C \xAB${model.name}\xBB \u043D\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0430 \u0432 \u043A\u043E\u043C\u0430\u043D\u0434\u0435. \u041F\u043E\u0434\u0441\u0442\u0430\u043D\u043E\u0432\u043A\u0430 \u0434\u0440\u0443\u0433\u043E\u0439 \u043C\u043E\u0434\u0435\u043B\u0438 \u0437\u0430\u043F\u0440\u0435\u0449\u0435\u043D\u0430; \u0443\u0442\u043E\u0447\u043D\u0438\u0442\u0435 \u043A\u0430\u0442\u0430\u043B\u043E\u0433.`);
+      if (a.purchasePrice != null && !(0, import_facts.money)(sourceText).includes(a.purchasePrice)) fail("\u041F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u043D\u0430\u044F \u0437\u0430\u043A\u0443\u043F\u043E\u0447\u043D\u0430\u044F \u0446\u0435\u043D\u0430 \u043D\u0435 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u0442\u0441\u044F \u0432 \u043A\u043E\u043C\u0430\u043D\u0434\u0435. \u0423\u0442\u043E\u0447\u043D\u0438\u0442\u0435 \u0446\u0435\u043D\u0443 \u0437\u0430 \u0435\u0434\u0438\u043D\u0438\u0446\u0443.");
+      if (a.quantity == null) fail("\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u043A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u043E \u0442\u0435\u0445\u043D\u0438\u043A\u0438 \u0432 \u0437\u0430\u043F\u0440\u043E\u0441\u0435");
+      const quantity = a.quantity || 1;
+      total += quantity;
+      if (total > 50) fail("\u0417\u0430 \u043E\u0434\u0438\u043D \u0437\u0430\u043F\u0440\u043E\u0441 \u043C\u043E\u0436\u043D\u043E \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043D\u0435 \u0431\u043E\u043B\u0435\u0435 50 \u0435\u0434\u0438\u043D\u0438\u0446 \u0442\u0435\u0445\u043D\u0438\u043A\u0438");
+      for (const field of bike ? ["inventoryNumbers", "frameNumbers", "motorNumbers"] : ["serialNumbers"]) {
+        const values = a[field];
+        if (values?.length && values.length !== quantity) fail(`\u041A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u043E \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0439 \xAB${field}\xBB \u0434\u043E\u043B\u0436\u043D\u043E \u0441\u043E\u0432\u043F\u0430\u0434\u0430\u0442\u044C \u0441 \u043A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u043E\u043C \u0442\u0435\u0445\u043D\u0438\u043A\u0438`);
+      }
+      const identifiers = (bike ? a.inventoryNumbers : a.serialNumbers) || [];
+      for (const id of identifiers) {
+        const normalized = id.toLowerCase();
+        const seen = bike ? inventory : serials;
+        if (seen.has(normalized) || (bike ? db2.bikes.some((b) => b.inventoryNumber.toLowerCase() === normalized) : db2.batteries.some((b) => b.serialNumber.toLowerCase() === normalized))) fail(`\u041D\u043E\u043C\u0435\u0440 \xAB${id}\xBB \u0443\u0436\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442\u0441\u044F`);
+        seen.add(normalized);
+      }
+      preview.push(`\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C ${quantity} ${bike ? "\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434(\u043E\u0432)" : "\u0410\u041A\u0411"}: ${model.name}${a.purchasePrice != null ? `, \u0437\u0430\u043A\u0443\u043F\u043E\u0447\u043D\u0430\u044F \u0446\u0435\u043D\u0430 \u0437\u0430 \u0435\u0434\u0438\u043D\u0438\u0446\u0443: ${a.purchasePrice} \u20BD` : ""}`);
+      if (identifiers.length) preview.push(`  ${bike ? "\u0418\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u043D\u044B\u0435" : "\u0421\u0435\u0440\u0438\u0439\u043D\u044B\u0435"} \u043D\u043E\u043C\u0435\u0440\u0430: ${identifiers.join(", ")}`);
+      if (a.frameNumbers?.length && bike) preview.push(`  \u0420\u0430\u043C\u044B: ${a.frameNumbers.join(", ")}`);
+      if (a.motorNumbers?.length && bike) preview.push(`  \u041C\u043E\u0442\u043E\u0440\u044B: ${a.motorNumbers.join(", ")}`);
+      if (bike && !a.inventoryNumbers?.length) warnings.push("\u0418\u043D\u0432\u0435\u043D\u0442\u0430\u0440\u043D\u044B\u0435 \u043D\u043E\u043C\u0435\u0440\u0430 \u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434\u043E\u0432 \u0431\u0443\u0434\u0443\u0442 \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D\u044B \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438");
+      if (bike && !a.frameNumbers?.length) warnings.push(`${model.name}: \u043D\u0443\u0436\u043D\u043E \u0432\u043D\u0435\u0441\u0442\u0438 \u043D\u043E\u043C\u0435\u0440\u0430 \u0440\u0430\u043C`);
+      if (bike && !a.motorNumbers?.length) warnings.push(`${model.name}: \u043D\u0443\u0436\u043D\u043E \u0432\u043D\u0435\u0441\u0442\u0438 \u043D\u043E\u043C\u0435\u0440\u0430 \u043C\u043E\u0442\u043E\u0440\u043E\u0432`);
+      if (!bike && !a.serialNumbers?.length) warnings.push(`${model.name}: \u0410\u041A\u0411 \u043F\u043E\u043B\u0443\u0447\u0430\u0442 \u044F\u0432\u043D\u043E \u0432\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0435 \u043D\u043E\u043C\u0435\u0440\u0430 \xAB\u0412\u0420\u0415\u041C-\u0410\u041A\u0411-\u2026\xBB; \u043D\u0443\u0436\u043D\u043E \u0437\u0430\u043C\u0435\u043D\u0438\u0442\u044C \u0438\u0445 \u0441\u0435\u0440\u0438\u0439\u043D\u044B\u043C\u0438 \u043D\u043E\u043C\u0435\u0440\u0430\u043C\u0438`);
+      if (a.purchasePrice == null) warnings.push(`${model.name}: \u0446\u0435\u043D\u0430 \u043F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u044F \u043D\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0430; \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u0441\u044F \u0446\u0435\u043D\u0430 \u0438\u0437 \u043C\u043E\u0434\u0435\u043B\u0438 (${model.purchasePrice ?? 0} \u20BD), \u0441 \u0437\u0430\u0434\u0430\u0447\u0435\u0439 \u043F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0444\u0430\u043A\u0442\u0438\u0447\u0435\u0441\u043A\u0443\u044E \u0441\u0442\u043E\u0438\u043C\u043E\u0441\u0442\u044C`);
+      baseline.push(model);
+    }
+  }
+  if (!plan.questions.length) {
+    const expected = (0, import_facts.requestedCount)(sourceText, "clients");
+    if (expected && source.clients && plan.actions.filter((a) => a.kind === "create_client").length !== expected) fail(`\u0412 \u043A\u043E\u043C\u0430\u043D\u0434\u0435 ${expected} \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u0432: \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0434\u043E\u043B\u0436\u043D\u043E \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u044C \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0438\u0437 \u043D\u0438\u0445 \u0438\u043B\u0438 \u0432\u043E\u043F\u0440\u043E\u0441\u044B \u043F\u043E \u043D\u0435\u0434\u043E\u0441\u0442\u0430\u044E\u0449\u0438\u043C \u0434\u0430\u043D\u043D\u044B\u043C.`);
+    const amounts = (0, import_facts.money)(sourceText);
+    for (const [category, kind] of [["bikes", "add_bikes"], ["batteries", "add_batteries"]]) {
+      const count = (0, import_facts.requestedCount)(sourceText, category);
+      if (count && plan.actions.filter((a) => a.kind === kind).reduce((n, a) => n + (a.quantity || 0), 0) !== count) fail("\u041A\u043E\u043B\u0438\u0447\u0435\u0441\u0442\u0432\u043E \u0442\u0435\u0445\u043D\u0438\u043A\u0438 \u043D\u0435 \u0441\u043E\u043E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0443\u0435\u0442 \u043A\u043E\u043C\u0430\u043D\u0434\u0435. \u041F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u044C\u0442\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
+    }
+    if ((source.bikes || source.batteries) && amounts.length && !/закуп|покупн|приобрет|купили|поставщик/iu.test(sourceText)) fail("\u0423\u0442\u043E\u0447\u043D\u0438\u0442\u0435 \u043D\u0430\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435 \u0441\u0443\u043C\u043C\u044B: \u0437\u0430\u043A\u0443\u043F\u043E\u0447\u043D\u0430\u044F \u0446\u0435\u043D\u0430 \u0437\u0430 \u0435\u0434\u0438\u043D\u0438\u0446\u0443 \u0438\u043B\u0438 \u0446\u0435\u043D\u0430 \u043F\u0440\u043E\u0434\u0430\u0436\u0438. \u041D\u0435\u043E\u0434\u043D\u043E\u0437\u043D\u0430\u0447\u043D\u0430\u044F \u0441\u0442\u043E\u0438\u043C\u043E\u0441\u0442\u044C \u043D\u0435 \u043F\u043E\u0434\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442\u0441\u044F \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438.");
+    if ((source.bikes || source.batteries) && amounts.some((value) => !plan.actions.some((a) => a.purchasePrice === value))) fail("\u0423\u043A\u0430\u0437\u0430\u043D\u043D\u0430\u044F \u0432 \u043A\u043E\u043C\u0430\u043D\u0434\u0435 \u0441\u0443\u043C\u043C\u0430 \u043F\u043E\u0442\u0435\u0440\u044F\u043D\u0430. \u0423\u0442\u043E\u0447\u043D\u0438\u0442\u0435 \u0437\u0430\u043A\u0443\u043F\u043E\u0447\u043D\u0443\u044E \u0446\u0435\u043D\u0443 \u0437\u0430 \u0435\u0434\u0438\u043D\u0438\u0446\u0443; \u043E\u043D\u0430 \u043D\u0435 \u0437\u0430\u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F \u0446\u0435\u043D\u043E\u0439 \u043A\u0430\u0442\u0430\u043B\u043E\u0433\u0430.");
+  }
+  return { preview, warnings: [...new Set(warnings)], baseline: hash(JSON.stringify(baseline)) };
+}
+function addTask(userId, module2, entityId, label2, field, title) {
+  if (state().tasks.some((t) => t.entityId === entityId && t.field === field && !t.resolvedAt)) return;
+  state().tasks.push({ id: (0, import_node_crypto4.randomUUID)(), userId, module: module2, entityId, label: label2, field, title, createdAt: now() });
+}
+function taskComplete(task) {
+  const entity = getDb()[task.module].find((e) => e.id === task.entityId);
+  return !entity || task.module === "clients" && entity.clientType === "RETAIL" && ["passportNumber", "registrationAddress"].includes(task.field) || (task.field === "purchasePrice" ? false : task.field === "serialNumber" ? entity.serialNumber && !entity.serialNumber.startsWith("\u0412\u0420\u0415\u041C-\u0410\u041A\u0411-") : task.field === "passportNumber" ? entity.passportNumber && (entity.citizenship !== "\u0420\u0424" || entity.passportSerial) : Boolean(entity[task.field]));
+}
+var AssistantService = class {
+  static createPairing(userId) {
+    userById(userId);
+    if (!["clients", "bikes", "batteries"].some((m) => allowed(userId, m, true))) fail("\u041D\u0435\u0442 \u043F\u0440\u0430\u0432 \u043D\u0430 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u044B\u0435 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438", 403);
+    const code = (0, import_node_crypto4.randomBytes)(16).toString("hex");
+    state().pairings = state().pairings.filter((p) => p.userId !== userId && p.expiresAt > Date.now());
+    const expiresAt = Date.now() + 10 * 6e4;
+    state().pairings.push({ userId, codeHash: hash(code), expiresAt });
+    saveDb();
+    return { code, expiresAt };
+  }
+  static connect(input) {
+    const { code, name } = external_exports.object({ code: external_exports.string().regex(/^[a-f0-9]{32}$/i), name: external_exports.string().trim().min(1).max(80) }).strict().parse(input);
+    const pairing = state().pairings.find((p) => p.codeHash === hash(code.toLowerCase()) && p.expiresAt > Date.now());
+    if (!pairing) fail("\u041A\u043E\u0434 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u0435\u043D \u0438\u043B\u0438 \u0438\u0441\u0442\u0451\u043A", 401);
+    const user2 = userById(pairing.userId);
+    if (state().devices.filter((d) => d.userId === user2.id && !d.revokedAt).length >= 5) fail("\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043B\u0438\u0448\u043D\u0438\u0439 \u043A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440 \u043F\u0435\u0440\u0435\u0434 \u043D\u043E\u0432\u044B\u043C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435\u043C");
+    const token2 = (0, import_node_crypto4.randomBytes)(32).toString("hex");
+    const device = { id: (0, import_node_crypto4.randomUUID)(), userId: user2.id, name, tokenHash: hash(token2), fingerprint: hash(user2.passwordHash), createdAt: now() };
+    state().devices.push(device);
+    state().pairings = state().pairings.filter((p) => p !== pairing);
+    saveDb();
+    return { token: token2, deviceId: device.id };
+  }
+  static authenticateWorker(token2) {
+    if (!/^[a-f0-9]{64}$/.test(token2)) fail("\u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A \u0437\u0430\u043D\u043E\u0432\u043E", 401);
+    const device = state().devices.find((d) => !d.revokedAt && d.tokenHash === hash(token2));
+    if (!device) fail("\u041A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D \u043E\u0442 CRM", 401);
+    const user2 = userById(device.userId);
+    if (device.fingerprint !== hash(user2.passwordHash)) fail("\u041F\u0430\u0440\u043E\u043B\u044C \u0438\u0437\u043C\u0435\u043D\u0451\u043D. \u041F\u043E\u0434\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A \u0437\u0430\u043D\u043E\u0432\u043E", 401);
+    return device;
+  }
+  static status(userId) {
+    const devices = state().devices.filter((d) => d.userId === userId && !d.revokedAt);
+    const workerOnline = devices.some((d) => !!d.lastSeenAt && Date.now() - Date.parse(d.lastSeenAt) < 9e4);
+    const active = state().jobs.some((j) => j.userId === userId && j.status === "PROCESSING" && (j.leaseUntil || 0) > Date.now());
+    return {
+      workerOnline,
+      devices: devices.map(({ id, name, createdAt, lastSeenAt }) => ({ id, name, createdAt, lastSeenAt })),
+      jobs: state().jobs.filter((j) => j.userId === userId).slice(-30).reverse().map(({ lease, deviceId, baseline, plan, ...j }) => {
+        let validationError;
+        if (j.status === "READY" && plan && !plan.questions.length) {
+          try {
+            if (validatePlan(userId, plan, j.text).baseline !== baseline) validationError = "\u0421\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0438\u0441\u044C. \u041F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u044C\u0442\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.";
+          } catch (e) {
+            validationError = e.errors?.[0]?.message || e.message;
+          }
+        }
+        return {
+          ...j,
+          stalled: j.status === "PROCESSING" && (j.leaseUntil || 0) < Date.now(),
+          waitingReason: j.status === "QUEUED" ? active ? "\u041E\u0436\u0438\u0434\u0430\u0435\u0442 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u043F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0435\u0439 \u043A\u043E\u043C\u0430\u043D\u0434\u044B" : !workerOnline ? "\u041D\u0435\u0442 \u0441\u0432\u044F\u0437\u0438 \u0441 \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E\u0439 \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u043E\u0439. \u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0435\u0451 \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u0438 \u043F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0438\u043D\u0442\u0435\u0440\u043D\u0435\u0442, \u043F\u0440\u043E\u043A\u0441\u0438 \u0438 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u043E\u0431 \u043E\u0448\u0438\u0431\u043A\u0435." : void 0 : void 0,
+          summary: validationError ? "\u041F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0443\u0436\u043D\u043E \u043F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u0438\u0442\u044C \u0437\u0430\u043D\u043E\u0432\u043E" : plan?.questions.length ? "\u041D\u0443\u0436\u043D\u043E \u0443\u0442\u043E\u0447\u043D\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u0435\u0440\u0435\u0434 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u0435\u043C" : j.preview?.length ? j.preview.filter((line) => !line.startsWith("  ")).join("; ") : plan?.summary,
+          error: validationError || j.error,
+          questions: plan?.questions || [],
+          canApply: !validationError && j.status === "READY" && !!plan?.actions.length && !plan.questions.length
+        };
+      }),
+      tasks: state().tasks.filter((t) => t.userId === userId && !t.resolvedAt && allowed(userId, t.module) && !taskComplete(t)).map((t) => {
+        const entity = getDb()[t.module].find((e) => e.id === t.entityId);
+        return { ...t, label: entity?.fullName || entity?.inventoryNumber || entity?.serialNumber || t.label };
+      })
+    };
+  }
+  static tasks(userId) {
+    return this.status(userId).tasks;
+  }
+  static submit(userId, input) {
+    const { id, text: text2 } = external_exports.object({ id: external_exports.string().uuid(), text: external_exports.string().trim().min(3).max(8e3) }).strict().parse(input);
+    const existing = state().jobs.find((j) => j.id === id);
+    if (existing) {
+      if (existing.userId !== userId || existing.text !== text2) fail("\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u0437\u0430\u043F\u0440\u043E\u0441\u0430 \u0443\u0436\u0435 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D", 409);
+      return { id: existing.id };
+    }
+    if (!["clients", "bikes", "batteries"].some((m) => allowed(userId, m, true))) fail("\u041D\u0435\u0442 \u043F\u0440\u0430\u0432 \u043D\u0430 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u044B\u0435 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438", 403);
+    if (state().jobs.filter((j) => j.userId === userId && ["QUEUED", "PROCESSING", "READY"].includes(j.status)).length >= 20) fail("\u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u0438\u043B\u0438 \u043E\u0442\u043C\u0435\u043D\u0438\u0442\u0435 \u043F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B");
+    const cutoff = Date.now() - 30 * 864e5;
+    state().jobs = state().jobs.filter((j) => !["APPLIED", "CANCELLED", "ERROR"].includes(j.status) || Date.parse(j.createdAt) > cutoff);
+    while (state().jobs.length >= 1e3) {
+      const index = state().jobs.findIndex((j) => ["APPLIED", "CANCELLED", "ERROR"].includes(j.status));
+      if (index < 0) fail("\u041E\u0447\u0435\u0440\u0435\u0434\u044C \u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A\u0430 \u0437\u0430\u043F\u043E\u043B\u043D\u0435\u043D\u0430. \u0417\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u0438\u043B\u0438 \u043E\u0442\u043C\u0435\u043D\u0438\u0442\u0435 \u043F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u044B.");
+      state().jobs.splice(index, 1);
+    }
+    state().jobs.push({ id, userId, text: text2, createdAt: now(), status: "QUEUED", attempts: 0 });
+    saveDb();
+    return { id };
+  }
+  static poll(token2) {
+    const device = this.authenticateWorker(token2);
+    const db2 = getDb();
+    if (!device.lastSeenAt || Date.now() - Date.parse(device.lastSeenAt) > 6e4) {
+      device.lastSeenAt = now();
+      saveDb();
+    }
+    for (const job2 of state().jobs.filter((j) => j.userId === device.userId && j.status === "PROCESSING" && (j.leaseUntil || 0) < Date.now())) {
+      job2.status = job2.attempts >= 3 ? "ERROR" : "QUEUED";
+      job2.error = job2.status === "ERROR" ? "\u041B\u043E\u043A\u0430\u043B\u044C\u043D\u0430\u044F \u043C\u043E\u0434\u0435\u043B\u044C \u043D\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u043B\u0430 \u0437\u0430\u043F\u0440\u043E\u0441. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A \u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u043A\u043E\u043C\u0430\u043D\u0434\u0443 \u0437\u0430\u043D\u043E\u0432\u043E." : void 0;
+      saveDb();
+    }
+    if (state().jobs.some((j) => j.userId === device.userId && j.status === "PROCESSING")) return { job: null };
+    const job = state().jobs.find((j) => j.userId === device.userId && j.status === "QUEUED");
+    if (!job) return { job: null };
+    job.status = "PROCESSING";
+    job.deviceId = device.id;
+    job.lease = (0, import_node_crypto4.randomUUID)();
+    job.leaseUntil = Date.now() + 5 * 6e4;
+    job.attempts++;
+    const modules = ["clients", "bikes", "batteries"].filter((m) => allowed(device.userId, m, true));
+    const words = job.text.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3);
+    const digits = job.text.replace(/\D/g, "");
+    const clients = modules.includes("clients") ? db2.clients.filter((c) => digits.length >= 10 && digits.includes(normalizePhone(c.phone)) || words.some((w) => c.fullName.toLowerCase().includes(w))).slice(0, 30).map((c) => ({ id: c.id, fullName: c.fullName, phone: c.phone, clientType: c.clientType })) : [];
+    saveDb();
+    return { job: { id: job.id, text: job.text, lease: job.lease }, context: {
+      modules,
+      clients,
+      bikeModels: modules.includes("bikes") ? db2.models.slice(0, 150).map(({ id, name }) => ({ id, name })) : [],
+      batteryModels: modules.includes("batteries") ? db2.batteryModels.slice(0, 150).map(({ id, name, voltage, capacityAh }) => ({ id, name, voltage, capacityAh })) : []
+    } };
+  }
+  static result(token2, input) {
+    const device = this.authenticateWorker(token2);
+    const data = external_exports.object({ id: external_exports.string().uuid(), lease: external_exports.string().uuid(), plan: external_exports.unknown().optional(), error: external_exports.string().max(1500).optional() }).strict().parse(input);
+    const job = ownedJob(device.userId, data.id);
+    if (job.status !== "PROCESSING" || job.deviceId !== device.id || job.lease !== data.lease || (job.leaseUntil || 0) < Date.now()) fail("\u0417\u0430\u043F\u0440\u043E\u0441 \u043E\u0442\u043C\u0435\u043D\u0451\u043D \u0438\u043B\u0438 \u0441\u0440\u043E\u043A \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u043A\u0438 \u0438\u0441\u0442\u0451\u043A", 409);
+    if (data.error) {
+      job.status = "ERROR";
+      job.error = data.error;
+    } else {
+      try {
+        const plan = AssistantPlanDto.parse(data.plan);
+        const validated = validatePlan(device.userId, plan, job.text);
+        job.plan = plan;
+        Object.assign(job, validated);
+        job.status = "READY";
+        job.error = void 0;
+      } catch (error) {
+        job.status = "ERROR";
+        job.error = error.errors?.[0]?.message || error.message;
+      }
+    }
+    saveDb();
+    return { ok: true };
+  }
+  static cancel(userId, id) {
+    const job = ownedJob(userId, id);
+    if (job.status === "APPLIED") fail("\u0412\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u0439 \u0437\u0430\u043F\u0440\u043E\u0441 \u043D\u0435\u043B\u044C\u0437\u044F \u043E\u0442\u043C\u0435\u043D\u0438\u0442\u044C", 409);
+    job.status = "CANCELLED";
+    saveDb();
+    return { ok: true };
+  }
+  static retry(userId, id) {
+    const job = ownedJob(userId, id);
+    if (job.status === "APPLIED" || job.status === "READY" || job.status === "PROCESSING" && (job.leaseUntil || 0) > Date.now()) fail("\u042D\u0442\u0443 \u043A\u043E\u043C\u0430\u043D\u0434\u0443 \u043D\u0435\u043B\u044C\u0437\u044F \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u043E \u043F\u043E\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u044C \u0432 \u0442\u0435\u043A\u0443\u0449\u0435\u043C \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0438", 409);
+    job.status = "QUEUED";
+    job.attempts = 0;
+    job.error = void 0;
+    job.lease = void 0;
+    job.leaseUntil = void 0;
+    saveDb();
+    return { ok: true };
+  }
+  static revoke(userId, id) {
+    const device = state().devices.find((d) => d.id === id && d.userId === userId);
+    if (!device) fail("\u041A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D", 404);
+    device.revokedAt = now();
+    saveDb();
+    return { ok: true };
+  }
+  static resolveTask(userId, id) {
+    const task = state().tasks.find((t) => t.id === id && t.userId === userId && !t.resolvedAt);
+    if (!task) fail("\u0417\u0430\u0434\u0430\u0447\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430", 404);
+    requireEdit(userId, task.module);
+    if (!taskComplete(task) && task.field !== "purchasePrice") fail("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u0435 \u043F\u043E\u043B\u0435 \u0432 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0435");
+    task.resolvedAt = now();
+    saveDb();
+    return { ok: true };
+  }
+  static apply(userId, id) {
+    return withDbTransaction(() => {
+      const job = ownedJob(userId, id);
+      if (job.status === "APPLIED") return { results: job.results };
+      if (job.status !== "READY" || !job.plan) fail("\u041F\u043B\u0430\u043D \u0435\u0449\u0451 \u043D\u0435 \u0433\u043E\u0442\u043E\u0432", 409);
+      if (job.plan.questions.length || !job.plan.actions.length) fail("\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u0432\u0435\u0442\u044C\u0442\u0435 \u043D\u0430 \u0443\u0442\u043E\u0447\u043D\u044F\u044E\u0449\u0438\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B");
+      const checked = validatePlan(userId, job.plan, job.text);
+      if (checked.baseline !== job.baseline) fail("\u0421\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0438\u0441\u044C \u043F\u043E\u0441\u043B\u0435 \u043F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u043A\u0438 \u043F\u043B\u0430\u043D\u0430. \u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u0437\u0430\u043F\u0440\u043E\u0441 \u0437\u0430\u043D\u043E\u0432\u043E.", 409);
+      const results = [];
+      for (const a of job.plan.actions) {
+        if (a.kind === "create_client" || a.kind === "update_client") {
+          const data = clientData(a);
+          const c = a.kind === "create_client" ? ClientService.createClient(ClientCreateDto.parse(data)) : ClientService.updateClient(a.clientId, ClientUpdateDto.parse(data));
+          if (!c) fail("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+          results.push({ module: "clients", id: c.id, label: c.fullName });
+          if (c.clientType !== "RETAIL") {
+            if (!c.passportNumber || c.citizenship === "\u0420\u0424" && !c.passportSerial) addTask(userId, "clients", c.id, c.fullName, "passportNumber", "\u0417\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u044C \u043F\u0430\u0441\u043F\u043E\u0440\u0442\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435");
+            if (!c.registrationAddress) addTask(userId, "clients", c.id, c.fullName, "registrationAddress", "\u0417\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u044C \u043F\u0440\u043E\u043F\u0438\u0441\u043A\u0443");
+          }
+        } else {
+          const bike = a.kind === "add_bikes";
+          for (let i = 0; i < (a.quantity || 1); i++) {
+            const tag = (0, import_node_crypto4.randomUUID)().slice(0, 8).toUpperCase();
+            const entity = bike ? BikeRepository.create({ modelId: a.modelId, inventoryNumber: a.inventoryNumbers?.[i] || `\u042D\u0412-${tag}`, frameNumber: a.frameNumbers?.[i], motorNumber: a.motorNumbers?.[i], currentLocation: "\u0411\u0430\u0437\u0430", purchasePrice: a.purchasePrice ?? void 0 }) : BatteryRepository.create({ modelId: a.modelId, serialNumber: a.serialNumbers?.[i] || `\u0412\u0420\u0415\u041C-\u0410\u041A\u0411-${tag}`, notes: !a.serialNumbers?.length ? "\u0412\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0439 \u0443\u0447\u0451\u0442\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440. \u0412\u043D\u0435\u0441\u0438\u0442\u0435 \u0444\u0430\u043A\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0441\u0435\u0440\u0438\u0439\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440." : void 0, purchasePrice: a.purchasePrice ?? void 0 });
+            if (!entity) fail("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0442\u0435\u0445\u043D\u0438\u043A\u0443");
+            const module2 = bike ? "bikes" : "batteries";
+            const label2 = bike ? entity.inventoryNumber : entity.serialNumber;
+            results.push({ module: module2, id: entity.id, label: label2 });
+            if (bike && !a.frameNumbers?.length) addTask(userId, module2, entity.id, label2, "frameNumber", "\u0412\u043D\u0435\u0441\u0442\u0438 \u043D\u043E\u043C\u0435\u0440 \u0440\u0430\u043C\u044B");
+            if (bike && !a.motorNumbers?.length) addTask(userId, module2, entity.id, label2, "motorNumber", "\u0412\u043D\u0435\u0441\u0442\u0438 \u043D\u043E\u043C\u0435\u0440 \u043C\u043E\u0442\u043E\u0440\u0430");
+            if (!bike && !a.serialNumbers?.length) addTask(userId, module2, entity.id, label2, "serialNumber", "\u0417\u0430\u043C\u0435\u043D\u0438\u0442\u044C \u0432\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440 \u043D\u0430 \u0444\u0430\u043A\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0441\u0435\u0440\u0438\u0439\u043D\u044B\u0439");
+            if (a.purchasePrice == null) addTask(userId, module2, entity.id, label2, "purchasePrice", "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0444\u0430\u043A\u0442\u0438\u0447\u0435\u0441\u043A\u0443\u044E \u0437\u0430\u043A\u0443\u043F\u043E\u0447\u043D\u0443\u044E \u0446\u0435\u043D\u0443");
+          }
+        }
+      }
+      job.status = "APPLIED";
+      job.appliedAt = now();
+      job.results = results;
+      HistoryRepository.logAction({ category: "SYSTEM", action: "ASSISTANT_APPLY", title: "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u044B \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E\u0433\u043E \u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A\u0430", details: job.preview?.join("\n"), badgeText: "\u0418\u0418-\u043F\u043E\u043C\u043E\u0449\u043D\u0438\u043A" });
+      saveDb();
+      return { results };
+    });
+  }
+};
+
+// src/controllers/assistant.controller.ts
+var user = (req) => req.currentUser.id;
+var token = (req) => req.headers.authorization?.replace(/^Bearer\s+/i, "") || "";
+function handle(req, res, action) {
+  try {
+    return res.json(req.method === "GET" ? action() : withDbTransaction(action));
+  } catch (error) {
+    return res.status(error.status || 400).json({ error: error.errors?.[0]?.message || error.message });
+  }
+}
+var AssistantController = {
+  connect: (req, res) => handle(req, res, () => AssistantService.connect(req.body)),
+  poll: (req, res) => handle(req, res, () => AssistantService.poll(token(req))),
+  result: (req, res) => handle(req, res, () => AssistantService.result(token(req), req.body)),
+  status: (req, res) => handle(req, res, () => AssistantService.status(user(req))),
+  tasks: (req, res) => handle(req, res, () => AssistantService.tasks(user(req))),
+  pair: (req, res) => handle(req, res, () => AssistantService.createPairing(user(req))),
+  submit: (req, res) => handle(req, res, () => AssistantService.submit(user(req), req.body)),
+  apply: (req, res) => handle(req, res, () => AssistantService.apply(user(req), req.params.id)),
+  cancel: (req, res) => handle(req, res, () => AssistantService.cancel(user(req), req.params.id)),
+  retry: (req, res) => handle(req, res, () => AssistantService.retry(user(req), req.params.id)),
+  revoke: (req, res) => handle(req, res, () => AssistantService.revoke(user(req), req.params.id)),
+  resolve: (req, res) => handle(req, res, () => AssistantService.resolveTask(user(req), req.params.id))
+};
+
+// src/repositories/document.repository.ts
+var titles = {
+  RENTAL_CONTRACT: "\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B",
+  HANDOVER_ACT: "\u0410\u043A\u0442 \u0432\u044B\u0434\u0430\u0447\u0438 \u0442\u0435\u0445\u043D\u0438\u043A\u0438",
+  RETURN_ACT: "\u0410\u043A\u0442 \u0432\u043E\u0437\u0432\u0440\u0430\u0442\u0430 \u0442\u0435\u0445\u043D\u0438\u043A\u0438",
+  BUYOUT_ACT: "\u0410\u043A\u0442 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u0432\u044B\u043A\u0443\u043F\u0430",
+  SALE_RECEIPT: "\u0422\u043E\u0432\u0430\u0440\u043D\u044B\u0439 \u0447\u0435\u043A",
+  REPAIR_ORDER: "\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u0421\u0422\u041E",
+  REPAIR_ACT: "\u0410\u043A\u0442 \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u044B\u0445 \u0440\u0430\u0431\u043E\u0442 \u0421\u0422\u041E"
+};
+var prefixes = { RENTAL_CONTRACT: "\u0414\u041E\u0413", HANDOVER_ACT: "\u0412\u042B\u0414", RETURN_ACT: "\u0412\u041E\u0417", BUYOUT_ACT: "\u0412\u042B\u041A", SALE_RECEIPT: "\u0427\u0415\u041A", REPAIR_ORDER: "\u0417\u041D", REPAIR_ACT: "\u0420\u0410\u0411" };
+var DocumentRepository = class {
+  static canReadModule(user2, module2) {
+    const level = getDb().accessLevels.find((item) => item.id === user2.accessLevelId) || getDb().accessLevels.find((item) => item.id === (user2.role === "ADMIN" ? "lvl-owner" : user2.role === "MECHANIC" ? "lvl-master" : "lvl-manager"));
+    return Boolean(level && level.permissions.documents?.visible !== false && level.permissions[module2]?.visible !== false);
+  }
+  static capture(type, sourceId, reconstructed = false, settlement) {
+    const db2 = getDb();
+    if (!db2.documents) db2.documents = [];
+    const id = `doc-${type.toLowerCase()}-${sourceId}`;
+    const existing = db2.documents.find((document3) => document3.id === id);
+    if (existing) return existing;
+    const sourceModule = type === "SALE_RECEIPT" ? "shop" : type.startsWith("REPAIR_") ? "repairs" : "rentals";
+    const rental = sourceModule === "rentals" ? db2.rentals.find((item) => item.id === sourceId) : void 0;
+    const sale = sourceModule === "shop" ? db2.retailOrders.find((item) => item.id === sourceId) : void 0;
+    const repair = sourceModule === "repairs" ? db2.repairs.find((item) => item.id === sourceId) : void 0;
+    if (!rental && !sale && !repair) throw new Error("\u0418\u0441\u0445\u043E\u0434\u043D\u0430\u044F \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u044F \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+    const clientId = rental?.clientId || sale?.clientId || repair?.clientId;
+    const client = db2.clients.find((item) => item.id === clientId);
+    const bike = db2.bikes.find((item) => item.id === (rental?.bikeId || repair?.bikeId));
+    const tariff = db2.tariffs.find((item) => item.id === rental?.tariffId);
+    const model = db2.models.find((item) => item.id === bike?.modelId);
+    const sourceNumber = rental?.rentalNumber || sale?.orderNumber || repair?.orderNumber || sourceId;
+    const clientName = sale?.customerName || repair?.clientName || client?.fullName || "\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D";
+    const clientPhone = sale?.customerPhone || repair?.clientPhone || client?.phone || "";
+    const sourceActorId = rental?.managerId || repair?.mechanicId || (sale ? db2.payments.find((item) => item.orderId === sale.id)?.cashierId : void 0);
+    const actorId = reconstructed ? sourceActorId : getCurrentUser()?.id || sourceActorId;
+    const actor = db2.users.find((item) => item.id === actorId);
+    const date = getSystemTime().toISOString();
+    const finished = ["RETURN_ACT", "BUYOUT_ACT", "REPAIR_ACT"].includes(type);
+    const issuedAt = rental ? type === "RETURN_ACT" ? rental.updatedAt || rental.closedAt || date : finished ? rental.closedAt || rental.updatedAt || date : rental.startedAt : sale?.createdAt || (type === "REPAIR_ACT" ? repair?.completedAt || repair?.createdAt : repair?.createdAt) || date;
+    const details = [];
+    const equipment = [];
+    let items = [];
+    let amount = 0;
+    let notes = "";
+    if (bike) equipment.push({ name: model?.name || "\u042D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434", number: [bike.inventoryNumber, bike.frameNumber ? `\u0440\u0430\u043C\u0430 ${bike.frameNumber}` : "", bike.motorNumber ? `\u043C\u043E\u0442\u043E\u0440 ${bike.motorNumber}` : ""].filter(Boolean).join(" \xB7 ") });
+    if (rental) {
+      for (const battery of db2.batteries.filter((item) => rental.batteryIds?.includes(item.id) || item.id === bike?.batteryId)) equipment.push({ name: `\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${battery.voltage}V ${battery.capacityAh}Ah`, number: battery.serialNumber });
+      if (type !== "BUYOUT_ACT") for (const outfit of db2.outfits.filter((item) => rental.outfitIds.includes(item.id))) {
+        const returned = settlement?.outfitReturns?.find((item) => item.outfitId === outfit.id);
+        const condition = returned ? { OK: "\u0412\u043E\u0437\u0432\u0440\u0430\u0449\u0435\u043D\u043E \u0431\u0435\u0437 \u0437\u0430\u043C\u0435\u0447\u0430\u043D\u0438\u0439", DAMAGED: "\u041F\u043E\u0432\u0440\u0435\u0436\u0434\u0435\u043D\u043E", LOST: "\u0423\u0442\u0440\u0430\u0447\u0435\u043D\u043E" }[returned.condition] : "";
+        equipment.push({ name: outfit.name, number: [outfit.inventoryNumber || "\u2014", condition].filter(Boolean).join(" \xB7 ") });
+      }
+      const paid = db2.payments.filter((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT")).reduce((total, p) => total + p.amount, 0);
+      const firstPayment = db2.payments.find((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT"));
+      amount = type === "RETURN_ACT" ? settlement?.depositReturned ?? db2.payments.filter((p) => p.rentalId === rental.id && p.type === "DEPOSIT_REFUND").reduce((total, p) => total + p.amount, 0) : rental.type === "RENT_TO_OWN" ? rental.totalBuyoutPrice ?? tariff?.totalBuyoutPrice ?? 0 : firstPayment?.amount ?? tariff?.price ?? 0;
+      details.push({ label: "\u0412\u0438\u0434 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430", value: rental.type === "RENT_TO_OWN" ? "\u0410\u0440\u0435\u043D\u0434\u0430 \u0441 \u043F\u0440\u0430\u0432\u043E\u043C \u0432\u044B\u043A\u0443\u043F\u0430" : "\u0421\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u0430\u044F \u0430\u0440\u0435\u043D\u0434\u0430" }, { label: "\u0422\u0430\u0440\u0438\u0444", value: tariff?.name || "\u2014" }, { label: "\u041D\u0430\u0447\u0430\u043B\u043E", value: rental.startedAt }, { label: "\u0421\u0440\u043E\u043A \u0434\u043E", value: rental.expiresAt }, { label: "\u041E\u0431\u0435\u0441\u043F\u0435\u0447\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u0437\u0430\u043B\u043E\u0433", value: `${rental.depositAmount} \u20BD` }, { label: "\u0412\u043D\u0435\u0441\u0435\u043D\u043E \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443", value: `${paid} \u20BD` });
+      if (rental.type === "RENT_TO_OWN") details.push({ label: "\u041F\u043E\u043B\u043D\u0430\u044F \u0446\u0435\u043D\u0430 \u0432\u044B\u043A\u0443\u043F\u0430", value: `${rental.totalBuyoutPrice ?? tariff?.totalBuyoutPrice ?? 0} \u20BD` }, { label: "\u0420\u0435\u0433\u0443\u043B\u044F\u0440\u043D\u044B\u0439 \u043F\u043B\u0430\u0442\u0451\u0436", value: `${rental.installmentPayment ?? tariff?.installmentPayment ?? 0} \u20BD` }, { label: "\u0418\u043D\u0442\u0435\u0440\u0432\u0430\u043B \u043F\u043B\u0430\u0442\u0435\u0436\u0435\u0439", value: `${rental.paymentIntervalDays ?? tariff?.paymentIntervalDays ?? 7} \u0434\u043D.` });
+      if (finished) details.push({ label: "\u041F\u0440\u043E\u0431\u0435\u0433", value: `${bike?.mileageKm || 0} \u043A\u043C` }, { label: "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0442\u0435\u0445\u043D\u0438\u043A\u0438", value: bike?.status === "IN_MAINTENANCE" ? "\u0422\u0440\u0435\u0431\u0443\u0435\u0442\u0441\u044F \u0440\u0435\u043C\u043E\u043D\u0442" : type === "BUYOUT_ACT" ? "\u041F\u0435\u0440\u0435\u0434\u0430\u043D\u0430 \u0432 \u0441\u043E\u0431\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0441\u0442\u044C \u043A\u043B\u0438\u0435\u043D\u0442\u0430" : rental.status === "BOUGHT_OUT" ? "\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u043C; \u0440\u0430\u0441\u0447\u0451\u0442 \u043F\u043E \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0435 \u0438 \u0437\u0430\u043B\u043E\u0433\u0443" : "\u041F\u0440\u0438\u043D\u044F\u0442\u0430 \u043D\u0430 \u0431\u0430\u0437\u0443" });
+      if (settlement) details.push({ label: "\u0417\u0430\u043B\u043E\u0433 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0451\u043D", value: `${settlement.depositReturned} \u20BD` }, { label: "\u0423\u0434\u0435\u0440\u0436\u0430\u043D\u043E", value: `${settlement.totalDeduction} \u20BD` });
+      notes = [rental.notes, settlement?.defectDescription].filter(Boolean).join("\n");
+    } else if (sale) {
+      items = sale.items.map((item) => ({ name: item.name, quantity: item.quantity, price: item.price }));
+      amount = sale.totalAmount;
+      details.push({ label: "\u0421\u043F\u043E\u0441\u043E\u0431 \u043E\u043F\u043B\u0430\u0442\u044B", value: { CASH: "\u041D\u0430\u043B\u0438\u0447\u043D\u044B\u0435", CARD: "\u0411\u0430\u043D\u043A\u043E\u0432\u0441\u043A\u0430\u044F \u043A\u0430\u0440\u0442\u0430", SBP: "\u0421\u0411\u041F", BANK_TRANSFER: "\u0411\u0430\u043D\u043A\u043E\u0432\u0441\u043A\u0438\u0439 \u043F\u0435\u0440\u0435\u0432\u043E\u0434" }[sale.paymentMethod] || sale.paymentMethod });
+      notes = sale.notes || "";
+    } else if (repair) {
+      if (repair.batteryId) {
+        const battery = db2.batteries.find((item) => item.id === repair.batteryId);
+        if (battery) equipment.push({ name: "\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440", number: battery.serialNumber });
+      }
+      if (repair.customItemName) equipment.push({ name: repair.customItemName, number: "\u0422\u0435\u0445\u043D\u0438\u043A\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0430" });
+      items = repair.parts.map((part) => ({ name: db2.parts.find((item) => item.id === part.partId)?.name || "\u0417\u0430\u043F\u0447\u0430\u0441\u0442\u044C", quantity: part.quantity, price: part.priceCharged }));
+      items.push({ name: "\u0420\u0430\u0431\u043E\u0442\u044B \u0421\u0422\u041E", quantity: 1, price: repair.laborCost });
+      amount = repair.totalCost;
+      details.push({ label: "\u041E\u0442\u0432\u0435\u0442\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0441\u0442\u044C", value: repair.faultType === "CLIENT_FAULT" || repair.itemType === "EXTERNAL_DEVICE" ? "\u041E\u043F\u043B\u0430\u0442\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0430" : "\u0420\u0430\u0441\u0445\u043E\u0434\u044B \u0441\u0435\u0440\u0432\u0438\u0441\u0430" }, { label: "\u042D\u0442\u0430\u043F", value: type === "REPAIR_ACT" ? "\u0420\u0430\u0431\u043E\u0442\u044B \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u044B" : "\u041F\u0440\u0438\u0451\u043C \u0442\u0435\u0445\u043D\u0438\u043A\u0438 \u043D\u0430 \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443" });
+      notes = repair.description;
+    }
+    const document2 = {
+      id,
+      type,
+      number: sourceNumber.startsWith(`${prefixes[type]}-`) ? sourceNumber : `${prefixes[type]}-${sourceNumber}`,
+      title: type === "RENTAL_CONTRACT" && rental?.type === "RENT_TO_OWN" ? "\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B \u0441 \u043F\u0440\u0430\u0432\u043E\u043C \u0432\u044B\u043A\u0443\u043F\u0430" : titles[type],
+      sourceModule,
+      sourceId,
+      sourceNumber,
+      clientId,
+      clientName,
+      clientPhone,
+      bikeNumber: bike?.inventoryNumber || "",
+      issuedAt,
+      capturedAt: date,
+      reconstructed,
+      amount,
+      snapshot: { issuer: { ...db2.settings?.paymentDetails || {} }, client: { fullName: clientName, phone: clientPhone, ...rental ? { passportSerial: client?.passportSerial, passportNumber: client?.passportNumber, registrationAddress: client?.registrationAddress } : {} }, actor: actor?.fullName || (!reconstructed ? getCurrentUser()?.fullName : void 0) || "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A \u043D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D", equipment, items, details, notes }
+    };
+    if (rental) {
+      Object.assign(document2.snapshot.client, { citizenship: client?.citizenship, patentNumber: client?.patentNumber, courierService: client?.courierService });
+      const totalPaidForBuyout = db2.payments.filter((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT")).reduce((total, p) => total + p.amount, 0);
+      document2.snapshot.rentalData = { ...rental, totalPaidForBuyout, client: document2.snapshot.client, bike: bike ? { ...bike, model, battery: db2.batteries.find((item) => item.id === bike.batteryId) || null } : null, tariff: tariff ? { ...tariff, ...rental.type === "STANDARD" ? { price: amount } : {} } : null, manager: { fullName: document2.snapshot.actor }, outfits: db2.outfits.filter((item) => rental.outfitIds.includes(item.id)), batteries: db2.batteries.filter((item) => rental.batteryIds?.includes(item.id)) };
+    }
+    if (sale) document2.snapshot.saleData = { ...sale };
+    db2.documents.push(JSON.parse(JSON.stringify(document2)));
+    saveDb();
+    return document2;
+  }
+  static captureRental(id, reconstructed = false) {
+    this.capture("RENTAL_CONTRACT", id, reconstructed);
+    this.capture("HANDOVER_ACT", id, reconstructed);
+  }
+  static backfill() {
+    const db2 = getDb();
+    const existing = new Set(db2.documents.map((item) => item.id));
+    const missing = [];
+    const add = (type, id) => {
+      if (!existing.has(`doc-${type.toLowerCase()}-${id}`)) missing.push([type, id]);
+    };
+    for (const rental of db2.rentals.filter((item) => !["DRAFT", "RESERVED"].includes(item.status))) {
+      add("RENTAL_CONTRACT", rental.id);
+      add("HANDOVER_ACT", rental.id);
+      if (rental.status === "CLOSED" || rental.status === "BOUGHT_OUT" && rental.depositRefunded) add("RETURN_ACT", rental.id);
+      if (rental.status === "BOUGHT_OUT") add("BUYOUT_ACT", rental.id);
+    }
+    for (const sale of db2.retailOrders) add("SALE_RECEIPT", sale.id);
+    for (const repair of db2.repairs) {
+      add("REPAIR_ORDER", repair.id);
+      if (repair.status === "COMPLETED") add("REPAIR_ACT", repair.id);
+    }
+    if (!missing.length) return false;
+    withDbTransaction(() => {
+      for (const [type, id] of missing) this.capture(type, id, true);
+    });
+    return true;
+  }
+  static getAll(user2, filters = {}) {
+    let documents = getDb().documents.filter((document2) => this.canReadModule(user2, document2.sourceModule));
+    if (filters.type) documents = documents.filter((document2) => document2.type === filters.type);
+    if (filters.sourceId) documents = documents.filter((document2) => document2.sourceId === filters.sourceId);
+    if (filters.sourceModule) documents = documents.filter((document2) => document2.sourceModule === filters.sourceModule);
+    if (filters.from) documents = documents.filter((document2) => document2.issuedAt.slice(0, 10) >= filters.from);
+    if (filters.to) documents = documents.filter((document2) => document2.issuedAt.slice(0, 10) <= filters.to);
+    if (filters.search?.trim()) {
+      const query = filters.search.trim().toLowerCase();
+      const phone = normalizePhone(query);
+      documents = documents.filter((document2) => [document2.number, document2.sourceNumber, document2.clientName, document2.clientPhone, document2.bikeNumber].some((value) => value.toLowerCase().includes(query)) || phone.length >= 6 && normalizePhone(document2.clientPhone).includes(phone));
+    }
+    documents.sort((a, b) => b.issuedAt.localeCompare(a.issuedAt) || a.number.localeCompare(b.number));
+    const page = Math.max(1, filters.page || 1);
+    return { items: documents.slice((page - 1) * 30, page * 30).map(({ snapshot, ...summary }) => summary), total: documents.length, page, pageSize: 30 };
+  }
+  static getById(id, user2) {
+    const document2 = getDb().documents.find((item) => item.id === id);
+    return document2 && this.canReadModule(user2, document2.sourceModule) ? document2 : null;
+  }
+};
+
+// src/controllers/document.controller.ts
+var querySchema = external_exports.object({
+  search: external_exports.string().max(200).optional(),
+  type: external_exports.enum(["RENTAL_CONTRACT", "HANDOVER_ACT", "RETURN_ACT", "BUYOUT_ACT", "SALE_RECEIPT", "REPAIR_ORDER", "REPAIR_ACT"]).optional(),
+  from: external_exports.string().date().optional(),
+  to: external_exports.string().date().optional(),
+  sourceId: external_exports.string().max(200).optional(),
+  sourceModule: external_exports.enum(["rentals", "shop", "repairs"]).optional(),
+  page: external_exports.coerce.number().int().min(1).max(1e5).optional()
+}).refine((value) => !value.from || !value.to || value.from <= value.to, "\u0414\u0430\u0442\u0430 \u043D\u0430\u0447\u0430\u043B\u0430 \u043F\u043E\u0437\u0436\u0435 \u0434\u0430\u0442\u044B \u043E\u043A\u043E\u043D\u0447\u0430\u043D\u0438\u044F");
+var DocumentController = class {
+  static async list(req, res) {
+    try {
+      const filters = querySchema.parse(req.query);
+      const user2 = getDb().users.find((item) => item.id === req.currentUser.id);
+      if (DocumentRepository.backfill()) await flushDb(true);
+      return res.json(DocumentRepository.getAll(user2, filters));
+    } catch (error) {
+      return res.status(error instanceof external_exports.ZodError ? 400 : 500).json({ error: error instanceof external_exports.ZodError ? error.issues[0].message : error.message });
+    }
+  }
+  static async get(req, res) {
+    try {
+      const user2 = getDb().users.find((item) => item.id === req.currentUser.id);
+      if (DocumentRepository.backfill()) await flushDb(true);
+      const document2 = DocumentRepository.getById(req.params.id, user2);
+      if (!document2) return res.status(404).json({ error: "\u0414\u043E\u043A\u0443\u043C\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u0438\u043B\u0438 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D" });
+      return res.json(document2);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+};
+
+// src/services/session.service.ts
+var import_node_crypto5 = require("node:crypto");
+function hashPassword(password) {
+  const salt = (0, import_node_crypto5.randomBytes)(16).toString("hex");
+  return `scrypt:${salt}:${(0, import_node_crypto5.scryptSync)(password, salt, 64).toString("hex")}`;
+}
+function verifyPassword(password, stored) {
+  if (!stored.startsWith("scrypt:")) return password === stored;
+  const [, salt, hash2] = stored.split(":");
+  const expected = Buffer.from(hash2 || "", "hex");
+  const actual = (0, import_node_crypto5.scryptSync)(password, salt, 64);
+  return actual.length === expected.length && (0, import_node_crypto5.timingSafeEqual)(actual, expected);
+}
+function signingKey() {
+  const db2 = getDb();
+  if (!db2.settings) db2.settings = { monthlyFixedExpenses: 0 };
+  if (!db2.settings.authSigningKey) db2.settings.authSigningKey = (0, import_node_crypto5.randomBytes)(32).toString("hex");
+  return process.env.SESSION_SECRET || db2.settings.authSigningKey;
+}
+function fingerprint(user2) {
+  return (0, import_node_crypto5.createHmac)("sha256", signingKey()).update(user2.passwordHash).digest("hex");
+}
+function issueSession(user2, kind = "session") {
+  const payload = Buffer.from(JSON.stringify({ userId: user2.id, kind, expiresAt: Date.now() + (kind === "device" ? 90 : 30) * 864e5, fingerprint: fingerprint(user2) })).toString("base64url");
+  return `${payload}.${(0, import_node_crypto5.createHmac)("sha256", signingKey()).update(payload).digest("base64url")}`;
+}
+function authenticateSession(token2, kind = "session") {
+  const [payload, signature] = token2.split(".");
+  if (!payload || !signature) throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u043D\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u0430. \u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
+  const expected = (0, import_node_crypto5.createHmac)("sha256", signingKey()).update(payload).digest();
+  const actual = Buffer.from(signature, "base64url");
+  if (expected.length !== actual.length || !(0, import_node_crypto5.timingSafeEqual)(expected, actual)) throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u043D\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u0430. \u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
+  const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+  const user2 = getDb().users.find((candidate) => candidate.id === parsed.userId);
+  if (parsed.kind !== kind || !Number.isFinite(parsed.expiresAt) || parsed.expiresAt < Date.now() || !user2 || user2.isActive === false || parsed.fingerprint !== fingerprint(user2)) {
+    throw new Error("\u0421\u0435\u0441\u0441\u0438\u044F \u0438\u0441\u0442\u0435\u043A\u043B\u0430 \u0438\u043B\u0438 \u0434\u043E\u0441\u0442\u0443\u043F \u043E\u0442\u043E\u0437\u0432\u0430\u043D. \u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.");
+  }
+  return user2;
+}
+
+// src/services/auth.service.ts
+var AuthService = class {
+  static login(identifier, password, rememberDevice = false) {
+    const db2 = getDb();
+    const clean = (identifier || "").trim().toLowerCase();
+    const user2 = db2.users.find(
+      (u) => u.login && u.login.toLowerCase() === clean || u.username && u.username.toLowerCase() === clean || u.email && u.email.toLowerCase() === clean || u.fullName && u.fullName.toLowerCase() === clean
+    );
+    if (!user2) {
+      throw new Error("\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043B\u043E\u0433\u0438\u043D \u0438\u043B\u0438 email.");
+    }
+    if (!user2.isActive) {
+      throw new Error("\u0423\u0447\u0435\u0442\u043D\u0430\u044F \u0437\u0430\u043F\u0438\u0441\u044C \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043D\u0430 \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u043E\u043C.");
+    }
+    if (!password || !password.trim()) {
+      throw new Error("\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043F\u0430\u0440\u043E\u043B\u044C \u0434\u043B\u044F \u0432\u0445\u043E\u0434\u0430 \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0443.");
+    }
+    const p = password.trim();
+    const valid = verifyPassword(p, user2.passwordHash);
+    if (!valid) {
+      throw new Error("\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043F\u0440\u0430\u0432\u0438\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u0432\u0432\u043E\u0434\u0430 \u0438\u043B\u0438 \u043E\u0431\u0440\u0430\u0442\u0438\u0442\u0435\u0441\u044C \u043A \u0440\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044E.");
+    }
+    if (!user2.passwordHash.startsWith("scrypt:")) user2.passwordHash = hashPassword(p);
+    user2.lastLoginAt = (/* @__PURE__ */ new Date()).toISOString();
+    const accessLevel = (db2.accessLevels || []).find((l) => l.id === user2.accessLevelId) || (db2.accessLevels || []).find(
+      (l) => l.id === (user2.role === "ADMIN" ? "lvl-owner" : user2.role === "MECHANIC" ? "lvl-master" : "lvl-manager")
+    ) || (db2.accessLevels || [])[0];
+    return {
+      token: issueSession(user2),
+      trustedDeviceToken: rememberDevice ? issueSession(user2, "device") : void 0,
+      user: {
+        id: user2.id,
+        login: user2.login || user2.username || user2.email.split("@")[0],
+        username: user2.username || user2.login || user2.email.split("@")[0],
+        email: user2.email,
+        fullName: user2.fullName,
+        role: user2.role,
+        roleTitle: user2.roleTitle || (user2.role === "ADMIN" ? "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C \u043F\u0430\u0440\u043A\u0430" : user2.role === "MECHANIC" ? "\u041C\u0430\u0441\u0442\u0435\u0440 \u0421\u0422\u041E" : "\u0423\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0449\u0438\u0439"),
+        phone: user2.phone,
+        accessLevelId: user2.accessLevelId || accessLevel?.id || "lvl-owner",
+        accessLevel,
+        isActive: Boolean(user2.isActive)
+      }
+    };
+  }
+  static trustedLogin(token2) {
+    const user2 = authenticateSession(token2, "device");
+    return { token: issueSession(user2), user: this.getMe(user2.id) };
+  }
+  static getMe(userId) {
+    const db2 = getDb();
+    let user2;
+    if (userId) {
+      user2 = db2.users.find((u) => u.id === userId);
+      if (!user2) {
+        throw new Error(`\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u0441 ID "${userId}" \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+      }
+    } else {
+      user2 = db2.users.find((u) => u.id === "usr-bxleth") || db2.users[0];
+      if (!user2) {
+        throw new Error("\u0412 \u0441\u0438\u0441\u0442\u0435\u043C\u0435 \u043D\u0435\u0442 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0445 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u0435\u0439");
+      }
+    }
+    const accessLevel = (db2.accessLevels || []).find((l) => l.id === user2.accessLevelId) || (db2.accessLevels || []).find(
+      (l) => l.id === (user2.role === "ADMIN" ? "lvl-owner" : user2.role === "MECHANIC" ? "lvl-master" : "lvl-manager")
+    ) || (db2.accessLevels || [])[0];
+    return {
+      id: user2.id,
+      login: user2.login || user2.username || user2.email.split("@")[0],
+      username: user2.username || user2.login || user2.email.split("@")[0],
+      email: user2.email,
+      fullName: user2.fullName,
+      role: user2.role,
+      roleTitle: user2.roleTitle || (user2.role === "ADMIN" ? "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C \u043F\u0430\u0440\u043A\u0430" : user2.role === "MECHANIC" ? "\u041C\u0430\u0441\u0442\u0435\u0440 \u0421\u0422\u041E" : "\u0423\u043F\u0440\u0430\u0432\u043B\u044F\u044E\u0449\u0438\u0439"),
+      phone: user2.phone,
+      accessLevelId: user2.accessLevelId || accessLevel?.id || "lvl-owner",
+      accessLevel,
+      isActive: Boolean(user2.isActive)
+    };
+  }
+};
+
+// src/controllers/auth.controller.ts
+var AuthController = class {
+  static login(req, res) {
+    try {
+      const parsed = LoginDto.parse(req.body);
+      const result = AuthService.login(parsed.email, parsed.password, parsed.rememberDevice);
+      res.cookie("crm_session", result.token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 30 * 864e5 });
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message || "\u041E\u0448\u0438\u0431\u043A\u0430 \u0430\u0432\u0442\u043E\u0440\u0438\u0437\u0430\u0446\u0438\u0438" });
+    }
+  }
+  static trustedLogin(req, res) {
+    try {
+      const result = AuthService.trustedLogin(String(req.body.token || ""));
+      res.cookie("crm_session", result.token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 30 * 864e5 });
+      return res.json(result);
+    } catch (error) {
+      return res.status(401).json({ error: error.message });
+    }
+  }
+  static logout(req, res) {
+    res.clearCookie("crm_session");
+    return res.json({ success: true });
+  }
+  static getMe(req, res) {
+    try {
+      const userId = getCurrentUser()?.id;
+      if (!userId) return res.status(401).json({ error: "\u0412\u043E\u0439\u0434\u0438\u0442\u0435 \u0432 \u0441\u0438\u0441\u0442\u0435\u043C\u0443" });
+      const user2 = AuthService.getMe(userId);
+      return res.json(user2);
+    } catch (err) {
+      return res.status(404).json({ error: err.message || "\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D" });
+    }
+  }
+};
+
+// src/repositories/stats.repository.ts
+var StatsRepository = class {
+  static getDashboardStats() {
+    const db2 = getDb();
+    const now2 = getSystemTime();
+    const totalBikes = db2.bikes.length;
+    const activeParkBikes = db2.bikes.filter((b) => b.status !== "DECOMMISSIONED" && b.status !== "SOLD" && b.status !== "BOUGHT_OUT").length;
+    const rentedBikes = db2.bikes.filter((b) => b.status === "RENTED").length;
+    const availableBikes = db2.bikes.filter((b) => b.status === "AVAILABLE").length;
+    const maintenanceBikes = db2.bikes.filter((b) => b.status === "IN_MAINTENANCE").length;
+    const forSaleBikes = db2.bikes.filter((b) => b.status === "FOR_SALE").length;
+    const decommissionedBikes = db2.bikes.filter((b) => b.status === "DECOMMISSIONED").length;
+    const soldBikes = db2.bikes.filter((b) => b.status === "SOLD").length;
+    const fleetUtilization = activeParkBikes > 0 ? Math.round(rentedBikes / activeParkBikes * 1e3) / 10 : 0;
+    let overdueCount = 0;
+    let activeRentalsCount = 0;
+    const urgentOverdueRentals = [];
+    db2.rentals.forEach((r) => {
+      const isPastDue = new Date(r.nextPaymentDue) < now2;
+      if (r.status === "ACTIVE" && isPastDue) {
+        r.status = "OVERDUE";
+      }
+      if (r.status === "ACTIVE" || r.status === "OVERDUE") activeRentalsCount++;
+      if (r.status === "OVERDUE") {
+        overdueCount++;
+        const client = db2.clients.find((c) => c.id === r.clientId);
+        const bike = db2.bikes.find((b) => b.id === r.bikeId);
+        const diffDays = Math.ceil((now2.getTime() - new Date(r.nextPaymentDue).getTime()) / 864e5);
+        urgentOverdueRentals.push({
+          rentalId: r.id,
+          rentalNumber: r.rentalNumber,
+          clientId: r.clientId,
+          clientName: client?.fullName,
+          clientPhone: client?.phone,
+          clientTelegram: client?.telegram,
+          courierService: client?.courierService,
+          bikeInventoryNumber: bike?.inventoryNumber,
+          daysOverdue: Math.max(1, diffDays),
+          nextPaymentDue: r.nextPaymentDue,
+          depositAmount: r.depositAmount
+        });
+      }
+    });
+    const openRepairsCount = db2.repairs.filter(
+      (rp) => rp.status !== "COMPLETED" && rp.status !== "CANCELLED"
+    ).length;
+    const lowStockParts = db2.parts.filter((p) => p.quantity <= p.minQuantity);
+    const lowStockPartsCount = lowStockParts.length;
+    const financialSummary = calculateFinancials();
+    const { totalRevenue, salaryExpenses, totalPartsCost, retailCogs, fixedExpenses, monthlyFixedExpenses, netMargin, activeDepositsHeld } = financialSummary;
+    const { rentalPayments: rentalRevenue, buyoutPayments: buyoutRevenue, repairPayments: clientRepairRevenue, outfitSales: outfitRevenue, retailSales: retailRevenue } = financialSummary;
+    const settings = getDb().settings;
+    const revenueByMonth = Array.from({ length: 12 }, (_, index) => {
+      const monthDate = new Date(Date.UTC(now2.getUTCFullYear(), now2.getUTCMonth() - 11 + index, 1));
+      const key = monthDate.toISOString().slice(0, 7);
+      const payments = db2.payments.filter((payment) => payment.createdAt.slice(0, 7) === key && isRevenuePayment(payment));
+      const sum = (type) => payments.filter((payment) => payment.type === type).reduce((total, payment) => total + payment.amount, 0);
+      return { key, month: monthDate.toLocaleDateString("ru-RU", { month: "short", timeZone: "UTC" }), rental: sum("RENTAL"), buyout: sum("BUYOUT"), repair: sum("REPAIR"), retail: sum("RETAIL_SALE"), outfit: sum("OUTFIT_SALE"), fines: sum("FINE"), total: payments.reduce((total, payment) => total + payment.amount, 0) };
+    });
+    const modelsBreakdown = db2.models.map((m) => {
+      const modelBikes = db2.bikes.filter(
+        (b) => b.modelId === m.id && b.status !== "DECOMMISSIONED" && b.status !== "SOLD" && b.status !== "BOUGHT_OUT"
+      );
+      const rented = modelBikes.filter((b) => b.status === "RENTED").length;
+      const available = modelBikes.filter((b) => b.status === "AVAILABLE").length;
+      const maintenance = modelBikes.filter((b) => b.status === "IN_MAINTENANCE").length;
+      const total = modelBikes.length;
+      const utilization = total > 0 ? Math.round(rented / total * 100) : 0;
+      return {
+        modelId: m.id,
+        name: m.name,
+        powerWatts: m.powerWatts,
+        total,
+        rented,
+        available,
+        maintenance,
+        utilization
+      };
+    }).filter((m) => m.total > 0 || db2.models.length <= 6);
+    return {
+      revenueByMonth,
+      fleet: {
+        totalBikes,
+        activeParkBikes,
+        rentedBikes,
+        availableBikes,
+        maintenanceBikes,
+        forSaleBikes,
+        decommissionedBikes,
+        soldBikes,
+        fleetUtilization
+      },
+      modelsBreakdown,
+      rentals: {
+        activeRentalsCount,
+        overdueCount,
+        urgentOverdueRentals
+      },
+      repairs: {
+        openRepairsCount
+      },
+      inventory: {
+        lowStockPartsCount,
+        lowStockParts
+      },
+      financials: {
+        fines: financialSummary.fines,
+        partPurchaseExpenses: financialSummary.partPurchaseExpenses,
+        totalRevenue,
+        rentalRevenue,
+        buyoutRevenue,
+        clientRepairRevenue,
+        outfitRevenue,
+        retailRevenue,
+        salaryExpenses,
+        totalPartsCost,
+        retailCogs,
+        fixedExpenses,
+        monthlyFixedExpenses,
+        fixedExpensesDescription: settings.fixedExpensesDescription || "\u0410\u0440\u0435\u043D\u0434\u0430 \u0441\u0435\u0440\u0432\u0438\u0441\u043D\u043E\u0433\u043E \u0445\u0430\u0431\u0430 \u0438 \u043D\u0430\u043A\u043B\u0430\u0434\u043D\u044B\u0435 \u0440\u0430\u0441\u0445\u043E\u0434\u044B",
+        fixedExpenseItems: settings.fixedExpenseItems || [],
+        netMargin,
+        activeDepositsHeld
+      },
+      recentPayments: [...db2.payments].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10),
+      totalClients: db2.clients.length,
+      employeesCount: db2.employees.length,
+      retailOrdersCount: db2.retailOrders.length,
+      systemTime: {
+        currentDate: now2.toISOString(),
+        isSimulated: isTimeSimulated()
+      }
+    };
+  }
+};
+
+// src/services/dashboard.service.ts
+var DashboardService = class {
+  static getStats() {
+    return StatsRepository.getDashboardStats();
+  }
+};
+
+// src/controllers/dashboard.controller.ts
+var DashboardController = class {
+  static getStats(req, res) {
+    try {
+      const stats = DashboardService.getStats();
+      return res.json(stats);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+};
+
+// src/services/bike.service.ts
+var BikeService = class {
+  static getAllBikes(filters) {
+    return BikeRepository.getAll(filters);
+  }
+  static getBikeById(id) {
+    const bike = BikeRepository.getById(id);
+    if (!bike) {
+      throw new Error(`\u0411\u0430\u0439\u043A \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+    }
+    return bike;
+  }
+  static getModels() {
+    return BikeRepository.getModels();
+  }
+  static createModel(data) {
+    return BikeRepository.createModel(data);
+  }
+  static updateModel(id, data) {
+    return BikeRepository.updateModel(id, data);
+  }
+  static deleteModel(id) {
+    return BikeRepository.deleteModel(id);
+  }
+  static createBike(data) {
+    return BikeRepository.create(data);
+  }
+  static updateBike(id, data) {
+    const bike = BikeRepository.update(id, data);
+    if (!bike) {
+      throw new Error(`\u0411\u0430\u0439\u043A \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+    }
+    return bike;
+  }
+  static changeStatus(id, status, location2) {
+    const bike = BikeRepository.updateStatus(id, status, location2);
+    if (!bike) {
+      throw new Error(`\u0411\u0430\u0439\u043A \u0441 ID ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+    }
+    return bike;
+  }
+  static deleteBike(id) {
+    return BikeRepository.delete(id);
+  }
+};
+
+// src/controllers/bike.controller.ts
+var BikeController = class {
+  static getAll(req, res) {
+    try {
+      const { status, modelId, search } = req.query;
+      const bikes = BikeService.getAllBikes({
+        status,
+        modelId,
+        search
+      });
+      return res.json(bikes);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  static getModels(req, res) {
+    try {
+      const models = BikeService.getModels();
+      return res.json(models);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  static createModel(req, res) {
+    try {
+      const newModel = BikeService.createModel(req.body);
+      return res.status(201).json(newModel);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+  static updateModel(req, res) {
+    try {
+      const updated = BikeService.updateModel(req.params.id, req.body);
+      return res.json(updated);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+  static deleteModel(req, res) {
+    try {
+      const removed = BikeService.deleteModel(req.params.id);
+      return res.json({
+        success: true,
+        message: `\u0428\u0430\u0431\u043B\u043E\u043D \u043C\u043E\u0434\u0435\u043B\u0438 "${removed.name}" \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0443\u0434\u0430\u043B\u0435\u043D`,
+        data: removed
+      });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+  static getById(req, res) {
+    try {
+      const bike = BikeService.getBikeById(req.params.id);
+      return res.json(bike);
+    } catch (err) {
+      return res.status(404).json({ error: err.message });
+    }
+  }
+  static create(req, res) {
+    try {
+      const parsed = BikeCreateDto.parse(req.body);
+      const newBike = BikeService.createBike(parsed);
+      return res.status(201).json(newBike);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static update(req, res) {
+    try {
+      const parsed = BikeUpdateDto.parse(req.body);
+      const updated = BikeService.updateBike(req.params.id, parsed);
+      return res.json(updated);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static delete(req, res) {
+    try {
+      const removed = BikeService.deleteBike(req.params.id);
+      return res.json({ success: true, message: `\u0411\u0430\u0439\u043A ${removed.inventoryNumber} \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0443\u0434\u0430\u043B\u0435\u043D \u0438\u0437 \u043F\u0430\u0440\u043A\u0430`, data: removed });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+};
+
+// src/controllers/client.controller.ts
+var ClientController = class {
+  static getAll(req, res) {
+    try {
+      const { status, search, courierService, clientType } = req.query;
+      const clients = ClientService.getAllClients({
+        status,
+        search,
+        courierService,
+        clientType
+      });
+      return res.json(clients);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  static getById(req, res) {
+    try {
+      const client = ClientService.getClientById(req.params.id);
+      return res.json(client);
+    } catch (err) {
+      return res.status(404).json({ error: err.message });
+    }
+  }
+  static searchByPhone(req, res) {
+    try {
+      const phone = req.query.phone;
+      if (!phone) return res.status(400).json({ error: "\u041F\u0430\u0440\u0430\u043C\u0435\u0442\u0440 phone \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D" });
+      const client = ClientService.searchByPhone(phone);
+      return res.json(client);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  static create(req, res) {
+    try {
+      const parsed = ClientCreateDto.parse(req.body);
+      const newClient = ClientService.createClient(parsed);
+      return res.status(201).json(newClient);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static update(req, res) {
+    try {
+      const parsed = ClientUpdateDto.parse(req.body);
+      const updated = ClientService.updateClient(req.params.id, parsed);
+      return res.json(updated);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static updateStatus(req, res) {
+    try {
+      const { status, reason } = req.body;
+      if (!status) return res.status(400).json({ error: "\u0421\u0442\u0430\u0442\u0443\u0441 \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u0435\u043D" });
+      const updated = ClientService.updateStatus(req.params.id, status, reason);
+      return res.json(updated);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+  static delete(req, res) {
+    try {
+      const removed = ClientService.deleteClient(req.params.id);
+      return res.json({ success: true, message: `\u041A\u0443\u0440\u044C\u0435\u0440 ${removed.fullName} \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0443\u0434\u0430\u043B\u0435\u043D`, data: removed });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+};
+
+// src/repositories/rental.repository.ts
+var RentalRepository = class {
+  static refreshOverdueStatuses() {
+    const db2 = getDb();
+    const now2 = getSystemTime();
+    db2.rentals.forEach((r) => {
+      if (r.status === "ACTIVE" && new Date(r.nextPaymentDue) < now2) {
+        r.status = "OVERDUE";
+      }
+    });
+  }
+  static getAll(filters) {
+    this.refreshOverdueStatuses();
+    const db2 = getDb();
+    let list = db2.rentals.map((r) => {
+      const client = db2.clients.find((c) => c.id === r.clientId);
+      const bike = db2.bikes.find((b) => b.id === r.bikeId);
+      const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
+      const battery = bike?.batteryId ? db2.batteries.find((bt) => bt.id === bike.batteryId) : null;
+      const tariff = db2.tariffs.find((t) => t.id === r.tariffId);
+      const tariffBikeModel = tariff?.bikeModelId ? db2.models.find((m) => m.id === tariff.bikeModelId) : null;
+      const fullTariff = tariff ? { ...tariff, bikeModel: tariffBikeModel } : null;
+      const outfits = db2.outfits.filter((o) => r.outfitIds.includes(o.id));
+      const payments = db2.payments.filter((p) => p.rentalId === r.id);
+      const manager = db2.users.find((user2) => user2.id === r.managerId);
+      const batteries = db2.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
+      const buyoutPayments = payments.filter((p) => p.type === "RENTAL" || p.type === "BUYOUT");
+      const totalPaidForBuyout = buyoutPayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalBuyoutPrice = r.totalBuyoutPrice || (r.type === "RENT_TO_OWN" ? tariff?.totalBuyoutPrice || tariff?.price || 0 : void 0);
+      const remainingBuyoutAmount = totalBuyoutPrice !== void 0 ? Math.max(0, totalBuyoutPrice - totalPaidForBuyout) : void 0;
+      return {
+        ...r,
+        client,
+        bike: bike ? { ...bike, model: bikeModel, battery } : null,
+        batteries,
+        tariff: fullTariff,
+        outfits,
+        payments,
+        manager,
+        totalPaidForBuyout,
+        totalBuyoutPrice,
+        remainingBuyoutAmount
+      };
+    });
+    if (filters?.status) {
+      if (filters.status === "ACTIVE") {
+        list = list.filter((r) => r.status === "ACTIVE" || r.status === "OVERDUE");
+      } else {
+        list = list.filter((r) => r.status === filters.status);
+      }
+    }
+    if (filters?.clientId) {
+      list = list.filter((r) => r.clientId === filters.clientId);
+    }
+    if (filters?.search) {
+      const q = filters.search.toLowerCase();
+      list = list.filter(
+        (r) => r.rentalNumber.toLowerCase().includes(q) || r.client?.fullName.toLowerCase().includes(q) || r.client?.phone.toLowerCase().includes(q) || r.bike?.inventoryNumber.toLowerCase().includes(q)
+      );
+    }
+    return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  }
+  static getById(id) {
+    this.refreshOverdueStatuses();
+    const db2 = getDb();
+    const r = db2.rentals.find(
+      (rent) => rent.id === id || rent.rentalNumber?.toLowerCase() === id.toLowerCase()
+    );
+    if (!r) return null;
+    const client = db2.clients.find((c) => c.id === r.clientId);
+    const bike = db2.bikes.find((b) => b.id === r.bikeId);
+    const bikeModel = bike ? db2.models.find((m) => m.id === bike.modelId) : null;
+    const battery = bike?.batteryId ? db2.batteries.find((bt) => bt.id === bike.batteryId) : null;
+    const tariff = db2.tariffs.find((t) => t.id === r.tariffId);
+    const tariffBikeModel = tariff?.bikeModelId ? db2.models.find((m) => m.id === tariff.bikeModelId) : null;
+    const fullTariff = tariff ? { ...tariff, bikeModel: tariffBikeModel } : null;
+    const outfits = db2.outfits.filter((o) => r.outfitIds.includes(o.id));
+    const payments = db2.payments.filter((p) => p.rentalId === r.id);
+    const batteries = db2.batteries.filter((bt) => (r.batteryIds || []).includes(bt.id));
+    const manager = db2.users.find((u) => u.id === r.managerId);
+    const buyoutPayments = payments.filter((p) => p.type === "RENTAL" || p.type === "BUYOUT");
+    const totalPaidForBuyout = buyoutPayments.reduce((sum, p) => sum + p.amount, 0);
+    const totalBuyoutPrice = r.totalBuyoutPrice || (r.type === "RENT_TO_OWN" ? tariff?.totalBuyoutPrice || tariff?.price || 0 : void 0);
+    const remainingBuyoutAmount = totalBuyoutPrice !== void 0 ? Math.max(0, totalBuyoutPrice - totalPaidForBuyout) : void 0;
+    return {
+      ...r,
+      client,
+      bike: bike ? { ...bike, model: bikeModel, battery } : null,
+      batteries,
+      tariff: fullTariff,
+      outfits,
+      payments,
+      manager,
+      totalPaidForBuyout,
+      totalBuyoutPrice,
+      remainingBuyoutAmount
+    };
+  }
+  static getTariffs() {
+    const db2 = getDb();
+    return db2.tariffs.map((t) => {
+      const bikeModel = t.bikeModelId ? db2.models.find((m) => m.id === t.bikeModelId) : null;
+      return {
+        ...t,
+        bikeModel
+      };
+    });
+  }
+  static createTariff(data) {
+    const db2 = getDb();
+    const newTariff = {
+      id: `trf-${Date.now()}`,
+      name: data.name,
+      type: data.type || "STANDARD",
+      durationDays: data.durationDays,
+      price: data.price,
+      depositRequired: data.depositRequired ?? 0,
+      isActive: data.isActive ?? true,
+      totalBuyoutPrice: data.totalBuyoutPrice !== void 0 ? Number(data.totalBuyoutPrice) : void 0,
+      paymentIntervalDays: data.paymentIntervalDays !== void 0 ? Number(data.paymentIntervalDays) : void 0,
+      installmentPayment: data.installmentPayment !== void 0 ? Number(data.installmentPayment) : void 0,
+      bikeModelId: data.bikeModelId || null,
+      includedBatteries: data.includedBatteries || []
+    };
+    db2.tariffs.push(newTariff);
+    const bikeModel = newTariff.bikeModelId ? db2.models.find((m) => m.id === newTariff.bikeModelId) : null;
+    return { ...newTariff, bikeModel };
+  }
+  static updateTariff(id, data) {
+    const db2 = getDb();
+    const tariff = db2.tariffs.find((t) => t.id === id);
+    if (!tariff) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    Object.assign(tariff, data);
+    const bikeModel = tariff.bikeModelId ? db2.models.find((m) => m.id === tariff.bikeModelId) : null;
+    return { ...tariff, bikeModel };
+  }
+  static deleteTariff(id) {
+    const db2 = getDb();
+    const inUse = db2.rentals.some(
+      (r) => r.tariffId === id && (r.status === "ACTIVE" || r.status === "OVERDUE")
+    );
+    if (inUse) {
+      throw new Error(
+        "\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0448\u0430\u0431\u043B\u043E\u043D, \u0442\u0430\u043A \u043A\u0430\u043A \u043F\u043E \u043D\u0435\u043C\u0443 \u0435\u0441\u0442\u044C \u0430\u043A\u0442\u0438\u0432\u043D\u044B\u0435 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u044B \u0430\u0440\u0435\u043D\u0434\u044B. \u0412\u044B \u043C\u043E\u0436\u0435\u0442\u0435 \u0434\u0435\u0430\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0435\u0433\u043E."
+      );
+    }
+    const idx = db2.tariffs.findIndex((t) => t.id === id);
+    if (idx === -1) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    db2.tariffs.splice(idx, 1);
+    return { success: true, message: "\u0428\u0430\u0431\u043B\u043E\u043D \u0442\u0430\u0440\u0438\u0444\u0430 \u0443\u0434\u0430\u043B\u0435\u043D" };
+  }
+  static create(data) {
+    return withDbTransaction(() => this.createInternal(data));
+  }
+  static createInternal(data) {
+    const db2 = getDb();
+    const client = db2.clients.find((c) => c.id === data.clientId);
+    if (!client) throw new Error("\u041A\u043B\u0438\u0435\u043D\u0442 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (client.status === "BLACKLIST") {
+      throw new Error(`\u041A\u043B\u0438\u0435\u043D\u0442 \u0432 \u0427\u0435\u0440\u043D\u043E\u043C \u0421\u043F\u0438\u0441\u043A\u0435! \u041F\u0440\u0438\u0447\u0438\u043D\u0430: ${client.blackListReason || "\u0437\u0430\u043F\u0440\u0435\u0442 \u0430\u0440\u0435\u043D\u0434\u044B"}`);
+    }
+    if (data.registrationAddress !== void 0) client.registrationAddress = data.registrationAddress?.trim() || null;
+    if (data.courierService) client.courierService = data.courierService;
+    if (data.passportSerial) client.passportSerial = data.passportSerial;
+    if (data.passportNumber) client.passportNumber = data.passportNumber;
+    if (data.citizenship) client.citizenship = data.citizenship;
+    if (data.patentNumber) client.patentNumber = data.patentNumber;
+    if (data.telegram && !client.telegram) client.telegram = data.telegram;
+    client.clientType = "COURIER";
+    const bike = db2.bikes.find((b) => b.id === data.bikeId);
+    if (!bike) throw new Error("\u0411\u0430\u0439\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (bike.status !== "AVAILABLE") {
+      throw new Error(`\u0411\u0430\u0439\u043A ${bike.inventoryNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438 (\u0442\u0435\u043A\u0443\u0449\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441: ${bike.status})`);
+    }
+    if (activeRentalForBike(bike.id)) throw new Error("\u0411\u0430\u0439\u043A \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0451\u043D \u0437\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
+    const tariff = db2.tariffs.find((t) => t.id === data.tariffId);
+    if (!tariff) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    if (!tariff.isActive) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043E\u0442\u043A\u043B\u044E\u0447\u0451\u043D");
+    if (tariff.bikeModelId && tariff.bikeModelId !== bike.modelId) throw new Error("\u0422\u0430\u0440\u0438\u0444 \u043D\u0435 \u043F\u043E\u0434\u0445\u043E\u0434\u0438\u0442 \u0434\u043B\u044F \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u043E\u0439 \u043C\u043E\u0434\u0435\u043B\u0438");
+    const outfits = db2.outfits.filter((o) => data.outfitIds.includes(o.id));
+    if (outfits.length !== new Set(data.outfitIds).size) throw new Error("\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u0430\u044F \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+    if (outfits.some((o) => db2.rentals.some((r) => isOpenRental(r) && r.outfitIds.includes(o.id)))) {
+      throw new Error("\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u0443\u0436\u0435 \u0437\u0430\u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0430 \u0437\u0430 \u0434\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u043C \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u043E\u043C");
+    }
+    const unavailableOutfit = outfits.find((o) => o.status !== "IN_STOCK");
+    if (unavailableOutfit) {
+      throw new Error(`\u042D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 "${unavailableOutfit.name}" \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u043D\u0430 \u0441\u043A\u043B\u0430\u0434\u0435 (\u0441\u0442\u0430\u0442\u0443\u0441: ${unavailableOutfit.status})`);
+    }
+    const requestedBatteryIds = [.../* @__PURE__ */ new Set([...data.batteryIds || [], ...bike.batteryId ? [bike.batteryId] : []])];
+    const batteries = db2.batteries.filter((b) => requestedBatteryIds.includes(b.id));
+    if (batteries.length !== requestedBatteryIds.length) throw new Error("\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u0430\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    for (const b of batteries) {
+      if (activeRentalForBattery(b.id)) throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${b.serialNumber} \u0443\u0436\u0435 \u0432\u044B\u0434\u0430\u043D \u043F\u043E \u0434\u0440\u0443\u0433\u043E\u043C\u0443 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443`);
+      if (b.status === "SOLD" || b.status === "DECOMMISSIONED" || b.status === "IN_MAINTENANCE") {
+        throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${b.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438`);
+      }
+      if (b.status !== "AVAILABLE" && b.installedBikeId !== bike.id && b.id !== bike.batteryId) {
+        throw new Error(`\u0410\u043A\u043A\u0443\u043C\u0443\u043B\u044F\u0442\u043E\u0440 ${b.serialNumber} \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0434\u043B\u044F \u0432\u044B\u0434\u0430\u0447\u0438 (\u0442\u0435\u043A\u0443\u0449\u0438\u0439 \u0441\u0442\u0430\u0442\u0443\u0441: ${b.status})`);
+      }
+    }
+    const isRentToOwn = tariff.type === "RENT_TO_OWN";
+    const paymentIntervalDays = data.paymentIntervalDays ?? tariff.paymentIntervalDays ?? (isRentToOwn ? 7 : tariff.durationDays);
+    const model = db2.models.find((item) => item.id === bike.modelId);
+    const fallbackKitPrice = (model?.baseBuyoutPrice || model?.salePrice || 6e4) + batteries.reduce((sum, battery) => sum + (battery.salePrice || db2.batteryModels.find((item) => item.id === battery.modelId)?.salePrice || 25e3), 0);
+    const totalBuyoutPrice = data.totalBuyoutPrice ?? tariff.totalBuyoutPrice ?? (isRentToOwn ? fallbackKitPrice : void 0);
+    const installmentPayment = data.installmentPayment ?? tariff.installmentPayment ?? (isRentToOwn ? tariff.price : void 0);
+    const discount = ClientRepository.computeClientLoyalty(client).loyaltyTier.discountRentalPercent;
+    const firstPaymentAmount = data.firstPaymentAmount ?? (isRentToOwn ? installmentPayment ?? tariff.price : Math.round(tariff.price * (1 - discount / 100) * 100) / 100);
+    const now2 = getSystemTime();
+    let startDate = now2;
+    if (data.startDate) {
+      const parsedStart = new Date(data.startDate);
+      if (!isNaN(parsedStart.getTime())) {
+        startDate = parsedStart;
+      }
+    }
+    const effectiveDurationDays = data.durationDays && data.durationDays > 0 ? data.durationDays : tariff.durationDays;
+    const nextPaymentDue = isRentToOwn ? new Date(startDate.getTime() + paymentIntervalDays * 864e5) : new Date(startDate.getTime() + effectiveDurationDays * 864e5);
+    const expiresAt = new Date(startDate.getTime() + effectiveDurationDays * 864e5);
+    const rentalNumber = data.rentalNumber && data.rentalNumber.trim() ? data.rentalNumber.trim() : nextNumber(`RNT-${startDate.getFullYear()}`, db2.rentals.map((r) => r.rentalNumber));
+    if (db2.rentals.some((r) => r.rentalNumber.toLowerCase() === rentalNumber.toLowerCase())) throw new Error("\u041D\u043E\u043C\u0435\u0440 \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442");
+    const depositAmount = data.customDeposit !== void 0 ? data.customDeposit : tariff.depositRequired;
+    const rental = {
+      id: `rnt-${Date.now()}`,
+      rentalNumber,
+      clientId: data.clientId,
+      bikeId: data.bikeId,
+      tariffId: data.tariffId,
+      managerId: getCurrentUser()?.id || data.managerId || db2.users.find((u) => u.role === "MANAGER" || u.role === "ADMIN")?.id || db2.users[0]?.id || "usr-admin",
+      status: nextPaymentDue < now2 ? "OVERDUE" : "ACTIVE",
+      type: tariff.type,
+      startedAt: startDate.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      nextPaymentDue: nextPaymentDue.toISOString(),
+      depositAmount,
+      depositRefunded: false,
+      notes: data.notes || null,
+      outfitIds: data.outfitIds,
+      batteryIds: requestedBatteryIds,
+      totalBuyoutPrice: totalBuyoutPrice !== void 0 ? Number(totalBuyoutPrice) : void 0,
+      paymentIntervalDays: paymentIntervalDays !== void 0 ? Number(paymentIntervalDays) : void 0,
+      installmentPayment: installmentPayment !== void 0 ? Number(installmentPayment) : void 0,
+      createdAt: now2.toISOString(),
+      updatedAt: now2.toISOString()
+    };
+    db2.rentals.push(rental);
+    if (!bike.batteryId && batteries.length > 0) {
+      const primaryBattery = batteries[0];
+      bike.batteryId = primaryBattery.id;
+      primaryBattery.status = "INSTALLED";
+      primaryBattery.installedBikeId = bike.id;
+      primaryBattery.updatedAt = now2.toISOString();
+    }
+    for (const b of batteries) {
+      if (b.id !== bike.batteryId) {
+        b.status = "ISSUED_SPARE";
+        b.installedBikeId = null;
+        b.issuedBikeId = bike.id;
+        b.updatedAt = now2.toISOString();
+      }
+    }
+    bike.status = "RENTED";
+    bike.currentLocation = `\u0412 \u0430\u0440\u0435\u043D\u0434\u0435 \u0443 ${client.fullName}`;
+    bike.updatedAt = now2.toISOString();
+    outfits.forEach((o) => {
+      o.status = "ISSUED";
+    });
+    if (firstPaymentAmount > 0) {
+      db2.payments.push({
+        id: `pay-${Date.now()}-1`,
+        rentalId: rental.id,
+        clientId: rental.clientId,
+        cashierId: getCurrentUser()?.id || rental.managerId,
+        type: isRentToOwn ? "BUYOUT" : "RENTAL",
+        amount: firstPaymentAmount,
+        method: data.paymentMethod,
+        description: isRentToOwn ? `\u041F\u0435\u0440\u0432\u043E\u043D\u0430\u0447\u0430\u043B\u044C\u043D\u044B\u0439 \u0432\u0437\u043D\u043E\u0441 \u043F\u043E \u0432\u044B\u043A\u0443\u043F\u0443 \u0442\u0430\u0440\u0438\u0444\u0430 "${tariff.name}" \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}` : `\u041E\u043F\u043B\u0430\u0442\u0430 \u0442\u0430\u0440\u0438\u0444\u0430 "${tariff.name}" \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`,
+        createdAt: startDate.toISOString()
+      });
+    }
+    if (depositAmount > 0) {
+      db2.payments.push({
+        id: `pay-${Date.now()}-2`,
+        rentalId: rental.id,
+        clientId: rental.clientId,
+        type: "DEPOSIT",
+        cashierId: getCurrentUser()?.id || rental.managerId,
+        amount: depositAmount,
+        method: data.paymentMethod,
+        description: `\u041E\u0431\u0435\u0441\u043F\u0435\u0447\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0439 \u0437\u0430\u043B\u043E\u0433 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`,
+        createdAt: startDate.toISOString()
+      });
+    }
+    DocumentRepository.captureRental(rental.id);
+    if (isRentToOwn && totalBuyoutPrice && firstPaymentAmount >= totalBuyoutPrice) this.finalizeBuyout(rental.id);
+    return this.getById(rental.id);
+  }
+  static renew(id, data) {
+    return withDbTransaction(() => {
+      DocumentRepository.captureRental(id, true);
+      return this.renewInternal(id, data);
+    });
+  }
+  static renewInternal(id, data) {
+    const db2 = getDb();
+    const rental = db2.rentals.find((r) => r.id === id);
+    if (!rental) throw new Error("\u0410\u0440\u0435\u043D\u0434\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+    if (data.externalReference && db2.payments.some((p) => p.externalReference === data.externalReference)) return this.getById(id);
+    if (rental.status === "CLOSED" || rental.status === "BOUGHT_OUT") {
+      throw new Error("\u041D\u0435\u043B\u044C\u0437\u044F \u043F\u0440\u043E\u0434\u043B\u0438\u0442\u044C \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u043D\u044B\u0439 \u0438\u043B\u0438 \u0432\u044B\u043A\u0443\u043F\u043B\u0435\u043D\u043D\u044B\u0439 \u0434\u043E\u0433\u043E\u0432\u043E\u0440");
+    }
+    const tariff = db2.tariffs.find((t) => t.id === rental.tariffId);
+    const isRentToOwn = rental.type === "RENT_TO_OWN";
+    const durationDays = data.durationDays || rental.paymentIntervalDays || tariff?.paymentIntervalDays || tariff?.durationDays || 7;
+    const paid = db2.payments.filter((p) => p.rentalId === id && (p.type === "RENTAL" || p.type === "BUYOUT")).reduce((sum, p) => sum + p.amount, 0);
+    const target = rental.totalBuyoutPrice ?? tariff?.totalBuyoutPrice ?? tariff?.price ?? 0;
+    const defaultAmount = isRentToOwn ? Math.min(rental.installmentPayment ?? tariff?.installmentPayment ?? tariff?.price ?? 6e3, Math.max(0, target - paid)) : tariff?.price ?? 6e3;
+    const amount = data.amount ?? defaultAmount;
+    if (!Number.isFinite(amount) || amount <= 0) throw new Error("\u0421\u0443\u043C\u043C\u0430 \u043F\u043B\u0430\u0442\u0435\u0436\u0430 \u0434\u043E\u043B\u0436\u043D\u0430 \u0431\u044B\u0442\u044C \u043F\u043E\u043B\u043E\u0436\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0439");
+    if (data.isBuyoutFinal && (!isRentToOwn || paid + amount < target)) throw new Error("\u0414\u043B\u044F \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0438\u044F \u0432\u044B\u043A\u0443\u043F\u0430 \u043D\u0435\u043E\u0431\u0445\u043E\u0434\u0438\u043C\u043E \u043F\u043E\u0433\u0430\u0441\u0438\u0442\u044C \u043E\u0441\u0442\u0430\u0442\u043E\u043A \u0434\u043E\u043B\u0433\u0430");
+    const now2 = getSystemTime();
+    const paymentDate = data.createdAt ? new Date(data.createdAt) : now2;
+    if (isNaN(paymentDate.getTime())) throw new Error("\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u0430\u044F \u0434\u0430\u0442\u0430 \u043F\u043B\u0430\u0442\u0435\u0436\u0430");
+    const currentDue = new Date(rental.nextPaymentDue || rental.expiresAt);
+    const baseDate = currentDue > paymentDate ? currentDue : paymentDate;
+    const newNextDue = new Date(baseDate.getTime() + durationDays * 864e5);
+    const paymentType = isRentToOwn ? "BUYOUT" : "RENTAL";
+    db2.payments.push({
+      id: `pay-${Date.now()}`,
+      rentalId: rental.id,
+      cashierId: getCurrentUser()?.id || rental.managerId,
+      externalReference: data.externalReference,
+      clientId: rental.clientId,
+      type: paymentType,
+      amount,
+      method: data.method,
+      description: isRentToOwn ? data.isBuyoutFinal ? `\u0424\u0438\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u0432\u044B\u043A\u0443\u043F\u043D\u043E\u0439 \u043F\u043B\u0430\u0442\u0451\u0436 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}` : `\u041E\u0447\u0435\u0440\u0435\u0434\u043D\u043E\u0439 \u043F\u043B\u0430\u0442\u0451\u0436 \u043F\u043E \u0432\u044B\u043A\u0443\u043F\u0443 (${durationDays} \u0434\u043D.) \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}` : `\u041F\u0440\u043E\u0434\u043B\u0435\u043D\u0438\u0435 \u0430\u0440\u0435\u043D\u0434\u044B \u043D\u0430 ${durationDays} \u0434\u043D. \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`,
+      createdAt: paymentDate.toISOString()
+    });
+    const allBuyoutPayments = db2.payments.filter((p) => p.rentalId === rental.id && (p.type === "RENTAL" || p.type === "BUYOUT"));
+    const totalPaid = allBuyoutPayments.reduce((sum, p) => sum + p.amount, 0);
+    const targetPrice = rental.totalBuyoutPrice || tariff?.totalBuyoutPrice || tariff?.price || 0;
+    const isFullyPaid = isRentToOwn && targetPrice > 0 && totalPaid >= targetPrice;
+    if (data.isBuyoutFinal || isFullyPaid) {
+      this.finalizeBuyout(rental.id);
+      rental.updatedAt = now2.toISOString();
+      if (data.notes) {
+        rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u0412\u044B\u043A\u0443\u043F ${now2.toLocaleDateString("ru-RU")}]: ${data.notes}`;
+      } else {
+        rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u0412\u044B\u043A\u0443\u043F \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D ${now2.toLocaleDateString("ru-RU")}]: \u041E\u043F\u043B\u0430\u0447\u0435\u043D\u043E ${totalPaid} \u0438\u0437 ${targetPrice} \u20BD`;
+      }
+      const bike = db2.bikes.find((b) => b.id === rental.bikeId);
+      const client = db2.clients.find((c) => c.id === rental.clientId);
+      if (bike) {
+        bike.status = "BOUGHT_OUT";
+        bike.currentLocation = `\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D \u043A\u043B\u0438\u0435\u043D\u0442\u043E\u043C ${client?.fullName || ""} (\u0434\u043E\u0433\u043E\u0432\u043E\u0440 ${rental.rentalNumber})`;
+        bike.updatedAt = now2.toISOString();
+      }
+      return this.getById(rental.id);
+    }
+    rental.nextPaymentDue = newNextDue.toISOString();
+    if (!isRentToOwn) {
+      rental.expiresAt = newNextDue.toISOString();
+    }
+    rental.status = newNextDue < now2 ? "OVERDUE" : "ACTIVE";
+    rental.updatedAt = now2.toISOString();
+    if (data.notes) {
+      rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u041F\u0440\u043E\u0434\u043B\u0435\u043D\u0438\u0435 ${now2.toLocaleDateString("ru-RU")}]: ${data.notes}`;
+    }
+    return this.getById(rental.id);
+  }
+  static finalizeBuyout(id) {
+    const db2 = getDb();
+    const rental = db2.rentals.find((r) => r.id === id);
+    if (!rental || rental.type !== "RENT_TO_OWN") return;
+    const now2 = getSystemTime().toISOString();
+    rental.status = "BOUGHT_OUT";
+    rental.closedAt = now2;
+    rental.updatedAt = now2;
+    const bike = db2.bikes.find((b) => b.id === rental.bikeId);
+    if (bike) {
+      bike.status = "BOUGHT_OUT";
+      bike.currentLocation = `\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`;
+      bike.updatedAt = now2;
+    }
+    for (const battery of db2.batteries) {
+      if (rental.batteryIds?.includes(battery.id) || battery.id === bike?.batteryId || battery.installedBikeId === rental.bikeId || battery.issuedBikeId === rental.bikeId) {
+        battery.status = "SOLD";
+        battery.issuedBikeId = null;
+        battery.notes = `\u0412\u044B\u043A\u0443\u043F\u043B\u0435\u043D \u0432 \u0441\u043E\u0441\u0442\u0430\u0432\u0435 \u043A\u043E\u043C\u043F\u043B\u0435\u043A\u0442\u0430 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber}`;
+        battery.updatedAt = now2;
+      }
+    }
+    DocumentRepository.capture("BUYOUT_ACT", id);
+  }
+  static close(id, data) {
+    return withDbTransaction(() => {
+      DocumentRepository.captureRental(id, true);
+      return this.closeInternal(id, data);
+    });
+  }
+  static closeInternal(id, data) {
+    const db2 = getDb();
+    const rental = db2.rentals.find((r) => r.id === id);
+    if (!rental) throw new Error("\u0410\u0440\u0435\u043D\u0434\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430");
+    const isBoughtOut = rental.status === "BOUGHT_OUT";
+    if (rental.status === "CLOSED" || isBoughtOut && rental.depositRefunded) throw new Error("\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D \u0438 \u0440\u0430\u0441\u0447\u0451\u0442\u044B \u0437\u0430\u043A\u0440\u044B\u0442\u044B");
+    if (new Set(data.outfitReturns.map((o) => o.outfitId)).size !== data.outfitReturns.length || data.outfitReturns.some((o) => !rental.outfitIds.includes(o.outfitId))) {
+      throw new Error("\u0412 \u0432\u043E\u0437\u0432\u0440\u0430\u0442\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u0430 \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u0430\u044F \u044D\u043A\u0438\u043F\u0438\u0440\u043E\u0432\u043A\u0430 \u0438\u043B\u0438 \u043F\u0440\u0435\u0434\u043C\u0435\u0442 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0430");
+    }
+    const bike = db2.bikes.find((b) => b.id === rental.bikeId);
+    const client = db2.clients.find((c) => c.id === rental.clientId);
+    const now2 = getSystemTime();
+    let repairOrderCreated = null;
+    if (bike && !isBoughtOut) {
+      const existingRepair = db2.repairs.find((repair) => repair.bikeId === bike.id && repair.status !== "COMPLETED" && repair.status !== "CANCELLED");
+      if (data.bikeMileageKm && data.bikeMileageKm > bike.mileageKm) {
+        bike.mileageKm = data.bikeMileageKm;
+      }
+      if (data.bikeCondition === "NEEDS_REPAIR" || existingRepair) {
+        bike.status = "IN_MAINTENANCE";
+        bike.currentLocation = "\u041C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0430\u044F \u0421\u0422\u041E (\u0432\u043E\u0437\u0432\u0440\u0430\u0442 \u0441 \u0434\u0435\u0444\u0435\u043A\u0442\u043E\u043C)";
+        bike.note = data.defectDescription || "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u044B \u0434\u0435\u0444\u0435\u043A\u0442\u044B \u043F\u0440\u0438 \u043F\u0440\u0438\u0435\u043C\u043A\u0435 \u0438\u0437 \u0430\u0440\u0435\u043D\u0434\u044B";
+        const orderNumber = nextNumber(`REP-${now2.getFullYear()}`, db2.repairs.map((r) => r.orderNumber));
+        repairOrderCreated = {
+          id: `rep-${Date.now()}`,
+          orderNumber,
+          bikeId: bike.id,
+          clientId: rental.clientId,
+          clientName: client?.fullName || null,
+          clientPhone: client?.phone || null,
+          itemType: "BIKE",
+          mechanicId: getCurrentUser()?.id || db2.users.find((u) => u.role === "MECHANIC")?.id || db2.users[0]?.id || "usr-bxleth",
+          status: "DIAGNOSTICS",
+          faultType: data.faultType || "CLIENT_FAULT",
+          description: `\u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u043F\u043E \u0430\u0440\u0435\u043D\u0434\u0435 ${rental.rentalNumber}: ${data.defectDescription || "\u0414\u0435\u0444\u0435\u043A\u0442\u044B \u043F\u0440\u0438 \u0441\u0434\u0430\u0447\u0435"}`,
+          laborCost: 0,
+          partsCost: 0,
+          totalCost: 0,
+          createdAt: now2.toISOString(),
+          completedAt: null,
+          parts: []
+        };
+        if (existingRepair) repairOrderCreated = existingRepair;
+        else {
+          db2.repairs.push(repairOrderCreated);
+          DocumentRepository.capture("REPAIR_ORDER", repairOrderCreated.id);
+        }
+      } else {
+        bike.status = "AVAILABLE";
+        bike.currentLocation = "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F \u0431\u0430\u0437\u0430 (\u043C. \u0414\u043C\u0438\u0442\u0440\u043E\u0432\u0441\u043A\u0430\u044F)";
+      }
+      bike.updatedAt = now2.toISOString();
+    }
+    let totalDeduction = 0;
+    const returns = rental.outfitIds.map((outfitId) => data.outfitReturns.find((item) => item.outfitId === outfitId) || { outfitId, condition: "OK", deductionAmount: 0 });
+    returns.forEach((item) => {
+      const outfit = db2.outfits.find((o) => o.id === item.outfitId);
+      if (outfit) {
+        if (item.condition === "OK") {
+          outfit.status = "IN_STOCK";
+        } else if (item.condition === "DAMAGED") {
+          outfit.status = "DAMAGED";
+          totalDeduction += item.deductionAmount ?? 500;
+        } else if (item.condition === "LOST") {
+          outfit.status = "LOST";
+          totalDeduction += item.deductionAmount ?? outfit.depositValue;
+        }
+      }
+    });
+    const initialDeposit = rental.depositRefunded ? 0 : rental.depositAmount || 0;
+    const netRefund = Math.max(0, initialDeposit - totalDeduction);
+    if (netRefund > 0) {
+      db2.payments.push({
+        id: `pay-${Date.now()}-refund`,
+        rentalId: rental.id,
+        clientId: rental.clientId,
+        type: "DEPOSIT_REFUND",
+        cashierId: getCurrentUser()?.id || rental.managerId,
+        amount: netRefund,
+        method: data.refundMethod || "CASH",
+        description: `\u0412\u043E\u0437\u0432\u0440\u0430\u0442 \u0437\u0430\u043B\u043E\u0433\u0430 \u043F\u043E \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0443 ${rental.rentalNumber} (\u0443\u0434\u0435\u0440\u0436\u0430\u043D\u043E ${totalDeduction} \u0440\u0443\u0431.)`,
+        createdAt: now2.toISOString()
+      });
+      rental.depositRefunded = true;
+    }
+    rental.status = isBoughtOut ? "BOUGHT_OUT" : "CLOSED";
+    rental.closedAt = rental.closedAt || now2.toISOString();
+    rental.depositRefunded = true;
+    rental.updatedAt = now2.toISOString();
+    if (data.notes) {
+      rental.notes = (rental.notes ? rental.notes + "\n" : "") + `[\u0417\u0430\u043A\u0440\u044B\u0442\u0438\u0435 ${now2.toLocaleDateString("ru-RU")}]: ${data.notes}`;
+    }
+    if (!isBoughtOut && rental.batteryIds && rental.batteryIds.length > 0) {
+      rental.batteryIds.forEach((bId) => {
+        const bat = db2.batteries.find((b) => b.id === bId);
+        if (bat && bat.status === "ISSUED_SPARE") {
+          bat.status = "AVAILABLE";
+          bat.issuedBikeId = null;
+          bat.updatedAt = now2.toISOString();
+        }
+      });
+    }
+    DocumentRepository.capture("RETURN_ACT", id, false, { depositReturned: netRefund, totalDeduction, defectDescription: data.defectDescription, outfitReturns: returns });
+    saveDb(true);
+    return {
+      rental: this.getById(rental.id),
+      repairOrder: repairOrderCreated,
+      depositReturned: netRefund,
+      totalDeduction
+    };
+  }
+  static delete(id) {
+    const db2 = getDb();
+    const index = db2.rentals.findIndex((r) => r.id === id);
+    if (index === -1) {
+      throw new Error("\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D");
+    }
+    const rental = db2.rentals[index];
+    if (rental.status === "ACTIVE" || rental.status === "OVERDUE") {
+      throw new Error(
+        `\u041D\u0435\u043B\u044C\u0437\u044F \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0430\u043A\u0442\u0438\u0432\u043D\u044B\u0439 \u0438\u043B\u0438 \u043F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u043D\u044B\u0439 \u0434\u043E\u0433\u043E\u0432\u043E\u0440 (${rental.rentalNumber}). \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u0432\u0435\u0440\u0448\u0438\u0442\u0435 \u0430\u0440\u0435\u043D\u0434\u0443 \u0438 \u043E\u0444\u043E\u0440\u043C\u0438\u0442\u0435 \u0432\u043E\u0437\u0432\u0440\u0430\u0442 \u0442\u0435\u0445\u043D\u0438\u043A\u0438.`
+      );
+    }
+    const [removed] = db2.rentals.splice(index, 1);
+    db2.payments = db2.payments.filter((p) => p.rentalId !== id);
+    saveDb(true);
+    return removed;
+  }
+};
+
+// src/services/rental.service.ts
+var RentalService = class {
+  static getAllRentals(filters) {
+    return RentalRepository.getAll(filters);
+  }
+  static getRentalById(id) {
+    const rental = RentalRepository.getById(id);
+    if (!rental) {
+      throw new Error(`\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B ${id} \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D`);
+    }
+    return rental;
+  }
+  static getTariffs() {
+    return RentalRepository.getTariffs();
+  }
+  static createTariff(data) {
+    return RentalRepository.createTariff(data);
+  }
+  static updateTariff(id, data) {
+    return RentalRepository.updateTariff(id, data);
+  }
+  static deleteTariff(id) {
+    return RentalRepository.deleteTariff(id);
+  }
+  static createRental(data) {
+    return RentalRepository.create(data);
+  }
+  static renewRental(id, data) {
+    return RentalRepository.renew(id, data);
+  }
+  static closeRental(id, data) {
+    return RentalRepository.close(id, data);
+  }
+  static deleteRental(id) {
+    return RentalRepository.delete(id);
+  }
+};
+
+// src/controllers/rental.controller.ts
+var RentalController = class {
+  static getAll(req, res) {
+    try {
+      const { status, search, clientId } = req.query;
+      const rentals = RentalService.getAllRentals({
+        status,
+        search,
+        clientId
+      });
+      return res.json(rentals);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  static getById(req, res) {
+    try {
+      const rental = RentalService.getRentalById(req.params.id);
+      return res.json(rental);
+    } catch (err) {
+      return res.status(404).json({ error: err.message });
+    }
+  }
+  static getTariffs(req, res) {
+    try {
+      const tariffs = RentalService.getTariffs();
+      return res.json(tariffs);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  static createTariff(req, res) {
+    try {
+      const parsed = TariffCreateDto.parse(req.body);
+      const tariff = RentalService.createTariff(parsed);
+      return res.status(201).json(tariff);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static updateTariff(req, res) {
+    try {
+      const parsed = TariffUpdateDto.parse(req.body);
+      const tariff = RentalService.updateTariff(req.params.id, parsed);
+      return res.json(tariff);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static deleteTariff(req, res) {
+    try {
+      const result = RentalService.deleteTariff(req.params.id);
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+  static create(req, res) {
+    try {
+      const parsed = RentalCreateDto.parse(req.body);
+      const rental = RentalService.createRental(parsed);
+      return res.status(201).json(rental);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static renew(req, res) {
+    try {
+      const parsed = RentalRenewDto.parse(req.body);
+      const rental = RentalService.renewRental(req.params.id, parsed);
+      return res.json(rental);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static close(req, res) {
+    try {
+      const parsed = RentalCloseDto.parse(req.body);
+      const result = RentalService.closeRental(req.params.id, parsed);
+      return res.json(result);
+    } catch (err) {
+      return res.status(400).json({ error: err.errors ? err.errors[0].message : err.message });
+    }
+  }
+  static delete(req, res) {
+    try {
+      const removed = RentalService.deleteRental(req.params.id);
+      return res.json({
+        success: true,
+        message: `\u0414\u043E\u0433\u043E\u0432\u043E\u0440 \u0430\u0440\u0435\u043D\u0434\u044B ${removed.rentalNumber} \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u0443\u0434\u0430\u043B\u0435\u043D`,
+        data: removed
+      });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+  }
+};
+
 // src/repositories/repair.repository.ts
 var RepairRepository = class {
   static getAll(filters) {
@@ -66198,8 +66691,8 @@ var RepairRepository = class {
   }
   static createInternal(data) {
     const db2 = getDb();
-    const now = getSystemTime();
-    const orderNumber = data.orderNumber && data.orderNumber.trim() ? data.orderNumber.trim() : nextNumber(`\u0417\u041D-${now.getFullYear()}`, db2.repairs.map((r) => r.orderNumber));
+    const now2 = getSystemTime();
+    const orderNumber = data.orderNumber && data.orderNumber.trim() ? data.orderNumber.trim() : nextNumber(`\u0417\u041D-${now2.getFullYear()}`, db2.repairs.map((r) => r.orderNumber));
     if (db2.repairs.some((r) => r.orderNumber.toLowerCase() === orderNumber.toLowerCase())) throw new Error("\u041D\u043E\u043C\u0435\u0440 \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0430 \u0443\u0436\u0435 \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u0435\u0442");
     const itemId = data.batteryId || data.bikeId;
     if (itemId && db2.repairs.some((r) => (r.bikeId === itemId || r.batteryId === itemId) && r.status !== "COMPLETED" && r.status !== "CANCELLED")) {
@@ -66223,12 +66716,12 @@ var RepairRepository = class {
         const parentBike = db2.bikes.find((bk) => bk.id === battery.installedBikeId);
         if (parentBike) {
           parentBike.batteryId = null;
-          parentBike.updatedAt = now.toISOString();
+          parentBike.updatedAt = now2.toISOString();
         }
         battery.installedBikeId = null;
       }
       battery.status = "IN_MAINTENANCE";
-      battery.updatedAt = now.toISOString();
+      battery.updatedAt = now2.toISOString();
       resolvedBatteryId = battery.id;
     } else {
       if (!data.bikeId) {
@@ -66239,7 +66732,7 @@ var RepairRepository = class {
       if (bike.status === "SOLD" || bike.status === "BOUGHT_OUT" || bike.status === "DECOMMISSIONED") throw new Error("\u0411\u0430\u0439\u043A \u0432\u044B\u0431\u044B\u043B \u0438\u0437 \u043F\u0430\u0440\u043A\u0430; \u043E\u0444\u043E\u0440\u043C\u0438\u0442\u0435 \u0440\u0435\u043C\u043E\u043D\u0442 \u0441\u0442\u043E\u0440\u043E\u043D\u043D\u0435\u0439 \u0442\u0435\u0445\u043D\u0438\u043A\u0438");
       bike.status = "IN_MAINTENANCE";
       bike.currentLocation = "\u041C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u0430\u044F \u0421\u0422\u041E";
-      bike.updatedAt = now.toISOString();
+      bike.updatedAt = now2.toISOString();
       resolvedBikeId = bike.id;
     }
     let partsCost = 0;
@@ -66309,7 +66802,7 @@ var RepairRepository = class {
       laborCost,
       partsCost,
       totalCost,
-      createdAt: now.toISOString(),
+      createdAt: now2.toISOString(),
       completedAt: null,
       parts: partsList
     };
@@ -66333,21 +66826,21 @@ var RepairRepository = class {
   }
   static restoreItem(repair) {
     const db2 = getDb();
-    const now = getSystemTime().toISOString();
+    const now2 = getSystemTime().toISOString();
     const bike = db2.bikes.find((b) => b.id === repair.bikeId);
     if (bike && !["SOLD", "BOUGHT_OUT", "DECOMMISSIONED"].includes(bike.status)) {
       const rental = activeRentalForBike(bike.id);
       const client = db2.clients.find((c) => c.id === rental?.clientId);
       bike.status = rental ? "RENTED" : "AVAILABLE";
       bike.currentLocation = rental ? `\u0412 \u0430\u0440\u0435\u043D\u0434\u0435 \u0443 ${client?.fullName || "\u043A\u043B\u0438\u0435\u043D\u0442\u0430"}` : "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u0430\u044F \u0431\u0430\u0437\u0430 (\u043C. \u0414\u043C\u0438\u0442\u0440\u043E\u0432\u0441\u043A\u0430\u044F)";
-      bike.updatedAt = now;
+      bike.updatedAt = now2;
     }
     const battery = db2.batteries.find((b) => b.id === repair.batteryId);
     if (battery && !["SOLD", "DECOMMISSIONED"].includes(battery.status)) {
       const rental = activeRentalForBattery(battery.id);
       battery.status = rental ? "ISSUED_SPARE" : "AVAILABLE";
       battery.issuedBikeId = rental?.bikeId || null;
-      battery.updatedAt = now;
+      battery.updatedAt = now2;
     }
   }
   static complete(id, data) {
@@ -66363,7 +66856,7 @@ var RepairRepository = class {
     if (repair.status === "COMPLETED" || repair.status === "CANCELLED") throw new Error("\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 \u0443\u0436\u0435 \u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D \u0438\u043B\u0438 \u043E\u0442\u043C\u0435\u043D\u0451\u043D");
     const bike = repair.bikeId ? db2.bikes.find((b) => b.id === repair.bikeId) : null;
     const battery = repair.batteryId ? db2.batteries.find((b) => b.id === repair.batteryId) : null;
-    const now = getSystemTime();
+    const now2 = getSystemTime();
     const finalPartsToDeduct = data.partsUsed || repair.parts;
     let computedPartsCost = 0;
     const finalPartsList = [];
@@ -66393,19 +66886,19 @@ var RepairRepository = class {
     repair.partsCost = computedPartsCost;
     repair.totalCost = totalCost;
     repair.status = "COMPLETED";
-    repair.completedAt = now.toISOString();
+    repair.completedAt = now2.toISOString();
     if (data.mechanicNotes) {
       repair.description += `
-[\u041C\u0430\u0441\u0442\u0435\u0440 ${now.toLocaleDateString("ru-RU")}]: ${data.mechanicNotes}`;
+[\u041C\u0430\u0441\u0442\u0435\u0440 ${now2.toLocaleDateString("ru-RU")}]: ${data.mechanicNotes}`;
     }
     this.restoreItem(repair);
     if (bike) {
       bike.note = `\u041E\u0442\u0440\u0435\u043C\u043E\u043D\u0442\u0438\u0440\u043E\u0432\u0430\u043D \u043F\u043E \u0437\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434\u0443 ${repair.orderNumber}`;
-      bike.updatedAt = now.toISOString();
+      bike.updatedAt = now2.toISOString();
     }
     if (battery) {
       battery.notes = battery.notes ? `${battery.notes} | \u041E\u0431\u0441\u043B\u0443\u0436\u0435\u043D \u043F\u043E \u0417\u041D ${repair.orderNumber}` : `\u041E\u0431\u0441\u043B\u0443\u0436\u0435\u043D \u043F\u043E \u0417\u041D ${repair.orderNumber}`;
-      battery.updatedAt = now.toISOString();
+      battery.updatedAt = now2.toISOString();
     }
     if ((repair.faultType === "CLIENT_FAULT" || repair.itemType === "EXTERNAL_DEVICE") && totalCost > 0 && data.paymentMethod) {
       const paymentDesc = repair.itemType === "EXTERNAL_DEVICE" ? `\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0435\u043C\u043E\u043D\u0442\u0430 \u0441\u0442\u043E\u0440\u043E\u043D\u043D\u0435\u0439 \u0442\u0435\u0445\u043D\u0438\u043A\u0438 "${repair.customItemName || "\u043A\u043B\u0438\u0435\u043D\u0442\u0430"}" (\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${repair.orderNumber})` : `\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0435\u043C\u043E\u043D\u0442\u0430 \u043F\u043E \u0432\u0438\u043D\u0435 \u043A\u0443\u0440\u044C\u0435\u0440\u0430 (\u0417\u0430\u043A\u0430\u0437-\u043D\u0430\u0440\u044F\u0434 ${repair.orderNumber})`;
@@ -66419,7 +66912,7 @@ var RepairRepository = class {
         amount: totalCost,
         method: data.paymentMethod,
         description: paymentDesc,
-        createdAt: now.toISOString()
+        createdAt: now2.toISOString()
       });
     }
     HistoryRepository.logAction({
@@ -67726,7 +68219,7 @@ var ReviewController = class {
 var import_multer = __toESM(require_multer());
 var import_path2 = __toESM(require("path"));
 var import_fs2 = __toESM(require("fs"));
-var import_node_crypto2 = require("node:crypto");
+var import_node_crypto6 = require("node:crypto");
 var isVercel2 = Boolean(process.env.VERCEL);
 var uploadsDir = process.env.CRM_UPLOADS_DIR ? import_path2.default.resolve(process.env.CRM_UPLOADS_DIR) : isVercel2 ? import_path2.default.resolve("/tmp", "uploads") : import_path2.default.resolve(process.cwd(), "uploads");
 try {
@@ -67751,7 +68244,7 @@ var UploadController = class {
         return res.status(400).json({ error: "\u0424\u0430\u0439\u043B \u043D\u0435 \u0431\u044B\u043B \u043F\u0435\u0440\u0435\u0434\u0430\u043D" });
       }
       const extensions = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "application/pdf": ".pdf" };
-      const filename = `doc_${(0, import_node_crypto2.randomUUID)()}${extensions[req.file.mimetype]}`;
+      const filename = `doc_${(0, import_node_crypto6.randomUUID)()}${extensions[req.file.mimetype]}`;
       const cloud = isVercel2 || supabaseAdapter.getStatus().mode !== "LOCAL_FILE";
       if (cloud) await supabaseAdapter.uploadDocument(filename, req.file.buffer, req.file.mimetype);
       else await import_fs2.default.promises.writeFile(import_path2.default.join(uploadsDir, filename), req.file.buffer);
@@ -67783,9 +68276,9 @@ var import_fs3 = __toESM(require("fs"));
 var SystemController = class {
   static getState(req, res) {
     try {
-      const now = getSystemTime();
+      const now2 = getSystemTime();
       return res.json({
-        currentDate: now.toISOString(),
+        currentDate: now2.toISOString(),
         isSimulated: isTimeSimulated()
       });
     } catch (err) {
@@ -68294,12 +68787,12 @@ var ArticleRepository = class {
       saveDb(true);
       return;
     }
-    const now = /* @__PURE__ */ new Date();
+    const now2 = /* @__PURE__ */ new Date();
     db2.articles = DEFAULT_ARTICLES.map((a, idx) => ({
       ...a,
       id: `art-default-${idx + 1}`,
-      createdAt: new Date(now.getTime() - idx * 36e5).toISOString(),
-      updatedAt: new Date(now.getTime() - idx * 36e5).toISOString()
+      createdAt: new Date(now2.getTime() - idx * 36e5).toISOString(),
+      updatedAt: new Date(now2.getTime() - idx * 36e5).toISOString()
     }));
     db2.settings.articlesInitialized = true;
     saveDb(true);
@@ -68467,12 +68960,12 @@ var ArticleRepository = class {
     if (!db2.settings) {
       db2.settings = { monthlyFixedExpenses: 0 };
     }
-    const now = /* @__PURE__ */ new Date();
+    const now2 = /* @__PURE__ */ new Date();
     db2.articles = DEFAULT_ARTICLES.map((a, idx) => ({
       ...a,
       id: `art-default-${idx + 1}`,
-      createdAt: new Date(now.getTime() - idx * 36e5).toISOString(),
-      updatedAt: new Date(now.getTime() - idx * 36e5).toISOString()
+      createdAt: new Date(now2.getTime() - idx * 36e5).toISOString(),
+      updatedAt: new Date(now2.getTime() - idx * 36e5).toISOString()
     }));
     db2.settings.articlesInitialized = true;
     saveDb(true);
@@ -68677,7 +69170,7 @@ var AccessLevelRepository = class {
     if (!Array.isArray(db2.accessLevels)) {
       db2.accessLevels = [];
     }
-    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const now2 = (/* @__PURE__ */ new Date()).toISOString();
     const newLvl = {
       id: `lvl-${Date.now()}`,
       name: data.name.trim(),
@@ -68686,8 +69179,8 @@ var AccessLevelRepository = class {
       canManageEmployees: Boolean(data.canManageEmployees),
       canSeeProfits: Boolean(data.canSeeProfits),
       permissions: data.permissions || {},
-      createdAt: now,
-      updatedAt: now
+      createdAt: now2,
+      updatedAt: now2
     };
     db2.accessLevels.push(newLvl);
     saveDb();
@@ -68958,39 +69451,39 @@ var UserController = class {
   async update(req, res) {
     try {
       const db2 = getDb();
-      const user = (db2.users || []).find((u) => u.id === req.params.id);
-      if (!user) {
+      const user2 = (db2.users || []).find((u) => u.id === req.params.id);
+      if (!user2) {
         return res.status(404).json({ error: "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D" });
       }
       const { fullName, login, phone, roleTitle, role, accessLevelId, isActive, password, salaryAmount, salaryType } = req.body;
-      const matchedEmp = db2.employees.find((employee) => employee.id === user.employeeId) || db2.employees.find((employee) => user.phone && normalizePhone(employee.phone) === normalizePhone(user.phone) || employee.fullName.toLowerCase() === user.fullName.toLowerCase());
-      if (matchedEmp) user.employeeId = matchedEmp.id;
-      if (user.id === "usr-bxleth" && (isActive === false || accessLevelId && accessLevelId !== "lvl-owner" || role && role !== "ADMIN")) return res.status(403).json({ error: "\u041D\u0435\u043B\u044C\u0437\u044F \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0438\u043B\u0438 \u043F\u043E\u043D\u0438\u0437\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430" });
+      const matchedEmp = db2.employees.find((employee) => employee.id === user2.employeeId) || db2.employees.find((employee) => user2.phone && normalizePhone(employee.phone) === normalizePhone(user2.phone) || employee.fullName.toLowerCase() === user2.fullName.toLowerCase());
+      if (matchedEmp) user2.employeeId = matchedEmp.id;
+      if (user2.id === "usr-bxleth" && (isActive === false || accessLevelId && accessLevelId !== "lvl-owner" || role && role !== "ADMIN")) return res.status(403).json({ error: "\u041D\u0435\u043B\u044C\u0437\u044F \u0437\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0438\u043B\u0438 \u043F\u043E\u043D\u0438\u0437\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430" });
       if (login !== void 0 && login.trim()) {
         const cleanLogin = login.trim().toLowerCase();
         const exists = (db2.users || []).find(
-          (u) => u.id !== user.id && (u.login && u.login.toLowerCase() === cleanLogin || u.username && u.username.toLowerCase() === cleanLogin || u.email && u.email.toLowerCase() === `${cleanLogin}@ebike-crm.ru`)
+          (u) => u.id !== user2.id && (u.login && u.login.toLowerCase() === cleanLogin || u.username && u.username.toLowerCase() === cleanLogin || u.email && u.email.toLowerCase() === `${cleanLogin}@ebike-crm.ru`)
         );
         if (exists) {
           return res.status(400).json({ error: `\u041B\u043E\u0433\u0438\u043D "${cleanLogin}" \u0443\u0436\u0435 \u0437\u0430\u043D\u044F\u0442 \u0434\u0440\u0443\u0433\u0438\u043C \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A\u043E\u043C` });
         }
-        user.login = cleanLogin;
-        user.username = cleanLogin;
-        user.email = `${cleanLogin}@ebike-crm.ru`;
+        user2.login = cleanLogin;
+        user2.username = cleanLogin;
+        user2.email = `${cleanLogin}@ebike-crm.ru`;
       }
-      if (fullName !== void 0) user.fullName = fullName.trim();
-      if (phone !== void 0) user.phone = phone.trim();
-      if (roleTitle !== void 0) user.roleTitle = roleTitle.trim();
+      if (fullName !== void 0) user2.fullName = fullName.trim();
+      if (phone !== void 0) user2.phone = phone.trim();
+      if (roleTitle !== void 0) user2.roleTitle = roleTitle.trim();
       if (role && (role === "ADMIN" || role === "MANAGER" || role === "MECHANIC")) {
-        user.role = role;
+        user2.role = role;
       }
-      if (accessLevelId !== void 0) user.accessLevelId = accessLevelId;
-      if (isActive !== void 0) user.isActive = Boolean(isActive);
-      if (password && password.trim()) user.passwordHash = hashPassword(password.trim());
+      if (accessLevelId !== void 0) user2.accessLevelId = accessLevelId;
+      if (isActive !== void 0) user2.isActive = Boolean(isActive);
+      if (password && password.trim()) user2.passwordHash = hashPassword(password.trim());
       if (matchedEmp) {
-        if (fullName !== void 0) matchedEmp.fullName = user.fullName;
-        if (phone !== void 0) matchedEmp.phone = user.phone || "";
-        if (roleTitle !== void 0) matchedEmp.role = user.roleTitle || "";
+        if (fullName !== void 0) matchedEmp.fullName = user2.fullName;
+        if (phone !== void 0) matchedEmp.phone = user2.phone || "";
+        if (roleTitle !== void 0) matchedEmp.role = user2.roleTitle || "";
         if (salaryAmount !== void 0) matchedEmp.salaryAmount = Math.max(0, Number(salaryAmount) || 0);
         if (salaryType !== void 0) matchedEmp.salaryType = salaryType;
         if (isActive !== void 0) matchedEmp.status = isActive ? "ACTIVE" : "DISMISSED";
@@ -68999,25 +69492,25 @@ var UserController = class {
       await HistoryRepository.logAction({
         category: "SYSTEM",
         action: "USER_UPDATE",
-        title: `\u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A: ${user.fullName}`,
-        details: `\u0421\u0442\u0430\u0442\u0443\u0441: ${user.isActive ? "\u0410\u043A\u0442\u0438\u0432\u0435\u043D" : "\u0417\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043D"}. \u0423\u0440\u043E\u0432\u0435\u043D\u044C \u0434\u043E\u0441\u0442\u0443\u043F\u0430: ${user.accessLevelId}`,
+        title: `\u041E\u0431\u043D\u043E\u0432\u043B\u0435\u043D \u0441\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A: ${user2.fullName}`,
+        details: `\u0421\u0442\u0430\u0442\u0443\u0441: ${user2.isActive ? "\u0410\u043A\u0442\u0438\u0432\u0435\u043D" : "\u0417\u0430\u0431\u043B\u043E\u043A\u0438\u0440\u043E\u0432\u0430\u043D"}. \u0423\u0440\u043E\u0432\u0435\u043D\u044C \u0434\u043E\u0441\u0442\u0443\u043F\u0430: ${user2.accessLevelId}`,
         badgeText: "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A",
         badgeColor: "sky",
-        entityId: user.id
+        entityId: user2.id
       });
-      const lvl = (db2.accessLevels || []).find((l) => l.id === user.accessLevelId) || null;
+      const lvl = (db2.accessLevels || []).find((l) => l.id === user2.accessLevelId) || null;
       res.json({
-        id: user.id,
-        login: user.login || user.username || user.email.split("@")[0],
-        username: user.username || user.login || user.email.split("@")[0],
-        email: user.email,
-        fullName: user.fullName,
-        phone: user.phone,
-        role: user.role,
-        roleTitle: user.roleTitle,
-        accessLevelId: user.accessLevelId,
+        id: user2.id,
+        login: user2.login || user2.username || user2.email.split("@")[0],
+        username: user2.username || user2.login || user2.email.split("@")[0],
+        email: user2.email,
+        fullName: user2.fullName,
+        phone: user2.phone,
+        role: user2.role,
+        roleTitle: user2.roleTitle,
+        accessLevelId: user2.accessLevelId,
         accessLevel: lvl,
-        isActive: user.isActive,
+        isActive: user2.isActive,
         employeeId: matchedEmp?.id || null,
         salaryAmount: matchedEmp ? typeof matchedEmp.salaryAmount === "number" ? matchedEmp.salaryAmount : 0 : 0,
         salaryType: matchedEmp?.salaryType || "MONTHLY"
@@ -69113,8 +69606,8 @@ var ChatController = class {
   }
   static createMessage(req, res) {
     try {
-      const { senderId, senderName, senderRole, text } = req.body;
-      if (!text || !text.trim()) {
+      const { senderId, senderName, senderRole, text: text2 } = req.body;
+      if (!text2 || !text2.trim()) {
         res.status(400).json({ error: "\u0422\u0435\u043A\u0441\u0442 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0431\u044B\u0442\u044C \u043F\u0443\u0441\u0442\u044B\u043C" });
         return;
       }
@@ -69122,7 +69615,7 @@ var ChatController = class {
         senderId: senderId || "u-guest",
         senderName: senderName || "\u0421\u043E\u0442\u0440\u0443\u0434\u043D\u0438\u043A",
         senderRole: senderRole || "USER",
-        text
+        text: text2
       });
       res.status(201).json(message);
     } catch (err) {
@@ -69150,10 +69643,10 @@ var PresenceRepository = class {
   static getOnline(timeoutMs = INACTIVITY_TIMEOUT_MS) {
     const db2 = getDb();
     const list = db2.presence || [];
-    const now = Date.now();
+    const now2 = Date.now();
     return list.filter((p) => {
       const lastSeen = new Date(p.lastSeenAt).getTime();
-      return !isNaN(lastSeen) && now - lastSeen <= timeoutMs;
+      return !isNaN(lastSeen) && now2 - lastSeen <= timeoutMs;
     }).sort((a, b) => new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime());
   }
   static heartbeat(data) {
@@ -69163,11 +69656,11 @@ var PresenceRepository = class {
     if (!db2.presence) {
       db2.presence = [];
     }
-    const now = Date.now();
-    const nowIso = new Date(now).toISOString();
+    const now2 = Date.now();
+    const nowIso = new Date(now2).toISOString();
     db2.presence = db2.presence.filter((p) => {
       const lastSeen = new Date(p.lastSeenAt).getTime();
-      return !isNaN(lastSeen) && now - lastSeen <= 10 * 60 * 1e3;
+      return !isNaN(lastSeen) && now2 - lastSeen <= 10 * 60 * 1e3;
     });
     const existingIdx = db2.presence.findIndex((p) => p.userId === data.userId);
     if (existingIdx >= 0) {
@@ -70070,10 +70563,10 @@ var ShopController = class {
 function authenticateApi(req, res, next) {
   try {
     const cookie = req.headers.cookie?.split(";").map((value) => value.trim()).find((value) => value.startsWith("crm_session="))?.slice("crm_session=".length);
-    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "") || (cookie ? decodeURIComponent(cookie) : "");
-    const user = authenticateSession(token);
+    const token2 = req.headers.authorization?.replace(/^Bearer\s+/i, "") || (cookie ? decodeURIComponent(cookie) : "");
+    const user2 = authenticateSession(token2);
     const db2 = getDb();
-    const level = db2.accessLevels.find((item) => item.id === user.accessLevelId) || db2.accessLevels.find((item) => item.id === (user.role === "ADMIN" ? "lvl-owner" : user.role === "MECHANIC" ? "lvl-master" : "lvl-manager"));
+    const level = db2.accessLevels.find((item) => item.id === user2.accessLevelId) || db2.accessLevels.find((item) => item.id === (user2.role === "ADMIN" ? "lvl-owner" : user2.role === "MECHANIC" ? "lvl-master" : "lvl-manager"));
     const visible = (module3) => level?.permissions[module3]?.visible !== false;
     const edit = (module3) => level?.permissions[module3]?.canEdit !== false;
     const remove2 = (module3) => level?.permissions[module3]?.canDelete !== false;
@@ -70100,8 +70593,8 @@ function authenticateApi(req, res, next) {
       }));
       return originalJson(sanitized);
     };
-    const roleTitle = user.roleTitle || (user.role === "ADMIN" ? "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C" : user.role === "MECHANIC" ? "\u041C\u0430\u0441\u0442\u0435\u0440" : "\u041C\u0435\u043D\u0435\u0434\u0436\u0435\u0440");
-    const current = { id: user.id, fullName: user.fullName, role: user.role, roleTitle, displayName: `${user.fullName} (${roleTitle})` };
+    const roleTitle = user2.roleTitle || (user2.role === "ADMIN" ? "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0438\u0442\u0435\u043B\u044C" : user2.role === "MECHANIC" ? "\u041C\u0430\u0441\u0442\u0435\u0440" : "\u041C\u0435\u043D\u0435\u0434\u0436\u0435\u0440");
+    const current = { id: user2.id, fullName: user2.fullName, role: user2.role, roleTitle, displayName: `${user2.fullName} (${roleTitle})` };
     req.currentUser = current;
     userStorage.run(current, next);
   } catch (error) {
@@ -70111,7 +70604,7 @@ function authenticateApi(req, res, next) {
 
 // src/controllers/bikePhoto.controller.ts
 var import_multer2 = __toESM(require_multer());
-var import_node_crypto3 = require("node:crypto");
+var import_node_crypto7 = require("node:crypto");
 var import_promises = __toESM(require("node:fs/promises"));
 var import_node_path = __toESM(require("node:path"));
 
@@ -70169,7 +70662,7 @@ var BikePhotoController = class {
       if (!image || !thumbnail) return res.status(400).json({ error: "\u041D\u0443\u0436\u043D\u044B \u0444\u043E\u0442\u043E\u0433\u0440\u0430\u0444\u0438\u044F \u0438 \u043C\u0438\u043D\u0438\u0430\u0442\u044E\u0440\u0430" });
       const dimensions = validateBikePhoto(image.buffer);
       validateBikePhoto(thumbnail.buffer, true);
-      id = (0, import_node_crypto3.randomUUID)();
+      id = (0, import_node_crypto7.randomUUID)();
       const names = filenames(id);
       if (cloudStorage()) {
         await supabaseAdapter.uploadDocument(names[0], image.buffer, "image/webp");
@@ -70207,7 +70700,19 @@ var accessLevelCtrl = new AccessLevelController();
 var userCtrl = new UserController();
 router.post("/auth/login", AuthController.login);
 router.post("/auth/trusted-login", AuthController.trustedLogin);
+router.post("/assistant/connect", AssistantController.connect);
+router.post("/assistant/worker/poll", AssistantController.poll);
+router.post("/assistant/worker/result", AssistantController.result);
 router.use(authenticateApi);
+router.get("/assistant/status", AssistantController.status);
+router.get("/assistant/tasks", AssistantController.tasks);
+router.post("/assistant/pair", AssistantController.pair);
+router.post("/assistant/jobs", AssistantController.submit);
+router.post("/assistant/jobs/:id/apply", AssistantController.apply);
+router.post("/assistant/jobs/:id/cancel", AssistantController.cancel);
+router.post("/assistant/jobs/:id/retry", AssistantController.retry);
+router.post("/assistant/devices/:id/revoke", AssistantController.revoke);
+router.post("/assistant/tasks/:id/resolve", AssistantController.resolve);
 router.get("/documents", DocumentController.list);
 router.get("/documents/:id", DocumentController.get);
 router.post("/auth/logout", AuthController.logout);

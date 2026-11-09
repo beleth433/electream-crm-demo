@@ -1,4 +1,11 @@
 {
+  "assistant": {
+    "devices": [],
+    "pairings": [],
+    "jobs": [],
+    "tasks": []
+  },
+  "documents": [],
   "accessLevels": [
     {
       "id": "lvl-owner",
@@ -249,6 +256,20 @@
   ],
   "users": [
     {
+      "id": "usr-demo",
+      "login": "demo",
+      "username": "demo",
+      "email": "demo@electream.pro",
+      "passwordHash": "demo",
+      "fullName": "Демо Администратор",
+      "phone": "+7 (999) 000-00-00",
+      "role": "ADMIN",
+      "roleTitle": "Владелец / Администратор парка",
+      "accessLevelId": "lvl-owner",
+      "isActive": true,
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
       "id": "usr-bxleth",
       "login": "bxleth",
       "username": "bxleth",
@@ -260,342 +281,186 @@
       "roleTitle": "Главный инженер / Разработчик",
       "accessLevelId": "lvl-owner",
       "isActive": true,
-      "lastLoginAt": "2026-10-08T11:27:52.572Z"
+      "createdAt": "2026-10-01T00:00:00.000Z"
     }
   ],
   "models": [
     {
-      "id": "mdl-1790203139794",
-      "name": "Monster truck",
-      "powerWatts": 1200,
+      "id": "mdl-minako-monster",
+      "name": "Minako Monster Pro 60V",
+      "powerWatts": 500,
       "wheelSizeInch": 16,
-      "description": "",
-      "purchasePrice": 40000,
+      "baseRentalPrice": 600,
+      "buyoutPrice": 75000,
+      "purchasePrice": 45000,
       "salePrice": 65000,
-      "baseRentalPrice": 6000,
-      "baseBuyoutPrice": 65000
+      "description": "Флагманский курьерский электровелосипед высокой грузоподъемности"
     },
     {
-      "id": "mdl-1790203208214",
-      "name": "U2",
-      "powerWatts": 2000,
+      "id": "mdl-wenbox-u3",
+      "name": "Wenbox U3 Pro 60V",
+      "powerWatts": 500,
       "wheelSizeInch": 16,
-      "description": "",
-      "purchasePrice": 50000,
-      "salePrice": 75000,
-      "baseRentalPrice": 7000,
-      "baseBuyoutPrice": 75000
-    },
-    {
-      "id": "mdl-1790203452418",
-      "name": "U5",
-      "powerWatts": 2000,
-      "wheelSizeInch": 16,
-      "description": "",
-      "purchasePrice": 50000,
-      "salePrice": 75000,
-      "baseRentalPrice": 7000,
-      "baseBuyoutPrice": 75000
+      "baseRentalPrice": 550,
+      "buyoutPrice": 70000,
+      "purchasePrice": 42000,
+      "salePrice": 60000,
+      "description": "Надежный городской электробайк для интенсивных смен"
     }
   ],
   "batteryModels": [
     {
-      "id": "bat-mdl-1790203628855",
-      "name": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "description": "Тридцатки",
-      "purchasePrice": 15000,
-      "salePrice": 25000
-    },
-    {
-      "id": "bat-mdl-1790203665777",
-      "name": "Монстры1",
+      "id": "bat-mdl-60v21ah",
+      "name": "АКБ 60V 21Ah (Li-ion)",
       "voltage": 60,
       "capacityAh": 21,
       "chemistry": "Li-ion",
-      "description": "Двадцатки",
-      "purchasePrice": 10000,
-      "salePrice": 20000
+      "purchasePrice": 18000,
+      "salePrice": 28000,
+      "description": "Штатная тяговая батарея для Minako Monster"
     },
     {
-      "id": "bat-mdl-1790203730509",
-      "name": "Юшки ЖФ",
+      "id": "bat-mdl-60v30ah",
+      "name": "АКБ 60V 30Ah Long Range",
       "voltage": 60,
-      "capacityAh": 45,
-      "chemistry": "LiFePO4",
-      "description": null,
-      "purchasePrice": 25000,
-      "salePrice": 30000
-    },
-    {
-      "id": "bat-mdl-1790203765097",
-      "name": "Юшки ЛИ",
-      "voltage": 60,
-      "capacityAh": 70,
+      "capacityAh": 30,
       "chemistry": "Li-ion",
-      "description": null,
-      "purchasePrice": 50000,
-      "salePrice": 60000
+      "purchasePrice": 24000,
+      "salePrice": 36000,
+      "description": "Увеличенная емкость для смен до 14 часов"
     }
   ],
   "bikes": [
     {
-      "id": "bike-1790203523200",
+      "id": "bike-demo-1",
       "inventoryNumber": "ЭВ-001",
-      "modelId": "mdl-1790203139794",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
+      "modelId": "mdl-minako-monster",
+      "frameNumber": "FRM-MONSTER-001",
+      "motorNumber": "MTR-500W-001",
+      "voltage": 60,
       "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
-      "mileageKm": 0,
-      "note": null,
-      "purchasePrice": 40000,
-      "salePrice": 65000,
-      "createdAt": "2026-09-23T22:45:23.200Z",
-      "updatedAt": "2026-09-23T22:45:23.200Z"
+      "installedBatteryId": null,
+      "mileageKm": 120,
+      "photos": [],
+      "createdAt": "2026-11-01T00:00:00.000Z"
     },
     {
-      "id": "bike-1790203544706",
+      "id": "bike-demo-2",
       "inventoryNumber": "ЭВ-002",
-      "modelId": "mdl-1790203139794",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
+      "modelId": "mdl-minako-monster",
+      "frameNumber": "FRM-MONSTER-002",
+      "motorNumber": "MTR-500W-002",
+      "voltage": 60,
       "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
-      "mileageKm": 0,
-      "note": null,
-      "purchasePrice": 40000,
-      "salePrice": 65000,
-      "createdAt": "2026-09-23T22:45:44.706Z",
-      "updatedAt": "2026-09-23T22:45:44.706Z"
+      "installedBatteryId": null,
+      "mileageKm": 85,
+      "photos": [],
+      "createdAt": "2026-11-01T00:00:00.000Z"
     },
     {
-      "id": "bike-1790203547503",
+      "id": "bike-demo-3",
       "inventoryNumber": "ЭВ-003",
-      "modelId": "mdl-1790203139794",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
+      "modelId": "mdl-wenbox-u3",
+      "frameNumber": "FRM-WENBOX-003",
+      "motorNumber": "MTR-500W-003",
+      "voltage": 60,
       "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
-      "mileageKm": 0,
-      "note": null,
-      "purchasePrice": 40000,
-      "salePrice": 65000,
-      "createdAt": "2026-09-23T22:45:47.503Z",
-      "updatedAt": "2026-09-23T22:45:47.503Z"
+      "installedBatteryId": null,
+      "mileageKm": 210,
+      "photos": [],
+      "createdAt": "2026-11-01T00:00:00.000Z"
     },
     {
-      "id": "bike-1790203557538",
+      "id": "bike-demo-4",
       "inventoryNumber": "ЭВ-004",
-      "modelId": "mdl-1790203208214",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
+      "modelId": "mdl-wenbox-u3",
+      "frameNumber": "FRM-WENBOX-004",
+      "motorNumber": "MTR-500W-004",
+      "voltage": 60,
       "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
+      "installedBatteryId": null,
       "mileageKm": 0,
-      "note": null,
-      "purchasePrice": 50000,
-      "salePrice": 75000,
-      "createdAt": "2026-09-23T22:45:57.538Z",
-      "updatedAt": "2026-09-23T22:45:57.538Z"
-    },
-    {
-      "id": "bike-1790203563167",
-      "inventoryNumber": "ЭВ-005",
-      "modelId": "mdl-1790203208214",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
-      "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
-      "mileageKm": 0,
-      "note": null,
-      "purchasePrice": 50000,
-      "salePrice": 75000,
-      "createdAt": "2026-09-23T22:46:03.167Z",
-      "updatedAt": "2026-09-23T22:46:03.167Z"
-    },
-    {
-      "id": "bike-1790203573229",
-      "inventoryNumber": "ЭВ-006",
-      "modelId": "mdl-1790203452418",
-      "batteryId": null,
-      "frameNumber": null,
-      "motorNumber": null,
-      "status": "AVAILABLE",
-      "currentLocation": "Центральная база (м. Дмитровская)",
-      "mileageKm": 0,
-      "note": null,
-      "purchasePrice": 50000,
-      "salePrice": 75000,
-      "createdAt": "2026-09-23T22:46:13.229Z",
-      "updatedAt": "2026-09-23T22:46:13.229Z"
+      "photos": [],
+      "createdAt": "2026-11-01T00:00:00.000Z"
     }
   ],
   "batteries": [
     {
-      "id": "bat-1790203815746",
-      "serialNumber": "АКБ-001",
-      "modelId": "bat-mdl-1790203628855",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "IN_MAINTENANCE",
-      "installedBikeId": null,
-      "notes": null,
-      "purchasePrice": 15000,
-      "salePrice": 25000,
-      "createdAt": "2026-09-23T22:50:15.746Z",
-      "updatedAt": "2026-09-23T22:52:01.019Z"
-    },
-    {
-      "id": "bat-1790203824543",
-      "serialNumber": "АКБ-002",
-      "modelId": "bat-mdl-1790203628855",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
-      "notes": null,
-      "purchasePrice": 15000,
-      "salePrice": 25000,
-      "createdAt": "2026-09-23T22:50:24.543Z",
-      "updatedAt": "2026-09-23T22:50:24.543Z"
-    },
-    {
-      "id": "bat-1790203827197",
-      "serialNumber": "АКБ-003",
-      "modelId": "bat-mdl-1790203628855",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
-      "notes": null,
-      "purchasePrice": 15000,
-      "salePrice": 25000,
-      "createdAt": "2026-09-23T22:50:27.197Z",
-      "updatedAt": "2026-09-23T22:50:27.197Z"
-    },
-    {
-      "id": "bat-1790203829371",
-      "serialNumber": "АКБ-004",
-      "modelId": "bat-mdl-1790203628855",
-      "modelName": "Монстры",
-      "voltage": 60,
-      "capacityAh": 30,
-      "chemistry": "Li-ion",
-      "status": "AVAILABLE",
-      "installedBikeId": null,
-      "notes": null,
-      "purchasePrice": 15000,
-      "salePrice": 25000,
-      "createdAt": "2026-09-23T22:50:29.371Z",
-      "updatedAt": "2026-09-23T22:50:29.371Z"
-    },
-    {
-      "id": "bat-1790203840434",
-      "serialNumber": "АКБ-005",
-      "modelId": "bat-mdl-1790203665777",
-      "modelName": "Монстры1",
+      "id": "bat-demo-1",
+      "serialNumber": "BAT-60V-001",
+      "modelId": "bat-mdl-60v21ah",
       "voltage": 60,
       "capacityAh": 21,
-      "chemistry": "Li-ion",
+      "sohPercent": 99,
+      "chargeCycles": 28,
       "status": "AVAILABLE",
       "installedBikeId": null,
-      "notes": null,
-      "purchasePrice": 10000,
-      "salePrice": 20000,
-      "createdAt": "2026-09-23T22:50:40.434Z",
-      "updatedAt": "2026-09-23T22:50:40.434Z"
+      "createdAt": "2026-11-01T00:00:00.000Z"
     },
     {
-      "id": "bat-1790203845729",
-      "serialNumber": "АКБ-006",
-      "modelId": "bat-mdl-1790203665777",
-      "modelName": "Монстры1",
+      "id": "bat-demo-2",
+      "serialNumber": "BAT-60V-002",
+      "modelId": "bat-mdl-60v21ah",
       "voltage": 60,
       "capacityAh": 21,
-      "chemistry": "Li-ion",
+      "sohPercent": 97,
+      "chargeCycles": 45,
       "status": "AVAILABLE",
       "installedBikeId": null,
-      "notes": null,
-      "purchasePrice": 10000,
-      "salePrice": 20000,
-      "createdAt": "2026-09-23T22:50:45.729Z",
-      "updatedAt": "2026-09-23T22:50:45.729Z"
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "bat-demo-3",
+      "serialNumber": "BAT-60V-003",
+      "modelId": "bat-mdl-60v30ah",
+      "voltage": 60,
+      "capacityAh": 30,
+      "sohPercent": 100,
+      "chargeCycles": 12,
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "bat-demo-4",
+      "serialNumber": "BAT-60V-004",
+      "modelId": "bat-mdl-60v30ah",
+      "voltage": 60,
+      "capacityAh": 30,
+      "sohPercent": 98,
+      "chargeCycles": 34,
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "createdAt": "2026-11-01T00:00:00.000Z"
     }
   ],
   "outfits": [
     {
-      "id": "outfit-1790204955401",
-      "name": "Шлем Guardian",
-      "category": "cat-1790204877162",
-      "inventoryNumber": "ЭК-001",
-      "depositValue": 0,
-      "purchasePrice": 1000,
-      "salePrice": 2000,
-      "status": "IN_STOCK"
+      "id": "outfit-demo-1",
+      "name": "Шлем защитный курьерский (M/L)",
+      "category": "HELMET",
+      "depositAmount": 1500,
+      "status": "IN_STOCK",
+      "serialNumber": "HLM-001",
+      "createdAt": "2026-11-01T00:00:00.000Z"
     },
     {
-      "id": "outfit-1790204974918",
-      "name": "Шлем Guardian",
-      "category": "cat-1790204877162",
-      "inventoryNumber": "ЭК-002",
-      "depositValue": 0,
-      "purchasePrice": 1000,
-      "salePrice": 2000,
-      "status": "IN_STOCK"
+      "id": "outfit-demo-2",
+      "name": "Замок цепной противоугонный 10 мм",
+      "category": "LOCK",
+      "depositAmount": 2000,
+      "status": "IN_STOCK",
+      "serialNumber": "LCK-001",
+      "createdAt": "2026-11-01T00:00:00.000Z"
     },
     {
-      "id": "outfit-1790204984059",
-      "name": "Шлем Guardian",
-      "category": "cat-1790204877162",
-      "inventoryNumber": "ЭК-003",
-      "depositValue": 0,
-      "purchasePrice": 1000,
-      "salePrice": 2000,
-      "status": "IN_STOCK"
-    },
-    {
-      "id": "outfit-1790205070203",
-      "name": "Держатель hoco",
-      "category": "cat-1790119454641",
-      "inventoryNumber": "ЭК-004",
-      "depositValue": 0,
-      "purchasePrice": 500,
-      "salePrice": 1000,
-      "status": "IN_STOCK"
-    },
-    {
-      "id": "outfit-1790207422050",
-      "name": "Держатель hoco",
-      "category": "cat-1790119454641",
-      "inventoryNumber": "ЭК-005",
-      "depositValue": 0,
-      "purchasePrice": 500,
-      "salePrice": 1000,
-      "status": "IN_STOCK"
-    },
-    {
-      "id": "outfit-1790207644526",
-      "name": "Замок platinum",
-      "category": "cat-1790207477036",
-      "inventoryNumber": "ЗМК001",
-      "depositValue": 0,
-      "purchasePrice": 5000,
-      "salePrice": 7000,
-      "status": "IN_STOCK"
+      "id": "outfit-demo-3",
+      "name": "Термосумка курьерская 45л",
+      "category": "BAG",
+      "depositAmount": 2500,
+      "status": "IN_STOCK",
+      "serialNumber": "BAG-001",
+      "createdAt": "2026-11-01T00:00:00.000Z"
     }
   ],
   "outfitCategories": [
@@ -617,88 +482,103 @@
   ],
   "outfitTemplates": [
     {
-      "id": "tmpl-1790204905307",
-      "name": "Шлем Guardian",
-      "categoryId": "cat-1790204877162",
-      "defaultDeposit": 0,
-      "description": null,
-      "purchasePrice": 1000,
-      "salePrice": 2000
+      "id": "tmpl-helmet",
+      "name": "Шлем защитный курьерский (M/L)",
+      "category": "HELMET",
+      "depositAmount": 1500,
+      "salePrice": 2200
     },
     {
-      "id": "tmpl-1790204937332",
-      "name": "Держатель hoco",
-      "categoryId": "cat-1790119454641",
-      "defaultDeposit": 0,
-      "description": null,
-      "purchasePrice": 500,
-      "salePrice": 1000
+      "id": "tmpl-lock",
+      "name": "Замок цепной противоугонный 10 мм",
+      "category": "LOCK",
+      "depositAmount": 2000,
+      "salePrice": 2800
     },
     {
-      "id": "tmpl-1790207515981",
-      "name": "Замок platinum",
-      "categoryId": "cat-1790207477036",
-      "defaultDeposit": 0,
-      "description": null,
-      "purchasePrice": 5000,
-      "salePrice": 7000
+      "id": "tmpl-bag",
+      "name": "Термосумка курьерская 45л",
+      "category": "BAG",
+      "depositAmount": 2500,
+      "salePrice": 3500
     }
   ],
-  "clients": [
-    {
-      "id": "cli-1790207788520",
-      "fullName": "Фарход Каримов",
-      "phone": "+7 (925) 880-14-11",
-      "telegram": null,
-      "passportSerial": null,
-      "passportNumber": null,
-      "citizenship": "РФ",
-      "migrationCard": null,
-      "patentNumber": null,
-      "courierService": null,
-      "documentPhotoUrls": [],
-      "status": "NORMAL",
-      "clientType": "RETAIL",
-      "manualLoyaltyTierId": null,
-      "blackListReason": null,
-      "createdAt": "2026-09-23T23:56:28.520Z"
-    }
-  ],
+  "clients": [],
   "tariffs": [
     {
-      "id": "trf-1790210807562",
-      "name": "Monster недельный",
+      "id": "trf-weekly-standard",
+      "name": "Недельный стандарт (Minako Monster)",
       "type": "STANDARD",
+      "bikeModelId": "mdl-minako-monster",
       "durationDays": 7,
-      "price": 3500,
-      "depositRequired": 0,
-      "isActive": true,
-      "totalBuyoutPrice": 60000,
+      "price": 3850,
+      "depositAmount": 3000,
       "paymentIntervalDays": 7,
-      "installmentPayment": 6000,
-      "bikeModelId": "mdl-1790203139794"
+      "isActive": true,
+      "description": "Оплата раз в неделю, депозит возвращается при сдаче техники"
+    },
+    {
+      "id": "trf-rent-to-own-90",
+      "name": "Выкуп за 90 дней (Rent-to-Own)",
+      "type": "RENT_TO_OWN",
+      "bikeModelId": "mdl-minako-monster",
+      "durationDays": 90,
+      "price": 900,
+      "depositAmount": 5000,
+      "buyoutPrice": 81000,
+      "paymentIntervalDays": 1,
+      "isActive": true,
+      "description": "Посуточная оплата с переходом электровелосипеда в собственность курьера"
     }
   ],
   "parts": [
     {
-      "id": "prt-1790205322887",
-      "name": "Колодки керамика",
-      "sku": "КОЛК001",
-      "quantity": 5,
-      "minQuantity": 3,
-      "purchasePrice": 500,
-      "clientPrice": 1000
+      "id": "part-demo-1",
+      "name": "Колодки тормозные Monster (полуметалл)",
+      "categoryId": "cat-brakes",
+      "sku": "BRK-MON-01",
+      "quantity": 30,
+      "minQuantity": 10,
+      "costPrice": 250,
+      "price": 600,
+      "unit": "компл.",
+      "description": "Износостойкие тормозные колодки для гидравлических тормозов"
     },
     {
-      "id": "prt-1790207220843",
-      "name": "Фара арктик",
-      "sku": "СВТ001",
-      "categoryId": "cat-part-1790207194942",
-      "categoryName": "Свет",
-      "quantity": 9,
-      "minQuantity": 3,
-      "purchasePrice": 500,
-      "clientPrice": 1200
+      "id": "part-demo-2",
+      "name": "Камера 16×3.0 усиленная (бутил)",
+      "categoryId": "cat-wheels",
+      "sku": "CAM-16-01",
+      "quantity": 20,
+      "minQuantity": 8,
+      "costPrice": 350,
+      "price": 800,
+      "unit": "шт.",
+      "description": "Утолщенная антипрокольная камера для курьерских условий"
+    },
+    {
+      "id": "part-demo-3",
+      "name": "Контроллер 60V 500W синусный",
+      "categoryId": "cat-electric",
+      "sku": "CTRL-60V-01",
+      "quantity": 6,
+      "minQuantity": 2,
+      "costPrice": 2100,
+      "price": 3800,
+      "unit": "шт.",
+      "description": "Оригинальный контроллер с тихим плавным стартом"
+    },
+    {
+      "id": "part-demo-4",
+      "name": "Ручка газа с вольтметром и ключом",
+      "categoryId": "cat-controls",
+      "sku": "THROT-01",
+      "quantity": 12,
+      "minQuantity": 4,
+      "costPrice": 500,
+      "price": 1200,
+      "unit": "шт.",
+      "description": "Универсальная ручка газа с цифровой индикацией вольтажа"
     }
   ],
   "partOrders": [],
@@ -777,40 +657,8 @@
     }
   ],
   "rentals": [],
-  "repairs": [
-    {
-      "id": "rep-1790236642060",
-      "orderNumber": "ЗН-001",
-      "itemType": "EXTERNAL_DEVICE",
-      "bikeId": null,
-      "batteryId": null,
-      "customItemName": "Kugoo v1",
-      "clientName": "Константин Юрьев",
-      "clientPhone": null,
-      "clientId": null,
-      "mechanicId": "usr-mech-1",
-      "status": "DIAGNOSTICS",
-      "faultType": "CLIENT_FAULT",
-      "description": "Прокол колеса",
-      "laborCost": 500,
-      "partsCost": 0,
-      "totalCost": 500,
-      "createdAt": "2026-09-24T07:57:22.060Z",
-      "completedAt": null,
-      "parts": []
-    }
-  ],
-  "payments": [
-    {
-      "id": "pay-1790207788520",
-      "orderId": "ord-1790207788520",
-      "type": "RETAIL_SALE",
-      "amount": 1200,
-      "method": "SBP",
-      "description": "Розничная продажа (Чек ORD-788520): Фарход Каримов",
-      "createdAt": "2026-09-23T23:56:28.520Z"
-    }
-  ],
+  "repairs": [],
+  "payments": [],
   "reviews": [],
   "articles": [
     {
@@ -850,58 +698,8 @@
       "updatedAt": "2026-10-08T08:27:52.673Z"
     }
   ],
-  "employees": [
-    {
-      "id": "emp-1790100947687",
-      "fullName": "Андрей Сергеевич Кузнецов ",
-      "phone": "+7 3242342352344",
-      "email": "",
-      "role": "Механик",
-      "salaryType": "PIECEWORK",
-      "salaryAmount": 30000,
-      "status": "ACTIVE",
-      "hiredAt": "2026-09-22",
-      "notes": "Механик"
-    },
-    {
-      "id": "emp-1790100885318",
-      "fullName": "Максимов Максим",
-      "phone": "+7 3423423423423",
-      "email": null,
-      "role": "Владелец",
-      "salaryType": "MONTHLY",
-      "salaryAmount": 30000,
-      "status": "ACTIVE",
-      "hiredAt": "2026-09-22",
-      "notes": null
-    }
-  ],
-  "retailOrders": [
-    {
-      "id": "ord-1790207788520",
-      "orderNumber": "ORD-788520",
-      "customerType": "EXTERNAL",
-      "customerName": "Фарход Каримов",
-      "customerPhone": "+7 (925) 880-14-11",
-      "clientId": "cli-1790207788520",
-      "items": [
-        {
-          "itemType": "PART",
-          "itemId": "prt-1790207220843",
-          "name": "Фара арктик [СВТ001]",
-          "quantity": 1,
-          "price": 1200,
-          "costPrice": 500
-        }
-      ],
-      "totalAmount": 1200,
-      "totalCost": 500,
-      "profit": 700,
-      "paymentMethod": "SBP",
-      "notes": null,
-      "createdAt": "2026-09-23T23:56:28.520Z"
-    }
-  ],
+  "employees": [],
+  "retailOrders": [],
   "loyaltyTiers": [
     {
       "id": "tier-bronze",
@@ -954,90 +752,30 @@
   ],
   "auditLogs": [
     {
-      "id": "log-1791459501999-ypw1",
+      "id": "log-demo-init",
       "category": "SYSTEM",
-      "action": "USER_DELETE",
-      "title": "Удален сотрудник: Иван Ковалев (@manager)",
-      "actorName": "BXLETH (Руководитель парка)",
-      "badgeText": "Удалено",
-      "badgeColor": "rose",
-      "entityId": "usr-mgr-1",
-      "createdAt": "2026-10-08T11:38:21.999Z"
-    },
-    {
-      "id": "log-1791459497797-81xx",
-      "category": "SYSTEM",
-      "action": "USER_UPDATE",
-      "title": "Обновлен сотрудник: Иван Ковалев",
-      "details": "Статус: Активен. Уровень доступа: lvl-manager",
-      "actorName": "BXLETH (Руководитель парка)",
-      "badgeText": "Сотрудник",
-      "badgeColor": "sky",
-      "entityId": "usr-mgr-1",
-      "createdAt": "2026-10-08T11:38:17.797Z"
-    },
-    {
-      "id": "log-1791459493869-cwkn",
-      "category": "SYSTEM",
-      "action": "USER_DELETE",
-      "title": "Удален сотрудник: Дмитрий Орлов (@admin)",
-      "actorName": "BXLETH (Руководитель парка)",
-      "badgeText": "Удалено",
-      "badgeColor": "rose",
-      "entityId": "usr-admin-1",
-      "createdAt": "2026-10-08T11:38:13.869Z"
-    },
-    {
-      "id": "log-1791459491535-59rz",
-      "category": "SYSTEM",
-      "action": "USER_DELETE",
-      "title": "Удален сотрудник: Алексей Смирнов (@mechanic)",
-      "actorName": "BXLETH (Руководитель парка)",
-      "badgeText": "Удалено",
-      "badgeColor": "rose",
-      "entityId": "usr-mech-1",
-      "createdAt": "2026-10-08T11:38:11.535Z"
-    },
-    {
-      "id": "log-1791459486695-y667",
-      "category": "SYSTEM",
-      "action": "USER_UPDATE",
-      "title": "Обновлен сотрудник: Алексей Смирнов",
-      "details": "Статус: Активен. Уровень доступа: lvl-manager",
-      "actorName": "BXLETH (Руководитель парка)",
-      "badgeText": "Сотрудник",
-      "badgeColor": "sky",
-      "entityId": "usr-mech-1",
-      "createdAt": "2026-10-08T11:38:06.695Z"
-    },
-    {
-      "id": "log-1791459455687-u0xb",
-      "category": "SYSTEM",
-      "action": "USER_UPDATE",
-      "title": "Обновлен сотрудник: Дмитрий Орлов",
-      "details": "Статус: Активен. Уровень доступа: lvl-manager",
-      "actorName": "BXLETH (Руководитель парка)",
-      "badgeText": "Сотрудник",
-      "badgeColor": "sky",
-      "entityId": "usr-admin-1",
-      "createdAt": "2026-10-08T11:37:35.687Z"
+      "action": "SYSTEM_INIT",
+      "title": "Демо-стенд ELECTREAM CRM инициализирован",
+      "details": "База данных очищена от персональных данных и настроена для публичного демонстрационного портфолио",
+      "badgeText": "Портфолио",
+      "badgeColor": "emerald",
+      "createdAt": "2026-11-01T00:00:00.000Z"
     }
   ],
   "chatMessages": [
     {
-      "id": "msg-3",
-      "senderId": "u-bxleth",
-      "senderName": "Алексей (Разработчик)",
+      "id": "msg-demo-welcome",
+      "senderId": "usr-demo",
+      "senderName": "Демо Администратор",
       "senderRole": "ADMIN",
-      "text": "Обновления ELECTREAM CRM установлены: добавлены отделы заявок и быстрый QR-звонок курьерам.",
-      "createdAt": "2026-10-08T10:56:29.725Z"
+      "text": "Добро пожаловать в интерактивный демо-стенд ELECTREAM CRM! База готова к демонстрации: доступны аренда, выкуп, магазин, СТО, касса и симуляция.",
+      "createdAt": "2026-11-01T10:00:00.000Z"
     }
   ],
   "settings": {
-    "monthlyFixedExpenses": 0,
-    "fixedExpensesDescription": "Аренда помещения мастерской и накладные расходы",
-    "articlesInitialized": true,
-    "fixedExpenseItems": []
+    "monthlyFixedExpenses": 50000,
+    "fixedExpensesDescription": "Аренда сервисного бокса и постоянные накладные расходы базы",
+    "articlesInitialized": true
   },
   "presence": []
 }

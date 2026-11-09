@@ -81,6 +81,19 @@ export const INITIAL_ACCESS_LEVELS = [
 
 export const INITIAL_USERS = [
   {
+    id: 'usr-demo',
+    login: 'demo',
+    username: 'demo',
+    email: 'demo@electream.ru',
+    passwordHash: 'demo',
+    fullName: 'Демо-Администратор',
+    phone: '+7 (999) 777-88-99',
+    role: 'ADMIN' as const,
+    roleTitle: 'Демо-Администратор',
+    accessLevelId: 'lvl-owner',
+    isActive: true,
+  },
+  {
     id: "usr-bxleth",
     login: "bxleth",
     username: "bxleth",

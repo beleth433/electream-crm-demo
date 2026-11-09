@@ -12,6 +12,8 @@ import {
   LogOut,
   RefreshCw,
   CheckCircle2,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -133,6 +135,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     }
   };
 
+  const handleDemoLogin = async () => {
+    setIsLoading(true);
+    try {
+      const res = await api.login('demo', 'demo', false);
+      localStorage.setItem('crm_auth_token', res.token);
+      localStorage.setItem('crm_auth_user', JSON.stringify(res.user));
+      toast.success('Демо-доступ активирован! Добро пожаловать.');
+      onLoginSuccess(res.user);
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка входа в демо-режим');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 via-slate-100 to-emerald-50/30 dark:from-[#060c09] dark:via-[#09140e] dark:to-[#07130b] text-slate-900 dark:text-slate-100">
       <div className="w-full max-w-md">
@@ -162,6 +179,29 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 <span>Служебный контур • Только для команды</span>
               </div>
             )}
+          </div>
+
+                    {/* DEMO SHOWCASE BANNER (1-CLICK LOGIN) */}
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-emerald-500/5 border border-emerald-500/30 text-center shadow-lg shadow-emerald-500/5">
+            <div className="flex items-center justify-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1">
+              <Sparkles className="w-4 h-4 text-emerald-500 animate-pulse" />
+              <span>Демо-режим (Портфолио)</span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-3">
+              Ознакомьтесь со всем функционалом CRM парка в 1 клик без необходимости ручного ввода.
+            </p>
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              disabled={isLoading}
+              className="w-full h-11 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black rounded-xl shadow-md shadow-emerald-500/25 transition-all active:scale-[0.98]"
+            >
+              <Zap className="w-4 h-4 fill-current" />
+              <span>Войти в демо в 1 клик (Администратор)</span>
+            </button>
+            <div className="mt-2.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+              Логин: <span className="text-emerald-600 dark:text-emerald-400 font-bold">demo</span> • Пароль: <span className="text-emerald-600 dark:text-emerald-400 font-bold">demo</span>
+            </div>
           </div>
 
           {/* MODE 1: Recognized Trusted Device */}
