@@ -32,6 +32,7 @@ import { Rental, User, ChatMessage, PresenceUser } from './types';
 import { LoginPage } from './components/auth/LoginPage';
 import { TeamChatDrawer } from './components/chat/TeamChatDrawer';
 import { NavbarOnlineUsers } from './components/chat/OnlineUsersBadge';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { playChatNotificationSound } from './utils/audio';
 import {
   Plus,
@@ -649,6 +650,7 @@ const MainLayout: React.FC = () => {
 
         {/* Dynamic Page Views */}
         <main className="grow p-3 sm:p-6 pb-24 md:pb-8 overflow-y-auto max-w-7xl w-full mx-auto">
+          <ErrorBoundary key={currentTab}>
           {currentTab === 'dashboard' && (
             <DashboardPage
               stats={stats || null}
@@ -694,6 +696,7 @@ const MainLayout: React.FC = () => {
           {currentTab === 'loyalty' && <LoyaltyPage />}
           {currentTab === 'info' && <InfoPage />}
           {currentTab === 'history' && <HistoryPage />}
+          </ErrorBoundary>
         </main>
       </div>
 

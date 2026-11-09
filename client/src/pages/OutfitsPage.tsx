@@ -418,7 +418,7 @@ export const OutfitsPage: React.FC = () => {
               {outfits.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                   <td className="p-3.5 font-mono font-bold text-sky-600 dark:text-sky-400">
-                    {item.inventoryNumber || '—'}
+                    {item.inventoryNumber || (item as any).serialNumber || '—'}
                   </td>
                   <td className="p-3.5 font-semibold text-slate-900 dark:text-white">
                     {item.name}
@@ -429,14 +429,14 @@ export const OutfitsPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-3.5 font-bold text-slate-800 dark:text-slate-200">
-                    {item.depositValue.toLocaleString('ru-RU')} ₽
+                    {(item.depositValue ?? item.depositAmount ?? 0).toLocaleString('ru-RU')} ₽
                   </td>
                   <td className="p-3.5 font-mono text-xs whitespace-nowrap">
                     <div className="text-slate-500">
-                      {item.purchasePrice ? `${item.purchasePrice.toLocaleString('ru-RU')} ₽` : '—'}
+                      {(item.purchasePrice ?? (item as any).costPrice) ? `${(item.purchasePrice ?? (item as any).costPrice ?? 0).toLocaleString('ru-RU')} ₽` : '—'}
                     </div>
                     <div className="font-bold text-emerald-600 dark:text-emerald-400">
-                      {item.salePrice ? `${item.salePrice.toLocaleString('ru-RU')} ₽` : '—'}
+                      {(item.salePrice ?? (item as any).price) ? `${(item.salePrice ?? (item as any).price ?? 0).toLocaleString('ru-RU')} ₽` : '—'}
                     </div>
                   </td>
                   <td className="p-3.5 text-slate-500">
@@ -521,7 +521,7 @@ export const OutfitsPage: React.FC = () => {
                 <option value="">-- Выберите шаблон или заполните вручную --</option>
                 {templates.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.name} (Залог: {t.defaultDeposit.toLocaleString('ru-RU')} ₽)
+                    {t.name} (Залог: {(t.defaultDeposit ?? t.depositAmount ?? 0).toLocaleString('ru-RU')} ₽)
                   </option>
                 ))}
               </select>
@@ -958,10 +958,10 @@ export const OutfitsPage: React.FC = () => {
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-emerald-500/10 text-[11px] flex-wrap gap-1">
                       <span className="text-slate-400">
-                        Залог: <b className="text-slate-900 dark:text-emerald-400">{tmpl.defaultDeposit.toLocaleString('ru-RU')} ₽</b>
+                        Залог: <b className="text-slate-900 dark:text-emerald-400">{(tmpl.defaultDeposit ?? tmpl.depositAmount ?? 0).toLocaleString('ru-RU')} ₽</b>
                       </span>
                       <span className="text-slate-500 font-mono text-[10px]">
-                        Себест: {tmpl.purchasePrice?.toLocaleString() || '—'} ₽ • Продажа: {tmpl.salePrice?.toLocaleString() || '—'} ₽
+                        Себест: {(tmpl.purchasePrice ?? (tmpl as any).costPrice)?.toLocaleString('ru-RU') || '—'} ₽ • Продажа: {(tmpl.salePrice ?? (tmpl as any).price)?.toLocaleString('ru-RU') || '—'} ₽
                       </span>
                     </div>
                   </div>

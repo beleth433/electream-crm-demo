@@ -908,7 +908,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
       const term = orderSearch.toLowerCase().trim();
       const matchesSearch =
         !term ||
-        order.partName.toLowerCase().includes(term) ||
+        (order.partName || '').toLowerCase().includes(term) ||
         (order.categoryName && order.categoryName.toLowerCase().includes(term)) ||
         (order.requestedBy && order.requestedBy.toLowerCase().includes(term)) ||
         (order.note && order.note.toLowerCase().includes(term)) ||
@@ -1196,10 +1196,10 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                       {p.minQuantity} шт.
                     </td>
                     <td className="p-3.5 text-slate-600 dark:text-slate-300">
-                      {p.purchasePrice.toLocaleString('ru-RU')} ₽
+                      {(p.purchasePrice ?? (p as any).costPrice ?? 0).toLocaleString('ru-RU')} ₽
                     </td>
                     <td className="p-3.5 font-bold text-slate-900 dark:text-white">
-                      {p.clientPrice.toLocaleString('ru-RU')} ₽
+                      {(p.clientPrice ?? (p as any).price ?? 0).toLocaleString('ru-RU')} ₽
                     </td>
                     <td className="p-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
@@ -1291,13 +1291,13 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                 <div>
                   <span className="text-slate-400 text-[10px] block">Клиентская (СТО):</span>
                   <span className="font-bold text-slate-900 dark:text-white text-xs">
-                    {p.clientPrice.toLocaleString('ru-RU')} ₽
+                    {(p.clientPrice ?? (p as any).price ?? 0).toLocaleString('ru-RU')} ₽
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-400 text-[10px] block">Себестоимость:</span>
                   <span className="text-slate-600 dark:text-slate-300 text-xs">
-                    {p.purchasePrice.toLocaleString('ru-RU')} ₽
+                    {(p.purchasePrice ?? (p as any).costPrice ?? 0).toLocaleString('ru-RU')} ₽
                   </span>
                 </div>
                 <div className="col-span-2 pt-1 border-t border-slate-200/50 dark:border-emerald-500/10 flex items-center justify-between text-[11px]">
@@ -1365,7 +1365,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
             <div className="text-xl font-black text-slate-900 dark:text-white flex items-baseline gap-1.5">
               <span>{totalOrdersCount}</span>
               <span className="text-xs font-bold text-slate-400">
-                ({totalOrdersSum.toLocaleString('ru-RU')} ₽)
+                ({(totalOrdersSum || 0).toLocaleString('ru-RU')} ₽)
               </span>
             </div>
           </div>
@@ -1382,7 +1382,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
             <div className="text-xl font-black text-amber-600 dark:text-amber-400 flex items-baseline gap-1.5">
               <span>{requestedOrdersCount}</span>
               <span className="text-xs font-bold text-amber-600/80 dark:text-amber-400/80">
-                ({requestedOrdersSum.toLocaleString('ru-RU')} ₽)
+                ({(requestedOrdersSum || 0).toLocaleString('ru-RU')} ₽)
               </span>
             </div>
           </div>
@@ -1399,7 +1399,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
             <div className="text-xl font-black text-sky-600 dark:text-sky-400 flex items-baseline gap-1.5">
               <span>{orderedOrdersCount}</span>
               <span className="text-xs font-bold text-sky-600/80 dark:text-sky-400/80">
-                ({orderedOrdersSum.toLocaleString('ru-RU')} ₽)
+                ({(orderedOrdersSum || 0).toLocaleString('ru-RU')} ₽)
               </span>
             </div>
           </div>
@@ -1416,7 +1416,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
             <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1.5">
               <span>{receivedOrdersCount}</span>
               <span className="text-xs font-bold text-emerald-600/80 dark:text-emerald-400/80">
-                ({receivedOrdersSum.toLocaleString('ru-RU')} ₽)
+                ({(receivedOrdersSum || 0).toLocaleString('ru-RU')} ₽)
               </span>
             </div>
           </div>
@@ -1463,7 +1463,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
             }`}
           >
-            Все отделы ({getCategoryStats('ALL').count} • {getCategoryStats('ALL').sum.toLocaleString('ru-RU')} ₽)
+            Все отделы ({getCategoryStats('ALL').count} • {(getCategoryStats('ALL').sum || 0).toLocaleString('ru-RU')} ₽)
           </button>
           {orderCategories.map((cat) => {
             const st = getCategoryStats(cat.id);
@@ -1477,7 +1477,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
-                {cat.name} ({st.count} • {st.sum.toLocaleString('ru-RU')} ₽)
+                {cat.name} ({st.count} • {(st.sum || 0).toLocaleString('ru-RU')} ₽)
               </button>
             );
           })}
@@ -1496,7 +1496,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                   : 'bg-slate-100 dark:bg-[#101d17] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-[#162720]'
               }`}
             >
-              Все ({totalOrdersCount} • {totalOrdersSum.toLocaleString('ru-RU')} ₽)
+              Все ({totalOrdersCount} • {(totalOrdersSum || 0).toLocaleString('ru-RU')} ₽)
             </button>
             <button
               onClick={() => setOrderStatusFilter('REQUESTED')}
@@ -1507,7 +1507,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
-              <span>Требуется ({requestedOrdersCount} • {requestedOrdersSum.toLocaleString('ru-RU')} ₽)</span>
+              <span>Требуется ({requestedOrdersCount} • {(requestedOrdersSum || 0).toLocaleString('ru-RU')} ₽)</span>
             </button>
             <button
               onClick={() => setOrderStatusFilter('ORDERED')}
@@ -1518,7 +1518,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
               }`}
             >
               <Truck className="w-3.5 h-3.5" />
-              <span>В пути ({orderedOrdersCount} • {orderedOrdersSum.toLocaleString('ru-RU')} ₽)</span>
+              <span>В пути ({orderedOrdersCount} • {(orderedOrdersSum || 0).toLocaleString('ru-RU')} ₽)</span>
             </button>
             <button
               onClick={() => setOrderStatusFilter('RECEIVED')}
@@ -1529,7 +1529,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Получено ({receivedOrdersCount} • {receivedOrdersSum.toLocaleString('ru-RU')} ₽)</span>
+              <span>Получено ({receivedOrdersCount} • {(receivedOrdersSum || 0).toLocaleString('ru-RU')} ₽)</span>
             </button>
             <button
               onClick={() => setOrderStatusFilter('ARCHIVED')}
@@ -1540,7 +1540,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
               }`}
             >
               <Archive className="w-3.5 h-3.5 text-slate-400" />
-              <span>Архив ({archivedOrdersCount} • {archivedOrdersSum.toLocaleString('ru-RU')} ₽)</span>
+              <span>Архив ({archivedOrdersCount} • {(archivedOrdersSum || 0).toLocaleString('ru-RU')} ₽)</span>
             </button>
             {orders.some((o) => o.status === 'CANCELLED') && (
               <button
@@ -1709,7 +1709,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                         {order.actualCost !== undefined && order.actualCost > 0 ? (
                           <div>
                             <span className="font-extrabold text-slate-900 dark:text-white">
-                              {order.actualCost.toLocaleString('ru-RU')} ₽
+                              {(order.actualCost ?? 0).toLocaleString('ru-RU')} ₽
                             </span>
                             <div className="flex items-center gap-1 text-[10px] text-sky-600 dark:text-sky-400 font-semibold mt-0.5">
                               <Receipt className="w-3 h-3 shrink-0" />
@@ -1730,7 +1730,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                               {((order.estimatedPrice || 0) * (order.quantity || 1)).toLocaleString('ru-RU')} ₽
                             </span>
                             <span className="block text-[10px] text-slate-400">
-                              ({order.estimatedPrice.toLocaleString('ru-RU')} ₽/шт.)
+                              ({(order.estimatedPrice ?? 0).toLocaleString('ru-RU')} ₽/шт.)
                             </span>
                           </div>
                         ) : (
@@ -1844,7 +1844,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                     {filteredOrdersTotalQuantity} шт.
                   </td>
                   <td className="px-2.5 py-3 text-amber-600 dark:text-amber-400 font-black text-sm whitespace-nowrap">
-                    {filteredOrdersTotalSum.toLocaleString('ru-RU')} ₽
+                    {(filteredOrdersTotalSum || 0).toLocaleString('ru-RU')} ₽
                   </td>
                   <td colSpan={3} className="px-2.5 py-3 text-right text-[11px] font-medium text-slate-400">
                     Авторасчет: кол-во × цена
@@ -1862,7 +1862,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                 В выборке: <b>{filteredOrders.length} поз.</b> ({filteredOrdersTotalQuantity} шт.)
               </span>
               <span className="font-black text-sm text-amber-600 dark:text-amber-400">
-                {filteredOrdersTotalSum.toLocaleString('ru-RU')} ₽
+                {(filteredOrdersTotalSum || 0).toLocaleString('ru-RU')} ₽
               </span>
             </div>
 
@@ -1943,7 +1943,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                       </span>
                       <span className="font-bold text-slate-900 dark:text-white text-xs">
                         {order.actualCost !== undefined && order.actualCost > 0
-                          ? `${order.actualCost.toLocaleString('ru-RU')} ₽ (${
+                          ? `${(order.actualCost ?? 0).toLocaleString('ru-RU')} ₽ (${
                               order.paymentMethod === 'CARD'
                                 ? 'Карта'
                                 : order.paymentMethod === 'SBP'
@@ -2110,7 +2110,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
           <option value="">-- Ввести название вручную или выбрать из базы --</option>
           {allParts.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.sku} | {p.name} (остаток: {p.quantity} шт., себестоимость: {p.purchasePrice} ₽)
+              {p.sku} | {p.name} (остаток: {p.quantity} шт., себестоимость: {p.purchasePrice ?? (p as any).costPrice ?? 0} ₽)
             </option>
           ))}
         </select>
@@ -3096,7 +3096,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                   <div>
                     <span className="text-slate-400 block text-[10px]">Ориентировочно за шт.:</span>
                     <span className="font-semibold text-slate-700 dark:text-slate-200">
-                      {orderToConfirmPurchase.estimatedPrice.toLocaleString('ru-RU')} ₽
+                      {(orderToConfirmPurchase.estimatedPrice ?? 0).toLocaleString('ru-RU')} ₽
                     </span>
                   </div>
                 ) : null}
@@ -3248,7 +3248,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                   {orderToReceive.actualCost ? (
                     <>
                       <span>•</span>
-                      <span>Списано: <b className="text-slate-900 dark:text-white">{orderToReceive.actualCost.toLocaleString('ru-RU')} ₽</b></span>
+                      <span>Списано: <b className="text-slate-900 dark:text-white">{(orderToReceive.actualCost ?? 0).toLocaleString('ru-RU')} ₽</b></span>
                     </>
                   ) : null}
                 </div>
@@ -3584,7 +3584,7 @@ export const InventoryPage: React.FC<InventoryPageProps> = ({ currentUser }) => 
                 <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-center gap-2">
                   <Receipt className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                   <span className="text-[11px]">
-                    В кассе зафиксирован кассовый расход: <b>{orderToDelete.actualCost.toLocaleString('ru-RU')} ₽</b> ({orderToDelete.paymentMethod || 'CARD'})
+                    В кассе зафиксирован кассовый расход: <b>{(orderToDelete.actualCost ?? 0).toLocaleString('ru-RU')} ₽</b> ({orderToDelete.paymentMethod || 'CARD'})
                   </span>
                 </div>
               ) : null}

@@ -262,41 +262,89 @@ export const INITIAL_OUTFITS = [
   {
     "id": "outfit-demo-1",
     "name": "Шлем защитный курьерский (M/L)",
-    "category": "HELMET",
+    "category": "cat-helmet",
+    "inventoryNumber": "EQ-001",
+    "serialNumber": "EQ-001",
+    "depositValue": 1500,
     "depositAmount": 1500,
+    "purchasePrice": 800,
+    "salePrice": 1500,
     "status": "IN_STOCK",
-    "serialNumber": "HLM-001",
     "createdAt": "2026-11-01T00:00:00.000Z"
   },
   {
     "id": "outfit-demo-2",
     "name": "Замок цепной противоугонный 10 мм",
-    "category": "LOCK",
+    "category": "cat-lock",
+    "inventoryNumber": "EQ-002",
+    "serialNumber": "EQ-002",
+    "depositValue": 2000,
     "depositAmount": 2000,
+    "purchasePrice": 1000,
+    "salePrice": 2000,
     "status": "IN_STOCK",
-    "serialNumber": "LCK-001",
     "createdAt": "2026-11-01T00:00:00.000Z"
   },
   {
     "id": "outfit-demo-3",
     "name": "Термосумка курьерская 45л",
-    "category": "BAG",
+    "category": "cat-bag",
+    "inventoryNumber": "EQ-003",
+    "serialNumber": "EQ-003",
+    "depositValue": 2500,
     "depositAmount": 2500,
+    "purchasePrice": 1200,
+    "salePrice": 2500,
     "status": "IN_STOCK",
-    "serialNumber": "BAG-001",
     "createdAt": "2026-11-01T00:00:00.000Z"
   }
 ];
-export const INITIAL_OUTFIT_TEMPLATES: any[] = [];
+export const INITIAL_OUTFIT_TEMPLATES = [
+  {
+    "id": "tmpl-helmet",
+    "name": "Шлем защитный курьерский (M/L)",
+    "categoryId": "cat-helmet",
+    "category": "cat-helmet",
+    "defaultDeposit": 1500,
+    "depositAmount": 1500,
+    "purchasePrice": 800,
+    "salePrice": 1500,
+    "description": "Усиленный ABS-пластик с вентиляцией"
+  },
+  {
+    "id": "tmpl-lock",
+    "name": "Замок цепной противоугонный 10 мм",
+    "categoryId": "cat-lock",
+    "category": "cat-lock",
+    "defaultDeposit": 2000,
+    "depositAmount": 2000,
+    "purchasePrice": 1000,
+    "salePrice": 2000,
+    "description": "Закаленная сталь 10мм в нейлоновом чехле"
+  },
+  {
+    "id": "tmpl-bag",
+    "name": "Термосумка курьерская 45л",
+    "categoryId": "cat-bag",
+    "category": "cat-bag",
+    "defaultDeposit": 2500,
+    "depositAmount": 2500,
+    "purchasePrice": 1200,
+    "salePrice": 2500,
+    "description": "Фольгированный термослой с перегородками"
+  }
+];
 export const INITIAL_CLIENTS: any[] = [];
 export const INITIAL_PARTS = [
   {
     "id": "part-demo-1",
     "name": "Колодки тормозные Monster (полуметалл)",
-    "categoryId": "cat-brakes",
-    "sku": "BRK-MON-01",
+    "categoryId": "cat-part-brakes",
+    "sku": "PRT-001",
     "quantity": 30,
     "minQuantity": 10,
+    "purchasePrice": 250,
+    "clientPrice": 600,
     "costPrice": 250,
     "price": 600,
     "unit": "компл.",
@@ -305,10 +353,12 @@ export const INITIAL_PARTS = [
   {
     "id": "part-demo-2",
     "name": "Камера 16×3.0 усиленная (бутил)",
-    "categoryId": "cat-wheels",
-    "sku": "CAM-16-01",
+    "categoryId": "cat-part-wheels",
+    "sku": "PRT-002",
     "quantity": 20,
     "minQuantity": 8,
+    "purchasePrice": 350,
+    "clientPrice": 800,
     "costPrice": 350,
     "price": 800,
     "unit": "шт.",
@@ -317,10 +367,12 @@ export const INITIAL_PARTS = [
   {
     "id": "part-demo-3",
     "name": "Контроллер 60V 500W синусный",
-    "categoryId": "cat-electric",
-    "sku": "CTRL-60V-01",
+    "categoryId": "cat-part-controllers",
+    "sku": "PRT-003",
     "quantity": 6,
     "minQuantity": 2,
+    "purchasePrice": 2100,
+    "clientPrice": 3800,
     "costPrice": 2100,
     "price": 3800,
     "unit": "шт.",
@@ -329,10 +381,12 @@ export const INITIAL_PARTS = [
   {
     "id": "part-demo-4",
     "name": "Ручка газа с вольтметром и ключом",
-    "categoryId": "cat-controls",
-    "sku": "THROT-01",
+    "categoryId": "cat-part-steering",
+    "sku": "PRT-004",
     "quantity": 12,
     "minQuantity": 4,
+    "purchasePrice": 500,
+    "clientPrice": 1200,
     "costPrice": 500,
     "price": 1200,
     "unit": "шт.",

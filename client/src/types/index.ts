@@ -249,6 +249,7 @@ export interface OutfitTemplate {
   name: string;
   categoryId: string;
   defaultDeposit: number;
+  depositAmount?: number;
   description?: string | null;
   categoryName?: string;
   purchasePrice?: number;
@@ -261,7 +262,9 @@ export interface Outfit {
   category: string;
   categoryName?: string;
   inventoryNumber?: string | null;
+
   depositValue: number;
+  depositAmount?: number;
   status: OutfitStatus;
   purchasePrice?: number;
   salePrice?: number;
@@ -595,6 +598,7 @@ export interface ShopCatalog {
     category: string;
     categoryName: string;
     inventoryNumber?: string | null;
+
     price: number;
     costPrice: number;
     inStock: number;
