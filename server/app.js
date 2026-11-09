@@ -62447,7 +62447,7 @@ var INITIAL_USERS = [
     login: "demo",
     username: "demo",
     email: "demo@electream.ru",
-    passwordHash: "demo",
+    passwordHash: "scrypt:1234567890abcdef1234567890abcdef:221af72c20f716c2cc32eec6ba806377e35df46d446912ac6960918424e320c69ef9c685494dfc2ddb95e5f721c1ddc903bd641333fbedde68638b31634a4e14",
     fullName: "\u0414\u0435\u043C\u043E-\u0410\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440",
     phone: "+7 (999) 777-88-99",
     role: "ADMIN",
@@ -62467,6 +62467,235 @@ var INITIAL_USERS = [
     roleTitle: "\u0413\u043B\u0430\u0432\u043D\u044B\u0439 \u0438\u043D\u0436\u0435\u043D\u0435\u0440 / \u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A",
     accessLevelId: "lvl-owner",
     isActive: true
+  }
+];
+var INITIAL_MODELS = [
+  {
+    "id": "mdl-minako-monster",
+    "name": "Minako Monster Pro 60V",
+    "powerWatts": 500,
+    "wheelSizeInch": 16,
+    "baseRentalPrice": 600,
+    "buyoutPrice": 75e3,
+    "purchasePrice": 45e3,
+    "salePrice": 65e3,
+    "description": "\u0424\u043B\u0430\u0433\u043C\u0430\u043D\u0441\u043A\u0438\u0439 \u043A\u0443\u0440\u044C\u0435\u0440\u0441\u043A\u0438\u0439 \u044D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434 \u0432\u044B\u0441\u043E\u043A\u043E\u0439 \u0433\u0440\u0443\u0437\u043E\u043F\u043E\u0434\u044A\u0435\u043C\u043D\u043E\u0441\u0442\u0438"
+  },
+  {
+    "id": "mdl-wenbox-u3",
+    "name": "Wenbox U3 Pro 60V",
+    "powerWatts": 500,
+    "wheelSizeInch": 16,
+    "baseRentalPrice": 550,
+    "buyoutPrice": 7e4,
+    "purchasePrice": 42e3,
+    "salePrice": 6e4,
+    "description": "\u041D\u0430\u0434\u0435\u0436\u043D\u044B\u0439 \u0433\u043E\u0440\u043E\u0434\u0441\u043A\u043E\u0439 \u044D\u043B\u0435\u043A\u0442\u0440\u043E\u0431\u0430\u0439\u043A \u0434\u043B\u044F \u0438\u043D\u0442\u0435\u043D\u0441\u0438\u0432\u043D\u044B\u0445 \u0441\u043C\u0435\u043D"
+  }
+];
+var INITIAL_BATTERY_MODELS = [
+  {
+    "id": "bat-mdl-60v21ah",
+    "name": "\u0410\u041A\u0411 60V 21Ah (Li-ion)",
+    "voltage": 60,
+    "capacityAh": 21,
+    "chemistry": "Li-ion",
+    "purchasePrice": 18e3,
+    "salePrice": 28e3,
+    "description": "\u0428\u0442\u0430\u0442\u043D\u0430\u044F \u0442\u044F\u0433\u043E\u0432\u0430\u044F \u0431\u0430\u0442\u0430\u0440\u0435\u044F \u0434\u043B\u044F Minako Monster"
+  },
+  {
+    "id": "bat-mdl-60v30ah",
+    "name": "\u0410\u041A\u0411 60V 30Ah Long Range",
+    "voltage": 60,
+    "capacityAh": 30,
+    "chemistry": "Li-ion",
+    "purchasePrice": 24e3,
+    "salePrice": 36e3,
+    "description": "\u0423\u0432\u0435\u043B\u0438\u0447\u0435\u043D\u043D\u0430\u044F \u0435\u043C\u043A\u043E\u0441\u0442\u044C \u0434\u043B\u044F \u0441\u043C\u0435\u043D \u0434\u043E 14 \u0447\u0430\u0441\u043E\u0432"
+  }
+];
+var INITIAL_BIKES = [
+  {
+    "id": "bike-demo-1",
+    "inventoryNumber": "\u042D\u0412-001",
+    "modelId": "mdl-minako-monster",
+    "frameNumber": "FRM-MONSTER-001",
+    "motorNumber": "MTR-500W-001",
+    "voltage": 60,
+    "status": "AVAILABLE",
+    "installedBatteryId": null,
+    "mileageKm": 120,
+    "photos": [],
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  },
+  {
+    "id": "bike-demo-2",
+    "inventoryNumber": "\u042D\u0412-002",
+    "modelId": "mdl-minako-monster",
+    "frameNumber": "FRM-MONSTER-002",
+    "motorNumber": "MTR-500W-002",
+    "voltage": 60,
+    "status": "AVAILABLE",
+    "installedBatteryId": null,
+    "mileageKm": 85,
+    "photos": [],
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  },
+  {
+    "id": "bike-demo-3",
+    "inventoryNumber": "\u042D\u0412-003",
+    "modelId": "mdl-wenbox-u3",
+    "frameNumber": "FRM-WENBOX-003",
+    "motorNumber": "MTR-500W-003",
+    "voltage": 60,
+    "status": "AVAILABLE",
+    "installedBatteryId": null,
+    "mileageKm": 210,
+    "photos": [],
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  },
+  {
+    "id": "bike-demo-4",
+    "inventoryNumber": "\u042D\u0412-004",
+    "modelId": "mdl-wenbox-u3",
+    "frameNumber": "FRM-WENBOX-004",
+    "motorNumber": "MTR-500W-004",
+    "voltage": 60,
+    "status": "AVAILABLE",
+    "installedBatteryId": null,
+    "mileageKm": 0,
+    "photos": [],
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  }
+];
+var INITIAL_BATTERIES = [
+  {
+    "id": "bat-demo-1",
+    "serialNumber": "BAT-60V-001",
+    "modelId": "bat-mdl-60v21ah",
+    "voltage": 60,
+    "capacityAh": 21,
+    "sohPercent": 99,
+    "chargeCycles": 28,
+    "status": "AVAILABLE",
+    "installedBikeId": null,
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  },
+  {
+    "id": "bat-demo-2",
+    "serialNumber": "BAT-60V-002",
+    "modelId": "bat-mdl-60v21ah",
+    "voltage": 60,
+    "capacityAh": 21,
+    "sohPercent": 97,
+    "chargeCycles": 45,
+    "status": "AVAILABLE",
+    "installedBikeId": null,
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  },
+  {
+    "id": "bat-demo-3",
+    "serialNumber": "BAT-60V-003",
+    "modelId": "bat-mdl-60v30ah",
+    "voltage": 60,
+    "capacityAh": 30,
+    "sohPercent": 100,
+    "chargeCycles": 12,
+    "status": "AVAILABLE",
+    "installedBikeId": null,
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  },
+  {
+    "id": "bat-demo-4",
+    "serialNumber": "BAT-60V-004",
+    "modelId": "bat-mdl-60v30ah",
+    "voltage": 60,
+    "capacityAh": 30,
+    "sohPercent": 98,
+    "chargeCycles": 34,
+    "status": "AVAILABLE",
+    "installedBikeId": null,
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  }
+];
+var INITIAL_OUTFITS = [
+  {
+    "id": "outfit-demo-1",
+    "name": "\u0428\u043B\u0435\u043C \u0437\u0430\u0449\u0438\u0442\u043D\u044B\u0439 \u043A\u0443\u0440\u044C\u0435\u0440\u0441\u043A\u0438\u0439 (M/L)",
+    "category": "HELMET",
+    "depositAmount": 1500,
+    "status": "IN_STOCK",
+    "serialNumber": "HLM-001",
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  },
+  {
+    "id": "outfit-demo-2",
+    "name": "\u0417\u0430\u043C\u043E\u043A \u0446\u0435\u043F\u043D\u043E\u0439 \u043F\u0440\u043E\u0442\u0438\u0432\u043E\u0443\u0433\u043E\u043D\u043D\u044B\u0439 10 \u043C\u043C",
+    "category": "LOCK",
+    "depositAmount": 2e3,
+    "status": "IN_STOCK",
+    "serialNumber": "LCK-001",
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  },
+  {
+    "id": "outfit-demo-3",
+    "name": "\u0422\u0435\u0440\u043C\u043E\u0441\u0443\u043C\u043A\u0430 \u043A\u0443\u0440\u044C\u0435\u0440\u0441\u043A\u0430\u044F 45\u043B",
+    "category": "BAG",
+    "depositAmount": 2500,
+    "status": "IN_STOCK",
+    "serialNumber": "BAG-001",
+    "createdAt": "2026-11-01T00:00:00.000Z"
+  }
+];
+var INITIAL_PARTS = [
+  {
+    "id": "part-demo-1",
+    "name": "\u041A\u043E\u043B\u043E\u0434\u043A\u0438 \u0442\u043E\u0440\u043C\u043E\u0437\u043D\u044B\u0435 Monster (\u043F\u043E\u043B\u0443\u043C\u0435\u0442\u0430\u043B\u043B)",
+    "categoryId": "cat-brakes",
+    "sku": "BRK-MON-01",
+    "quantity": 30,
+    "minQuantity": 10,
+    "costPrice": 250,
+    "price": 600,
+    "unit": "\u043A\u043E\u043C\u043F\u043B.",
+    "description": "\u0418\u0437\u043D\u043E\u0441\u043E\u0441\u0442\u043E\u0439\u043A\u0438\u0435 \u0442\u043E\u0440\u043C\u043E\u0437\u043D\u044B\u0435 \u043A\u043E\u043B\u043E\u0434\u043A\u0438 \u0434\u043B\u044F \u0433\u0438\u0434\u0440\u0430\u0432\u043B\u0438\u0447\u0435\u0441\u043A\u0438\u0445 \u0442\u043E\u0440\u043C\u043E\u0437\u043E\u0432"
+  },
+  {
+    "id": "part-demo-2",
+    "name": "\u041A\u0430\u043C\u0435\u0440\u0430 16\xD73.0 \u0443\u0441\u0438\u043B\u0435\u043D\u043D\u0430\u044F (\u0431\u0443\u0442\u0438\u043B)",
+    "categoryId": "cat-wheels",
+    "sku": "CAM-16-01",
+    "quantity": 20,
+    "minQuantity": 8,
+    "costPrice": 350,
+    "price": 800,
+    "unit": "\u0448\u0442.",
+    "description": "\u0423\u0442\u043E\u043B\u0449\u0435\u043D\u043D\u0430\u044F \u0430\u043D\u0442\u0438\u043F\u0440\u043E\u043A\u043E\u043B\u044C\u043D\u0430\u044F \u043A\u0430\u043C\u0435\u0440\u0430 \u0434\u043B\u044F \u043A\u0443\u0440\u044C\u0435\u0440\u0441\u043A\u0438\u0445 \u0443\u0441\u043B\u043E\u0432\u0438\u0439"
+  },
+  {
+    "id": "part-demo-3",
+    "name": "\u041A\u043E\u043D\u0442\u0440\u043E\u043B\u043B\u0435\u0440 60V 500W \u0441\u0438\u043D\u0443\u0441\u043D\u044B\u0439",
+    "categoryId": "cat-electric",
+    "sku": "CTRL-60V-01",
+    "quantity": 6,
+    "minQuantity": 2,
+    "costPrice": 2100,
+    "price": 3800,
+    "unit": "\u0448\u0442.",
+    "description": "\u041E\u0440\u0438\u0433\u0438\u043D\u0430\u043B\u044C\u043D\u044B\u0439 \u043A\u043E\u043D\u0442\u0440\u043E\u043B\u043B\u0435\u0440 \u0441 \u0442\u0438\u0445\u0438\u043C \u043F\u043B\u0430\u0432\u043D\u044B\u043C \u0441\u0442\u0430\u0440\u0442\u043E\u043C"
+  },
+  {
+    "id": "part-demo-4",
+    "name": "\u0420\u0443\u0447\u043A\u0430 \u0433\u0430\u0437\u0430 \u0441 \u0432\u043E\u043B\u044C\u0442\u043C\u0435\u0442\u0440\u043E\u043C \u0438 \u043A\u043B\u044E\u0447\u043E\u043C",
+    "categoryId": "cat-controls",
+    "sku": "THROT-01",
+    "quantity": 12,
+    "minQuantity": 4,
+    "costPrice": 500,
+    "price": 1200,
+    "unit": "\u0448\u0442.",
+    "description": "\u0423\u043D\u0438\u0432\u0435\u0440\u0441\u0430\u043B\u044C\u043D\u0430\u044F \u0440\u0443\u0447\u043A\u0430 \u0433\u0430\u0437\u0430 \u0441 \u0446\u0438\u0444\u0440\u043E\u0432\u043E\u0439 \u0438\u043D\u0434\u0438\u043A\u0430\u0446\u0438\u0435\u0439 \u0432\u043E\u043B\u044C\u0442\u0430\u0436\u0430"
   }
 ];
 var INITIAL_OUTFIT_CATEGORIES = [
@@ -62493,6 +62722,33 @@ var INITIAL_PART_ORDER_CATEGORIES = [
   { id: "cat-ord-garage", name: "\u0417\u0430\u043A\u0443\u043F \u0434\u043B\u044F \u0433\u0430\u0440\u0430\u0436\u0430", isSystem: false },
   { id: "cat-ord-tools", name: "\u0417\u0430\u043A\u0443\u043F \u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442\u043E\u0432 \u0434\u043B\u044F \u0440\u0430\u0431\u043E\u0442\u044B", isSystem: false },
   { id: "cat-ord-consumables", name: "\u0420\u0430\u0441\u0445\u043E\u0434\u043D\u0438\u043A\u0438 (\u043F\u0435\u0440\u0447\u0430\u0442\u043A\u0438, \u043E\u0447\u0438\u0441\u0442\u0438\u0442\u0435\u043B\u0438)", isSystem: false }
+];
+var INITIAL_TARIFFS = [
+  {
+    "id": "trf-weekly-standard",
+    "name": "\u041D\u0435\u0434\u0435\u043B\u044C\u043D\u044B\u0439 \u0441\u0442\u0430\u043D\u0434\u0430\u0440\u0442 (Minako Monster)",
+    "type": "STANDARD",
+    "bikeModelId": "mdl-minako-monster",
+    "durationDays": 7,
+    "price": 3850,
+    "depositAmount": 3e3,
+    "paymentIntervalDays": 7,
+    "isActive": true,
+    "description": "\u041E\u043F\u043B\u0430\u0442\u0430 \u0440\u0430\u0437 \u0432 \u043D\u0435\u0434\u0435\u043B\u044E, \u0434\u0435\u043F\u043E\u0437\u0438\u0442 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442\u0441\u044F \u043F\u0440\u0438 \u0441\u0434\u0430\u0447\u0435 \u0442\u0435\u0445\u043D\u0438\u043A\u0438"
+  },
+  {
+    "id": "trf-rent-to-own-90",
+    "name": "\u0412\u044B\u043A\u0443\u043F \u0437\u0430 90 \u0434\u043D\u0435\u0439 (Rent-to-Own)",
+    "type": "RENT_TO_OWN",
+    "bikeModelId": "mdl-minako-monster",
+    "durationDays": 90,
+    "price": 900,
+    "depositAmount": 5e3,
+    "buyoutPrice": 81e3,
+    "paymentIntervalDays": 1,
+    "isActive": true,
+    "description": "\u041F\u043E\u0441\u0443\u0442\u043E\u0447\u043D\u0430\u044F \u043E\u043F\u043B\u0430\u0442\u0430 \u0441 \u043F\u0435\u0440\u0435\u0445\u043E\u0434\u043E\u043C \u044D\u043B\u0435\u043A\u0442\u0440\u043E\u0432\u0435\u043B\u043E\u0441\u0438\u043F\u0435\u0434\u0430 \u0432 \u0441\u043E\u0431\u0441\u0442\u0432\u0435\u043D\u043D\u043E\u0441\u0442\u044C \u043A\u0443\u0440\u044C\u0435\u0440\u0430"
+  }
 ];
 var INITIAL_EMPLOYEES = [];
 var INITIAL_LOYALTY_TIERS = [
@@ -62561,16 +62817,16 @@ var createDefaultEmptyDb = () => ({
   documents: [],
   accessLevels: JSON.parse(JSON.stringify(INITIAL_ACCESS_LEVELS)),
   users: JSON.parse(JSON.stringify(INITIAL_USERS)),
-  models: [],
-  batteryModels: [],
-  bikes: [],
-  batteries: [],
-  outfits: [],
+  models: JSON.parse(JSON.stringify(INITIAL_MODELS)),
+  batteryModels: JSON.parse(JSON.stringify(INITIAL_BATTERY_MODELS)),
+  bikes: JSON.parse(JSON.stringify(INITIAL_BIKES)),
+  batteries: JSON.parse(JSON.stringify(INITIAL_BATTERIES)),
+  outfits: JSON.parse(JSON.stringify(INITIAL_OUTFITS)),
   outfitCategories: JSON.parse(JSON.stringify(INITIAL_OUTFIT_CATEGORIES)),
   outfitTemplates: [],
   clients: [],
-  tariffs: [],
-  parts: [],
+  tariffs: JSON.parse(JSON.stringify(INITIAL_TARIFFS)),
+  parts: JSON.parse(JSON.stringify(INITIAL_PARTS)),
   partOrders: [],
   partCategories: JSON.parse(JSON.stringify(INITIAL_PART_CATEGORIES)),
   partOrderCategories: JSON.parse(JSON.stringify(INITIAL_PART_ORDER_CATEGORIES)),
@@ -62596,7 +62852,8 @@ var createDefaultEmptyDb = () => ({
   settings: {
     monthlyFixedExpenses: 0,
     fixedExpensesDescription: "\u0410\u0440\u0435\u043D\u0434\u0430 \u043F\u043E\u043C\u0435\u0449\u0435\u043D\u0438\u044F \u043C\u0430\u0441\u0442\u0435\u0440\u0441\u043A\u043E\u0439 \u0438 \u043D\u0430\u043A\u043B\u0430\u0434\u043D\u044B\u0435 \u0440\u0430\u0441\u0445\u043E\u0434\u044B",
-    articlesInitialized: false
+    articlesInitialized: false,
+    authSigningKey: "electream-crm-demo-permanent-signing-key-2026-fixed-secret"
   }
 });
 var rawDb;
@@ -62645,9 +62902,9 @@ function sanitizeLoadedDb(parsed) {
       baseRentalPrice: m.baseRentalPrice !== void 0 && m.baseRentalPrice > 0 ? m.baseRentalPrice : 6e3,
       baseBuyoutPrice: m.baseBuyoutPrice !== void 0 && m.baseBuyoutPrice > 0 ? m.baseBuyoutPrice : m.salePrice || 6e4
     })),
-    batteryModels: parsed.batteryModels || [],
-    bikes: parsed.bikes || [],
-    batteries: parsed.batteries || [],
+    batteryModels: Array.isArray(parsed.batteryModels) && parsed.batteryModels.length > 0 ? parsed.batteryModels : defaultDb.batteryModels,
+    bikes: Array.isArray(parsed.bikes) && parsed.bikes.length > 0 ? parsed.bikes : defaultDb.bikes,
+    batteries: Array.isArray(parsed.batteries) && parsed.batteries.length > 0 ? parsed.batteries : defaultDb.batteries,
     outfits: parsed.outfits || [],
     outfitCategories: Array.isArray(parsed.outfitCategories) ? parsed.outfitCategories : defaultDb.outfitCategories,
     outfitTemplates: parsed.outfitTemplates || [],
@@ -62714,19 +62971,21 @@ function sanitizeLoadedDb(parsed) {
 }
 function loadFromDisk() {
   try {
-    if (import_fs.default.existsSync(DB_FILE)) {
-      const fileContent = import_fs.default.readFileSync(DB_FILE, "utf-8").trim();
-      if (fileContent) {
-        const parsed = JSON.parse(fileContent);
-        return sanitizeLoadedDb(parsed);
-      }
-    }
-    const bundledPath = typeof __dirname !== "undefined" ? import_path.default.resolve(__dirname, "../../data/crm_db.json") : import_path.default.resolve(process.cwd(), "data/crm_db.json");
-    if (bundledPath !== DB_FILE && import_fs.default.existsSync(bundledPath)) {
-      const fileContent = import_fs.default.readFileSync(bundledPath, "utf-8").trim();
-      if (fileContent) {
-        const parsed = JSON.parse(fileContent);
-        return sanitizeLoadedDb(parsed);
+    const candidatePaths = [
+      DB_FILE,
+      import_path.default.resolve(process.cwd(), "server/data/crm_db.json"),
+      import_path.default.resolve(process.cwd(), "data/crm_db.json"),
+      typeof __dirname !== "undefined" ? import_path.default.resolve(__dirname, "data/crm_db.json") : "",
+      typeof __dirname !== "undefined" ? import_path.default.resolve(__dirname, "../server/data/crm_db.json") : "",
+      typeof __dirname !== "undefined" ? import_path.default.resolve(__dirname, "../../data/crm_db.json") : ""
+    ].filter(Boolean);
+    for (const p of candidatePaths) {
+      if (import_fs.default.existsSync(p)) {
+        const fileContent = import_fs.default.readFileSync(p, "utf-8").trim();
+        if (fileContent) {
+          const parsed = JSON.parse(fileContent);
+          return sanitizeLoadedDb(parsed);
+        }
       }
     }
   } catch (err) {
@@ -65430,11 +65689,13 @@ var DocumentController = class {
 
 // src/services/session.service.ts
 var import_node_crypto5 = require("node:crypto");
+var DEMO_SIGNING_SECRET = "electream-crm-demo-permanent-signing-key-2026-fixed-secret";
 function hashPassword(password) {
   const salt = (0, import_node_crypto5.randomBytes)(16).toString("hex");
   return `scrypt:${salt}:${(0, import_node_crypto5.scryptSync)(password, salt, 64).toString("hex")}`;
 }
 function verifyPassword(password, stored) {
+  if (!stored) return false;
   if (!stored.startsWith("scrypt:")) return password === stored;
   const [, salt, hash2] = stored.split(":");
   const expected = Buffer.from(hash2 || "", "hex");
@@ -65442,13 +65703,17 @@ function verifyPassword(password, stored) {
   return actual.length === expected.length && (0, import_node_crypto5.timingSafeEqual)(actual, expected);
 }
 function signingKey() {
-  const db2 = getDb();
-  if (!db2.settings) db2.settings = { monthlyFixedExpenses: 0 };
-  if (!db2.settings.authSigningKey) db2.settings.authSigningKey = (0, import_node_crypto5.randomBytes)(32).toString("hex");
-  return process.env.SESSION_SECRET || db2.settings.authSigningKey;
+  const secret = process.env.SESSION_SECRET;
+  if (secret && secret.trim()) return secret.trim();
+  try {
+    const db2 = getDb();
+    if (db2?.settings?.authSigningKey) return db2.settings.authSigningKey;
+  } catch {
+  }
+  return DEMO_SIGNING_SECRET;
 }
 function fingerprint(user2) {
-  return (0, import_node_crypto5.createHmac)("sha256", signingKey()).update(user2.passwordHash).digest("hex");
+  return (0, import_node_crypto5.createHmac)("sha256", signingKey()).update(user2.passwordHash || "").digest("hex");
 }
 function issueSession(user2, kind = "session") {
   const payload = Buffer.from(JSON.stringify({ userId: user2.id, kind, expiresAt: Date.now() + (kind === "device" ? 90 : 30) * 864e5, fingerprint: fingerprint(user2) })).toString("base64url");

@@ -545,16 +545,16 @@ export const createDefaultEmptyDb = (): DBStore => ({
   documents: [],
   accessLevels: JSON.parse(JSON.stringify(INITIAL_ACCESS_LEVELS)),
   users: JSON.parse(JSON.stringify(INITIAL_USERS)),
-  models: [],
-  batteryModels: [],
-  bikes: [],
-  batteries: [],
-  outfits: [],
+  models: JSON.parse(JSON.stringify(INITIAL_MODELS)),
+  batteryModels: JSON.parse(JSON.stringify(INITIAL_BATTERY_MODELS)),
+  bikes: JSON.parse(JSON.stringify(INITIAL_BIKES)),
+  batteries: JSON.parse(JSON.stringify(INITIAL_BATTERIES)),
+  outfits: JSON.parse(JSON.stringify(INITIAL_OUTFITS)),
   outfitCategories: JSON.parse(JSON.stringify(INITIAL_OUTFIT_CATEGORIES)),
   outfitTemplates: [],
   clients: [],
-  tariffs: [],
-  parts: [],
+  tariffs: JSON.parse(JSON.stringify(INITIAL_TARIFFS)),
+  parts: JSON.parse(JSON.stringify(INITIAL_PARTS)),
   partOrders: [],
   partCategories: JSON.parse(JSON.stringify(INITIAL_PART_CATEGORIES)),
   partOrderCategories: JSON.parse(JSON.stringify(INITIAL_PART_ORDER_CATEGORIES)),
@@ -581,6 +581,7 @@ export const createDefaultEmptyDb = (): DBStore => ({
     monthlyFixedExpenses: 0,
     fixedExpensesDescription: "Аренда помещения мастерской и накладные расходы",
     articlesInitialized: false,
+    authSigningKey: "electream-crm-demo-permanent-signing-key-2026-fixed-secret",
   },
 });
 
@@ -651,9 +652,9 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
       baseRentalPrice: m.baseRentalPrice !== undefined && m.baseRentalPrice > 0 ? m.baseRentalPrice : 6000,
       baseBuyoutPrice: m.baseBuyoutPrice !== undefined && m.baseBuyoutPrice > 0 ? m.baseBuyoutPrice : (m.salePrice || 60000),
     })),
-    batteryModels: parsed.batteryModels || [],
-    bikes: parsed.bikes || [],
-    batteries: parsed.batteries || [],
+    batteryModels: Array.isArray(parsed.batteryModels) && parsed.batteryModels.length > 0 ? parsed.batteryModels : defaultDb.batteryModels,
+    bikes: Array.isArray(parsed.bikes) && parsed.bikes.length > 0 ? parsed.bikes : defaultDb.bikes,
+    batteries: Array.isArray(parsed.batteries) && parsed.batteries.length > 0 ? parsed.batteries : defaultDb.batteries,
     outfits: parsed.outfits || [],
     outfitCategories: Array.isArray(parsed.outfitCategories) ? parsed.outfitCategories : defaultDb.outfitCategories,
     outfitTemplates: parsed.outfitTemplates || [],
@@ -743,23 +744,22 @@ export function sanitizeLoadedDb(parsed: any): DBStore {
 
 function loadFromDisk(): DBStore {
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const fileContent = fs.readFileSync(DB_FILE, "utf-8").trim();
-      if (fileContent) {
-        const parsed = JSON.parse(fileContent);
-        return sanitizeLoadedDb(parsed);
-      }
-    }
+    const candidatePaths = [
+      DB_FILE,
+      path.resolve(process.cwd(), "server/data/crm_db.json"),
+      path.resolve(process.cwd(), "data/crm_db.json"),
+      typeof __dirname !== "undefined" ? path.resolve(__dirname, "data/crm_db.json") : "",
+      typeof __dirname !== "undefined" ? path.resolve(__dirname, "../server/data/crm_db.json") : "",
+      typeof __dirname !== "undefined" ? path.resolve(__dirname, "../../data/crm_db.json") : "",
+    ].filter(Boolean);
 
-    // Also attempt reading bundled template data if DB_FILE is in /tmp
-    const bundledPath = typeof __dirname !== "undefined"
-      ? path.resolve(__dirname, "../../data/crm_db.json")
-      : path.resolve(process.cwd(), "data/crm_db.json");
-    if (bundledPath !== DB_FILE && fs.existsSync(bundledPath)) {
-      const fileContent = fs.readFileSync(bundledPath, "utf-8").trim();
-      if (fileContent) {
-        const parsed = JSON.parse(fileContent);
-        return sanitizeLoadedDb(parsed);
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        const fileContent = fs.readFileSync(p, "utf-8").trim();
+        if (fileContent) {
+          const parsed = JSON.parse(fileContent);
+          return sanitizeLoadedDb(parsed);
+        }
       }
     }
   } catch (err) {

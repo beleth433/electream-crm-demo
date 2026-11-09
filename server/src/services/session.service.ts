@@ -1,12 +1,15 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { getDb, UserRecord } from "../repositories/db.js";
 
+const DEMO_SIGNING_SECRET = "electream-crm-demo-permanent-signing-key-2026-fixed-secret";
+
 export function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
   return `scrypt:${salt}:${scryptSync(password, salt, 64).toString("hex")}`;
 }
 
 export function verifyPassword(password: string, stored: string): boolean {
+  if (!stored) return false;
   if (!stored.startsWith("scrypt:")) return password === stored;
   const [, salt, hash] = stored.split(":");
   const expected = Buffer.from(hash || "", "hex");
@@ -15,14 +18,17 @@ export function verifyPassword(password: string, stored: string): boolean {
 }
 
 function signingKey(): string {
-  const db = getDb();
-  if (!db.settings) db.settings = { monthlyFixedExpenses: 0 };
-  if (!db.settings.authSigningKey) db.settings.authSigningKey = randomBytes(32).toString("hex");
-  return process.env.SESSION_SECRET || db.settings.authSigningKey;
+  const secret = process.env.SESSION_SECRET;
+  if (secret && secret.trim()) return secret.trim();
+  try {
+    const db = getDb();
+    if (db?.settings?.authSigningKey) return db.settings.authSigningKey;
+  } catch {}
+  return DEMO_SIGNING_SECRET;
 }
 
 function fingerprint(user: UserRecord): string {
-  return createHmac("sha256", signingKey()).update(user.passwordHash).digest("hex");
+  return createHmac("sha256", signingKey()).update(user.passwordHash || "").digest("hex");
 }
 
 export function issueSession(user: UserRecord, kind: "session" | "device" = "session"): string {

@@ -1,0 +1,782 @@
+{
+  "assistant": {
+    "devices": [],
+    "pairings": [],
+    "jobs": [],
+    "tasks": []
+  },
+  "documents": [],
+  "accessLevels": [
+    {
+      "id": "lvl-owner",
+      "name": "Владелец / SuperAdmin",
+      "description": "Полный доступ ко всей системе, кассе, прибыли, управлению сотрудниками и паролями",
+      "isSystem": true,
+      "canManageEmployees": true,
+      "canSeeProfits": true,
+      "permissions": {
+        "dashboard": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "rentals": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "shop": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "bikes": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "batteries": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "outfits": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "clients": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "repairs": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "inventory": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "finance": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "employees": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "loyalty": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "info": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        },
+        "history": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": true
+        }
+      },
+      "createdAt": "2026-10-01T00:00:00.000Z",
+      "updatedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "lvl-manager",
+      "name": "Менеджер парка",
+      "description": "Аренда, курьеры, касса, байки и АКБ. Скрыты сотрудники, настройки и чистая прибыль P&L",
+      "isSystem": true,
+      "canManageEmployees": false,
+      "canSeeProfits": false,
+      "permissions": {
+        "dashboard": {
+          "visible": true,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "rentals": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "shop": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "bikes": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "batteries": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "outfits": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "clients": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "repairs": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "inventory": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "finance": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "employees": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "loyalty": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "info": {
+          "visible": true,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "history": {
+          "visible": true,
+          "canEdit": false,
+          "canDelete": false
+        }
+      },
+      "createdAt": "2026-10-01T00:00:00.000Z",
+      "updatedAt": "2026-10-01T00:00:00.000Z"
+    },
+    {
+      "id": "lvl-master",
+      "name": "Мастер СТО",
+      "description": "Мастерская СТО, склад запчастей, заявки на закупку Ozon, статус техники. Касса и аренда скрыты",
+      "isSystem": true,
+      "canManageEmployees": false,
+      "canSeeProfits": false,
+      "permissions": {
+        "dashboard": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "rentals": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "shop": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "bikes": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "batteries": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "outfits": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "clients": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "repairs": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "inventory": {
+          "visible": true,
+          "canEdit": true,
+          "canDelete": false
+        },
+        "finance": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "employees": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "loyalty": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "info": {
+          "visible": true,
+          "canEdit": false,
+          "canDelete": false
+        },
+        "history": {
+          "visible": false,
+          "canEdit": false,
+          "canDelete": false
+        }
+      },
+      "createdAt": "2026-10-01T00:00:00.000Z",
+      "updatedAt": "2026-10-01T00:00:00.000Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "usr-demo",
+      "login": "demo",
+      "username": "demo",
+      "email": "demo@electream.pro",
+      "passwordHash": "scrypt:1234567890abcdef1234567890abcdef:221af72c20f716c2cc32eec6ba806377e35df46d446912ac6960918424e320c69ef9c685494dfc2ddb95e5f721c1ddc903bd641333fbedde68638b31634a4e14",
+      "fullName": "Демо Администратор",
+      "phone": "+7 (999) 000-00-00",
+      "role": "ADMIN",
+      "roleTitle": "Владелец / Администратор парка",
+      "accessLevelId": "lvl-owner",
+      "isActive": true,
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "usr-bxleth",
+      "login": "bxleth",
+      "username": "bxleth",
+      "email": "bxleth@ebike-crm.ru",
+      "passwordHash": "admin",
+      "fullName": "BXLETH",
+      "phone": "+7 (999) 000-00-00",
+      "role": "ADMIN",
+      "roleTitle": "Главный инженер / Разработчик",
+      "accessLevelId": "lvl-owner",
+      "isActive": true,
+      "createdAt": "2026-10-01T00:00:00.000Z"
+    }
+  ],
+  "models": [
+    {
+      "id": "mdl-minako-monster",
+      "name": "Minako Monster Pro 60V",
+      "powerWatts": 500,
+      "wheelSizeInch": 16,
+      "baseRentalPrice": 600,
+      "buyoutPrice": 75000,
+      "purchasePrice": 45000,
+      "salePrice": 65000,
+      "description": "Флагманский курьерский электровелосипед высокой грузоподъемности"
+    },
+    {
+      "id": "mdl-wenbox-u3",
+      "name": "Wenbox U3 Pro 60V",
+      "powerWatts": 500,
+      "wheelSizeInch": 16,
+      "baseRentalPrice": 550,
+      "buyoutPrice": 70000,
+      "purchasePrice": 42000,
+      "salePrice": 60000,
+      "description": "Надежный городской электробайк для интенсивных смен"
+    }
+  ],
+  "batteryModels": [
+    {
+      "id": "bat-mdl-60v21ah",
+      "name": "АКБ 60V 21Ah (Li-ion)",
+      "voltage": 60,
+      "capacityAh": 21,
+      "chemistry": "Li-ion",
+      "purchasePrice": 18000,
+      "salePrice": 28000,
+      "description": "Штатная тяговая батарея для Minako Monster"
+    },
+    {
+      "id": "bat-mdl-60v30ah",
+      "name": "АКБ 60V 30Ah Long Range",
+      "voltage": 60,
+      "capacityAh": 30,
+      "chemistry": "Li-ion",
+      "purchasePrice": 24000,
+      "salePrice": 36000,
+      "description": "Увеличенная емкость для смен до 14 часов"
+    }
+  ],
+  "bikes": [
+    {
+      "id": "bike-demo-1",
+      "inventoryNumber": "ЭВ-001",
+      "modelId": "mdl-minako-monster",
+      "frameNumber": "FRM-MONSTER-001",
+      "motorNumber": "MTR-500W-001",
+      "voltage": 60,
+      "status": "AVAILABLE",
+      "installedBatteryId": null,
+      "mileageKm": 120,
+      "photos": [],
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "bike-demo-2",
+      "inventoryNumber": "ЭВ-002",
+      "modelId": "mdl-minako-monster",
+      "frameNumber": "FRM-MONSTER-002",
+      "motorNumber": "MTR-500W-002",
+      "voltage": 60,
+      "status": "AVAILABLE",
+      "installedBatteryId": null,
+      "mileageKm": 85,
+      "photos": [],
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "bike-demo-3",
+      "inventoryNumber": "ЭВ-003",
+      "modelId": "mdl-wenbox-u3",
+      "frameNumber": "FRM-WENBOX-003",
+      "motorNumber": "MTR-500W-003",
+      "voltage": 60,
+      "status": "AVAILABLE",
+      "installedBatteryId": null,
+      "mileageKm": 210,
+      "photos": [],
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "bike-demo-4",
+      "inventoryNumber": "ЭВ-004",
+      "modelId": "mdl-wenbox-u3",
+      "frameNumber": "FRM-WENBOX-004",
+      "motorNumber": "MTR-500W-004",
+      "voltage": 60,
+      "status": "AVAILABLE",
+      "installedBatteryId": null,
+      "mileageKm": 0,
+      "photos": [],
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    }
+  ],
+  "batteries": [
+    {
+      "id": "bat-demo-1",
+      "serialNumber": "BAT-60V-001",
+      "modelId": "bat-mdl-60v21ah",
+      "voltage": 60,
+      "capacityAh": 21,
+      "sohPercent": 99,
+      "chargeCycles": 28,
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "bat-demo-2",
+      "serialNumber": "BAT-60V-002",
+      "modelId": "bat-mdl-60v21ah",
+      "voltage": 60,
+      "capacityAh": 21,
+      "sohPercent": 97,
+      "chargeCycles": 45,
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "bat-demo-3",
+      "serialNumber": "BAT-60V-003",
+      "modelId": "bat-mdl-60v30ah",
+      "voltage": 60,
+      "capacityAh": 30,
+      "sohPercent": 100,
+      "chargeCycles": 12,
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "bat-demo-4",
+      "serialNumber": "BAT-60V-004",
+      "modelId": "bat-mdl-60v30ah",
+      "voltage": 60,
+      "capacityAh": 30,
+      "sohPercent": 98,
+      "chargeCycles": 34,
+      "status": "AVAILABLE",
+      "installedBikeId": null,
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    }
+  ],
+  "outfits": [
+    {
+      "id": "outfit-demo-1",
+      "name": "Шлем защитный курьерский (M/L)",
+      "category": "HELMET",
+      "depositAmount": 1500,
+      "status": "IN_STOCK",
+      "serialNumber": "HLM-001",
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "outfit-demo-2",
+      "name": "Замок цепной противоугонный 10 мм",
+      "category": "LOCK",
+      "depositAmount": 2000,
+      "status": "IN_STOCK",
+      "serialNumber": "LCK-001",
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    },
+    {
+      "id": "outfit-demo-3",
+      "name": "Термосумка курьерская 45л",
+      "category": "BAG",
+      "depositAmount": 2500,
+      "status": "IN_STOCK",
+      "serialNumber": "BAG-001",
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    }
+  ],
+  "outfitCategories": [
+    {
+      "id": "cat-1790119454641",
+      "name": "Держатель смартфона",
+      "isSystem": false
+    },
+    {
+      "id": "cat-1790204877162",
+      "name": "Шлемы",
+      "isSystem": false
+    },
+    {
+      "id": "cat-1790207477036",
+      "name": "Замки",
+      "isSystem": false
+    }
+  ],
+  "outfitTemplates": [
+    {
+      "id": "tmpl-helmet",
+      "name": "Шлем защитный курьерский (M/L)",
+      "category": "HELMET",
+      "depositAmount": 1500,
+      "salePrice": 2200
+    },
+    {
+      "id": "tmpl-lock",
+      "name": "Замок цепной противоугонный 10 мм",
+      "category": "LOCK",
+      "depositAmount": 2000,
+      "salePrice": 2800
+    },
+    {
+      "id": "tmpl-bag",
+      "name": "Термосумка курьерская 45л",
+      "category": "BAG",
+      "depositAmount": 2500,
+      "salePrice": 3500
+    }
+  ],
+  "clients": [],
+  "tariffs": [
+    {
+      "id": "trf-weekly-standard",
+      "name": "Недельный стандарт (Minako Monster)",
+      "type": "STANDARD",
+      "bikeModelId": "mdl-minako-monster",
+      "durationDays": 7,
+      "price": 3850,
+      "depositAmount": 3000,
+      "paymentIntervalDays": 7,
+      "isActive": true,
+      "description": "Оплата раз в неделю, депозит возвращается при сдаче техники"
+    },
+    {
+      "id": "trf-rent-to-own-90",
+      "name": "Выкуп за 90 дней (Rent-to-Own)",
+      "type": "RENT_TO_OWN",
+      "bikeModelId": "mdl-minako-monster",
+      "durationDays": 90,
+      "price": 900,
+      "depositAmount": 5000,
+      "buyoutPrice": 81000,
+      "paymentIntervalDays": 1,
+      "isActive": true,
+      "description": "Посуточная оплата с переходом электровелосипеда в собственность курьера"
+    }
+  ],
+  "parts": [
+    {
+      "id": "part-demo-1",
+      "name": "Колодки тормозные Monster (полуметалл)",
+      "categoryId": "cat-brakes",
+      "sku": "BRK-MON-01",
+      "quantity": 30,
+      "minQuantity": 10,
+      "costPrice": 250,
+      "price": 600,
+      "unit": "компл.",
+      "description": "Износостойкие тормозные колодки для гидравлических тормозов"
+    },
+    {
+      "id": "part-demo-2",
+      "name": "Камера 16×3.0 усиленная (бутил)",
+      "categoryId": "cat-wheels",
+      "sku": "CAM-16-01",
+      "quantity": 20,
+      "minQuantity": 8,
+      "costPrice": 350,
+      "price": 800,
+      "unit": "шт.",
+      "description": "Утолщенная антипрокольная камера для курьерских условий"
+    },
+    {
+      "id": "part-demo-3",
+      "name": "Контроллер 60V 500W синусный",
+      "categoryId": "cat-electric",
+      "sku": "CTRL-60V-01",
+      "quantity": 6,
+      "minQuantity": 2,
+      "costPrice": 2100,
+      "price": 3800,
+      "unit": "шт.",
+      "description": "Оригинальный контроллер с тихим плавным стартом"
+    },
+    {
+      "id": "part-demo-4",
+      "name": "Ручка газа с вольтметром и ключом",
+      "categoryId": "cat-controls",
+      "sku": "THROT-01",
+      "quantity": 12,
+      "minQuantity": 4,
+      "costPrice": 500,
+      "price": 1200,
+      "unit": "шт.",
+      "description": "Универсальная ручка газа с цифровой индикацией вольтажа"
+    }
+  ],
+  "partOrders": [],
+  "partCategories": [
+    {
+      "id": "cat-part-brakes",
+      "name": "Колодки и тормоза",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-steering",
+      "name": "Рули и управление",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-displays",
+      "name": "Экраны и дисплеи",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-controllers",
+      "name": "Контроллеры",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-wheels",
+      "name": "Колеса и обода",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-tires",
+      "name": "Шины и камеры",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-consumables",
+      "name": "Расходники",
+      "isSystem": true
+    },
+    {
+      "id": "cat-part-other",
+      "name": "Прочее",
+      "isSystem": false
+    },
+    {
+      "id": "cat-part-1790207194942",
+      "name": "Свет",
+      "isSystem": false
+    }
+  ],
+  "partOrderCategories": [
+    {
+      "id": "cat-ord-tuning",
+      "name": "Тюнинг",
+      "isSystem": false
+    },
+    {
+      "id": "cat-ord-parts",
+      "name": "Запчасти (пластик, ручки, тормоза)",
+      "isSystem": false
+    },
+    {
+      "id": "cat-ord-garage",
+      "name": "Закуп для гаража",
+      "isSystem": false
+    },
+    {
+      "id": "cat-ord-tools",
+      "name": "Закуп инструментов для работы",
+      "isSystem": false
+    },
+    {
+      "id": "cat-ord-consumables",
+      "name": "Расходники (перчатки, очистители)",
+      "isSystem": false
+    }
+  ],
+  "rentals": [],
+  "repairs": [],
+  "payments": [],
+  "reviews": [],
+  "articles": [
+    {
+      "title": "Прайс-лист и тарифы аренды (Шпаргалка)",
+      "category": "Цены и тарифы",
+      "pinned": true,
+      "content": "📋 ТЕКУЩИЕ ТАРИФЫ АРЕНДЫ ДЛЯ КУРЬЕРОВ:\n\n• Недельный тариф (1 АКБ):\n  — Стоимость: 5 600 ₽ / 7 дней (800 ₽/сутки)\n  — Обеспечительный залог: 3 000 ₽ (возвратный)\n  — В комплекте: байк, 1 АКБ, зарядное 3A/5A, замок\n\n• Недельный тариф (2 АКБ — Двойная смена):\n  — Стоимость: 6 600 ₽ / 7 дней (942 ₽/сутки)\n  — Обеспечительный залог: 5 000 ₽ (возвратный)\n  — В комплекте: байк, 2 АКБ, зарядное, замок, шлем\n\n• Месячный тариф:\n  — Стоимость: 22 000 ₽ / 30 дней (скидка ~15%)\n  — Залог: 5 000 ₽\n\n💡 Дополнительные опции:\n— Второй АКБ на замену: 1 000 ₽/неделя\n— Термосумка Delivery / Яндекс: бесплатно под залог 1 500 ₽\n— Зимние муфты / перчатки: бесплатно в зимний сезон",
+      "id": "art-default-1",
+      "createdAt": "2026-10-08T11:27:52.673Z",
+      "updatedAt": "2026-10-08T11:27:52.673Z"
+    },
+    {
+      "title": "Условия и расчет выкупа электровелосипеда (Rent-to-Own)",
+      "category": "Выкуп техники",
+      "pinned": true,
+      "content": "🚴‍♂️ ПРОГРАММА АРЕНДЫ С ВЫКУПОМ:\n\n1. Базовая стоимость выкупа:\n   • Wenbox U2 / Maikolin: 60 000 – 75 000 ₽\n   • Almiko U2 Pro (60V): 100 000 – 110 000 ₽\n\n2. Условия рассрочки:\n   • Взнос оплачивается каждые 7 дней\n   • Стандартный взнос: 6 000 ₽ в неделю\n   • Срок выплаты: 10 – 18 недель\n\n3. Правила и досрочный выкуп:\n   • Досрочный выкуп возможен в любой день без комиссии\n   • При досрочном выкупе сумма оставшегося долга гасится разовым платежом\n   • После внесения 100% суммы договор закрывается со статусом «Выкуплен», а байк переводится в статус «Продан» и переходит в полную собственность курьера.",
+      "id": "art-default-2",
+      "createdAt": "2026-10-08T10:27:52.673Z",
+      "updatedAt": "2026-10-08T10:27:52.673Z"
+    },
+    {
+      "title": "Памятка курьеру при выдаче техники",
+      "category": "Памятка курьеру",
+      "pinned": false,
+      "content": "🔍 ЧЕК-ЛИСТ ПРОВЕРКИ ПЕРЕД ВЫЕЗДОМ:\n\n1. Тормозная система:\n   — Проверить ход ручек тормоза\n   — Проверить толщину колодок и отсутствие скрипа\n\n2. Аккумулятор и электрика:\n   — Убедиться, что ключ замка АКБ зафиксирован\n   — Разъем XT60 плотно вставлен, нет оплавления\n   — Фара, стоп-сигнал и гудок исправны\n\n3. Колеса и давление:\n   — Давление в шинах: 2.5 – 3.0 bar\n   — Осмотреть покрышки на отсутствие порезов\n\n4. Действия при ЧП или ДТП:\n   — Незамедлительно связаться с менеджером парка\n   — Сделать фото/видео повреждений\n   — При необходимости оформить протокол",
+      "id": "art-default-3",
+      "createdAt": "2026-10-08T09:27:52.673Z",
+      "updatedAt": "2026-10-08T09:27:52.673Z"
+    },
+    {
+      "title": "Штрафы и компенсация ущерба",
+      "category": "Правила и регламенты",
+      "pinned": false,
+      "content": "⚠️ РЕГЛАМЕНТ ВОЗМЕЩЕНИЯ УЩЕРБА:\n\n• Просрочка регулярного платежа: 300 ₽/день (свыше 24 часов)\n• Утеря ключа зажигания / замка АКБ: 500 ₽\n• Повреждение зарядного устройства: 1 500 ₽\n• Утеря или поломка замка безопасности: 1 000 ₽\n• Прокол колеса / замена камеры по вине курьера: 800 ₽\n• Механическое повреждение фары / экрана: по себестоимости детали + 500 ₽ работа СТО\n• Утеря шлема / термосумки: удержание залоговой стоимости (1 500 – 2 500 ₽)",
+      "id": "art-default-4",
+      "createdAt": "2026-10-08T08:27:52.673Z",
+      "updatedAt": "2026-10-08T08:27:52.673Z"
+    }
+  ],
+  "employees": [],
+  "retailOrders": [],
+  "loyaltyTiers": [
+    {
+      "id": "tier-bronze",
+      "name": "Бронза",
+      "color": "amber",
+      "minRentalDays": 0,
+      "minTotalSpent": 0,
+      "discountRentalPercent": 0,
+      "discountPartsPercent": 0,
+      "discountRepairsPercent": 0,
+      "description": "Начальный базовый ранг для всех новых клиентов и курьеров",
+      "isDefault": true
+    },
+    {
+      "id": "tier-silver",
+      "name": "Серебро",
+      "color": "slate",
+      "minRentalDays": 14,
+      "minTotalSpent": 15000,
+      "discountRentalPercent": 5,
+      "discountPartsPercent": 5,
+      "discountRepairsPercent": 5,
+      "description": "От 14 дней аренды или 15 000 ₽ трат. Скидка 5% на аренду, запчасти и СТО",
+      "isDefault": false
+    },
+    {
+      "id": "tier-gold",
+      "name": "Золото",
+      "color": "emerald",
+      "minRentalDays": 45,
+      "minTotalSpent": 45000,
+      "discountRentalPercent": 10,
+      "discountPartsPercent": 10,
+      "discountRepairsPercent": 10,
+      "description": "От 45 дней аренды или 45 000 ₽ трат. Скидка 10% на все услуги и товары",
+      "isDefault": false
+    },
+    {
+      "id": "tier-platinum",
+      "name": "Платина",
+      "color": "purple",
+      "minRentalDays": 90,
+      "minTotalSpent": 100000,
+      "discountRentalPercent": 15,
+      "discountPartsPercent": 15,
+      "discountRepairsPercent": 15,
+      "description": "От 90 дней аренды или 100 000 ₽ трат. VIP-статус и максимальная скидка 15%",
+      "isDefault": false
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log-demo-init",
+      "category": "SYSTEM",
+      "action": "SYSTEM_INIT",
+      "title": "Демо-стенд ELECTREAM CRM инициализирован",
+      "details": "База данных очищена от персональных данных и настроена для публичного демонстрационного портфолио",
+      "badgeText": "Портфолио",
+      "badgeColor": "emerald",
+      "createdAt": "2026-11-01T00:00:00.000Z"
+    }
+  ],
+  "chatMessages": [
+    {
+      "id": "msg-demo-welcome",
+      "senderId": "usr-demo",
+      "senderName": "Демо Администратор",
+      "senderRole": "ADMIN",
+      "text": "Добро пожаловать в интерактивный демо-стенд ELECTREAM CRM! База готова к демонстрации: доступны аренда, выкуп, магазин, СТО, касса и симуляция.",
+      "createdAt": "2026-11-01T10:00:00.000Z"
+    }
+  ],
+  "settings": {
+    "monthlyFixedExpenses": 50000,
+    "fixedExpensesDescription": "Аренда сервисного бокса и постоянные накладные расходы базы",
+    "articlesInitialized": true,
+    "authSigningKey": "electream-crm-demo-permanent-signing-key-2026-fixed-secret"
+  },
+  "presence": []
+}

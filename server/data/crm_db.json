@@ -1,11 +1,11 @@
 {
+  "documents": [],
   "assistant": {
     "devices": [],
     "pairings": [],
     "jobs": [],
     "tasks": []
   },
-  "documents": [],
   "accessLevels": [
     {
       "id": "lvl-owner",
@@ -260,7 +260,7 @@
       "login": "demo",
       "username": "demo",
       "email": "demo@electream.pro",
-      "passwordHash": "demo",
+      "passwordHash": "scrypt:1234567890abcdef1234567890abcdef:221af72c20f716c2cc32eec6ba806377e35df46d446912ac6960918424e320c69ef9c685494dfc2ddb95e5f721c1ddc903bd641333fbedde68638b31634a4e14",
       "fullName": "Демо Администратор",
       "phone": "+7 (999) 000-00-00",
       "role": "ADMIN",
@@ -294,7 +294,8 @@
       "buyoutPrice": 75000,
       "purchasePrice": 45000,
       "salePrice": 65000,
-      "description": "Флагманский курьерский электровелосипед высокой грузоподъемности"
+      "description": "Флагманский курьерский электровелосипед высокой грузоподъемности",
+      "baseBuyoutPrice": 65000
     },
     {
       "id": "mdl-wenbox-u3",
@@ -305,7 +306,8 @@
       "buyoutPrice": 70000,
       "purchasePrice": 42000,
       "salePrice": 60000,
-      "description": "Надежный городской электробайк для интенсивных смен"
+      "description": "Надежный городской электробайк для интенсивных смен",
+      "baseBuyoutPrice": 60000
     }
   ],
   "batteryModels": [
@@ -759,7 +761,8 @@
       "details": "База данных очищена от персональных данных и настроена для публичного демонстрационного портфолио",
       "badgeText": "Портфолио",
       "badgeColor": "emerald",
-      "createdAt": "2026-11-01T00:00:00.000Z"
+      "createdAt": "2026-11-01T00:00:00.000Z",
+      "actorName": "Администратор"
     }
   ],
   "chatMessages": [
@@ -775,7 +778,7 @@
   "settings": {
     "monthlyFixedExpenses": 50000,
     "fixedExpensesDescription": "Аренда сервисного бокса и постоянные накладные расходы базы",
-    "articlesInitialized": true
-  },
-  "presence": []
+    "articlesInitialized": true,
+    "authSigningKey": "electream-crm-demo-permanent-signing-key-2026-fixed-secret"
+  }
 }
