@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User } from '../../types';
 import { api } from '../../services/api';
 import {
-  ShieldCheck,
+
   RefreshCw,
   Sparkles,
   Zap,
@@ -47,10 +47,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               />
             </div>
 
-            <div className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#101d17] border border-slate-200 dark:border-emerald-500/20 text-slate-600 dark:text-slate-400 text-xs font-semibold mt-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span>Личное учебное пространство • 24 часа</span>
-            </div>
+
           </div>
 
           {/* DEMO SHOWCASE BANNER (1-CLICK LOGIN) */}
@@ -60,7 +57,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               <span>ДЕМО-РЕЖИМ</span>
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-              Попробуйте аренду, ремонт и продажи на вымышленных данных. Ваши изменения не затронут других посетителей. Не вводите настоящие персональные данные.
+              Познакомьтесь с возможностями CRM: попробуйте аренду, ремонт и продажи на вымышленных данных. Не вводите настоящие персональные данные.
             </p>
             <button
               type="button"
@@ -73,8 +70,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               ) : (
                 <Zap className="w-4 h-4 fill-current" />
               )}
-              <span>Открыть личное демо</span>
+              <span>Открыть демоверсию</span>
             </button>
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Изменения в демонстрационной версии сохраняются на 24 часа.
+            </p>
           </div>
         </div>
       </div>
