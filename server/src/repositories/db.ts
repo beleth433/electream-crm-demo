@@ -1,4 +1,8 @@
 import fs from "fs";
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+export const demoContext = new AsyncLocalStorage<{ db: DBStore; expiresAt: string }>();
+export const isPublicDemo = () => process.env.CRM_LEGACY_MODE !== 'true';
 import path from "path";
 import { supabaseAdapter, StorageStatus } from "./supabase.adapter.js";
 import {
@@ -581,7 +585,7 @@ export const createDefaultEmptyDb = (): DBStore => ({
     monthlyFixedExpenses: 0,
     fixedExpensesDescription: "Аренда помещения мастерской и накладные расходы",
     articlesInitialized: false,
-    authSigningKey: "electream-crm-demo-permanent-signing-key-2026-fixed-secret",
+
   },
 });
 
@@ -775,7 +779,8 @@ function loadFromDisk(): DBStore {
   return cleanDb;
 }
 
-rawDb = loadFromDisk();
+// Public demo must never read a production snapshot or initialize the legacy cloud store.
+rawDb = isPublicDemo() ? createDefaultEmptyDb() : loadFromDisk();
 
 let isCloudInitialized = false;
 let hasPendingChanges = false;
@@ -783,6 +788,7 @@ let changeVersion = 0;
 let cloudInitialization: Promise<void> | null = null;
 
 export const initCloudDb = async (): Promise<void> => {
+  if (isPublicDemo()) return;
   if (isCloudInitialized) return;
   if (cloudInitialization) return cloudInitialization;
 
@@ -809,6 +815,7 @@ export const initCloudDb = async (): Promise<void> => {
 };
 
 export const checkAndSyncCloudDb = async (force = false): Promise<boolean> => {
+  if (isPublicDemo()) return false;
   // Never overwrite dirty in-memory state that has not been flushed yet
   if (hasPendingChanges) {
     return false;
@@ -832,6 +839,7 @@ export const getStorageStatus = (): StorageStatus => {
 };
 
 export const flushDb = async (force = false): Promise<void> => {
+  if (isPublicDemo()) return;
   if (saveTimeout) {
     clearTimeout(saveTimeout);
     saveTimeout = null;
@@ -872,7 +880,8 @@ let transactionDepth = 0;
 // Repository operations are synchronous: commit all related entities together,
 // and never persist an intermediate or rejected operation through the proxy.
 export function withDbTransaction<T>(operation: () => T): T {
-  const snapshot = JSON.stringify(rawDb);
+  const target = demoContext.getStore()?.db || rawDb;
+  const snapshot = JSON.stringify(target);
   const wasPending = hasPendingChanges;
   transactionDepth++;
   try {
@@ -884,7 +893,7 @@ export function withDbTransaction<T>(operation: () => T): T {
     if (transactionDepth === 0 && hasPendingChanges) saveDb();
     return result;
   } catch (error) {
-    Object.assign(rawDb, JSON.parse(snapshot));
+    Object.assign(target, JSON.parse(snapshot));
     hasPendingChanges = wasPending;
     transactionDepth--;
     throw error;
@@ -892,6 +901,7 @@ export function withDbTransaction<T>(operation: () => T): T {
 }
 
 export const saveDb = (immediate = false) => {
+  if (demoContext.getStore() || isPublicDemo()) return;
   hasPendingChanges = true;
   changeVersion++;
   if (transactionDepth > 0) return;
@@ -959,7 +969,7 @@ function createAutoSavingProxy<T extends object>(targetObj: T, onMutate: () => v
 
 const db = createAutoSavingProxy(rawDb, () => saveDb(false));
 
-export const getDb = () => db;
+export const getDb = () => demoContext.getStore()?.db || db;
 
 export const getSettings = (): SystemSettingsRecord => {
   const currentDb = getDb();

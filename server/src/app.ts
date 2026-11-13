@@ -1,4 +1,5 @@
 import express from "express";
+import { publicDemoMiddleware } from './controllers/auth.controller.js';
 import cors from "cors";
 import path from "path";
 import fs from "fs";
@@ -12,6 +13,13 @@ import { initCloudDb, flushDb, checkAndSyncCloudDb, getDb, getStorageStatus } fr
 dotenv.config();
 
 const app = express();
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Frame-Options', 'DENY');
+  next();
+});
 
 // Enable CORS
 app.use(
@@ -39,6 +47,10 @@ app.get(["/health", "/api/health"], (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+app.get(["/diagnostics", "/api/diagnostics"], (_req, res) => {
+  res.status(404).json({ error: 'Диагностика недоступна через публичный API' });
+});
+/* Internal diagnostics intentionally not exposed publicly.
 app.get(["/diagnostics", "/api/diagnostics"], async (req, res) => {
   try {
     await initCloudDb();
@@ -65,6 +77,8 @@ app.get(["/diagnostics", "/api/diagnostics"], async (req, res) => {
   });
 });
 
+*/
+
 // Prevent client and proxy caching of dynamic API data
 app.use((req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
@@ -72,6 +86,8 @@ app.use((req, res, next) => {
   res.setHeader("Expires", "0");
   next();
 });
+
+app.use(publicDemoMiddleware);
 
 // Serialize requests within a worker through persistence. Optimistic cloud
 // versions protect the shared snapshot from writes by other workers.
@@ -169,7 +185,8 @@ app.use((req, res) => {
 // Global error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error("Internal server error:", err);
-  res.status(500).json({ error: err.message || "Внутренняя ошибка сервера" });
+  const status = err.type === 'entity.too.large' ? 413 : err instanceof SyntaxError && 'body' in err ? 400 : 500;
+  res.status(status).json({ error: status === 413 ? 'Слишком большой запрос' : status === 400 ? 'Некорректный JSON' : 'Внутренняя ошибка сервера' });
 });
 
 export default app;

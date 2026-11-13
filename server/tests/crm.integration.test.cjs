@@ -8,6 +8,7 @@ const testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ebike-crm-integration-'))
 process.env.CRM_DATA_DIR = testDir;
 process.env.CRM_UPLOADS_DIR = path.join(testDir, 'uploads');
 process.env.CRM_STORAGE_MODE = 'LOCAL_FILE';
+process.env.CRM_LEGACY_MODE = 'true';
 const store = require('../dist/repositories/db.js');
 const { supabaseAdapter } = require('../dist/repositories/supabase.adapter.js');
 // No connection is initialized; persistence never reaches the real cloud.
@@ -41,6 +42,8 @@ beforeEach(async () => {
   supabaseAdapter.syncIfOutdated = async () => null;
   db = store.getDb();
   Object.assign(db, store.createDefaultEmptyDb());
+  // Repository tests own their fixtures; demo catalog records must not affect order or totals.
+  for (const collection of ['models', 'batteryModels', 'bikes', 'batteries', 'outfits', 'tariffs', 'parts', 'employees']) db[collection] = [];
   store.setSystemTime('2026-10-22T12:00:00Z');
   db.clients.push({ id: 'client', fullName: 'Иван Иванов', phone: '+7 (999) 123-45-67', clientType: 'COURIER', status: 'NORMAL', createdAt: '2026-10-01T12:00:00Z' });
   db.models.push({ id: 'model', name: 'Minako', powerWatts: 500, purchasePrice: 40000, salePrice: 60000 });
@@ -260,8 +263,8 @@ test('trusted-device login works and password changes revoke both session types'
   const result = AuthService.login('bxleth', 'admin', true);
   assert.ok(result.trustedDeviceToken);
   assert.equal(AuthService.trustedLogin(result.trustedDeviceToken).user.id, 'usr-bxleth');
-  assert.ok(db.users[0].passwordHash.startsWith('scrypt:'));
-  db.users[0].passwordHash = 'changed-password';
+  assert.ok(db.users.find((user) => user.id === 'usr-bxleth').passwordHash.startsWith('scrypt:'));
+  db.users.find((user) => user.id === 'usr-bxleth').passwordHash = 'changed-password';
   assert.throws(() => authenticateSession(result.token), /отозван/);
   assert.throws(() => AuthService.trustedLogin(result.trustedDeviceToken), /отозван/);
 });
@@ -629,6 +632,43 @@ test('failed issuance rolls back document captures together with the source oper
   try { assert.throws(() => issue(), /Проверка отката/); }
   finally { documents.capture = originalCapture; }
   assert.equal(JSON.stringify(db), before);
+});
+
+test('public demo sessions isolate edits, reset and parallel reads', async () => {
+  const oldUrl = process.env.DEMO_DATABASE_URL;
+  delete process.env.DEMO_DATABASE_URL;
+  process.env.CRM_LEGACY_MODE = 'false';
+  const call = async (route, token, method = 'GET', body) => {
+    const response = await fetch(apiUrl + route, { method, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    return { status: response.status, body: await response.json() };
+  };
+  try {
+    assert.equal((await call('/clients')).status, 401);
+    const first = await call('/auth/demo', null, 'POST'), second = await call('/auth/demo', null, 'POST');
+    assert.equal(first.status, 200, JSON.stringify(first.body));
+    assert.equal(second.status, 200, JSON.stringify(second.body));
+    const a = first.body.token, b = second.body.token;
+    assert.notEqual(a, b);
+    const original = (await call('/clients/demo-client-1', b)).body.fullName;
+    const update = await call('/clients/demo-client-1', a, 'PATCH', { fullName: 'Изменённый учебный клиент' });
+    assert.equal(update.status, 200, JSON.stringify(update.body));
+    assert.equal((await call('/clients/demo-client-1', a)).body.fullName, 'Изменённый учебный клиент');
+    assert.equal((await call('/clients/demo-client-1', b)).body.fullName, original);
+    const routes = ['/dashboard/stats', '/clients', '/bikes', '/batteries', '/rentals', '/repairs', '/documents', '/auth/me'];
+    const results = await Promise.all(routes.map(route => call(route, a)));
+    results.forEach((result, i) => assert.equal(result.status, 200, `${routes[i]}: ${JSON.stringify(result.body)}`));
+    assert.equal((await call('/users', a, 'POST', {})).status, 403);
+    assert.equal((await call('/assistant/connect', a, 'POST', {})).status, 403);
+    assert.equal((await call('/auth/login', a, 'POST', {})).status, 403);
+    assert.equal((await call('/demo/reset', a, 'POST')).status, 200);
+    assert.equal((await call('/clients/demo-client-1', a)).body.fullName, original);
+    assert.equal((await call('/auth/logout', a, 'POST')).status, 200);
+    assert.equal((await call('/clients', a)).status, 401);
+    assert.equal((await call('/clients', b)).status, 200);
+  } finally {
+    process.env.CRM_LEGACY_MODE = 'true';
+    if (oldUrl === undefined) delete process.env.DEMO_DATABASE_URL; else process.env.DEMO_DATABASE_URL = oldUrl;
+  }
 });
 
 after(async () => {

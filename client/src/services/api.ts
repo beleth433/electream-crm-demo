@@ -123,6 +123,7 @@ export const api = {
   },
   deleteBikePhoto: (id: string) => fetchJson<{ success: boolean }>(`/bikes/photos/${id}`, { method: 'DELETE' }),
   // Auth
+  demoLogin: () => fetchJson<{ token: string; user: User; expiresAt: string }>('/auth/demo', { method: 'POST', body: '{}' }),
   getMe: (userId?: string) =>
     fetchJson<User>(userId ? `/auth/me?userId=${encodeURIComponent(userId)}` : '/auth/me'),
   login: (email: string, password?: string, rememberDevice?: boolean) =>

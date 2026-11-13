@@ -1,7 +1,8 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { getDb, UserRecord } from "../repositories/db.js";
 
-const DEMO_SIGNING_SECRET = "electream-crm-demo-permanent-signing-key-2026-fixed-secret";
+// Development sessions are invalidated on restart; production requires a private key.
+const developmentSecret = randomBytes(48).toString('hex');
 
 export function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
@@ -18,13 +19,12 @@ export function verifyPassword(password: string, stored: string): boolean {
 }
 
 function signingKey(): string {
-  const secret = process.env.SESSION_SECRET;
-  if (secret && secret.trim()) return secret.trim();
-  try {
-    const db = getDb();
-    if (db?.settings?.authSigningKey) return db.settings.authSigningKey;
-  } catch {}
-  return DEMO_SIGNING_SECRET;
+  const secret = process.env.SESSION_SECRET?.trim();
+  if (secret && secret.length >= 32) return secret;
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+    throw new Error('SESSION_SECRET must contain at least 32 characters.');
+  }
+  return developmentSecret;
 }
 
 function fingerprint(user: UserRecord): string {
@@ -37,6 +37,7 @@ export function issueSession(user: UserRecord, kind: "session" | "device" = "ses
 }
 
 export function authenticateSession(token: string, kind: "session" | "device" = "session"): UserRecord {
+  if (typeof token !== 'string' || token.length > 4096 || token.split('.').length !== 2) throw new Error('Сессия недействительна. Войдите заново.');
   const [payload, signature] = token.split(".");
   if (!payload || !signature) throw new Error("Сессия недействительна. Войдите заново.");
   const expected = createHmac("sha256", signingKey()).update(payload).digest();

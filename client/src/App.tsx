@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import { Toaster, toast } from 'sonner';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Sidebar } from './components/Sidebar';
+import { DemoTour } from './components/DemoTour';
 import { DashboardPage } from './pages/DashboardPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import type { DocumentSummary } from './types/documents';
@@ -807,6 +808,8 @@ const MainLayout: React.FC = () => {
           <span className="text-[10px]">Меню</span>
         </button>
       </nav>
+
+      {currentUser.id === 'usr-demo' && <DemoTour onNavigate={handleSelectTab} onOpenRental={() => setIsWizardOpen(true)} />}
 
       {/* Global Modals */}
       <RentalWizardModal

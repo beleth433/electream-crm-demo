@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { authenticateSession } from "../services/session.service.js";
-import { getDb } from "../repositories/db.js";
+import { demoContext, getDb } from "../repositories/db.js";
 import { userStorage } from "../context/userContext.js";
 
 export function authenticateApi(req: Request, res: Response, next: NextFunction) {
   try {
     const cookie = req.headers.cookie?.split(";").map((value) => value.trim()).find((value) => value.startsWith("crm_session="))?.slice("crm_session=".length);
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, "") || (cookie ? decodeURIComponent(cookie) : "");
-    const user = authenticateSession(token);
+    const user = demoContext.getStore() ? getDb().users.find(u => u.id === 'usr-demo')! : authenticateSession(token);
     const db = getDb();
     const level = db.accessLevels.find((item) => item.id === user.accessLevelId) || db.accessLevels.find((item) => item.id === (user.role === "ADMIN" ? "lvl-owner" : user.role === "MECHANIC" ? "lvl-master" : "lvl-manager"));
     const visible = (module: string) => level?.permissions[module]?.visible !== false;
@@ -15,6 +15,16 @@ export function authenticateApi(req: Request, res: Response, next: NextFunction)
     const remove = (module: string) => level?.permissions[module]?.canDelete !== false;
     const route = req.path;
     const root = route.split("/")[1];
+    // The public visitor may exercise business workflows, not administer the host.
+    if (user.id === 'usr-demo' && (
+      ['assistant', 'upload', 'uploads'].includes(root) ||
+      (root === 'system' && route !== '/system/state') ||
+      (['users', 'access-levels'].includes(root) && req.method !== 'GET') ||
+      (root === 'employees' && req.method === 'DELETE') ||
+      (route === '/payments/settings' && req.method !== 'GET') ||
+      (route === '/history' && req.method === 'DELETE') ||
+      (route === '/bikes/photos' && req.method !== 'GET')
+    )) return res.status(403).json({ error: 'Управление доступом, хранилищем и настройками сервера недоступно на публичном демо-стенде.' });
     if (root === 'documents' && (level?.permissions.documents?.visible === false || !['rentals', 'shop', 'repairs'].some((source) => level && level.permissions[source]?.visible !== false))) return res.status(403).json({ error: 'Нет доступа к документам' });
     const module = ({ dashboard: "dashboard", bikes: "bikes", batteries: "batteries", outfits: "outfits", clients: "clients", rentals: "rentals", repairs: "repairs", parts: "inventory", payments: "finance", users: "employees", employees: "employees", "access-levels": "employees", articles: "info", history: "history", loyalty: "loyalty", shop: "shop", reviews: "clients" } as Record<string, string>)[root];
     const readDependencies: Record<string, string[]> = { clients: ["rentals", "repairs", "shop", "loyalty"], bikes: ["rentals", "repairs", "shop"], batteries: ["rentals", "repairs", "bikes"], outfits: ["rentals", "shop"], parts: ["repairs"], rentals: ["clients"], loyalty: ["clients", "rentals", "shop", "repairs"] };

@@ -7,6 +7,7 @@ const path = require('node:path');
 process.env.CRM_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ebike-assistant-tests-'));
 process.env.CRM_UPLOADS_DIR = path.join(process.env.CRM_DATA_DIR, 'uploads');
 process.env.CRM_STORAGE_MODE = 'LOCAL_FILE';
+process.env.CRM_LEGACY_MODE = 'true';
 const store = require('../dist/repositories/db.js');
 const { AssistantService: assistant } = require('../dist/services/assistant.service.js');
 const { issueSession } = require('../dist/services/session.service.js');
@@ -20,7 +21,8 @@ before(async () => {
 });
 beforeEach(() => {
   db = store.getDb(); Object.assign(db, store.createDefaultEmptyDb());
-  owner = db.users.find(u => u.role === 'ADMIN');
+  for (const collection of ['models', 'batteryModels', 'bikes', 'batteries', 'outfits', 'parts']) db[collection] = [];
+  owner = db.users.find(u => u.id === 'usr-bxleth');
   db.models.push({ id: 'model', name: 'Minako Monster', powerWatts: 500, purchasePrice: 45000 });
   db.batteryModels.push({ id: 'bat-model', name: 'АКБ 60V 30Ah', voltage: 60, capacityAh: 30 });
 });
