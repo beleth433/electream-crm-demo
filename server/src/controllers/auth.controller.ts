@@ -104,6 +104,12 @@ export async function publicDemoMiddleware(req: Request, res: Response, next: im
       return res.status(403).json({ error: 'В публичном демо доступен только учебный вход.' });
     }
     const originalSend = res.send.bind(res);
+    // Vercel supplies its own res.json helper which can bypass Express res.send.
+    // Route JSON through the persistence barrier on both runtimes.
+    res.json = function(body: any) {
+      res.type('json');
+      return res.send(JSON.stringify(body));
+    };
     let saving = false;
     res.send = function(body?: any) {
       if (saving) return originalSend(body);
