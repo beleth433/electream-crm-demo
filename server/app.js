@@ -63779,7 +63779,12 @@ function pool() {
     if (process.env.NODE_ENV === "production" || process.env.VERCEL) throw new Error("DEMO_DATABASE_URL is required");
     return void 0;
   }
-  return demoPool ||= new esm_default.Pool({ connectionString, max: 3, connectionTimeoutMillis: 1e4, idleTimeoutMillis: 1e4 });
+  const ca = process.env.DEMO_DATABASE_CA;
+  const url = new URL(connectionString);
+  if (ca) {
+    for (const key of ["sslmode", "sslcert", "sslkey", "sslrootcert"]) url.searchParams.delete(key);
+  }
+  return demoPool ||= new esm_default.Pool({ connectionString: url.toString(), ...ca ? { ssl: { ca, rejectUnauthorized: true } } : {}, max: 3, connectionTimeoutMillis: 1e4, idleTimeoutMillis: 1e4 });
 }
 function createDemoDb() {
   const data = createDefaultEmptyDb();

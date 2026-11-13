@@ -15,7 +15,13 @@ function pool() {
     if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw new Error('DEMO_DATABASE_URL is required');
     return undefined;
   }
-  return demoPool ||= new pg.Pool({ connectionString, max: 3, connectionTimeoutMillis: 10000, idleTimeoutMillis: 10000 });
+  // Keep certificate verification enabled for Supabase's private root CA.
+  const ca = process.env.DEMO_DATABASE_CA;
+  const url = new URL(connectionString);
+  if (ca) {
+    for (const key of ['sslmode', 'sslcert', 'sslkey', 'sslrootcert']) url.searchParams.delete(key);
+  }
+  return demoPool ||= new pg.Pool({ connectionString: url.toString(), ...(ca ? { ssl: { ca, rejectUnauthorized: true } } : {}), max: 3, connectionTimeoutMillis: 10000, idleTimeoutMillis: 10000 });
 }
 export function createDemoDb(): DBStore {
   const data = createDefaultEmptyDb();
