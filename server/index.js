@@ -71399,6 +71399,7 @@ app.use(async (req, res, next) => {
   next();
 });
 app.use(async (req, res, next) => {
+  if (isPublicDemo()) return next();
   if (req.path.includes("health") || req.path.includes("diagnostics")) {
     return next();
   }

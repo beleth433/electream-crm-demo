@@ -107,6 +107,8 @@ app.use(async (req, res, next) => {
 
 // Storage middleware: ensure DB ready & fresh from Supabase before reading, and flush write requests before response concludes
 app.use(async (req, res, next) => {
+  // Isolated demo persistence owns the response; legacy flushing must not bypass it.
+  if (isPublicDemo()) return next();
   if (req.path.includes("health") || req.path.includes("diagnostics")) {
     return next();
   }
