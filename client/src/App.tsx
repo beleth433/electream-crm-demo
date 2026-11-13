@@ -543,7 +543,7 @@ const MainLayout: React.FC = () => {
       case 'history':
         return 'История действий и аудит';
       default:
-        return 'ELECTREAM PRO SAMOKAT';
+        return 'ELECTREAM CRM';
     }
   };
 

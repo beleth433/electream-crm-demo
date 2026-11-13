@@ -81,7 +81,7 @@ export const PrintableSaleReceiptModal: React.FC<PrintableSaleReceiptModalProps>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-base text-emerald-600 dark:text-emerald-400 tracking-tight">
-                  {paymentDetails?.recipientName || 'ELECTREAM PRO SAMOKAT'}
+                  {paymentDetails?.recipientName || 'ELECTREAM'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 mt-1">

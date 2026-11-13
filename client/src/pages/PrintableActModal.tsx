@@ -115,7 +115,7 @@ export const PrintableActModal: React.FC<PrintableActModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 my-4 text-[11px]">
             <div>
               <p className="font-bold text-slate-800 mb-1">АРЕНДОДАТЕЛЬ:</p>
-              <p>{paymentDetails?.recipientName || 'ELECTREAM PRO SAMOKAT'}</p>
+              <p>{paymentDetails?.recipientName || 'ELECTREAM'}</p>
               {paymentDetails?.inn && <p>ИНН {paymentDetails.inn}</p>}
               {paymentDetails?.bankName && <p>Банк: {paymentDetails.bankName}</p>}
               {paymentDetails?.accountNumber && <p>Расчётный счёт: {paymentDetails.accountNumber}</p>}

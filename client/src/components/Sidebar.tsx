@@ -388,9 +388,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             alt="ELECTREAM"
             className="w-44 h-auto object-contain -my-3"
           />
-          <p className="text-[10px] font-black tracking-widest uppercase text-slate-500 dark:text-emerald-400 pl-0.5">
-            PRO SAMOKAT EDITION
-          </p>
+          
         </div>
 
         {isDrawer && (

@@ -27,7 +27,7 @@ export function DocumentPreviewModal({ id, onClose }: { id: string | null; onClo
           {doc.reconstructed && <p className="text-xs mt-1">Восстановлен {new Date(doc.capturedAt).toLocaleDateString('ru-RU')} из доступных данных</p>}
         </header>
         <section className="grid sm:grid-cols-2 gap-5">
-          <div><h3 className="font-bold">Организация / исполнитель</h3><p>{doc.snapshot.issuer.recipientName || 'ELECTREAM PRO SAMOKAT'}</p>
+          <div><h3 className="font-bold">Организация / исполнитель</h3><p>{doc.snapshot.issuer.recipientName || 'ELECTREAM'}</p>
             {doc.snapshot.issuer.inn && <p>ИНН: {doc.snapshot.issuer.inn}</p>}
             {doc.snapshot.issuer.bankName && <p>Банк: {doc.snapshot.issuer.bankName}</p>}
             {doc.snapshot.issuer.accountNumber && <p>Счёт: {doc.snapshot.issuer.accountNumber}</p>}
