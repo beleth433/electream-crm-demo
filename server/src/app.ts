@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import apiRouter from "./routes/api.routes.js";
 import { authenticateApi } from "./middleware/auth.js";
 import { UploadController } from "./controllers/upload.controller.js";
-import { initCloudDb, flushDb, checkAndSyncCloudDb, getDb, getStorageStatus } from "./repositories/db.js";
+import { initCloudDb, flushDb, checkAndSyncCloudDb, getDb, getStorageStatus, isPublicDemo } from "./repositories/db.js";
 
 
 dotenv.config();
