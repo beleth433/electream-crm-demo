@@ -24957,7 +24957,7 @@ var require_phoenix_cjs = __commonJS({
        * @param {PresenceOptions} [opts] - The options, for example `{events: {state: "state", diff: "diff"}}`
        */
       constructor(channel, opts = {}) {
-        let events = opts.events || /** @type {PresenceEvents} */
+        let events2 = opts.events || /** @type {PresenceEvents} */
         { state: "presence_state", diff: "presence_diff" };
         this.state = /* @__PURE__ */ Object.create(null);
         this.pendingDiffs = [];
@@ -24971,7 +24971,7 @@ var require_phoenix_cjs = __commonJS({
           onSync: function() {
           }
         };
-        this.channel.on(events.state, (newState) => {
+        this.channel.on(events2.state, (newState) => {
           let { onJoin, onLeave, onSync } = this.caller;
           this.joinRef = this.channel.joinRef();
           this.state = _Presence.syncState(this.state, newState, onJoin, onLeave);
@@ -24981,7 +24981,7 @@ var require_phoenix_cjs = __commonJS({
           this.pendingDiffs = [];
           onSync();
         });
-        this.channel.on(events.diff, (diff) => {
+        this.channel.on(events2.diff, (diff) => {
           let { onJoin, onLeave, onSync } = this.caller;
           if (this.inPendingSyncState()) {
             this.pendingDiffs.push(diff);
@@ -27066,8 +27066,8 @@ var require_RealtimeChannel = __commonJS({
       /** @internal */
       _notThisChannelEvent(event, ref) {
         const { close, error, leave, join } = constants_1.CHANNEL_EVENTS;
-        const events = [close, error, leave, join];
-        return ref && events.includes(event) && ref !== this.joinPush.ref;
+        const events2 = [close, error, leave, join];
+        return ref && events2.includes(event) && ref !== this.joinPush.ref;
       }
       /** @internal */
       _updateFilterTransform() {
@@ -49728,6 +49728,9 @@ var require_multer = __commonJS({
 // src/app.ts
 var import_express2 = __toESM(require_express2());
 
+// src/controllers/demo-insights.controller.ts
+var import_node_crypto3 = require("node:crypto");
+
 // src/repositories/db.ts
 var import_fs = __toESM(require("fs"));
 var import_node_async_hooks = require("node:async_hooks");
@@ -63957,6 +63960,69 @@ var AuthController = class {
   }
 };
 
+// src/controllers/demo-insights.controller.ts
+var events = /* @__PURE__ */ new Set(["page_opened", "demo_entered", "tour_started", "tour_skipped", "tour_step_viewed", "tour_completed", "section_opened", "contact_clicked"]);
+var sections = /* @__PURE__ */ new Set(["dashboard", "bikes", "batteries", "clients", "rentals", "outfits", "repairs", "inventory", "shop", "finance", "documents", "loyalty", "employees", "info", "history"]);
+var uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+async function demoInsights(req, res, next) {
+  const route = req.path.replace(/^\/api(?=\/|$)/, "");
+  if (!isPublicDemo() || !["/demo/events", "/demo/feedback", "/demo/report"].includes(route)) return next();
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    if (route === "/demo/report") {
+      if (req.method !== "GET") return res.sendStatus(405);
+      const key = process.env.DEMO_REPORT_KEY;
+      const supplied = req.headers.authorization?.replace(/^Bearer\s+/i, "") || "";
+      const digest = (s) => (0, import_node_crypto3.createHash)("sha256").update(s).digest();
+      if (!key || key.length < 32 || supplied.length > 256 || !(0, import_node_crypto3.timingSafeEqual)(digest(key), digest(supplied))) return res.status(401).json({ error: "\u041D\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u0430 \u043A \u043E\u0442\u0447\u0451\u0442\u0443" });
+      const db3 = pool();
+      if (!db3) return res.status(503).json({ error: "\u0425\u0440\u0430\u043D\u0438\u043B\u0438\u0449\u0435 \u043D\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043E" });
+      const totals = await db3.query(`SELECT event,count(*)::int AS count,count(DISTINCT visitor_id)::int AS visitors FROM electream_demo.events WHERE created_at>=now()-interval '30 days' GROUP BY event ORDER BY event`);
+      const steps = await db3.query(`SELECT step,count(DISTINCT visitor_id)::int AS visitors FROM electream_demo.events WHERE event='tour_step_viewed' AND created_at>=now()-interval '30 days' GROUP BY step ORDER BY step`);
+      const modules = await db3.query(`SELECT section,count(DISTINCT visitor_id)::int AS visitors FROM electream_demo.events WHERE event='section_opened' AND created_at>=now()-interval '30 days' GROUP BY section ORDER BY visitors DESC`);
+      const feedback2 = await db3.query(`SELECT id,fit,comment,contact,created_at FROM electream_demo.feedback WHERE created_at>=now()-interval '90 days' ORDER BY created_at DESC LIMIT 200`);
+      return res.json({ totals: totals.rows, steps: steps.rows, sections: modules.rows, feedback: feedback2.rows });
+    }
+    if (req.method !== "POST") return res.sendStatus(405);
+    if (Buffer.byteLength(JSON.stringify(req.body || {})) > 1e4) return res.sendStatus(413);
+    const { visitorId, id } = req.body || {};
+    if (!uuid.test(visitorId || "") || !uuid.test(id || "")) return res.sendStatus(400);
+    const db2 = pool();
+    if (!db2) return res.status(503).json({ error: "\u0425\u0440\u0430\u043D\u0438\u043B\u0438\u0449\u0435 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E" });
+    const feedback = route === "/demo/feedback";
+    const { event, section, step, fit, comment = "", contact = "", consent = false } = req.body;
+    if (!feedback && (!events.has(event) || section !== void 0 && !sections.has(section) || step !== void 0 && (!Number.isInteger(step) || step < 1 || step > 12))) return res.sendStatus(400);
+    if (feedback && (!["yes", "partly", "no", "unsure"].includes(fit) || typeof comment !== "string" || comment.length > 2e3 || typeof contact !== "string" || contact.length > 200 || typeof consent !== "boolean" || contact.trim() && !consent)) return res.status(400).json({ error: "\u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u043F\u043E\u043B\u044F \u0438 \u0441\u043E\u0433\u043B\u0430\u0441\u0438\u0435 \u043D\u0430 \u0441\u0432\u044F\u0437\u044C" });
+    const client = await db2.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT pg_advisory_xact_lock(19861113, 2)");
+      const table = feedback ? "feedback" : "events";
+      const existing = await client.query(`SELECT id FROM electream_demo.${table} WHERE id=$1`, [id]);
+      if (existing.rowCount) {
+        await client.query("COMMIT");
+        return res.json({ success: true });
+      }
+      const limits = await client.query(`SELECT count(*)::int AS total,count(*) FILTER (WHERE visitor_id=$1)::int AS visitor FROM electream_demo.${table} WHERE created_at>now()-interval '1 day'`, [visitorId]);
+      if (limits.rows[0].total >= (feedback ? 500 : 1e4) || limits.rows[0].visitor >= (feedback ? 5 : 1e3)) {
+        await client.query("ROLLBACK");
+        return res.status(429).json({ error: "\u041B\u0438\u043C\u0438\u0442 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u0434\u043E\u0441\u0442\u0438\u0433\u043D\u0443\u0442. \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u043F\u043E\u0437\u0436\u0435." });
+      }
+      if (feedback) await client.query("INSERT INTO electream_demo.feedback (id,visitor_id,fit,comment,contact,consent) VALUES ($1,$2,$3,$4,$5,$6)", [id, visitorId, fit, comment.trim(), contact.trim(), consent]);
+      else await client.query("INSERT INTO electream_demo.events (id,visitor_id,event,section,step) VALUES ($1,$2,$3,$4,$5)", [id, visitorId, event, section || null, step || null]);
+      await client.query("COMMIT");
+      return res.status(201).json({ success: true });
+    } catch (e) {
+      await client.query("ROLLBACK");
+      throw e;
+    } finally {
+      client.release();
+    }
+  } catch {
+    return res.status(503).json({ error: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u0438\u043B\u0438 \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435. \u041F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u043F\u043E\u0437\u0436\u0435." });
+  }
+}
+
 // src/app.ts
 var import_cors = __toESM(require_lib5());
 var import_path3 = __toESM(require("path"));
@@ -63967,7 +64033,7 @@ var import_dotenv = __toESM(require_main4());
 var import_express = __toESM(require_express2());
 
 // src/services/assistant.service.ts
-var import_node_crypto6 = require("node:crypto");
+var import_node_crypto7 = require("node:crypto");
 
 // src/dtos/assistant.dto.ts
 var text = external_exports.string().trim().max(500).nullable().optional();
@@ -64000,7 +64066,7 @@ var AssistantPlanDto = external_exports.object({
 }).strict();
 
 // src/repositories/client.repository.ts
-var import_node_crypto3 = require("node:crypto");
+var import_node_crypto4 = require("node:crypto");
 
 // src/repositories/loyalty.repository.ts
 var LoyaltyRepository = class {
@@ -64313,7 +64379,7 @@ var ClientRepository = class {
     }
     const newClient = {
       registrationAddress: data.registrationAddress?.trim() || null,
-      id: `cli-${(0, import_node_crypto3.randomUUID)()}`,
+      id: `cli-${(0, import_node_crypto4.randomUUID)()}`,
       fullName: data.fullName,
       phone: data.phone,
       telegram: data.telegram || null,
@@ -64440,10 +64506,10 @@ var ClientService = class {
 };
 
 // src/repositories/bike.repository.ts
-var import_node_crypto5 = require("node:crypto");
+var import_node_crypto6 = require("node:crypto");
 
 // src/repositories/battery.repository.ts
-var import_node_crypto4 = require("node:crypto");
+var import_node_crypto5 = require("node:crypto");
 var BatteryRepository = class {
   // Battery Model Templates CRUD
   static getBatteryModels() {
@@ -64655,7 +64721,7 @@ var BatteryRepository = class {
       }
     }
     const newBattery = {
-      id: `bat-${(0, import_node_crypto4.randomUUID)()}`,
+      id: `bat-${(0, import_node_crypto5.randomUUID)()}`,
       serialNumber: cleanSerial,
       modelId: data.modelId || null,
       modelName,
@@ -65133,7 +65199,7 @@ var BikeRepository = class {
     const salePrice = data.salePrice !== void 0 ? Number(data.salePrice) : model?.salePrice ?? 0;
     const newBike = {
       photos: data.photos || [],
-      id: `bike-${(0, import_node_crypto5.randomUUID)()}`,
+      id: `bike-${(0, import_node_crypto6.randomUUID)()}`,
       inventoryNumber: data.inventoryNumber,
       modelId: data.modelId,
       batteryId: data.batteryId || null,
@@ -65507,7 +65573,7 @@ var HistoryRepository = class {
 
 // src/services/assistant.service.ts
 var import_facts = __toESM(require_facts());
-var hash = (value) => (0, import_node_crypto6.createHash)("sha256").update(value).digest("hex");
+var hash = (value) => (0, import_node_crypto7.createHash)("sha256").update(value).digest("hex");
 var now = () => (/* @__PURE__ */ new Date()).toISOString();
 function fail(message, status = 400) {
   throw Object.assign(new Error(message), { status });
@@ -65623,7 +65689,7 @@ function validatePlan(userId, plan, sourceText) {
 }
 function addTask(userId, module2, entityId, label2, field, title) {
   if (state().tasks.some((t) => t.entityId === entityId && t.field === field && !t.resolvedAt)) return;
-  state().tasks.push({ id: (0, import_node_crypto6.randomUUID)(), userId, module: module2, entityId, label: label2, field, title, createdAt: now() });
+  state().tasks.push({ id: (0, import_node_crypto7.randomUUID)(), userId, module: module2, entityId, label: label2, field, title, createdAt: now() });
 }
 function taskComplete(task) {
   const entity = getDb()[task.module].find((e) => e.id === task.entityId);
@@ -65633,7 +65699,7 @@ var AssistantService = class {
   static createPairing(userId) {
     userById(userId);
     if (!["clients", "bikes", "batteries"].some((m) => allowed(userId, m, true))) fail("\u041D\u0435\u0442 \u043F\u0440\u0430\u0432 \u043D\u0430 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043C\u044B\u0435 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438", 403);
-    const code = (0, import_node_crypto6.randomBytes)(16).toString("hex");
+    const code = (0, import_node_crypto7.randomBytes)(16).toString("hex");
     state().pairings = state().pairings.filter((p) => p.userId !== userId && p.expiresAt > Date.now());
     const expiresAt = Date.now() + 10 * 6e4;
     state().pairings.push({ userId, codeHash: hash(code), expiresAt });
@@ -65646,8 +65712,8 @@ var AssistantService = class {
     if (!pairing) fail("\u041A\u043E\u0434 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u0435\u043D \u0438\u043B\u0438 \u0438\u0441\u0442\u0451\u043A", 401);
     const user2 = userById(pairing.userId);
     if (state().devices.filter((d) => d.userId === user2.id && !d.revokedAt).length >= 5) fail("\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435 \u043B\u0438\u0448\u043D\u0438\u0439 \u043A\u043E\u043C\u043F\u044C\u044E\u0442\u0435\u0440 \u043F\u0435\u0440\u0435\u0434 \u043D\u043E\u0432\u044B\u043C \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435\u043C");
-    const token2 = (0, import_node_crypto6.randomBytes)(32).toString("hex");
-    const device = { id: (0, import_node_crypto6.randomUUID)(), userId: user2.id, name, tokenHash: hash(token2), fingerprint: hash(user2.passwordHash), createdAt: now() };
+    const token2 = (0, import_node_crypto7.randomBytes)(32).toString("hex");
+    const device = { id: (0, import_node_crypto7.randomUUID)(), userId: user2.id, name, tokenHash: hash(token2), fingerprint: hash(user2.passwordHash), createdAt: now() };
     state().devices.push(device);
     state().pairings = state().pairings.filter((p) => p !== pairing);
     saveDb();
@@ -65733,7 +65799,7 @@ var AssistantService = class {
     if (!job) return { job: null };
     job.status = "PROCESSING";
     job.deviceId = device.id;
-    job.lease = (0, import_node_crypto6.randomUUID)();
+    job.lease = (0, import_node_crypto7.randomUUID)();
     job.leaseUntil = Date.now() + 5 * 6e4;
     job.attempts++;
     const modules = ["clients", "bikes", "batteries"].filter((m) => allowed(device.userId, m, true));
@@ -65828,7 +65894,7 @@ var AssistantService = class {
         } else {
           const bike = a.kind === "add_bikes";
           for (let i = 0; i < (a.quantity || 1); i++) {
-            const tag = (0, import_node_crypto6.randomUUID)().slice(0, 8).toUpperCase();
+            const tag = (0, import_node_crypto7.randomUUID)().slice(0, 8).toUpperCase();
             const entity = bike ? BikeRepository.create({ modelId: a.modelId, inventoryNumber: a.inventoryNumbers?.[i] || `\u042D\u0412-${tag}`, frameNumber: a.frameNumbers?.[i], motorNumber: a.motorNumbers?.[i], currentLocation: "\u0411\u0430\u0437\u0430", purchasePrice: a.purchasePrice ?? void 0 }) : BatteryRepository.create({ modelId: a.modelId, serialNumber: a.serialNumbers?.[i] || `\u0412\u0420\u0415\u041C-\u0410\u041A\u0411-${tag}`, notes: !a.serialNumbers?.length ? "\u0412\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0439 \u0443\u0447\u0451\u0442\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440. \u0412\u043D\u0435\u0441\u0438\u0442\u0435 \u0444\u0430\u043A\u0442\u0438\u0447\u0435\u0441\u043A\u0438\u0439 \u0441\u0435\u0440\u0438\u0439\u043D\u044B\u0439 \u043D\u043E\u043C\u0435\u0440." : void 0, purchasePrice: a.purchasePrice ?? void 0 });
             if (!entity) fail("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0442\u0435\u0445\u043D\u0438\u043A\u0443");
             const module2 = bike ? "bikes" : "batteries";
@@ -68699,7 +68765,7 @@ var ReviewController = class {
 var import_multer = __toESM(require_multer());
 var import_path2 = __toESM(require("path"));
 var import_fs2 = __toESM(require("fs"));
-var import_node_crypto7 = require("node:crypto");
+var import_node_crypto8 = require("node:crypto");
 var isVercel2 = Boolean(process.env.VERCEL);
 var uploadsDir = process.env.CRM_UPLOADS_DIR ? import_path2.default.resolve(process.env.CRM_UPLOADS_DIR) : isVercel2 ? import_path2.default.resolve("/tmp", "uploads") : import_path2.default.resolve(process.cwd(), "uploads");
 try {
@@ -68724,7 +68790,7 @@ var UploadController = class {
         return res.status(400).json({ error: "\u0424\u0430\u0439\u043B \u043D\u0435 \u0431\u044B\u043B \u043F\u0435\u0440\u0435\u0434\u0430\u043D" });
       }
       const extensions = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "application/pdf": ".pdf" };
-      const filename = `doc_${(0, import_node_crypto7.randomUUID)()}${extensions[req.file.mimetype]}`;
+      const filename = `doc_${(0, import_node_crypto8.randomUUID)()}${extensions[req.file.mimetype]}`;
       const cloud = isVercel2 || supabaseAdapter.getStatus().mode !== "LOCAL_FILE";
       if (cloud) await supabaseAdapter.uploadDocument(filename, req.file.buffer, req.file.mimetype);
       else await import_fs2.default.promises.writeFile(import_path2.default.join(uploadsDir, filename), req.file.buffer);
@@ -71085,7 +71151,7 @@ function authenticateApi(req, res, next) {
 
 // src/controllers/bikePhoto.controller.ts
 var import_multer2 = __toESM(require_multer());
-var import_node_crypto8 = require("node:crypto");
+var import_node_crypto9 = require("node:crypto");
 var import_promises = __toESM(require("node:fs/promises"));
 var import_node_path = __toESM(require("node:path"));
 
@@ -71143,7 +71209,7 @@ var BikePhotoController = class {
       if (!image || !thumbnail) return res.status(400).json({ error: "\u041D\u0443\u0436\u043D\u044B \u0444\u043E\u0442\u043E\u0433\u0440\u0430\u0444\u0438\u044F \u0438 \u043C\u0438\u043D\u0438\u0430\u0442\u044E\u0440\u0430" });
       const dimensions = validateBikePhoto(image.buffer);
       validateBikePhoto(thumbnail.buffer, true);
-      id = (0, import_node_crypto8.randomUUID)();
+      id = (0, import_node_crypto9.randomUUID)();
       const names = filenames(id);
       if (cloudStorage()) {
         await supabaseAdapter.uploadDocument(names[0], image.buffer, "image/webp");
@@ -71378,6 +71444,7 @@ app.use((req, res, next) => {
   res.setHeader("Expires", "0");
   next();
 });
+app.use(demoInsights);
 app.use(publicDemoMiddleware);
 var requestQueue = Promise.resolve();
 app.use(async (req, res, next) => {

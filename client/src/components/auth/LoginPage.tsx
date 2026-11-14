@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../../types';
 import { api } from '../../services/api';
+import { track } from '../../services/demoInsights';
 import {
 
   RefreshCw,
@@ -24,6 +25,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       localStorage.setItem('crm_auth_token', res.token);
       localStorage.setItem('crm_auth_user', JSON.stringify(res.user));
       toast.success('Демо-доступ активирован! Добро пожаловать.');
+      track('demo_entered');
       onLoginSuccess(res.user);
     } catch (err: any) {
       toast.error(err.message || 'Ошибка входа в демо-режим');

@@ -9,7 +9,7 @@ import { createDefaultEmptyDb, demoContext, isPublicDemo, type DBStore } from '.
 let demoPool: pg.Pool | undefined;
 const localSessions = new Map<string, { data: DBStore; expiresAt: string; version: number }>();
 const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
-function pool() {
+export function pool() {
   const connectionString = process.env.DEMO_DATABASE_URL;
   if (!connectionString) {
     if (process.env.NODE_ENV === 'production' || process.env.VERCEL) throw new Error('DEMO_DATABASE_URL is required');

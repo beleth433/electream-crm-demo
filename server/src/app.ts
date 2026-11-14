@@ -1,4 +1,5 @@
 import express from "express";
+import { demoInsights } from './controllers/demo-insights.controller.js';
 import { publicDemoMiddleware } from './controllers/auth.controller.js';
 import cors from "cors";
 import path from "path";
@@ -87,6 +88,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(demoInsights);
 app.use(publicDemoMiddleware);
 
 // Serialize requests within a worker through persistence. Optimistic cloud

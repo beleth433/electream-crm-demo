@@ -4,6 +4,9 @@ import { Toaster, toast } from 'sonner';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Sidebar } from './components/Sidebar';
 import { DemoTour } from './components/DemoTour';
+import { DemoFeedback } from './components/DemoFeedback';
+import { DemoReport } from './components/DemoReport';
+import { track } from './services/demoInsights';
 import { DashboardPage } from './pages/DashboardPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import type { DocumentSummary } from './types/documents';
@@ -143,6 +146,7 @@ const MainLayout: React.FC = () => {
   }, [currentUser?.id]);
 
   const [currentTab, setCurrentTab] = useState<string>(getInitialTab);
+  useEffect(() => { if (currentUser?.id === 'usr-demo') track('section_opened', { section: currentTab }); }, [currentTab, currentUser?.id]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
     return localStorage.getItem('crm_demo_mode') === 'true';
@@ -809,7 +813,7 @@ const MainLayout: React.FC = () => {
         </button>
       </nav>
 
-      {currentUser.id === 'usr-demo' && <DemoTour onNavigate={handleSelectTab} onOpenRental={() => setIsWizardOpen(true)} />}
+      {currentUser.id === 'usr-demo' && <><DemoTour onNavigate={handleSelectTab} onOpenRental={() => setIsWizardOpen(true)} /><DemoFeedback /></>}
 
       {/* Global Modals */}
       <RentalWizardModal
@@ -874,6 +878,8 @@ const MainLayout: React.FC = () => {
 };
 
 export default function App() {
+  useEffect(() => { if (window.location.hash !== '#demo-report') track('page_opened'); }, []);
+  if (window.location.hash === '#demo-report') return <ThemeProvider><DemoReport /></ThemeProvider>;
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>

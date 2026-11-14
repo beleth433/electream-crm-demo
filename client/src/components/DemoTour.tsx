@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, GraduationCap, RotateCcw, X } from 'lucide-react';
 import { Modal } from './Modal';
+import { track } from '../services/demoInsights';
 
 const STEPS = [
   ['dashboard', 'Пульс бизнеса', 'Дашборд объединяет показатели парка, аренды, ремонтов и денег.', 'Найдите свободную технику и открытые ремонты. При пустой базе показатели могут быть нулевыми.'],
@@ -28,7 +29,7 @@ export function DemoTour({ onNavigate, onOpenRental }: { onNavigate: (tab: strin
   const panel = useRef<HTMLElement>(null);
   const current = STEPS[step];
   const save = (status: string, index = step) => { try { localStorage.setItem(KEY, JSON.stringify({ status, step: index })); } catch {} };
-  const start = (index: number) => { setStep(index); setInvitation(false); setCollapsed(false); setActive(true); onNavigate(STEPS[index][0]); save('started', index); };
+  const start = (index: number) => { setStep(index); setInvitation(false); setCollapsed(false); setActive(true); onNavigate(STEPS[index][0]); save('started', index); track('tour_started'); track('tour_step_viewed', { step: index + 1 }); };
   useEffect(() => {
     if (!active || collapsed) return;
     panel.current?.focus();
@@ -36,8 +37,8 @@ export function DemoTour({ onNavigate, onOpenRental }: { onNavigate: (tab: strin
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
   }, [active, collapsed, step]);
-  const move = (index: number) => { setStep(index); onNavigate(STEPS[index][0]); save('started', index); };
-  const decline = () => { save('declined'); setInvitation(false); };
+  const move = (index: number) => { setStep(index); onNavigate(STEPS[index][0]); save('started', index); track('tour_step_viewed', { step: index + 1 }); };
+  const decline = () => { save('declined'); setInvitation(false); track('tour_skipped'); };
   return <>
     <Modal
       isOpen={invitation}
@@ -59,7 +60,7 @@ export function DemoTour({ onNavigate, onOpenRental }: { onNavigate: (tab: strin
       </div>
     </Modal>
     {!invitation && (!active || collapsed) && <button type="button" onClick={() => active ? setCollapsed(false) : start(step)} className="btn-secondary fixed right-4 bottom-24 md:bottom-5 z-40 shadow-sm" aria-label="Открыть обучение CRM"><GraduationCap className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />{active ? 'Продолжить обучение' : 'Обучение'}</button>}
-    {active && !collapsed && <aside ref={panel} tabIndex={-1} aria-label="Обучение CRM" className="contour-card fixed right-3 bottom-24 md:bottom-5 z-40 flex w-[calc(100%-1.5rem)] sm:w-96 max-h-[65dvh] flex-col p-4 sm:p-6 text-sm leading-relaxed text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+    {active && !collapsed && <aside ref={panel} tabIndex={-1} aria-label="Обучение CRM" className="contour-card fixed right-3 bottom-24 md:bottom-5 z-40 flex w-[calc(100%-1.5rem)] sm:w-96 max-h-[45dvh] md:max-h-[65dvh] flex-col p-4 sm:p-6 text-sm leading-relaxed text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-emerald-500/15">
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><GraduationCap className="h-5 w-5" /></span>
@@ -73,12 +74,13 @@ export function DemoTour({ onNavigate, onOpenRental }: { onNavigate: (tab: strin
         </div>
         <div><h2 className="mb-2 text-base font-bold leading-tight sm:text-lg dark:text-white">{current[1]}</h2><p className="text-slate-600 dark:text-slate-400">{current[2]}</p></div>
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-emerald-500/20 dark:bg-[#101d17]"><p className="mb-1 font-semibold">Попробуйте</p><p className="text-slate-600 dark:text-slate-400">{current[3]}</p></div>
-        <div className="flex flex-col gap-2"><button type="button" className="btn-secondary" onClick={() => onNavigate(current[0])}>Открыть раздел<ArrowRight className="h-4 w-4 shrink-0" /></button>{current[0] === 'rentals' && <button type="button" className="btn-secondary" onClick={() => { setCollapsed(true); onOpenRental(); }}>Оформить аренду</button>}</div>
+        <p className="text-xs text-slate-500">Сверните подсказку кнопкой ×, чтобы попробовать действие в разделе.</p>
+        <div className="flex flex-col gap-2">{current[0] === 'rentals' && <button type="button" className="btn-secondary" onClick={() => { setCollapsed(true); onOpenRental(); }}>Оформить аренду</button>}</div>
       </div>
       <div className="shrink-0 space-y-2 border-t border-slate-100 pt-4 dark:border-emerald-500/15">
         <div className="flex items-center justify-between gap-2">
           <button type="button" disabled={step === 0} onClick={() => move(step - 1)} className="btn-secondary"><ArrowLeft className="h-4 w-4 shrink-0" />Назад</button>
-          <button type="button" onClick={() => { if (step === STEPS.length - 1) { save('completed', 0); setStep(0); setActive(false); } else move(step + 1); }} className="btn-primary">{step === STEPS.length - 1 ? 'Завершить' : 'Далее'}<ArrowRight className="h-4 w-4 shrink-0" /></button>
+          <button type="button" onClick={() => { if (step === STEPS.length - 1) { save('completed', 0); setStep(0); setActive(false); track('tour_completed'); window.dispatchEvent(new Event('demo:tour-completed')); } else move(step + 1); }} className="btn-primary">{step === STEPS.length - 1 ? 'Завершить' : 'Далее'}<ArrowRight className="h-4 w-4 shrink-0" /></button>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <button type="button" onClick={() => start(0)} className="crm-filter-tab gap-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-emerald-500/10"><RotateCcw className="h-3.5 w-3.5 shrink-0" />Начать заново</button>

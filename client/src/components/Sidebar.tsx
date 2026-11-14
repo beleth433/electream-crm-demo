@@ -26,7 +26,9 @@ import {
   ShoppingBag,
   Award,
   FileText,
+  MessageSquare,
 } from 'lucide-react';
+import { openFeedback } from '../services/demoInsights';
 import { useTheme } from '../context/ThemeContext';
 import { DashboardStats, User, PartOrder, Article, BatteryStats } from '../types';
 
@@ -541,6 +543,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </p>
             </div>
           </div>
+          {currentUser?.id === 'usr-demo' && <button type="button" className="crm-icon-button text-emerald-600" title="Обратная связь" aria-label="Обратная связь" onClick={() => { onCloseMobile?.(); openFeedback(); }}><MessageSquare className="w-5 h-5" /></button>}
           <button
             onClick={onLogout}
             className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors shrink-0"
