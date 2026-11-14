@@ -27,7 +27,7 @@ export function DemoFeedback() {
       setSent(true); try { localStorage.setItem('electream-feedback-offered','1'); } catch {}
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
-  return <Modal isOpen={open} onClose={close} title={sent?'Спасибо за обратную связь':'Как вам ELECTREAM CRM?'} subtitle="Опрос необязательный — можно вернуться к нему через меню" maxWidth="md">
+  return <Modal isOpen={open} onClose={close} title={sent?'Спасибо за обратную связь':'Как вам ELECTREAM CRM?'} subtitle="Опрос необязательный — кнопка «Оставить отзыв» всегда рядом с обучением" maxWidth="md">
     {sent ? <div className="space-y-4"><p>Ответ сохранён. Он поможет выбрать следующие улучшения.</p><button className="btn-secondary" onClick={() => { setSent(false); setFit(''); setComment(''); setContact(''); setConsent(false); setId(crypto.randomUUID()); }}>Написать ещё</button></div> : <form onSubmit={submit} className="space-y-4 text-sm">
       <label className="block space-y-2"><span className="font-semibold">Насколько CRM подходит под ваши задачи?</span><select required value={fit} onChange={e=>setFit(e.target.value)} className="crm-input w-full"><option value="" disabled>Выберите ответ</option><option value="yes">Подходит</option><option value="partly">Частично</option><option value="no">Не подходит</option><option value="unsure">Пока не понял</option></select></label>
       <label className="block space-y-2"><span className="font-semibold">Чего не хватает или что было неудобно?</span><textarea maxLength={2000} rows={3} value={comment} onChange={e=>setComment(e.target.value)} className="crm-input w-full" placeholder="Необязательно. Не указывайте данные клиентов." /></label>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, GraduationCap, RotateCcw, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, GraduationCap, MessageSquare, RotateCcw, X } from 'lucide-react';
 import { Modal } from './Modal';
-import { track } from '../services/demoInsights';
+import { openFeedback, track } from '../services/demoInsights';
 
 const STEPS = [
   ['dashboard', 'Пульс бизнеса', 'Дашборд объединяет показатели парка, аренды, ремонтов и денег.', 'Найдите свободную технику и открытые ремонты. При пустой базе показатели могут быть нулевыми.'],
@@ -56,10 +56,14 @@ export function DemoTour({ onNavigate, onOpenRental }: { onNavigate: (tab: strin
         <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
           <p className="mb-1 font-semibold text-slate-900 dark:text-white">Безопасная практика</p>
           <p>Это учебный стенд. Не вводите персональные данные. Обучение всегда доступно по кнопке в нижнем углу.</p>
+          <p className="mt-2">Рядом есть кнопка «Оставить отзыв»: поделиться впечатлениями можно в любой момент, даже без прохождения обучения. Это необязательно.</p>
         </div>
       </div>
     </Modal>
-    {!invitation && (!active || collapsed) && <button type="button" onClick={() => active ? setCollapsed(false) : start(step)} className="btn-secondary fixed right-4 bottom-24 md:bottom-5 z-40 shadow-sm" aria-label="Открыть обучение CRM"><GraduationCap className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />{active ? 'Продолжить обучение' : 'Обучение'}</button>}
+    {!invitation && (!active || collapsed) && <div role="group" aria-label="Обучение и обратная связь" className="fixed right-4 bottom-24 md:bottom-5 z-40 flex max-w-[calc(100%-2rem)] flex-wrap justify-end gap-2">
+      <button type="button" onClick={openFeedback} className="btn-secondary shadow-sm"><MessageSquare className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />Оставить отзыв</button>
+      <button type="button" onClick={() => active ? setCollapsed(false) : start(step)} className="btn-secondary shadow-sm" aria-label="Открыть обучение CRM"><GraduationCap className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />{active ? 'Продолжить обучение' : 'Обучение'}</button>
+    </div>}
     {active && !collapsed && <aside ref={panel} tabIndex={-1} aria-label="Обучение CRM" className="contour-card fixed right-3 bottom-24 md:bottom-5 z-40 flex w-[calc(100%-1.5rem)] sm:w-96 max-h-[45dvh] md:max-h-[65dvh] flex-col p-4 sm:p-6 text-sm leading-relaxed text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-emerald-500/15">
         <div className="flex items-center gap-2">
@@ -84,6 +88,7 @@ export function DemoTour({ onNavigate, onOpenRental }: { onNavigate: (tab: strin
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <button type="button" onClick={() => start(0)} className="crm-filter-tab gap-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-emerald-500/10"><RotateCcw className="h-3.5 w-3.5 shrink-0" />Начать заново</button>
+          <button type="button" onClick={openFeedback} className="crm-filter-tab gap-1.5 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-emerald-500/10"><MessageSquare className="h-3.5 w-3.5 shrink-0" />Оставить отзыв</button>
           <button type="button" onClick={() => { save('paused'); setActive(false); }} className="crm-filter-tab text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-emerald-500/10">Позже</button>
         </div>
       </div>

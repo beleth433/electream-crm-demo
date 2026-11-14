@@ -75,6 +75,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               <span>Открыть демоверсию</span>
             </button>
             <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Внутри — необязательное обучение и кнопка «Оставить отзыв». Можно изучать CRM самостоятельно и делиться впечатлениями в любой момент.
+            </p>
+            <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               Изменения в демонстрационной версии сохраняются на 24 часа.
             </p>
           </div>
